@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X } from "lucide-react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { DataGrid } from "@/components/shared";
@@ -262,6 +262,23 @@ export default function ProcessPage() {
     });
   };
 
+  // Employee Onboarding file states (for Add dialog)
+  const [pendingOnboardingFiles, setPendingOnboardingFiles] = useState<File[]>([]);
+  const onboardingFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Employee Onboarding file states (for Edit dialog)
+  const [editOnboardingFiles, setEditOnboardingFiles] = useState<File[]>([]);
+  const editOnboardingFileInputRef = useRef<HTMLInputElement>(null);
+  const [editExistingOnboardingFiles, setEditExistingOnboardingFiles] = useState<{ id: string; fileName: string; fileSize?: number | null }[]>([]);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
   const kpiYears = ["2029", "2028", "2027", "2026", "2025", "2024", "2023"];
   const kpiMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -447,6 +464,22 @@ export default function ProcessPage() {
 
       if (res.ok) {
         const newProcess = await res.json();
+
+        // Upload onboarding files if any
+        if (pendingOnboardingFiles.length > 0) {
+          for (const file of pendingOnboardingFiles) {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("category", "employee_onboarding");
+            try {
+              await fetch(`/api/processes/${newProcess.id}/attachments`, { method: "POST", body: fd });
+            } catch (err) {
+              console.error("Error uploading onboarding file:", err);
+            }
+          }
+          setPendingOnboardingFiles([]);
+        }
+
         setProcesses([...processes, newProcess]);
         resetProcessForm();
         setIsAddProcessOpen(false);
@@ -497,6 +530,22 @@ export default function ProcessPage() {
 
       if (res.ok) {
         const updated = await res.json();
+
+        // Upload new onboarding files if any
+        if (editOnboardingFiles.length > 0) {
+          for (const file of editOnboardingFiles) {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("category", "employee_onboarding");
+            try {
+              await fetch(`/api/processes/${editingProcess.id}/attachments`, { method: "POST", body: fd });
+            } catch (err) {
+              console.error("Error uploading onboarding file:", err);
+            }
+          }
+          setEditOnboardingFiles([]);
+        }
+
         setProcesses(processes.map((p) => (p.id === updated.id ? updated : p)));
         setIsEditProcessOpen(false);
         setEditingProcess(null);
@@ -548,6 +597,20 @@ export default function ProcessPage() {
       informed: process.informedId || "",
     });
     setIsEditProcessOpen(true);
+
+    // Fetch existing onboarding files
+    setEditOnboardingFiles([]);
+    setEditExistingOnboardingFiles([]);
+    fetch(`/api/processes/${process.id}/attachments`)
+      .then((res) => res.ok ? res.json() : [])
+      .then((attachments: { id: string; fileName: string; fileSize?: number | null; category?: string }[]) => {
+        setEditExistingOnboardingFiles(
+          attachments
+            .filter((a) => a.category === "employee_onboarding")
+            .map((a) => ({ id: a.id, fileName: a.fileName, fileSize: a.fileSize }))
+        );
+      })
+      .catch(() => {});
   };
 
   // Open KPI Modal
@@ -1606,6 +1669,78 @@ export default function ProcessPage() {
                 </div>
               </div>
             </div>
+
+            {/* Employee Onboarding Section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Employee Onboarding")}</h4>
+              <p className="text-sm text-muted-foreground">
+                {t("Upload employee onboarding documents for this process.")}
+              </p>
+              <div
+                className="border-2 border-dashed rounded-lg p-6 text-center transition-colors border-gray-300 hover:border-gray-400"
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const files = Array.from(e.dataTransfer.files);
+                  if (files.length > 0) setPendingOnboardingFiles((prev) => [...prev, ...files]);
+                }}
+              >
+                <div className="space-y-2">
+                  <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                  <p className="text-sm text-gray-600">
+                    {t("Drag and drop files here, or")}{" "}
+                    <button
+                      type="button"
+                      onClick={() => onboardingFileInputRef.current?.click()}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      {t("browse")}
+                    </button>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
+                  </p>
+                  <input
+                    ref={onboardingFileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files) setPendingOnboardingFiles((prev) => [...prev, ...Array.from(files)]);
+                      if (onboardingFileInputRef.current) onboardingFileInputRef.current.value = "";
+                    }}
+                    accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.ppt,.pptx"
+                  />
+                </div>
+              </div>
+              {pendingOnboardingFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t("Files to Upload")} ({pendingOnboardingFiles.length})</Label>
+                  <div className="border rounded-lg divide-y">
+                    {pendingOnboardingFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-green-600" />
+                          <div>
+                            <p className="text-sm font-medium">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setPendingOnboardingFiles((prev) => prev.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
@@ -1858,6 +1993,116 @@ export default function ProcessPage() {
                     </Select>
                   </div>
                 </div>
+              </div>
+
+              {/* Employee Onboarding Section */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Employee Onboarding")}</h4>
+                <p className="text-sm text-muted-foreground">
+                  {t("Upload employee onboarding documents for this process.")}
+                </p>
+
+                {/* Existing onboarding files */}
+                {editExistingOnboardingFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">{t("Existing Files")} ({editExistingOnboardingFiles.length})</Label>
+                    <div className="border rounded-lg divide-y">
+                      {editExistingOnboardingFiles.map((file) => (
+                        <div key={file.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-green-600" />
+                            <div>
+                              <p className="text-sm font-medium">{file.fileName}</p>
+                              {file.fileSize && <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/processes/${editingProcess?.id}/attachments/${file.id}`, { method: "DELETE" });
+                                if (res.ok) {
+                                  setEditExistingOnboardingFiles((prev) => prev.filter((f) => f.id !== file.id));
+                                }
+                              } catch (err) {
+                                console.error("Error deleting file:", err);
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className="border-2 border-dashed rounded-lg p-6 text-center transition-colors border-gray-300 hover:border-gray-400"
+                  onDragOver={(e) => { e.preventDefault(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const files = Array.from(e.dataTransfer.files);
+                    if (files.length > 0) setEditOnboardingFiles((prev) => [...prev, ...files]);
+                  }}
+                >
+                  <div className="space-y-2">
+                    <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                    <p className="text-sm text-gray-600">
+                      {t("Drag and drop files here, or")}{" "}
+                      <button
+                        type="button"
+                        onClick={() => editOnboardingFileInputRef.current?.click()}
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {t("browse")}
+                      </button>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
+                    </p>
+                    <input
+                      ref={editOnboardingFileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files) setEditOnboardingFiles((prev) => [...prev, ...Array.from(files)]);
+                        if (editOnboardingFileInputRef.current) editOnboardingFileInputRef.current.value = "";
+                      }}
+                      accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.ppt,.pptx"
+                    />
+                  </div>
+                </div>
+                {editOnboardingFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">{t("New Files to Upload")} ({editOnboardingFiles.length})</Label>
+                    <div className="border rounded-lg divide-y">
+                      {editOnboardingFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-green-600" />
+                            <div>
+                              <p className="text-sm font-medium">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setEditOnboardingFiles((prev) => prev.filter((_, i) => i !== index))}
+                          >
+                            <X className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
