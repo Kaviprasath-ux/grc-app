@@ -747,22 +747,26 @@ export default function GovernanceDetailPage() {
 
   const handleClearAIReview = async () => {
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: "PUT",
+      // Call the cleanup route which deletes from RunPod and resets DB
+      const response = await fetch(`/api/ai/governance/cleanup`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          aiReviewStatus: null,
-          aiReviewScore: null,
-          aiReviewJustification: null,
-        }),
+        body: JSON.stringify({ policyId: id }),
       });
 
       if (response.ok) {
+        const data = await response.json();
+        console.log("[Clear AI Review] Cleanup completed:", data);
         setAiReviewResult(null);
         fetchPolicy();
+        toast.success(t("AI review cleared successfully"));
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t("Failed to clear AI review"));
       }
     } catch (error) {
       console.error("Error clearing AI review:", error);
+      toast.error(t("Failed to clear AI review"));
     }
   };
 

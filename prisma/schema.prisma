@@ -2765,6 +2765,7 @@ model EvidenceAIReview {
   id                String           @id @default(cuid())
   evidenceId        String
   evidence          Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  documentId        String?          // External AI document ID (RunPod)
   status            String           @default("pending") // pending, completed, failed
   critique          String?          @db.Text
   complianceSummary String?          @db.Text

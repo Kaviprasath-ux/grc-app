@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Brain, Loader2, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
+import { Brain, Loader2, CheckCircle, XCircle, AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEvidenceAIStatus } from "@/hooks/useEvidenceAIStatus";
 import { AIStatusBadge } from "./AIStatusBadge";
@@ -51,6 +51,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
   const { status, loading, error, refresh, startPolling } = useEvidenceAIStatus(evidenceId);
   const [triggering, setTriggering] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   // Trigger AI Ingest
   const handleTriggerIngest = async () => {
@@ -116,6 +117,35 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
     }
   };
 
+  // Clear AI Review - calls cleanup endpoint to delete from RunPod
+  const handleClearAIReview = async () => {
+    setClearing(true);
+    try {
+      const response = await fetch("/api/ai/evidence/cleanup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ evidenceId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to clear AI review");
+      }
+
+      const data = await response.json();
+      console.log("[Clear AI Review] Cleanup completed:", data);
+      toast.success("AI review cleared successfully");
+
+      // Refresh status
+      await refresh();
+    } catch (err) {
+      console.error("Error clearing AI review:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to clear AI review");
+    } finally {
+      setClearing(false);
+    }
+  };
+
   if (loading && !status) {
     return (
       <Card className="mb-4">
@@ -162,6 +192,22 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
             <Button variant="ghost" size="sm" onClick={refresh} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
+            {(ingestStatus !== "NOT_STARTED" || reviewStatus !== "NOT_READY") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAIReview}
+                disabled={clearing || isProcessing}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                title="Clear AI Review"
+              >
+                {clearing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
