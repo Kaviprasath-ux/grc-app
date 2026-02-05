@@ -45,6 +45,7 @@ import {
   Eye,
   Upload,
   X,
+  XCircle,
   Loader2,
   Plus,
   MessageSquare,
@@ -56,6 +57,7 @@ import {
   Check,
   AlertCircle,
   Home,
+  HelpCircle,
 } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
@@ -189,6 +191,24 @@ export default function FieldworkDetailsPage() {
   // Check if user is ONLY an auditee (not also part of audit team)
   const isAuditeeOnly = isAuditee && !isAuditTeam;
 
+  // AI Review status icon: irrelevant=red X, relevant=green check, others=warning/info
+  const getAIReviewStatusIcon = (status: string | null | undefined) => {
+    const s = (status || "").toLowerCase();
+    if (s === "irrelevant") {
+      return <XCircle className="h-4 w-4 flex-shrink-0 text-red-500" title="Irrelevant" />;
+    }
+    if (s === "relevant") {
+      return <Check className="h-4 w-4 flex-shrink-0 text-emerald-500" title="Relevant" />;
+    }
+    if (s === "partial" || s === "needs_attention" || s === "needs attention") {
+      return <AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-500" title="Needs Attention" />;
+    }
+    if (s) {
+      return <HelpCircle className="h-4 w-4 flex-shrink-0 text-slate-500" title={status || ""} />;
+    }
+    return null;
+  };
+
   const [loading, setLoading] = useState(true);
   const [engagement, setEngagement] = useState<Engagement | null>(null);
 
@@ -282,6 +302,7 @@ export default function FieldworkDetailsPage() {
 
   // AI Review states
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([]);
+  const [aiReviewQuestion, setAiReviewQuestion] = useState<string>("");
   const [generatingAIReview, setGeneratingAIReview] = useState(false);
   const [aiReviewDialogOpen, setAiReviewDialogOpen] = useState(false);
   const [aiReviewResult, setAiReviewResult] = useState<string>("");
@@ -1327,8 +1348,9 @@ export default function FieldworkDetailsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setAiReviewResult(data.review || data.result || "AI Review completed successfully.");
+        setAiReviewResult(data.review || data.answer || data.result || "AI Review completed successfully.");
         setAiReviewDialogOpen(true);
+        await fetchEvidenceRequests();
         toast.success(t("AI Review generated successfully"));
       } else {
         toast.error(t("Failed to generate AI review"));
@@ -2165,41 +2187,41 @@ export default function FieldworkDetailsPage() {
                           <MessageSquare className="h-4 w-4 text-slate-500" />
                           <span className="text-sm font-medium text-slate-700">{t("AI Review")}</span>
                         </div>
-                        <div className="flex items-center gap-1 mb-1">
-                          {er.aiReviewStatus === 'Satisfactory' ? (
-                            <>
-                              <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
-                              </div>
-                              <span className="text-sm text-green-600 font-medium">{t("Satisfactory")}</span>
-                            </>
-                          ) : er.aiReviewStatus === 'Needs Attention' ? (
-                            <>
-                              <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
-                                <span className="text-white text-xs">✕</span>
-                              </div>
-                              <span className="text-sm text-red-600 font-medium">{t("Needs Attention")}</span>
-                            </>
-                          ) : (
-                            <>
+                        {(er.aiReviewStatus || er.aiReviewComment) ? (
+                          <div className="flex items-start gap-2">
+                            <div className="flex-shrink-0 mt-0.5">
+                              {getAIReviewStatusIcon(er.aiReviewStatus)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              {er.aiReviewStatus && (
+                                <span className="text-xs font-medium text-slate-600 block mb-0.5 capitalize">
+                                  {er.aiReviewStatus}
+                                </span>
+                              )}
+                              {er.aiReviewComment && (
+                                <p className="text-xs text-slate-600 line-clamp-3">{er.aiReviewComment}</p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-1 mb-1">
                               <div className="w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center">
                                 <span className="text-white text-xs">⏳</span>
                               </div>
                               <span className="text-sm text-yellow-600 font-medium">
                                 {er.status === 'Submitted' ? t('Awaiting Review') : t('Pending')}
                               </span>
-                            </>
-                          )}
-                        </div>
-                        <p className="text-xs text-amber-600 line-clamp-2">
-                          {!er.aiReviewStatus && er.status === 'Pending'
-                            ? t('Waiting for document upload and review.')
-                            : !er.aiReviewStatus && er.status === 'Submitted'
-                            ? t('Document submitted. Awaiting AI review.')
-                            : er.aiReviewStatus
-                            ? t('AI review completed.')
-                            : t('Awaiting review.')}
-                        </p>
+                            </div>
+                            <p className="text-xs text-amber-600 line-clamp-2">
+                              {er.status === 'Pending'
+                                ? t('Waiting for document upload and review.')
+                                : er.status === 'Submitted'
+                                ? t('Document submitted. Awaiting AI review.')
+                                : t('Awaiting review.')}
+                            </p>
+                          </>
+                        )}
                       </div>
 
                       {/* Right side - Action Icons */}
@@ -2295,23 +2317,21 @@ export default function FieldworkDetailsPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        {er.aiReviewStatus ? (
-                          <div className="flex items-center gap-1">
-                            {er.aiReviewStatus === 'Satisfactory' ? (
-                              <>
-                                <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-                                  <span className="text-white text-xs">✓</span>
-                                </div>
-                                <span className="text-sm text-green-600 font-medium">{t("Satisfactory")}</span>
-                              </>
-                            ) : (
-                              <>
-                                <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
-                                  <span className="text-white text-xs">✕</span>
-                                </div>
-                                <span className="text-sm text-red-600 font-medium">{t("Needs Attention")}</span>
-                              </>
-                            )}
+                        {(er.aiReviewStatus || er.aiReviewComment) ? (
+                          <div className="flex items-start gap-2 max-w-[280px]">
+                            <div className="flex-shrink-0 mt-0.5">
+                              {getAIReviewStatusIcon(er.aiReviewStatus)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              {er.aiReviewStatus && (
+                                <span className="text-xs font-medium text-slate-600 block mb-0.5 capitalize">
+                                  {er.aiReviewStatus}
+                                </span>
+                              )}
+                              {er.aiReviewComment && (
+                                <p className="text-xs text-slate-600 line-clamp-3">{er.aiReviewComment}</p>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <span className="text-sm text-slate-400">-</span>
