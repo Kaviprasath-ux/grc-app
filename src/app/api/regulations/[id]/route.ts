@@ -24,6 +24,7 @@ export async function PUT(
         certificate,
         status,
       },
+      include: { attachments: { orderBy: { uploadedAt: "desc" } } },
     });
 
     return NextResponse.json(regulation);

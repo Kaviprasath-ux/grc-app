@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 
 interface Department {
   id: string;
@@ -25,6 +26,8 @@ interface Department {
 interface User {
   id: string;
   fullName: string;
+  departmentId?: string | null;
+  userRoles?: { role: { name: string } }[];
 }
 
 interface ProcessAttachment {
@@ -33,6 +36,7 @@ interface ProcessAttachment {
   fileType: string | null;
   fileSize: number | null;
   filePath: string;
+  category: string;
   uploadedAt: string;
 }
 
@@ -62,11 +66,8 @@ interface Process {
 }
 
 const processTypes = ["Primary", "Management", "Supporting"];
-const processFrequencies = ["Daily", "Weekly", "Monthly", "Quarterly", "Bi-annually", "Annually", "As needed"];
-const natureOfImplementations = ["Manual", "Automated", "Manual + Automated"];
+// natureOfImplementations fetched from API
 const operationalComplexities = ["Low", "Medium", "High"];
-const locations = ["Head Office", "Branch Office", "Remote", "Data Center"];
-
 const getSteps = (t: (key: string) => string) => [
   { step: 1, label: t("Info"), description: t("Basic process information") },
   { step: 2, label: t("Process Flow"), description: t("Process characteristics") },
@@ -86,13 +87,19 @@ export default function EditProcessPage() {
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [processFrequencies, setProcessFrequencies] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<MultiSelectOption[]>([]);
+  const [natureOfImplementations, setNatureOfImplementations] = useState<string[]>([]);
 
   // File upload states
   const [attachments, setAttachments] = useState<ProcessAttachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isOnboardingDragging, setIsOnboardingDragging] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadingOnboardingFile, setUploadingOnboardingFile] = useState(false);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const onboardingFileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     processCode: "",
@@ -106,7 +113,7 @@ export default function EditProcessPage() {
     natureOfImplementation: "",
     assetDependency: false,
     externalDependency: false,
-    location: "",
+    location: [] as string[],
     kpiMeasurementRequired: false,
     piiCapture: false,
     operationalComplexity: "",
@@ -122,14 +129,29 @@ export default function EditProcessPage() {
 
     setLoading(true);
     try {
-      const [processRes, deptRes, userRes] = await Promise.all([
+      const [processRes, deptRes, userRes, freqRes, locRes, implRes] = await Promise.all([
         fetch(`/api/processes/${processId}`),
         fetch("/api/departments"),
         fetch("/api/users"),
+        fetch("/api/organization-settings/process-frequency"),
+        fetch("/api/organization-settings/location"),
+        fetch("/api/organization-settings/nature-of-implementation"),
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
       if (userRes.ok) setUsers(await userRes.json());
+      if (freqRes.ok) {
+        const freqData = await freqRes.json();
+        setProcessFrequencies(freqData.map((f: { name: string }) => f.name));
+      }
+      if (locRes.ok) {
+        const locData = await locRes.json();
+        setLocationOptions(locData.map((l: { id: string; name: string }) => ({ value: l.name, label: l.name })));
+      }
+      if (implRes.ok) {
+        const implData = await implRes.json();
+        setNatureOfImplementations(implData.map((i: { name: string }) => i.name));
+      }
 
       if (processRes.ok) {
         const process: Process = await processRes.json();
@@ -146,7 +168,7 @@ export default function EditProcessPage() {
           natureOfImplementation: process.natureOfImplementation || "",
           assetDependency: process.assetDependency ?? false,
           externalDependency: process.externalDependency ?? false,
-          location: process.location || "",
+          location: (() => { try { return process.location ? JSON.parse(process.location) : []; } catch { return []; } })(),
           kpiMeasurementRequired: process.kpiMeasurementRequired ?? false,
           piiCapture: process.piiCapture ?? false,
           operationalComplexity: process.operationalComplexity || "",
@@ -197,30 +219,64 @@ export default function EditProcessPage() {
     setIsDragging(false);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      await uploadFile(files[0]);
+      await uploadFile(files[0], "process_document");
     }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      await uploadFile(file);
+      await uploadFile(file, "process_document");
     }
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const uploadFile = async (file: File) => {
-    setUploadingFile(true);
+  // Onboarding file handlers
+  const handleOnboardingDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsOnboardingDragging(true);
+  };
+
+  const handleOnboardingDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsOnboardingDragging(false);
+  };
+
+  const handleOnboardingDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsOnboardingDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    for (const file of files) {
+      await uploadFile(file, "employee_onboarding");
+    }
+  };
+
+  const handleOnboardingFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      for (const file of Array.from(files)) {
+        await uploadFile(file, "employee_onboarding");
+      }
+    }
+    if (onboardingFileInputRef.current) {
+      onboardingFileInputRef.current.value = "";
+    }
+  };
+
+  const uploadFile = async (file: File, category: string) => {
+    const isOnboarding = category === "employee_onboarding";
+    if (isOnboarding) setUploadingOnboardingFile(true);
+    else setUploadingFile(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("category", category);
 
       const res = await fetch(`/api/processes/${processId}/attachments`, {
         method: "POST",
-        body: formData,
+        body: fd,
       });
 
       if (res.ok) {
@@ -235,7 +291,8 @@ export default function EditProcessPage() {
       console.error("Error uploading file:", error);
       toast({ title: t("Error"), description: t("Failed to upload file"), variant: "destructive" });
     }
-    setUploadingFile(false);
+    if (isOnboarding) setUploadingOnboardingFile(false);
+    else setUploadingFile(false);
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {
@@ -281,7 +338,7 @@ export default function EditProcessPage() {
           natureOfImplementation: formData.natureOfImplementation || null,
           assetDependency: formData.assetDependency,
           externalDependency: formData.externalDependency,
-          location: formData.location || null,
+          location: formData.location.length > 0 ? JSON.stringify(formData.location) : null,
           kpiMeasurementRequired: formData.kpiMeasurementRequired,
           piiCapture: formData.piiCapture,
           operationalComplexity: formData.operationalComplexity || null,
@@ -406,7 +463,7 @@ export default function EditProcessPage() {
                 <Label>{t("Department")}</Label>
                 <Select
                   value={formData.departmentId}
-                  onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
+                  onValueChange={(value) => setFormData({ ...formData, departmentId: value, ownerId: "" })}
                 >
                   <SelectTrigger className="bg-white">
                     <SelectValue placeholder={t("Select Department")} />
@@ -425,12 +482,13 @@ export default function EditProcessPage() {
                 <Select
                   value={formData.ownerId}
                   onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
+                  disabled={!formData.departmentId}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder={t("Select Owner")} />
+                    <SelectValue placeholder={formData.departmentId ? t("Select Owner") : t("Select department first")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((user) => user.departmentId === formData.departmentId && user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -479,24 +537,6 @@ export default function EditProcessPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>{t("Process Type")}</Label>
-              <Select
-                value={formData.processType}
-                onValueChange={(value) => setFormData({ ...formData, processType: value })}
-              >
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder={t("Select Type")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {processTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {t(type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         )}
 
@@ -506,21 +546,12 @@ export default function EditProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Location")}</Label>
-                <Select
-                  value={formData.location}
-                  onValueChange={(value) => setFormData({ ...formData, location: value })}
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder={t("Select Location")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((loc) => (
-                      <SelectItem key={loc} value={loc}>
-                        {t(loc)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  options={locationOptions}
+                  selected={formData.location}
+                  onChange={(selected) => setFormData({ ...formData, location: selected })}
+                  placeholder={t("Select locations")}
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("Operational Complexity")}</Label>
@@ -633,14 +664,117 @@ export default function EditProcessPage() {
               </div>
 
               {/* Uploaded Files List */}
-              {attachments.length > 0 && (
+              {attachments.filter((a) => a.category !== "employee_onboarding").length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">{t("Uploaded Files")}</Label>
                   <div className="border rounded-lg divide-y">
-                    {attachments.map((attachment) => (
+                    {attachments.filter((a) => a.category !== "employee_onboarding").map((attachment) => (
                       <div key={attachment.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
                         <div className="flex items-center gap-3">
                           <FileText className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="text-sm font-medium">{attachment.fileName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(attachment.fileSize)} - {t("Uploaded")} {new Date(attachment.uploadedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title={t("View")}
+                            onClick={() => window.open(attachment.filePath, "_blank")}
+                          >
+                            <Eye className="h-4 w-4 text-gray-600" />
+                          </Button>
+                          <a
+                            href={attachment.filePath}
+                            download={attachment.fileName}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100"
+                            title={t("Download")}
+                          >
+                            <Download className="h-4 w-4 text-gray-600" />
+                          </a>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title={t("Delete")}
+                            disabled={deletingAttachmentId === attachment.id}
+                            onClick={() => handleDeleteAttachment(attachment.id)}
+                          >
+                            {deletingAttachmentId === attachment.id ? (
+                              <div className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Employee Onboarding Section */}
+            <div className="space-y-4 pt-6 border-t">
+              <Label className="text-base font-medium">{t("Employee Onboarding")}</Label>
+              <p className="text-sm text-muted-foreground">
+                {t("Upload employee onboarding documents for this process. Multiple files can be attached.")}
+              </p>
+
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isOnboardingDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                }`}
+                onDragOver={handleOnboardingDragOver}
+                onDragLeave={handleOnboardingDragLeave}
+                onDrop={handleOnboardingDrop}
+              >
+                {uploadingOnboardingFile ? (
+                  <div className="space-y-2">
+                    <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+                    <p className="text-sm text-muted-foreground">{t("Uploading...")}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                    <p className="text-sm text-gray-600">
+                      {t("Drag and drop files here, or")}{" "}
+                      <button
+                        type="button"
+                        onClick={() => onboardingFileInputRef.current?.click()}
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {t("browse")}
+                      </button>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
+                    </p>
+                    <input
+                      ref={onboardingFileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleOnboardingFileChange}
+                      accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.ppt,.pptx"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {attachments.filter((a) => a.category === "employee_onboarding").length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t("Onboarding Files")}</Label>
+                  <div className="border rounded-lg divide-y">
+                    {attachments.filter((a) => a.category === "employee_onboarding").map((attachment) => (
+                      <div key={attachment.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-green-600" />
                           <div>
                             <p className="text-sm font-medium">{attachment.fileName}</p>
                             <p className="text-xs text-muted-foreground">
@@ -707,7 +841,7 @@ export default function EditProcessPage() {
                     <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -726,7 +860,7 @@ export default function EditProcessPage() {
                     <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -747,7 +881,7 @@ export default function EditProcessPage() {
                     <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -766,7 +900,7 @@ export default function EditProcessPage() {
                     <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>

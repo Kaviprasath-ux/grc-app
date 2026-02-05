@@ -152,9 +152,9 @@ interface Process {
 }
 
 // Default options
-const defaultDomains = ["Internal", "External", "IT", "GRC"];
-const defaultCategories = ["Finance", "Human Resources", "Data breach", "Compliance", "Operations", "Security"];
-const defaultIssueTypes = ["Financial", "Operational", "Data hack", "Compliance", "Security"];
+const defaultDomains: string[] = [];
+const defaultCategories: string[] = [];
+const defaultIssueTypes: string[] = [];
 
 // 5-step wizard for adding issues - step names will be translated in render
 const ISSUE_STEP_KEYS = [
@@ -330,7 +330,7 @@ export default function ContextPage() {
   const [selectedStakeholderId, setSelectedStakeholderId] = useState("");
   const [selectedNeedExpectation, setSelectedNeedExpectation] = useState("");
   const [stakeholderNeeds, setStakeholderNeeds] = useState<{ stakeholderId: string; needExpectation: string }[]>([]);
-  const [needExpectationOptions] = useState(["Compliance", "Security", "Business Continuity", "Data Protection", "Risk Management", "Audit Support"]);
+  const [needExpectationOptions, setNeedExpectationOptions] = useState<string[]>([]);
   const [showAddNeedDialog, setShowAddNeedDialog] = useState(false);
   const [newNeedExpectation, setNewNeedExpectation] = useState("");
   const [customNeedExpectations, setCustomNeedExpectations] = useState<string[]>([]);
@@ -542,7 +542,20 @@ export default function ContextPage() {
       ]);
 
       if (stakeholderRes.ok) setStakeholders(await stakeholderRes.json());
-      if (issueRes.ok) setIssues(await issueRes.json());
+      if (issueRes.ok) {
+        const issuesData = await issueRes.json();
+        setIssues(issuesData);
+        const uniqueDomains = [...new Set(issuesData.map((i: Issue) => i.domain).filter(Boolean))] as string[];
+        const uniqueCategories = [...new Set(issuesData.map((i: Issue) => i.category).filter(Boolean))] as string[];
+        const uniqueIssueTypes = [...new Set(issuesData.map((i: Issue) => i.issueType).filter(Boolean))] as string[];
+        setDomains(uniqueDomains);
+        setCategories(uniqueCategories);
+        setIssueTypes(uniqueIssueTypes);
+        const uniqueNeeds = [...new Set(
+          issuesData.flatMap((i: Issue) => (i.stakeholders || []).map((s: IssueStakeholder) => s.needExpectation)).filter(Boolean)
+        )] as string[];
+        setNeedExpectationOptions(uniqueNeeds);
+      }
       if (deptRes.ok) setDepartments(await deptRes.json());
       if (usersRes.ok) setUsers(await usersRes.json());
       if (regulationsRes.ok) setRegulations(await regulationsRes.json());
@@ -1492,7 +1505,7 @@ export default function ContextPage() {
                         {users
                           .filter((user) =>
                             (!newIssue.departmentId || user.departmentId === newIssue.departmentId) &&
-                            user.userRoles?.some((ur) => ["DepartmentReviewer", "Reviewer"].includes(ur.role.name))
+                            user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
                           )
                           .map((user) => (
                             <SelectItem key={user.id} value={user.id}>
@@ -2237,7 +2250,7 @@ export default function ContextPage() {
                         {users
                           .filter((user) =>
                             (!editIssueForm.departmentId || user.departmentId === editIssueForm.departmentId) &&
-                            user.userRoles?.some((ur) => ["DepartmentReviewer", "Reviewer"].includes(ur.role.name))
+                            user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
                           )
                           .map((user) => (
                             <SelectItem key={user.id} value={user.id}>

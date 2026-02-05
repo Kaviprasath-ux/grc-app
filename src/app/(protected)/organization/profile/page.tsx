@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft, Home, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft, Home, ChevronRight, Download, FileText } from "lucide-react";
 import Link from "next/link";
 import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -101,6 +101,16 @@ interface Service {
   serviceItem: string;
 }
 
+interface RegulationAttachment {
+  id: string;
+  type: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  uploadedAt: string;
+}
+
 interface Regulation {
   id: string;
   name: string;
@@ -112,6 +122,7 @@ interface Regulation {
   document: string;
   certificate: string;
   status: string;
+  attachments?: RegulationAttachment[];
 }
 
 function ProfilePageContent() {
@@ -144,17 +155,9 @@ function ProfilePageContent() {
   const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
   const [deleteRegulationId, setDeleteRegulationId] = useState<string | null>(null);
 
-  // Service categories and items
-  const [serviceCategories, setServiceCategories] = useState<string[]>([
-    "consulting",
-    "Telecom",
-    "IT",
-  ]);
-  const [serviceItems, setServiceItems] = useState<string[]>([
-    "Advisory",
-    "Internet",
-    "Support",
-  ]);
+  // Service categories and items (derived from existing services)
+  const [serviceCategories, setServiceCategories] = useState<string[]>([]);
+  const [serviceItems, setServiceItems] = useState<string[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newItemName, setNewItemName] = useState("");
 
@@ -177,10 +180,8 @@ function ProfilePageContent() {
     document: "",
     certificate: "",
   });
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [certificateFile, setCertificateFile] = useState<File | null>(null);
-  const [editDocumentFile, setEditDocumentFile] = useState<File | null>(null);
-  const [editCertificateFile, setEditCertificateFile] = useState<File | null>(null);
+  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+  const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
   const [isEditRegulationOpen, setIsEditRegulationOpen] = useState(false);
   const [editingRegulation, setEditingRegulation] = useState<Regulation | null>(null);
 
@@ -204,7 +205,14 @@ function ProfilePageContent() {
         setOrganization(orgData); // Will be null if no profile exists
       }
       if (deptRes.ok) setDepartments(await deptRes.json());
-      if (servRes.ok) setServices(await servRes.json());
+      if (servRes.ok) {
+        const servicesData = await servRes.json();
+        setServices(servicesData);
+        const categories = [...new Set(servicesData.map((s: Service) => s.serviceCategory).filter(Boolean))] as string[];
+        const items = [...new Set(servicesData.map((s: Service) => s.serviceItem).filter(Boolean))] as string[];
+        setServiceCategories(categories);
+        setServiceItems(items);
+      }
       if (regRes.ok) setRegulations(await regRes.json());
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -342,41 +350,63 @@ function ProfilePageContent() {
     });
     if (res.ok) {
       const data = await res.json();
-      return data.url;
+      return data.file.filePath;
     }
     throw new Error("File upload failed");
+  };
+
+  // Upload file as regulation attachment
+  const uploadRegulationAttachment = async (regulationId: string, file: File, type: "document" | "certificate") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", type);
+    const res = await fetch(`/api/regulations/${regulationId}/attachments`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Failed to upload attachment");
+    return res.json();
+  };
+
+  // Delete regulation attachment
+  const deleteRegulationAttachment = async (regulationId: string, attachmentId: string) => {
+    const res = await fetch(`/api/regulations/${regulationId}/attachments?attachmentId=${attachmentId}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete attachment");
+    // Refresh regulations to get updated attachments
+    const regRes = await fetch("/api/regulations");
+    if (regRes.ok) setRegulations(await regRes.json());
   };
 
   // Regulation CRUD
   const handleAddRegulation = async () => {
     if (!newRegulation.name.trim()) return;
     try {
-      let documentUrl = newRegulation.document;
-      let certificateUrl = newRegulation.certificate;
-
-      // Upload document if selected
-      if (documentFile) {
-        documentUrl = await uploadFile(documentFile);
-      }
-
-      // Upload certificate if selected
-      if (certificateFile) {
-        certificateUrl = await uploadFile(certificateFile);
-      }
-
       const res = await fetch("/api/regulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newRegulation,
-          document: documentUrl,
-          certificate: certificateUrl,
           status: "Subscribed",
         }),
       });
       if (res.ok) {
         const reg = await res.json();
-        setRegulations([...regulations, reg]);
+
+        // Upload document files as attachments
+        for (const file of documentFiles) {
+          await uploadRegulationAttachment(reg.id, file, "document");
+        }
+        // Upload certificate files as attachments
+        for (const file of certificateFiles) {
+          await uploadRegulationAttachment(reg.id, file, "certificate");
+        }
+
+        // Refresh regulations to get full data with attachments
+        const regRes = await fetch("/api/regulations");
+        if (regRes.ok) setRegulations(await regRes.json());
+
         setNewRegulation({
           name: "",
           version: "",
@@ -387,8 +417,8 @@ function ProfilePageContent() {
           document: "",
           certificate: "",
         });
-        setDocumentFile(null);
-        setCertificateFile(null);
+        setDocumentFiles([]);
+        setCertificateFiles([]);
         setIsAddRegulationOpen(false);
       }
     } catch (error) {
@@ -399,38 +429,49 @@ function ProfilePageContent() {
   const handleEditRegulation = async () => {
     if (!editingRegulation) return;
     try {
-      let documentUrl = editingRegulation.document;
-      let certificateUrl = editingRegulation.certificate;
-
-      // Upload new document if selected
-      if (editDocumentFile) {
-        documentUrl = await uploadFile(editDocumentFile);
-      }
-
-      // Upload new certificate if selected
-      if (editCertificateFile) {
-        certificateUrl = await uploadFile(editCertificateFile);
-      }
-
       const res = await fetch(`/api/regulations/${editingRegulation.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...editingRegulation,
-          document: documentUrl,
-          certificate: certificateUrl,
-        }),
+        body: JSON.stringify(editingRegulation),
       });
       if (res.ok) {
         const updated = await res.json();
         setRegulations(regulations.map((r) => (r.id === updated.id ? updated : r)));
         setIsEditRegulationOpen(false);
         setEditingRegulation(null);
-        setEditDocumentFile(null);
-        setEditCertificateFile(null);
       }
     } catch (error) {
       console.error("Error updating regulation:", error);
+    }
+  };
+
+  // Upload file for editing regulation and refresh
+  const handleEditRegulationUpload = async (files: FileList, type: "document" | "certificate") => {
+    if (!editingRegulation) return;
+    for (let i = 0; i < files.length; i++) {
+      await uploadRegulationAttachment(editingRegulation.id, files[i], type);
+    }
+    // Refresh regulations and update editing regulation
+    const regRes = await fetch("/api/regulations");
+    if (regRes.ok) {
+      const allRegs = await regRes.json();
+      setRegulations(allRegs);
+      const updated = allRegs.find((r: Regulation) => r.id === editingRegulation.id);
+      if (updated) setEditingRegulation(updated);
+    }
+  };
+
+  // Remove attachment from editing regulation
+  const handleEditRegulationRemoveAttachment = async (attachmentId: string) => {
+    if (!editingRegulation) return;
+    await deleteRegulationAttachment(editingRegulation.id, attachmentId);
+    // Refresh editing regulation
+    const regRes = await fetch("/api/regulations");
+    if (regRes.ok) {
+      const allRegs = await regRes.json();
+      setRegulations(allRegs);
+      const updated = allRegs.find((r: Regulation) => r.id === editingRegulation.id);
+      if (updated) setEditingRegulation(updated);
     }
   };
 
@@ -694,6 +735,30 @@ function ProfilePageContent() {
                     <p className="text-sm text-slate-700 leading-relaxed">{organization.mission || "-"}</p>
                   </div>
                 </div>
+
+                {/* Brochure */}
+                {organization.brochure && (
+                  <>
+                    <div className="border-t border-slate-100 my-6"></div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-2">{t("Brochure")}</p>
+                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 w-fit">
+                        <FileText className="h-5 w-5 text-slate-400 flex-shrink-0" />
+                        <span className="text-sm font-medium text-slate-700">{organization.brochure.split("/").pop()}</span>
+                        <a href={organization.brochure} target="_blank" rel="noopener noreferrer">
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </a>
+                        <a href={organization.brochure} download>
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </a>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ) : (
@@ -1275,71 +1340,75 @@ function ProfilePageContent() {
 
               {/* Document Upload */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Document")}</Label>
-                <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
-                  {documentFile ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">{documentFile.name}</span>
+                <Label className="text-sm font-medium text-slate-700">{t("Documents")}</Label>
+                <div className="mt-1.5 space-y-2">
+                  {documentFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                      <FileText className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                      <span className="text-sm text-slate-600 flex-1 truncate">{file.name}</span>
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="text-slate-400 hover:text-error"
-                        onClick={() => setDocumentFile(null)}
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error flex-shrink-0"
+                        onClick={() => setDocumentFiles(documentFiles.filter((_, i) => i !== index))}
                       >
-                        {t("Remove")}
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  ) : (
-                    <label className="flex flex-col items-center cursor-pointer py-2">
-                      <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                      <span className="text-sm text-slate-500">{t("Click to upload document")}</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setDocumentFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                  ))}
+                  <label className="flex flex-col items-center cursor-pointer py-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                    <Upload className="h-5 w-5 text-slate-300 mb-1" />
+                    <span className="text-sm text-slate-500">{t("Click to upload documents")}</span>
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.length) {
+                          setDocumentFiles([...documentFiles, ...Array.from(e.target.files)]);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
 
               {/* Certificate Upload */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Certificate")}</Label>
-                <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
-                  {certificateFile ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">{certificateFile.name}</span>
+                <Label className="text-sm font-medium text-slate-700">{t("Certificates")}</Label>
+                <div className="mt-1.5 space-y-2">
+                  {certificateFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                      <FileText className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                      <span className="text-sm text-slate-600 flex-1 truncate">{file.name}</span>
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="text-slate-400 hover:text-error"
-                        onClick={() => setCertificateFile(null)}
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error flex-shrink-0"
+                        onClick={() => setCertificateFiles(certificateFiles.filter((_, i) => i !== index))}
                       >
-                        {t("Remove")}
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  ) : (
-                    <label className="flex flex-col items-center cursor-pointer py-2">
-                      <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                      <span className="text-sm text-slate-500">{t("Click to upload certificate")}</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setCertificateFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                  ))}
+                  <label className="flex flex-col items-center cursor-pointer py-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                    <Upload className="h-5 w-5 text-slate-300 mb-1" />
+                    <span className="text-sm text-slate-500">{t("Click to upload certificates")}</span>
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.length) {
+                          setCertificateFiles([...certificateFiles, ...Array.from(e.target.files)]);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             </div>
@@ -1437,105 +1506,97 @@ function ProfilePageContent() {
                   />
                 </div>
 
-                {/* Document Upload */}
+                {/* Document Attachments */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Document")}</Label>
-                  <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
-                    {editDocumentFile ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">{editDocumentFile.name}</span>
+                  <Label className="text-sm font-medium text-slate-700">{t("Documents")}</Label>
+                  <div className="mt-1.5 space-y-2">
+                    {editingRegulation.attachments?.filter(a => a.type === "document").map((att) => (
+                      <div key={att.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <FileText className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                        <span className="text-sm text-slate-600 flex-1 truncate">{att.fileName}</span>
+                        <a href={att.filePath} target="_blank" rel="noopener noreferrer">
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600">
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                        </a>
+                        <a href={att.filePath} download>
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600">
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        </a>
                         <Button
                           type="button"
                           variant="ghost"
-                          size="sm"
-                          className="text-slate-400 hover:text-error"
-                          onClick={() => setEditDocumentFile(null)}
+                          size="icon"
+                          className="h-7 w-7 text-slate-400 hover:text-semantic-error flex-shrink-0"
+                          onClick={() => handleEditRegulationRemoveAttachment(att.id)}
                         >
-                          {t("Remove")}
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    ) : editingRegulation.document ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-500">{editingRegulation.document.split("/").pop()}</span>
-                        <label className="cursor-pointer text-sm text-primary-600 hover:text-primary-700">
-                          {t("Replace")}
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                setEditDocumentFile(e.target.files[0]);
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center cursor-pointer py-2">
-                        <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                        <span className="text-sm text-slate-500">{t("Click to upload document")}</span>
-                        <input
-                          type="file"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              setEditDocumentFile(e.target.files[0]);
-                            }
-                          }}
-                        />
-                      </label>
-                    )}
+                    ))}
+                    <label className="flex flex-col items-center cursor-pointer py-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                      <Upload className="h-5 w-5 text-slate-300 mb-1" />
+                      <span className="text-sm text-slate-500">{t("Click to upload documents")}</span>
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.length) {
+                            handleEditRegulationUpload(e.target.files, "document");
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
                   </div>
                 </div>
 
-                {/* Certificate Upload */}
+                {/* Certificate Attachments */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Certificate")}</Label>
-                  <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
-                    {editCertificateFile ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">{editCertificateFile.name}</span>
+                  <Label className="text-sm font-medium text-slate-700">{t("Certificates")}</Label>
+                  <div className="mt-1.5 space-y-2">
+                    {editingRegulation.attachments?.filter(a => a.type === "certificate").map((att) => (
+                      <div key={att.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <FileText className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                        <span className="text-sm text-slate-600 flex-1 truncate">{att.fileName}</span>
+                        <a href={att.filePath} target="_blank" rel="noopener noreferrer">
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600">
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                        </a>
+                        <a href={att.filePath} download>
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600">
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        </a>
                         <Button
                           type="button"
                           variant="ghost"
-                          size="sm"
-                          className="text-slate-400 hover:text-error"
-                          onClick={() => setEditCertificateFile(null)}
+                          size="icon"
+                          className="h-7 w-7 text-slate-400 hover:text-semantic-error flex-shrink-0"
+                          onClick={() => handleEditRegulationRemoveAttachment(att.id)}
                         >
-                          {t("Remove")}
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    ) : editingRegulation.certificate ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-500">{editingRegulation.certificate.split("/").pop()}</span>
-                        <label className="cursor-pointer text-sm text-primary-600 hover:text-primary-700">
-                          {t("Replace")}
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                setEditCertificateFile(e.target.files[0]);
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center cursor-pointer py-2">
-                        <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                        <span className="text-sm text-slate-500">{t("Click to upload certificate")}</span>
-                        <input
-                          type="file"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              setEditCertificateFile(e.target.files[0]);
-                            }
-                          }}
-                        />
-                      </label>
-                    )}
+                    ))}
+                    <label className="flex flex-col items-center cursor-pointer py-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                      <Upload className="h-5 w-5 text-slate-300 mb-1" />
+                      <span className="text-sm text-slate-500">{t("Click to upload certificates")}</span>
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.length) {
+                            handleEditRegulationUpload(e.target.files, "certificate");
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
                   </div>
                 </div>
               </div>

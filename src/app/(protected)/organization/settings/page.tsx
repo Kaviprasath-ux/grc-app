@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, Search, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
@@ -75,7 +75,6 @@ const settingCategories = [
 ];
 
 // Empty initial data - each tenant starts with clean slate
-// TODO: Replace with actual API calls for persistent storage
 const initialSettingsData: Record<string, SettingItem[]> = {
   bia: [],
   location: [],
@@ -85,6 +84,13 @@ const initialSettingsData: Record<string, SettingItem[]> = {
   designation: [],
 };
 
+// API endpoint mapping for categories that have backend persistence
+const categoryApiEndpoints: Record<string, string> = {
+  frequency: "/api/organization-settings/process-frequency",
+  location: "/api/organization-settings/location",
+  implementation: "/api/organization-settings/nature-of-implementation",
+};
+
 export default function OrganizationSettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -92,6 +98,7 @@ export default function OrganizationSettingsPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(initialSettingsData);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loadingData, setLoadingData] = useState(false);
 
   // Dialog states
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
@@ -101,6 +108,36 @@ export default function OrganizationSettingsPage() {
 
   // Form state
   const [newItem, setNewItem] = useState({ name: "", description: "" });
+
+  // Fetch data from API when a category with an API endpoint is selected
+  const fetchCategoryData = useCallback(async (categoryId: string) => {
+    const apiEndpoint = categoryApiEndpoints[categoryId];
+    if (!apiEndpoint) return;
+
+    setLoadingData(true);
+    try {
+      const res = await fetch(apiEndpoint);
+      if (res.ok) {
+        const data = await res.json();
+        setSettingsData((prev) => ({
+          ...prev,
+          [categoryId]: data.map((item: { id: string; name: string }) => ({
+            id: item.id,
+            name: item.name,
+          })),
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching settings data:", error);
+    }
+    setLoadingData(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeCategory && categoryApiEndpoints[activeCategory]) {
+      fetchCategoryData(activeCategory);
+    }
+  }, [activeCategory, fetchCategoryData]);
 
   // Get current category data
   const currentCategory = settingCategories.find((c) => c.id === activeCategory);
@@ -114,42 +151,108 @@ export default function OrganizationSettingsPage() {
   );
 
   // CRUD operations
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!activeCategory || !newItem.name.trim()) {
       toast({ title: t("Error"), description: t("Please enter a name"), variant: "destructive" });
       return;
     }
-    const newId = Date.now().toString();
-    setSettingsData({
-      ...settingsData,
-      [activeCategory]: [...currentData, { id: newId, ...newItem }],
-    });
-    setNewItem({ name: "", description: "" });
-    setIsAddItemOpen(false);
-    toast({ title: t("Success"), description: t("Item added successfully") });
+
+    const apiEndpoint = categoryApiEndpoints[activeCategory];
+    if (apiEndpoint) {
+      try {
+        const res = await fetch(apiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newItem.name }),
+        });
+        if (res.ok) {
+          setNewItem({ name: "", description: "" });
+          setIsAddItemOpen(false);
+          toast({ title: t("Success"), description: t("Item added successfully") });
+          fetchCategoryData(activeCategory);
+        } else {
+          const error = await res.json();
+          toast({ title: t("Error"), description: error.error || t("Failed to add item"), variant: "destructive" });
+        }
+      } catch {
+        toast({ title: t("Error"), description: t("Failed to add item"), variant: "destructive" });
+      }
+    } else {
+      const newId = Date.now().toString();
+      setSettingsData({
+        ...settingsData,
+        [activeCategory]: [...currentData, { id: newId, ...newItem }],
+      });
+      setNewItem({ name: "", description: "" });
+      setIsAddItemOpen(false);
+      toast({ title: t("Success"), description: t("Item added successfully") });
+    }
   };
 
-  const handleEditItem = () => {
+  const handleEditItem = async () => {
     if (!activeCategory || !editingItem) return;
-    setSettingsData({
-      ...settingsData,
-      [activeCategory]: currentData.map((item) =>
-        item.id === editingItem.id ? editingItem : item
-      ),
-    });
-    setIsEditItemOpen(false);
-    setEditingItem(null);
-    toast({ title: t("Success"), description: t("Item updated successfully") });
+
+    const apiEndpoint = categoryApiEndpoints[activeCategory];
+    if (apiEndpoint) {
+      try {
+        const res = await fetch(`${apiEndpoint}/${editingItem.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: editingItem.name }),
+        });
+        if (res.ok) {
+          setIsEditItemOpen(false);
+          setEditingItem(null);
+          toast({ title: t("Success"), description: t("Item updated successfully") });
+          fetchCategoryData(activeCategory);
+        } else {
+          const error = await res.json();
+          toast({ title: t("Error"), description: error.error || t("Failed to update item"), variant: "destructive" });
+        }
+      } catch {
+        toast({ title: t("Error"), description: t("Failed to update item"), variant: "destructive" });
+      }
+    } else {
+      setSettingsData({
+        ...settingsData,
+        [activeCategory]: currentData.map((item) =>
+          item.id === editingItem.id ? editingItem : item
+        ),
+      });
+      setIsEditItemOpen(false);
+      setEditingItem(null);
+      toast({ title: t("Success"), description: t("Item updated successfully") });
+    }
   };
 
-  const handleDeleteItem = () => {
+  const handleDeleteItem = async () => {
     if (!activeCategory || !deletingItemId) return;
-    setSettingsData({
-      ...settingsData,
-      [activeCategory]: currentData.filter((item) => item.id !== deletingItemId),
-    });
-    setDeletingItemId(null);
-    toast({ title: t("Success"), description: t("Item deleted successfully") });
+
+    const apiEndpoint = categoryApiEndpoints[activeCategory];
+    if (apiEndpoint) {
+      try {
+        const res = await fetch(`${apiEndpoint}/${deletingItemId}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          setDeletingItemId(null);
+          toast({ title: t("Success"), description: t("Item deleted successfully") });
+          fetchCategoryData(activeCategory);
+        } else {
+          const error = await res.json();
+          toast({ title: t("Error"), description: error.error || t("Failed to delete item"), variant: "destructive" });
+        }
+      } catch {
+        toast({ title: t("Error"), description: t("Failed to delete item"), variant: "destructive" });
+      }
+    } else {
+      setSettingsData({
+        ...settingsData,
+        [activeCategory]: currentData.filter((item) => item.id !== deletingItemId),
+      });
+      setDeletingItemId(null);
+      toast({ title: t("Success"), description: t("Item deleted successfully") });
+    }
   };
 
   // Columns for settings table - matching profile page pattern

@@ -78,10 +78,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate process code if not provided
+    // Generate process code if not provided (tenant-scoped)
     let finalProcessCode = processCode;
     if (!finalProcessCode) {
       const lastProcess = await prisma.process.findFirst({
+        where: { customerAccountId },
         orderBy: { processCode: "desc" },
       });
       const lastNum = lastProcess

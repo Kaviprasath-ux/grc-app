@@ -33,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 
 interface Department {
   id: string;
@@ -42,6 +43,8 @@ interface Department {
 interface User {
   id: string;
   fullName: string;
+  departmentId?: string | null;
+  userRoles?: { role: { name: string } }[];
 }
 
 interface BIAData {
@@ -62,15 +65,20 @@ interface Process {
   ownerId: string | null;
   owner: User | null;
   status: string;
+  processFrequency?: string | null;
   frequency?: string;
   natureOfImplementation?: string;
   assetDependency?: boolean;
   externalDependency?: boolean;
-  location?: string;
+  location?: string | string[];
   kpiMeasurementRequired?: boolean;
   piiCapture?: boolean;
   operationalComplexity?: string;
   lastAuditDate?: string;
+  responsibleId?: string | null;
+  accountableId?: string | null;
+  consultedId?: string | null;
+  informedId?: string | null;
   responsible?: string;
   accountable?: string;
   consulted?: string;
@@ -94,11 +102,8 @@ interface ProcessBIAStatus {
 }
 
 const processTypes = ["Primary", "Management", "Supporting"];
-const processFrequencies = ["Daily", "Weekly", "Monthly", "Quarterly", "Bi-annually", "Annually", "As needed"];
-const natureOfImplementations = ["Manual", "Automated", "Manual + Automated"];
+// natureOfImplementations fetched from API
 const operationalComplexities = ["Low", "Medium", "High"];
-const locations = ["Head Office", "Branch Office", "Remote", "Data Center"];
-
 const impactDescriptions = {
   High: "Major fines/legal action, Complete service outage, > $100K of loss",
   Medium: "Local media/social concern, Reportable incident, Partial service disruption, $10K – $100K",
@@ -130,6 +135,9 @@ export default function ProcessPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [processBIAStatuses, setProcessBIAStatuses] = useState<ProcessBIAStatus[]>([]);
+  const [processFrequencies, setProcessFrequencies] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<MultiSelectOption[]>([]);
+  const [natureOfImplementations, setNatureOfImplementations] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter states
@@ -222,7 +230,7 @@ export default function ProcessPage() {
     natureOfImplementation: "",
     assetDependency: false,
     externalDependency: false,
-    location: "",
+    location: [] as string[],
     kpiMeasurementRequired: false,
     piiCapture: false,
     operationalComplexity: "",
@@ -243,7 +251,7 @@ export default function ProcessPage() {
       natureOfImplementation: "",
       assetDependency: false,
       externalDependency: false,
-      location: "",
+      location: [],
       kpiMeasurementRequired: false,
       piiCapture: false,
       operationalComplexity: "",
@@ -264,11 +272,14 @@ export default function ProcessPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [processRes, deptRes, userRes, biaRes] = await Promise.all([
+      const [processRes, deptRes, userRes, biaRes, freqRes, locRes, implRes] = await Promise.all([
         fetch("/api/processes"),
         fetch("/api/departments"),
         fetch("/api/users"),
         fetch("/api/process-bia"),
+        fetch("/api/organization-settings/process-frequency"),
+        fetch("/api/organization-settings/location"),
+        fetch("/api/organization-settings/nature-of-implementation"),
       ]);
 
       if (processRes.ok) setProcesses(await processRes.json());
@@ -282,6 +293,18 @@ export default function ProcessPage() {
           impactRating: bia.impactRating,
           processCriticality: bia.processCriticality,
         })));
+      }
+      if (freqRes.ok) {
+        const freqData = await freqRes.json();
+        setProcessFrequencies(freqData.map((f: { name: string }) => f.name));
+      }
+      if (locRes.ok) {
+        const locData = await locRes.json();
+        setLocationOptions(locData.map((l: { id: string; name: string }) => ({ value: l.name, label: l.name })));
+      }
+      if (implRes.ok) {
+        const implData = await implRes.json();
+        setNatureOfImplementations(implData.map((i: { name: string }) => i.name));
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -396,10 +419,10 @@ export default function ProcessPage() {
 
   // Handle Add Process
   const handleAddProcess = async () => {
-    if (!processForm.name || !processForm.processType) {
+    if (!processForm.name) {
       toast({
         title: t("Error"),
-        description: t("Please fill in required fields (Name and Process Type)"),
+        description: t("Please fill in required fields (Name)"),
         variant: "destructive",
       });
       return;
@@ -407,10 +430,19 @@ export default function ProcessPage() {
 
     setSaving(true);
     try {
+      const { responsible, accountable, consulted, informed, frequency, location, ...rest } = processForm;
       const res = await fetch("/api/processes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(processForm),
+        body: JSON.stringify({
+          ...rest,
+          processFrequency: frequency || null,
+          location: location.length > 0 ? JSON.stringify(location) : null,
+          responsibleId: responsible || null,
+          accountableId: accountable || null,
+          consultedId: consulted || null,
+          informedId: informed || null,
+        }),
       });
 
       if (res.ok) {
@@ -447,10 +479,20 @@ export default function ProcessPage() {
 
     setSaving(true);
     try {
+      const { responsible, accountable, consulted, informed, frequency, location, ...rest } = editingProcess;
+      const locationArr = Array.isArray(location) ? location : [];
       const res = await fetch(`/api/processes/${editingProcess.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingProcess),
+        body: JSON.stringify({
+          ...rest,
+          processFrequency: frequency || null,
+          location: locationArr.length > 0 ? JSON.stringify(locationArr) : null,
+          responsibleId: responsible || null,
+          accountableId: accountable || null,
+          consultedId: consulted || null,
+          informedId: informed || null,
+        }),
       });
 
       if (res.ok) {
@@ -492,7 +534,19 @@ export default function ProcessPage() {
 
   // Open Edit Process modal
   const openEditProcess = (process: Process) => {
-    setEditingProcess(process);
+    let locationArr: string[] = [];
+    try {
+      if (process.location) locationArr = JSON.parse(process.location);
+    } catch { /* not JSON, treat as empty */ }
+    setEditingProcess({
+      ...process,
+      frequency: process.processFrequency || "",
+      location: locationArr,
+      responsible: process.responsibleId || "",
+      accountable: process.accountableId || "",
+      consulted: process.consultedId || "",
+      informed: process.informedId || "",
+    });
     setIsEditProcessOpen(true);
   };
 
@@ -642,9 +696,9 @@ export default function ProcessPage() {
       cell: ({ row }) => row.original.owner?.fullName || "-",
     },
     {
-      accessorKey: "frequency",
+      accessorKey: "processFrequency",
       header: t("Process Frequency"),
-      cell: ({ row }) => row.original.frequency || "-",
+      cell: ({ row }) => row.original.processFrequency || "-",
     },
     {
       accessorKey: "natureOfImplementation",
@@ -1369,21 +1423,8 @@ export default function ProcessPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Process Type")} <span className="text-error">*</span></Label>
-                    <Select value={processForm.processType} onValueChange={(value) => setProcessForm({ ...processForm, processType: value })}>
-                      <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder={t("Select type")} />
-                      </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
-                        {processTypes.map((type) => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
-                    <Select value={processForm.departmentId} onValueChange={(value) => setProcessForm({ ...processForm, departmentId: value })}>
+                    <Select value={processForm.departmentId} onValueChange={(value) => setProcessForm({ ...processForm, departmentId: value, ownerId: "" })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
@@ -1404,19 +1445,19 @@ export default function ProcessPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
-                  <Select value={processForm.ownerId} onValueChange={(value) => setProcessForm({ ...processForm, ownerId: value })}>
+                  <Select value={processForm.ownerId} onValueChange={(value) => setProcessForm({ ...processForm, ownerId: value })} disabled={!processForm.departmentId}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder={t("Select owner")} />
+                      <SelectValue placeholder={processForm.departmentId ? t("Select owner") : t("Select department first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {users.map((user) => (
+                      {users.filter((user) => user.departmentId === processForm.departmentId && user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")).map((user) => (
                         <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Frequency")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Process Frequency")}</Label>
                   <Select value={processForm.frequency} onValueChange={(value) => setProcessForm({ ...processForm, frequency: value })}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
                       <SelectValue placeholder={t("Select frequency")} />
@@ -1443,16 +1484,14 @@ export default function ProcessPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Location")}</Label>
-                  <Select value={processForm.location} onValueChange={(value) => setProcessForm({ ...processForm, location: value })}>
-                    <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder={t("Select location")} />
-                    </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4}>
-                      {locations.map((loc) => (
-                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="mt-1.5">
+                    <MultiSelect
+                      options={locationOptions}
+                      selected={processForm.location}
+                      onChange={(selected) => setProcessForm({ ...processForm, location: selected })}
+                      placeholder={t("Select locations")}
+                    />
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <Label className="text-sm font-medium text-slate-700">{t("Operational Complexity")}</Label>
@@ -1514,44 +1553,56 @@ export default function ProcessPage() {
               <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("RACI Matrix")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="responsible" className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
-                  <Input
-                    id="responsible"
-                    value={processForm.responsible}
-                    onChange={(e) => setProcessForm({ ...processForm, responsible: e.target.value })}
-                    placeholder={t("Enter responsible party")}
-                    className="mt-1.5 bg-white"
-                  />
+                  <Label className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
+                  <Select value={processForm.responsible} onValueChange={(value) => setProcessForm({ ...processForm, responsible: value })}>
+                    <SelectTrigger className="w-full mt-1.5 bg-white">
+                      <SelectValue placeholder={t("Select responsible")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
+                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="accountable" className="text-sm font-medium text-slate-700">{t("Accountable")}</Label>
-                  <Input
-                    id="accountable"
-                    value={processForm.accountable}
-                    onChange={(e) => setProcessForm({ ...processForm, accountable: e.target.value })}
-                    placeholder={t("Enter accountable party")}
-                    className="mt-1.5 bg-white"
-                  />
+                  <Label className="text-sm font-medium text-slate-700">{t("Accountable")}</Label>
+                  <Select value={processForm.accountable} onValueChange={(value) => setProcessForm({ ...processForm, accountable: value })}>
+                    <SelectTrigger className="w-full mt-1.5 bg-white">
+                      <SelectValue placeholder={t("Select accountable")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
+                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="consulted" className="text-sm font-medium text-slate-700">{t("Consulted")}</Label>
-                  <Input
-                    id="consulted"
-                    value={processForm.consulted}
-                    onChange={(e) => setProcessForm({ ...processForm, consulted: e.target.value })}
-                    placeholder={t("Enter consulted parties")}
-                    className="mt-1.5 bg-white"
-                  />
+                  <Label className="text-sm font-medium text-slate-700">{t("Consulted")}</Label>
+                  <Select value={processForm.consulted} onValueChange={(value) => setProcessForm({ ...processForm, consulted: value })}>
+                    <SelectTrigger className="w-full mt-1.5 bg-white">
+                      <SelectValue placeholder={t("Select consulted")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
+                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="informed" className="text-sm font-medium text-slate-700">{t("Informed")}</Label>
-                  <Input
-                    id="informed"
-                    value={processForm.informed}
-                    onChange={(e) => setProcessForm({ ...processForm, informed: e.target.value })}
-                    placeholder={t("Enter informed parties")}
-                    className="mt-1.5 bg-white"
-                  />
+                  <Label className="text-sm font-medium text-slate-700">{t("Informed")}</Label>
+                  <Select value={processForm.informed} onValueChange={(value) => setProcessForm({ ...processForm, informed: value })}>
+                    <SelectTrigger className="w-full mt-1.5 bg-white">
+                      <SelectValue placeholder={t("Select informed")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
+                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -1626,21 +1677,8 @@ export default function ProcessPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Process Type")} <span className="text-error">*</span></Label>
-                    <Select value={editingProcess.processType} onValueChange={(value) => setEditingProcess({ ...editingProcess, processType: value })}>
-                      <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder={t("Select type")} />
-                      </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
-                        {processTypes.map((type) => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
-                    <Select value={editingProcess.departmentId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, departmentId: value })}>
+                    <Select value={editingProcess.departmentId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, departmentId: value, ownerId: "" })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
@@ -1660,19 +1698,19 @@ export default function ProcessPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
-                    <Select value={editingProcess.ownerId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, ownerId: value })}>
+                    <Select value={editingProcess.ownerId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, ownerId: value })} disabled={!editingProcess.departmentId}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder={t("Select owner")} />
+                        <SelectValue placeholder={editingProcess.departmentId ? t("Select owner") : t("Select department first")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {users.map((user) => (
+                        {users.filter((user) => user.departmentId === editingProcess.departmentId && user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")).map((user) => (
                           <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Frequency")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Process Frequency")}</Label>
                     <Select value={editingProcess.frequency || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, frequency: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
                         <SelectValue placeholder={t("Select frequency")} />
@@ -1699,16 +1737,14 @@ export default function ProcessPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Location")}</Label>
-                    <Select value={editingProcess.location || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, location: value })}>
-                      <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder={t("Select location")} />
-                      </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
-                        {locations.map((loc) => (
-                          <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-1.5">
+                      <MultiSelect
+                        options={locationOptions}
+                        selected={Array.isArray(editingProcess.location) ? editingProcess.location as string[] : []}
+                        onChange={(selected) => setEditingProcess({ ...editingProcess, location: selected })}
+                        placeholder={t("Select locations")}
+                      />
+                    </div>
                   </div>
                   <div className="col-span-2">
                     <Label className="text-sm font-medium text-slate-700">{t("Operational Complexity")}</Label>
@@ -1770,44 +1806,56 @@ export default function ProcessPage() {
                 <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("RACI Matrix")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="editResponsible" className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
-                    <Input
-                      id="editResponsible"
-                      value={editingProcess.responsible || ""}
-                      onChange={(e) => setEditingProcess({ ...editingProcess, responsible: e.target.value })}
-                      placeholder={t("Enter responsible party")}
-                      className="mt-1.5 bg-white"
-                    />
+                    <Label className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
+                    <Select value={editingProcess.responsible || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, responsible: value })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder={t("Select responsible")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
+                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label htmlFor="editAccountable" className="text-sm font-medium text-slate-700">{t("Accountable")}</Label>
-                    <Input
-                      id="editAccountable"
-                      value={editingProcess.accountable || ""}
-                      onChange={(e) => setEditingProcess({ ...editingProcess, accountable: e.target.value })}
-                      placeholder={t("Enter accountable party")}
-                      className="mt-1.5 bg-white"
-                    />
+                    <Label className="text-sm font-medium text-slate-700">{t("Accountable")}</Label>
+                    <Select value={editingProcess.accountable || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, accountable: value })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder={t("Select accountable")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
+                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label htmlFor="editConsulted" className="text-sm font-medium text-slate-700">{t("Consulted")}</Label>
-                    <Input
-                      id="editConsulted"
-                      value={editingProcess.consulted || ""}
-                      onChange={(e) => setEditingProcess({ ...editingProcess, consulted: e.target.value })}
-                      placeholder={t("Enter consulted parties")}
-                      className="mt-1.5 bg-white"
-                    />
+                    <Label className="text-sm font-medium text-slate-700">{t("Consulted")}</Label>
+                    <Select value={editingProcess.consulted || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, consulted: value })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder={t("Select consulted")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
+                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label htmlFor="editInformed" className="text-sm font-medium text-slate-700">{t("Informed")}</Label>
-                    <Input
-                      id="editInformed"
-                      value={editingProcess.informed || ""}
-                      onChange={(e) => setEditingProcess({ ...editingProcess, informed: e.target.value })}
-                      placeholder={t("Enter informed parties")}
-                      className="mt-1.5 bg-white"
-                    />
+                    <Label className="text-sm font-medium text-slate-700">{t("Informed")}</Label>
+                    <Select value={editingProcess.informed || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, informed: value })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder={t("Select informed")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
+                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

@@ -264,7 +264,7 @@ export function EditProfileWizard({
         });
         if (res.ok) {
           const data = await res.json();
-          setFormData({ ...formData, [field]: data.url });
+          setFormData({ ...formData, [field]: data.file.filePath });
         }
       } catch (error) {
         console.error("Error uploading file:", error);

@@ -407,6 +407,22 @@ CREATE TABLE "Regulation" (
 );
 
 -- CreateTable
+CREATE TABLE "RegulationAttachment" (
+    "id" TEXT NOT NULL,
+    "regulationId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "filePath" TEXT NOT NULL,
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RegulationAttachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ControlDomain" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -491,6 +507,7 @@ CREATE TABLE "ProcessAttachment" (
     "fileType" TEXT,
     "fileSize" INTEGER,
     "filePath" TEXT NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'process_document',
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "processId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1624,6 +1641,17 @@ CREATE TABLE "NatureOfImplementation" (
 );
 
 -- CreateTable
+CREATE TABLE "OrganizationLocation" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OrganizationLocation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "InternalAuditProcess" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -2582,6 +2610,12 @@ CREATE INDEX "NatureOfImplementation_auditHeadId_idx" ON "NatureOfImplementation
 CREATE UNIQUE INDEX "NatureOfImplementation_auditHeadId_name_key" ON "NatureOfImplementation"("auditHeadId", "name");
 
 -- CreateIndex
+CREATE INDEX "OrganizationLocation_customerAccountId_idx" ON "OrganizationLocation"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OrganizationLocation_customerAccountId_name_key" ON "OrganizationLocation"("customerAccountId", "name");
+
+-- CreateIndex
 CREATE INDEX "InternalAuditProcess_customerAccountId_idx" ON "InternalAuditProcess"("customerAccountId");
 
 -- CreateIndex
@@ -2808,6 +2842,9 @@ ALTER TABLE "RequirementException" ADD CONSTRAINT "RequirementException_departme
 
 -- AddForeignKey
 ALTER TABLE "Regulation" ADD CONSTRAINT "Regulation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RegulationAttachment" ADD CONSTRAINT "RegulationAttachment_regulationId_fkey" FOREIGN KEY ("regulationId") REFERENCES "Regulation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ControlDomain" ADD CONSTRAINT "ControlDomain_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -3270,6 +3307,9 @@ ALTER TABLE "NatureOfImplementation" ADD CONSTRAINT "NatureOfImplementation_cust
 
 -- AddForeignKey
 ALTER TABLE "NatureOfImplementation" ADD CONSTRAINT "NatureOfImplementation_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrganizationLocation" ADD CONSTRAINT "OrganizationLocation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditProcess" ADD CONSTRAINT "InternalAuditProcess_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 
 interface Department {
   id: string;
@@ -27,14 +28,13 @@ interface Department {
 interface User {
   id: string;
   fullName: string;
+  departmentId?: string | null;
+  userRoles?: { role: { name: string } }[];
 }
 
 const processTypes = ["Primary", "Management", "Supporting"];
-const processFrequencies = ["Daily", "Weekly", "Monthly", "Quarterly", "Bi-annually", "Annually", "As needed"];
-const natureOfImplementations = ["Manual", "Automated", "Manual + Automated"];
+// natureOfImplementations fetched from API
 const operationalComplexities = ["Low", "Medium", "High"];
-const locations = ["Head Office", "Branch Office", "Remote", "Data Center"];
-
 const getSteps = (t: (key: string) => string) => [
   { step: 1, label: t("Info"), description: t("Basic process information") },
   { step: 2, label: t("Process Flow"), description: t("Process characteristics") },
@@ -57,11 +57,17 @@ export default function AddProcessPage() {
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [processFrequencies, setProcessFrequencies] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<MultiSelectOption[]>([]);
+  const [natureOfImplementations, setNatureOfImplementations] = useState<string[]>([]);
 
   // File upload states
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingOnboardingFiles, setPendingOnboardingFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isOnboardingDragging, setIsOnboardingDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const onboardingFileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     processCode: "",
@@ -75,7 +81,7 @@ export default function AddProcessPage() {
     natureOfImplementation: "",
     assetDependency: false,
     externalDependency: false,
-    location: "",
+    location: [] as string[],
     kpiMeasurementRequired: false,
     piiCapture: false,
     operationalComplexity: "",
@@ -89,12 +95,27 @@ export default function AddProcessPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [deptRes, userRes] = await Promise.all([
+        const [deptRes, userRes, freqRes, locRes, implRes] = await Promise.all([
           fetch("/api/departments"),
           fetch("/api/users"),
+          fetch("/api/organization-settings/process-frequency"),
+          fetch("/api/organization-settings/location"),
+          fetch("/api/organization-settings/nature-of-implementation"),
         ]);
         if (deptRes.ok) setDepartments(await deptRes.json());
         if (userRes.ok) setUsers(await userRes.json());
+        if (freqRes.ok) {
+          const freqData = await freqRes.json();
+          setProcessFrequencies(freqData.map((f: { name: string }) => f.name));
+        }
+        if (locRes.ok) {
+          const locData = await locRes.json();
+          setLocationOptions(locData.map((l: { id: string; name: string }) => ({ value: l.name, label: l.name })));
+        }
+        if (implRes.ok) {
+          const implData = await implRes.json();
+          setNatureOfImplementations(implData.map((i: { name: string }) => i.name));
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -152,18 +173,65 @@ export default function AddProcessPage() {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Onboarding file handlers
+  const handleOnboardingDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsOnboardingDragging(true);
+  };
+
+  const handleOnboardingDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsOnboardingDragging(false);
+  };
+
+  const handleOnboardingDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsOnboardingDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      setPendingOnboardingFiles((prev) => [...prev, ...files]);
+    }
+  };
+
+  const handleOnboardingFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setPendingOnboardingFiles((prev) => [...prev, ...Array.from(files)]);
+    }
+    if (onboardingFileInputRef.current) {
+      onboardingFileInputRef.current.value = "";
+    }
+  };
+
+  const removeOnboardingFile = (index: number) => {
+    setPendingOnboardingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const uploadFiles = async (processId: string) => {
     for (const file of pendingFiles) {
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("category", "process_document");
         await fetch(`/api/processes/${processId}/attachments`, {
           method: "POST",
-          body: formData,
+          body: fd,
         });
       } catch (error) {
         console.error("Error uploading file:", error);
+      }
+    }
+    for (const file of pendingOnboardingFiles) {
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("category", "employee_onboarding");
+        await fetch(`/api/processes/${processId}/attachments`, {
+          method: "POST",
+          body: fd,
+        });
+      } catch (error) {
+        console.error("Error uploading onboarding file:", error);
       }
     }
   };
@@ -190,7 +258,7 @@ export default function AddProcessPage() {
           natureOfImplementation: formData.natureOfImplementation || null,
           assetDependency: formData.assetDependency,
           externalDependency: formData.externalDependency,
-          location: formData.location || null,
+          location: formData.location.length > 0 ? JSON.stringify(formData.location) : null,
           kpiMeasurementRequired: formData.kpiMeasurementRequired,
           piiCapture: formData.piiCapture,
           operationalComplexity: formData.operationalComplexity || null,
@@ -206,7 +274,7 @@ export default function AddProcessPage() {
         const process = await res.json();
 
         // Upload pending files if any
-        if (pendingFiles.length > 0) {
+        if (pendingFiles.length > 0 || pendingOnboardingFiles.length > 0) {
           await uploadFiles(process.id);
         }
 
@@ -303,7 +371,7 @@ export default function AddProcessPage() {
                 <Label>{t("Department")}</Label>
                 <Select
                   value={formData.departmentId}
-                  onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
+                  onValueChange={(value) => setFormData({ ...formData, departmentId: value, ownerId: "" })}
                   disabled={isDepartmentContributor}
                 >
                   <SelectTrigger className="bg-white">
@@ -323,12 +391,13 @@ export default function AddProcessPage() {
                 <Select
                   value={formData.ownerId}
                   onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
+                  disabled={!formData.departmentId}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder={t("Select Owner")} />
+                    <SelectValue placeholder={formData.departmentId ? t("Select Owner") : t("Select department first")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((user) => user.departmentId === formData.departmentId && user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -377,24 +446,6 @@ export default function AddProcessPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>{t("Process Type")}</Label>
-              <Select
-                value={formData.processType}
-                onValueChange={(value) => setFormData({ ...formData, processType: value })}
-              >
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder={t("Select Type")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {processTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {t(type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         )}
 
@@ -404,21 +455,12 @@ export default function AddProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Location")}</Label>
-                <Select
-                  value={formData.location}
-                  onValueChange={(value) => setFormData({ ...formData, location: value })}
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder={t("Select Location")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((loc) => (
-                      <SelectItem key={loc} value={loc}>
-                        {t(loc)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  options={locationOptions}
+                  selected={formData.location}
+                  onChange={(selected) => setFormData({ ...formData, location: selected })}
+                  placeholder={t("Select locations")}
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("Operational Complexity")}</Label>
@@ -557,6 +599,78 @@ export default function AddProcessPage() {
                 </div>
               )}
             </div>
+
+            {/* Employee Onboarding Section */}
+            <div className="space-y-4 pt-6 border-t">
+              <Label className="text-base font-medium">{t("Employee Onboarding")}</Label>
+              <p className="text-sm text-muted-foreground">
+                {t("Upload employee onboarding documents for this process. Multiple files can be attached.")}
+              </p>
+
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isOnboardingDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                }`}
+                onDragOver={handleOnboardingDragOver}
+                onDragLeave={handleOnboardingDragLeave}
+                onDrop={handleOnboardingDrop}
+              >
+                <div className="space-y-2">
+                  <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                  <p className="text-sm text-gray-600">
+                    {t("Drag and drop files here, or")}{" "}
+                    <button
+                      type="button"
+                      onClick={() => onboardingFileInputRef.current?.click()}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      {t("browse")}
+                    </button>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
+                  </p>
+                  <input
+                    ref={onboardingFileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleOnboardingFileChange}
+                    accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.ppt,.pptx"
+                  />
+                </div>
+              </div>
+
+              {pendingOnboardingFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t("Onboarding Files to Upload")} ({pendingOnboardingFiles.length})</Label>
+                  <div className="border rounded-lg divide-y">
+                    {pendingOnboardingFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-green-600" />
+                          <div>
+                            <p className="text-sm font-medium">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(file.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title={t("Remove")}
+                          onClick={() => removeOnboardingFile(index)}
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -577,7 +691,7 @@ export default function AddProcessPage() {
                     <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -596,7 +710,7 @@ export default function AddProcessPage() {
                     <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -617,7 +731,7 @@ export default function AddProcessPage() {
                     <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -636,7 +750,7 @@ export default function AddProcessPage() {
                     <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
+                    {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>

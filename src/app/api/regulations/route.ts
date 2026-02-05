@@ -13,6 +13,7 @@ export async function GET() {
 
     const regulations = await prisma.regulation.findMany({
       where: tenantFilter,
+      include: { attachments: { orderBy: { uploadedAt: "desc" } } },
       orderBy: { name: "asc" },
     });
     return NextResponse.json(regulations);
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
         status: status || "Subscribed",
         ...(customerAccountId ? { customerAccountId } : {}),
       },
+      include: { attachments: true },
     });
 
     return NextResponse.json(regulation, { status: 201 });

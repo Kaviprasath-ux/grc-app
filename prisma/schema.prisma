@@ -97,6 +97,7 @@ model CustomerAccount {
   auditLocations         AuditLocation[]
   processFrequencies     ProcessFrequency[]
   natureOfImplementations NatureOfImplementation[]
+  organizationLocations  OrganizationLocation[]
   internalAuditProcesses InternalAuditProcess[]
   governanceTemplates    GovernanceTemplate[]
 }
@@ -648,11 +649,26 @@ model Regulation {
   certificate            String?
   status                 String            @default("Subscribed") // Subscribed, Not Subscribed
   issues                 IssueRegulation[]
+  attachments            RegulationAttachment[]
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
+}
+
+model RegulationAttachment {
+  id           String     @id @default(cuid())
+  regulationId String
+  regulation   Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  type         String     // "document" or "certificate"
+  fileName     String
+  fileType     String?
+  fileSize     Int?
+  filePath     String
+  uploadedAt   DateTime   @default(now())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 // Control Domains
@@ -784,6 +800,7 @@ model ProcessAttachment {
   fileType   String?  // pdf, docx, xlsx, png, jpg, etc.
   fileSize   Int?
   filePath   String
+  category   String   @default("process_document") // "process_document" or "employee_onboarding"
   uploadedAt DateTime @default(now())
   processId  String
   process    Process  @relation(fields: [processId], references: [id], onDelete: Cascade)
@@ -2265,6 +2282,19 @@ model NatureOfImplementation {
   @@unique([auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
+}
+
+// Organization Location (for organization settings location options)
+model OrganizationLocation {
+  id                String           @id @default(cuid())
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Internal Audit Process (for audit head specific process settings)
