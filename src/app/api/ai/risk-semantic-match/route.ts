@@ -3,6 +3,11 @@ import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  badRequestResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 export const dynamic = 'force-dynamic';
 
@@ -21,21 +26,17 @@ export const dynamic = 'force-dynamic';
  */
 async function handler(
     req: NextRequest,
-    _context: any,
+    _context: unknown,
     session: AuthenticatedRequest['user']
 ) {
     const startTime = Date.now();
-    const endpoint = "/api/semanticMatch_process_asset_riskV2";
 
     try {
         const body = await req.json();
         const { processId, generatedRisks, existingRisks } = body;
 
         if (!generatedRisks || !Array.isArray(generatedRisks) || generatedRisks.length === 0) {
-            return NextResponse.json(
-                { error: "generatedRisks array is required" },
-                { status: 400 }
-            );
+            return badRequestResponse("generatedRisks array is required");
         }
 
         // Fetch existing risks from DB if not provided
@@ -77,15 +78,15 @@ async function handler(
         formData.append("generated_risk", JSON.stringify(generatedRisks));
 
         // Submit job to RunPod
-        const response = await aiApiClient.post(endpoint, formData.toString(), {
+        const response = await aiApiClient.post(AI_ENDPOINTS.SEMANTIC_MATCH, formData.toString(), {
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
         });
 
-        const result = response.data;
+        const result = response.data as { job_id?: string; status?: string };
         const jobId = result.job_id;
         const latency = Date.now() - startTime;
 
-        console.log(`[AI] POST ${endpoint} → ${response.status} (job_id=${jobId})`);
+        console.log(`[Risk Semantic Match] Job submitted: ${jobId} (${latency}ms)`);
 
         // Create job record in DB
         if (jobId) {
@@ -104,7 +105,7 @@ async function handler(
         // Log operation
         await aiAuditService.logOperation({
             jobId,
-            endpoint,
+            endpoint: AI_ENDPOINTS.SEMANTIC_MATCH,
             method: 'POST',
             requestBody: { processId, generatedRisksCount: generatedRisks.length },
             responseBody: result,
@@ -118,23 +119,23 @@ async function handler(
             status: result.status || "queued",
             message: "Semantic matching job submitted successfully"
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latency = Date.now() - startTime;
-        console.log(`[AI] POST ${endpoint} → ${error.status || 500} (error: ${error.message})`);
+        const err = error as { message?: string; status?: number };
+        console.error(`[Risk Semantic Match] Error:`, err);
 
         await aiAuditService.logOperation({
-            endpoint,
+            endpoint: AI_ENDPOINTS.SEMANTIC_MATCH,
             method: 'POST',
-            error: error.message,
-            statusCode: error.status || 500,
+            error: err.message,
+            statusCode: err.status || 500,
             latencyMs: latency,
             userId: session.id
         });
 
-        return NextResponse.json(
-            { error: "Failed to submit semantic matching job", details: error.message },
-            { status: error.status || 500 }
-        );
+        return errorResponse("Failed to submit semantic matching job", err.status || 500, {
+            details: err.message,
+        });
     }
 }
 

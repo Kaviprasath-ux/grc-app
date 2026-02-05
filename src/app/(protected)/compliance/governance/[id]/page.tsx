@@ -74,6 +74,7 @@ import {
   Eye,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface Policy {
   id: string;
@@ -336,8 +337,20 @@ export default function GovernanceDetailPage() {
 
   // AI Generate Policy state
   const [generatePolicyDialogOpen, setGeneratePolicyDialogOpen] = useState(false);
-  const [generatePolicyPrompt, setGeneratePolicyPrompt] = useState("");
   const [generatingPolicy, setGeneratingPolicy] = useState(false);
+  const [templates, setTemplates] = useState<Array<{
+    id: string;
+    name: string;
+    fileName: string;
+    fileType: string | null;
+    fileSize: number | null;
+    createdAt: string;
+    uploadedBy?: { fullName: string } | null;
+  }>>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [uploadingTemplate, setUploadingTemplate] = useState(false);
+  const [newTemplateFile, setNewTemplateFile] = useState<File | null>(null);
+  const [newTemplateName, setNewTemplateName] = useState("");
 
   // AI Review Details Modal state
   const [aiReviewDetailsOpen, setAiReviewDetailsOpen] = useState(false);
@@ -753,36 +766,110 @@ export default function GovernanceDetailPage() {
     }
   };
 
+  // Fetch governance templates
+  const fetchTemplates = async () => {
+    try {
+      const response = await fetch(`/api/governance-templates?governanceType=${policy?.documentType || "Policy"}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTemplates(data);
+        // Auto-select first template if available
+        if (data.length > 0 && !selectedTemplateId) {
+          setSelectedTemplateId(data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching templates:", error);
+    }
+  };
+
+  // Upload new template
+  const handleUploadTemplate = async () => {
+    if (!newTemplateFile) {
+      toast.error("Please select a .docx file");
+      return;
+    }
+
+    setUploadingTemplate(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", newTemplateFile);
+      formData.append("name", newTemplateName || newTemplateFile.name.replace(/\.[^/.]+$/, ""));
+      formData.append("governanceType", policy?.documentType || "Policy");
+
+      const response = await fetch("/api/governance-templates", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const newTemplate = await response.json();
+        toast.success("Template uploaded successfully!");
+        setTemplates(prev => [newTemplate, ...prev]);
+        setSelectedTemplateId(newTemplate.id);
+        setNewTemplateFile(null);
+        setNewTemplateName("");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to upload template");
+      }
+    } catch (error) {
+      console.error("Error uploading template:", error);
+      toast.error("An error occurred while uploading the template");
+    } finally {
+      setUploadingTemplate(false);
+    }
+  };
+
   const handleGeneratePolicy = async () => {
-    if (!generatePolicyPrompt.trim()) {
+    // Validate linked controls
+    if (!policy?.policyControls || policy.policyControls.length === 0) {
+      toast.error("Please link controls to this policy first");
+      return;
+    }
+
+    // Validate template selection
+    if (!selectedTemplateId) {
+      toast.error("Please select a template");
       return;
     }
 
     setGeneratingPolicy(true);
+    toast.info("Generating policy document using AI...", { duration: 30000 });
+
     try {
-      // Call real RunPod API to generate policy
+      console.log("[Generate Policy] Starting generation for policy:", id);
+      console.log("[Generate Policy] Policy Name:", policy?.name);
+      console.log("[Generate Policy] Linked Controls:", policy.policyControls.length);
+      console.log("[Generate Policy] Template ID:", selectedTemplateId);
+
       const response = await fetch("/api/ai/governance/generate-policy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          policyId: id,
-          prompt: generatePolicyPrompt,
-          name: policy?.name,
-        }),
+        body: JSON.stringify({ policyId: id, templateId: selectedTemplateId }),
       });
 
-      if (response.ok) {
-        const result = await response.json();
+      const result = await response.json();
+      console.log("[Generate Policy] Response status:", response.status);
+      console.log("[Generate Policy] Response result:", JSON.stringify(result, null, 2));
+
+      if (response.ok && result.success) {
+        toast.success(`Policy generated successfully! Used ${result.controlsUsed} controls.`);
+        console.log("[Generate Policy] Download URL:", result.downloadUrl);
+        console.log("[Generate Policy] Controls Used:", result.controlsUsed);
+        console.log("[Generate Policy] Frameworks Used:", result.frameworksUsed);
         // Close dialog and refresh policy to show new attachment
         setGeneratePolicyDialogOpen(false);
-        setGeneratePolicyPrompt("");
+        setSelectedTemplateId("");
         fetchPolicy();
       } else {
-        const error = await response.json();
-        console.error("AI Policy generation failed:", error);
+        const errorMessage = result.error || result.message || "Failed to generate policy";
+        console.error("[Generate Policy] Error:", errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
-      console.error("Error generating policy:", error);
+      console.error("[Generate Policy] Exception:", error);
+      toast.error("An error occurred while generating the policy");
     } finally {
       setGeneratingPolicy(false);
     }
@@ -2129,84 +2216,188 @@ export default function GovernanceDetailPage() {
                 {/* Option 2: Generate Policy Using AI */}
                 {(() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
+                  const hasLinkedControls = policy?.policyControls && policy.policyControls.length > 0;
+                  const isDisabled = hasDocument || !hasLinkedControls;
                   return (
                     <Dialog open={generatePolicyDialogOpen} onOpenChange={(open) => {
-                      if (hasDocument) return;
+                      if (isDisabled) return;
                       setGeneratePolicyDialogOpen(open);
-                      if (!open) {
-                        setGeneratePolicyPrompt("");
+                      if (open) {
+                        fetchTemplates();
                       }
                     }}>
-                      <DialogTrigger asChild disabled={hasDocument}>
+                      <DialogTrigger asChild disabled={isDisabled}>
                         <div
                           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                            hasDocument
+                            isDisabled
                               ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
                               : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
                           }`}
                         >
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                            hasDocument ? "bg-gray-100" : "bg-purple-100"
+                            isDisabled ? "bg-gray-100" : "bg-purple-100"
                           }`}>
-                            <Sparkles className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-purple-600"}`} />
+                            <Sparkles className={`h-6 w-6 ${isDisabled ? "text-gray-400" : "text-purple-600"}`} />
                           </div>
-                          <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
+                          <h3 className={`font-medium ${isDisabled ? "text-gray-400" : "text-gray-900"}`}>
                             {t("Generate Policy Using AI")}
                           </h3>
-                          <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
+                          <p className={`text-sm mt-1 ${isDisabled ? "text-gray-300" : "text-gray-500"}`}>
                             {hasDocument
                               ? t("Delete existing file to use AI")
+                              : !hasLinkedControls
+                              ? t("Link controls first to generate")
                               : t("Create document with AI assistance")}
                           </p>
                         </div>
                       </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>{t("Generate Policy Using AI")}</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
-                          <div>
-                            <Label>{t("Policy Name")}</Label>
-                            <Input value={policy?.name || ""} disabled className="bg-gray-50" />
-                          </div>
-                          <div>
-                            <Label>{t("Requirements / Controls to Include")}</Label>
-                            <Textarea
-                              placeholder={t("Enter the requirements, controls, or topics you want the AI to include in the policy document. Separate multiple items with commas or new lines.")}
-                              value={generatePolicyPrompt}
-                              onChange={(e) => setGeneratePolicyPrompt(e.target.value)}
-                              rows={6}
-                              className="mt-1"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              {t("Example: Access control procedures, Password requirements, Data classification, Incident response")}
-                            </p>
-                          </div>
-                          {policy?.policyControls && policy.policyControls.length > 0 && (
+                          <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label>{t("Linked Controls")}</Label>
-                              <div className="mt-1 p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
-                                <div className="flex flex-wrap gap-1">
-                                  {policy.policyControls.map((pc) => (
-                                    <Badge key={pc.control.id} variant="outline" className="text-xs">
-                                      {pc.control.controlCode}
-                                    </Badge>
+                              <Label>{t("Policy Name")}</Label>
+                              <Input value={policy?.name || ""} disabled className="bg-gray-50 mt-1" />
+                            </div>
+                            <div>
+                              <Label>{t("Document Type")}</Label>
+                              <Input value={policy?.documentType || "Policy"} disabled className="bg-gray-50 mt-1" />
+                            </div>
+                          </div>
+
+                          {/* Template Selection */}
+                          <div>
+                            <Label className="flex items-center gap-2">
+                              {t("Select Template")} <span className="text-red-500">*</span>
+                              <span className="text-xs text-gray-500">(.docx only)</span>
+                            </Label>
+                            <div className="mt-2 space-y-3">
+                              {templates.length > 0 ? (
+                                <div className="border rounded-lg max-h-40 overflow-y-auto">
+                                  {templates.map((template) => (
+                                    <div
+                                      key={template.id}
+                                      className={`p-3 cursor-pointer border-b last:border-b-0 hover:bg-gray-50 ${
+                                        selectedTemplateId === template.id ? "bg-purple-50 border-purple-200" : ""
+                                      }`}
+                                      onClick={() => setSelectedTemplateId(template.id)}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="radio"
+                                            checked={selectedTemplateId === template.id}
+                                            onChange={() => setSelectedTemplateId(template.id)}
+                                            className="text-purple-600"
+                                          />
+                                          <FileText className="h-4 w-4 text-blue-600" />
+                                          <span className="font-medium text-sm">{template.name}</span>
+                                        </div>
+                                        <span className="text-xs text-gray-500">
+                                          {template.fileSize ? `${(template.fileSize / 1024).toFixed(1)} KB` : ""}
+                                        </span>
+                                      </div>
+                                      {template.uploadedBy && (
+                                        <p className="text-xs text-gray-500 ml-6 mt-1">
+                                          {t("Uploaded by")}: {template.uploadedBy.fullName}
+                                        </p>
+                                      )}
+                                    </div>
                                   ))}
                                 </div>
+                              ) : (
+                                <div className="border-2 border-dashed rounded-lg p-4 text-center text-gray-500">
+                                  <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                  <p className="text-sm">{t("No templates available")}</p>
+                                  <p className="text-xs">{t("Upload a .docx template below")}</p>
+                                </div>
+                              )}
+
+                              {/* Upload New Template */}
+                              <div className="border rounded-lg p-3 bg-gray-50">
+                                <Label className="text-sm font-medium">{t("Or upload a new template")}</Label>
+                                <div className="mt-2 flex gap-2">
+                                  <Input
+                                    type="file"
+                                    accept=".docx"
+                                    onChange={(e) => setNewTemplateFile(e.target.files?.[0] || null)}
+                                    className="flex-1"
+                                  />
+                                </div>
+                                {newTemplateFile && (
+                                  <div className="mt-2 flex gap-2 items-end">
+                                    <div className="flex-1">
+                                      <Label className="text-xs">{t("Template Name")}</Label>
+                                      <Input
+                                        value={newTemplateName}
+                                        onChange={(e) => setNewTemplateName(e.target.value)}
+                                        placeholder={newTemplateFile.name.replace(/\.[^/.]+$/, "")}
+                                        className="mt-1"
+                                      />
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={handleUploadTemplate}
+                                      disabled={uploadingTemplate}
+                                    >
+                                      {uploadingTemplate ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                                      ) : (
+                                        <Upload className="h-4 w-4" />
+                                      )}
+                                      <span className="ml-1">{t("Upload")}</span>
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {t("These controls will be included in the generation context")}
-                              </p>
                             </div>
-                          )}
+                          </div>
+
+                          {/* Linked Controls */}
+                          <div>
+                            <Label>{t("Linked Controls")} ({policy?.policyControls?.length || 0})</Label>
+                            <div className="mt-2 border rounded-lg max-h-32 overflow-y-auto">
+                              {policy?.policyControls && policy.policyControls.length > 0 ? (
+                                <div className="divide-y">
+                                  {policy.policyControls.map((pc) => (
+                                    <div key={pc.control.id} className="p-2 hover:bg-gray-50">
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-xs font-mono">
+                                          {pc.control.controlCode}
+                                        </Badge>
+                                        <span className="text-sm">{pc.control.name}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-4 text-center text-gray-500">
+                                  {t("No controls linked to this policy")}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-sm text-blue-800">
+                              <strong>{t("Note")}:</strong> {t("The AI will use the selected template and linked controls to generate a comprehensive policy document.")}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" onClick={() => setGeneratePolicyDialogOpen(false)}>
+                          <Button variant="outline" onClick={() => {
+                            setGeneratePolicyDialogOpen(false);
+                            setSelectedTemplateId("");
+                            setNewTemplateFile(null);
+                            setNewTemplateName("");
+                          }}>
                             {t("Cancel")}
                           </Button>
                           <Button
                             onClick={handleGeneratePolicy}
-                            disabled={generatingPolicy || !generatePolicyPrompt.trim()}
+                            disabled={generatingPolicy || !hasLinkedControls || !selectedTemplateId}
                           >
                             {generatingPolicy ? (
                               <>

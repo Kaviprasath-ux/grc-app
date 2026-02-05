@@ -98,6 +98,7 @@ model CustomerAccount {
   processFrequencies     ProcessFrequency[]
   natureOfImplementations NatureOfImplementation[]
   internalAuditProcesses InternalAuditProcess[]
+  governanceTemplates    GovernanceTemplate[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -363,6 +364,8 @@ model User {
   // AI relations
   aiOperations        AIOperation[]
   aiJobs              AIJob[]
+  // Governance Templates
+  uploadedTemplates   GovernanceTemplate[] @relation("TemplateUploader")
 }
 
 // Stakeholders
@@ -2691,16 +2694,20 @@ model DocumentSearch {
 
 // Governance Templates (Policy, Standard, Procedure templates)
 model GovernanceTemplate {
-  id             String   @id @default(cuid())
-  name           String
-  governanceType String   @default("Policy") // Policy, Standard, Procedure
-  fileName       String
-  fileType       String? // pdf, docx, xlsx, etc.
-  fileSize       Int?
-  filePath       String
-  uploadedBy     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  governanceType    String           @default("Policy") // Policy, Standard, Procedure
+  fileName          String
+  fileType          String?          // docx only for AI generation
+  fileSize          Int?
+  filePath          String
+  uploadedById      String?
+  uploadedBy        User?            @relation("TemplateUploader", fields: [uploadedById], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 }
 
 // ==================== AUDIT LOGS ====================

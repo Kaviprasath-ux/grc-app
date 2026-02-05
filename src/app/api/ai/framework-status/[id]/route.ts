@@ -39,7 +39,12 @@ async function handler(
 
         // Call Python backend via centralized client
         const response = await aiApiClient.get(endpoint);
-        const result = response.data;
+        const result = response.data as {
+            status?: string;
+            progress?: number;
+            queue_position?: number;
+            error?: string;
+        };
         const latency = Date.now() - startTime;
 
         // Concise status-specific logging
@@ -75,12 +80,13 @@ async function handler(
         });
 
         return NextResponse.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const err = error as { message?: string; status?: number; data?: unknown };
         const errorTime = new Date().toISOString();
-        console.error(`\n❌ [${errorTime}] STATUS POLL FAILED | Job: ${id} | Error: ${error.message || 'Unknown'} | Status: ${error.status || 'N/A'} | Latency: ${Date.now() - startTime}ms`);
+        console.error(`\n❌ [${errorTime}] STATUS POLL FAILED | Job: ${id} | Error: ${err.message || 'Unknown'} | Status: ${err.status || 'N/A'} | Latency: ${Date.now() - startTime}ms`);
 
-        const statusCode = error.status || 500;
-        const errorMsg = error.message || "Internal server error";
+        const statusCode = err.status || 500;
+        const errorMsg = err.message || "Internal server error";
 
         // Log failed operation
         await aiAuditService.logOperation({
@@ -96,7 +102,7 @@ async function handler(
         return NextResponse.json(
             {
                 error: "Failed to check framework status",
-                details: error.data || errorMsg
+                details: err.data || errorMsg
             },
             { status: statusCode }
         );

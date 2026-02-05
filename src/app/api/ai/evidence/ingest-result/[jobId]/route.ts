@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  notFoundResponse,
+  badRequestResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 interface RouteContext {
   params: Promise<{ jobId: string }>;
@@ -30,10 +36,7 @@ export const GET = withAuth(
       });
 
       if (!ingestJob) {
-        return NextResponse.json(
-          { error: "Ingest job not found" },
-          { status: 404 }
-        );
+        return notFoundResponse("Ingest job");
       }
 
       if (!validateTenantAccess(session, ingestJob.evidence.customerAccountId)) {
@@ -59,31 +62,31 @@ export const GET = withAuth(
       // Verify job is completed
       const jobStatus = ingestJob.status.toLowerCase();
       if (jobStatus !== "completed") {
-        return NextResponse.json(
-          { job_id: jobId, status: jobStatus, error: `Job not completed yet` },
-          { status: 400 }
-        );
+        return badRequestResponse(`Job not completed yet. Current status: ${jobStatus}`);
       }
 
       // Call RunPod result endpoint via standardized aiApiClient
       let response;
       try {
-        response = await aiApiClient.get(`/api/grc_ingest_result/${jobId}`);
-      } catch (apiError: any) {
-        console.error(`[Evidence Ingest Result] API error:`, apiError);
-        return NextResponse.json(
-          {
-            job_id: jobId,
-            status: "failed",
-            error: apiError.message,
-            requestId: apiError.requestId
-          },
-          { status: apiError.status || 502 }
-        );
+        response = await aiApiClient.get(`${AI_ENDPOINTS.INGEST_RESULT}/${jobId}`);
+        console.log(`[Evidence Ingest Result] RunPod Response:`, response.data);
+      } catch (apiError: unknown) {
+        const err = apiError as { message?: string; requestId?: string; status?: number };
+        console.error(`[Evidence Ingest Result] API error:`, err);
+        return errorResponse(err.message || "Failed to fetch result", err.status || 502, {
+          jobId,
+          currentStatus: "failed",
+          requestId: err.requestId,
+        });
       }
 
       // Response: { "job_id": "...", "status": "completed", "result": { "messages": [...], "status": true } }
-      const runpodData = response.data;
+      const runpodData = response.data as {
+        result?: {
+          messages?: unknown[];
+          status?: boolean;
+        };
+      };
 
       // Store ingest result - save messages as JSON string
       const messages = runpodData.result?.messages || [];
@@ -157,9 +160,10 @@ export const GET = withAuth(
 
             let reviewResponse;
             try {
-              reviewResponse = await aiApiClient.post("/api/grc_evidence_query", reviewRequestBody);
-            } catch (reviewApiError: any) {
-              console.error(`[Evidence Ingest Result] AUTO-TRIGGER API error:`, reviewApiError);
+              reviewResponse = await aiApiClient.post(AI_ENDPOINTS.EVIDENCE_QUERY, reviewRequestBody);
+            } catch (reviewApiError: unknown) {
+              const reviewErr = reviewApiError as { message?: string };
+              console.error(`[Evidence Ingest Result] AUTO-TRIGGER API error:`, reviewErr);
               // Mark as failed if review API fails
               await prisma.evidence.update({
                 where: { id: fullEvidence.id },
@@ -174,7 +178,7 @@ export const GET = withAuth(
             // Create AI operation record
             const aiOperation = await prisma.aIOperation.create({
               data: {
-                endpoint: "/api/grc_evidence_query",
+                endpoint: AI_ENDPOINTS.EVIDENCE_QUERY,
                 method: "POST",
                 requestBody: JSON.stringify(reviewRequestBody),
                 responseBody: JSON.stringify(reviewData),
@@ -260,8 +264,9 @@ export const GET = withAuth(
             reviewTriggered = true;
             console.log(`[Evidence Ingest Result] AUTO-TRIGGER completed for evidence ${fullEvidence.id}`);
           }
-        } catch (autoTriggerError: any) {
-          console.error("[Evidence Ingest Result] AUTO-TRIGGER error:", autoTriggerError);
+        } catch (autoTriggerError: unknown) {
+          const autoErr = autoTriggerError as { message?: string };
+          console.error("[Evidence Ingest Result] AUTO-TRIGGER error:", autoErr);
           // Don't fail the ingest-result request, just log the error
           await prisma.evidence.update({
             where: { id: ingestJob.evidenceId },
@@ -279,16 +284,12 @@ export const GET = withAuth(
         },
         reviewTriggered,
       });
-    } catch (error: any) {
-      console.error("[Evidence Ingest Result] Error:", error);
-      return NextResponse.json(
-        {
-          error: error.message || "Failed to fetch ingest result",
-          details: String(error),
-          requestId: error.requestId
-        },
-        { status: error.status || 500 }
-      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; requestId?: string; status?: number };
+      console.error("[Evidence Ingest Result] Error:", err);
+      return errorResponse(err.message || "Failed to fetch ingest result", err.status || 500, {
+        requestId: err.requestId,
+      });
     }
   },
   { resource: "compliance.evidence", action: "view" }

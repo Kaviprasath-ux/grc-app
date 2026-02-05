@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  unauthorizedResponse,
+  missingFieldResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 /**
  * GET /api/ai/governance/ingest/status/[jobId]
- * 
+ *
  * Check the status of a policy document ingest job.
  * Aligned with RunPod /api/grc_ingest_status/{job_id} OpenAPI contract.
  */
@@ -19,25 +25,20 @@ export async function GET(
     try {
         const session = await auth();
         if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return unauthorizedResponse();
         }
         userId = session.user.id;
 
         const { jobId } = await context.params;
 
         if (!jobId) {
-            return NextResponse.json(
-                { error: "jobId is required" },
-                { status: 400 }
-            );
+            return missingFieldResponse("jobId");
         }
 
         // Call backend to check job status
-        const response = await aiApiClient.get(
-            `/api/grc_ingest_status/${jobId}`
-        );
+        const response = await aiApiClient.get(`${AI_ENDPOINTS.INGEST_STATUS}/${jobId}`);
 
-        const statusData = response.data;
+        const statusData = response.data as { status?: string };
 
         // Update AIJob status in database
         await aiAuditService.updateJobStatus(
@@ -49,7 +50,7 @@ export async function GET(
 
         // Log operation
         await aiAuditService.logOperation({
-            endpoint: `/api/grc_ingest_status/${jobId}`,
+            endpoint: AI_ENDPOINTS.INGEST_STATUS,
             method: 'GET',
             requestBody: null,
             responseBody: statusData,
@@ -59,27 +60,24 @@ export async function GET(
         });
 
         return NextResponse.json(statusData);
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latency = Date.now() - startTime;
+        const err = error as { message?: string; response?: { status?: number }; status?: number };
 
-        console.error("Error checking ingest status:", error);
+        console.error("[Governance Ingest Status] Error:", err);
 
         await aiAuditService.logOperation({
-            endpoint: `/api/grc_ingest_status/${context.params}`,
+            endpoint: AI_ENDPOINTS.INGEST_STATUS,
             method: 'GET',
             requestBody: null,
-            responseBody: { error: error.message },
+            responseBody: { error: err.message },
             userId,
             latencyMs: latency,
-            statusCode: error.response?.status || 500,
+            statusCode: err.response?.status || err.status || 500,
         });
 
-        return NextResponse.json(
-            {
-                error: "Failed to check ingest status",
-                details: error.message,
-            },
-            { status: error.response?.status || 500 }
-        );
+        return errorResponse("Failed to check ingest status", err.response?.status || err.status || 500, {
+            details: err.message,
+        });
     }
 }

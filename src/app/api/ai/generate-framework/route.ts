@@ -142,7 +142,7 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
             },
         });
 
-        const result = response.data;
+        const result = response.data as { job_id?: string; status?: string };
         jobId = result.job_id;
         const latency = Date.now() - startTime;
 

@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
-import { saveFrameworkFromAIResult } from "@/services/framework-persistence";
-import { PrismaClient } from "@prisma/client";
+import { saveFrameworkFromAIResult, AIResultData } from "@/services/framework-persistence";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
+
+// Type for the AI framework result
+interface FrameworkAIResult extends AIResultData {
+  framework_name?: string;
+  framework_code?: string;
+  total_requirements?: number;
+}
 
 /**
  * GET /api/ai/framework-result/{jobId}
@@ -49,7 +55,7 @@ async function handler(
 
         // Call Python backend
         const response = await aiApiClient.get(endpoint);
-        const aiResult = response.data;
+        const aiResult = response.data as FrameworkAIResult;
 
         console.log(`
 📋 FRAMEWORK DATA RECEIVED FROM AI BACKEND
@@ -183,10 +189,11 @@ async function handler(
 
         // Return combined result to UI
         return NextResponse.json({
-            ...aiResult,
+            ...(aiResult as Record<string, unknown>),
             ...saveResult
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const err = error as { message?: string; status?: number; data?: unknown };
         const errorTime = new Date().toISOString();
         console.error(`
 ╔════════════════════════════════════════════════════════════════╗
@@ -196,8 +203,8 @@ async function handler(
 
 📊 ERROR DETAILS:
   • Job ID: ${id}
-  • Message: ${error.message || 'Unknown error'}
-  • Status Code: ${error.status || 'N/A'}
+  • Message: ${err.message || 'Unknown error'}
+  • Status Code: ${err.status || 'N/A'}
   • Processing Time: ${Date.now() - startTime}ms
 
 🔧 TROUBLESHOOTING:
@@ -207,8 +214,8 @@ async function handler(
   • Verify database connectivity
 `);
 
-        const statusCode = error.status || 500;
-        const errorMsg = error.message || "Internal server error";
+        const statusCode = err.status || 500;
+        const errorMsg = err.message || "Internal server error";
 
         // Update job status to FAILED if it was in the DB
         if (id) {
@@ -230,7 +237,7 @@ async function handler(
         return NextResponse.json(
             {
                 error: "Failed to process framework result",
-                details: error.data || errorMsg
+                details: err.data || errorMsg
             },
             { status: statusCode }
         );

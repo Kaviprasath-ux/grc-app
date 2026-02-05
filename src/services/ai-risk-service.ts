@@ -38,19 +38,20 @@ export async function generateProcessRisks(
         );
 
         console.log('[AI Service] Risk generation response:', response.data);
-        return response.data;
-    } catch (error: any) {
+        return response.data as RiskGenerationResponse;
+    } catch (error: unknown) {
+        const err = error as { message?: string; status?: number; statusText?: string; data?: { detail?: string }; url?: string };
         console.error('[AI Service] Error generating process risks:', {
-            message: error.message,
-            status: error.status,
-            statusText: error.statusText,
-            data: error.data,
-            url: error.url
+            message: err.message,
+            status: err.status,
+            statusText: err.statusText,
+            data: err.data,
+            url: err.url
         });
 
         throw new Error(
-            error.data?.detail ||
-            error.message ||
+            err.data?.detail ||
+            err.message ||
             'Failed to generate process risks'
         );
     }
@@ -86,12 +87,13 @@ export async function submitSemanticMatching(
             }
         );
 
-        return response.data;
-    } catch (error: any) {
-        console.error('Error submitting semantic matching job:', error);
+        return response.data as SemanticMatchingJobResponse;
+    } catch (error: unknown) {
+        const err = error as { data?: { detail?: string }; message?: string };
+        console.error('Error submitting semantic matching job:', err);
         throw new Error(
-            error.data?.detail ||
-            error.message ||
+            err.data?.detail ||
+            err.message ||
             'Failed to submit semantic matching job'
         );
     }
@@ -111,12 +113,13 @@ export async function checkSemanticMatchingStatus(
             `/api/semanticMatch_process_asset_riskV2_status/${jobId}`
         );
 
-        return response.data;
-    } catch (error: any) {
-        console.error('Error checking semantic matching status:', error);
+        return response.data as SemanticMatchingStatusResponse;
+    } catch (error: unknown) {
+        const err = error as { data?: { detail?: string }; message?: string };
+        console.error('Error checking semantic matching status:', err);
         throw new Error(
-            error.data?.detail ||
-            error.message ||
+            err.data?.detail ||
+            err.message ||
             'Failed to check semantic matching status'
         );
     }
@@ -136,12 +139,13 @@ export async function getSemanticMatchingResult(
             `/api/semanticMatch_process_asset_riskV2_result/${jobId}`
         );
 
-        return response.data;
-    } catch (error: any) {
-        console.error('Error getting semantic matching result:', error);
+        return response.data as SemanticMatchingResultResponse;
+    } catch (error: unknown) {
+        const err = error as { data?: { detail?: string }; message?: string };
+        console.error('Error getting semantic matching result:', err);
         throw new Error(
-            error.data?.detail ||
-            error.message ||
+            err.data?.detail ||
+            err.message ||
             'Failed to get semantic matching result'
         );
     }
