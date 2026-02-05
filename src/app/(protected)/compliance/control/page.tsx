@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PieChart,
   Pie,
@@ -209,9 +208,6 @@ function ControlListPageContent() {
     notApplicable: 0,
   });
 
-  // Active tab state
-  const [activeTab, setActiveTab] = useState("all-controls");
-
   // Selected status filter for tile cards
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
@@ -357,15 +353,6 @@ function ControlListPageContent() {
   const handleSearch = () => {
     setCurrentPage(0);
     fetchControls();
-  };
-
-  const handleStatusCardClick = (status: string | null) => {
-    if (selectedStatus === status) {
-      setSelectedStatus(null);
-    } else {
-      setSelectedStatus(status);
-    }
-    setCurrentPage(0);
   };
 
   const handleSort = (field: string) => {
@@ -589,80 +576,187 @@ function ControlListPageContent() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all-controls">{t("All Controls")}</TabsTrigger>
-          <TabsTrigger value="dashboard">{t("Dashboard")}</TabsTrigger>
-        </TabsList>
+      {/* Status Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+          <div className="flex items-start justify-between mb-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <Layers className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.total}</div>
+          <div className="text-sm font-medium text-slate-500">{t("Total Controls")}</div>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+          <div className="flex items-start justify-between mb-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.nonCompliant}</div>
+          <div className="text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+          <div className="flex items-start justify-between mb-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.compliant}</div>
+          <div className="text-sm font-medium text-slate-500">{t("Compliant")}</div>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+          <div className="flex items-start justify-between mb-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <XCircle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.notApplicable}</div>
+          <div className="text-sm font-medium text-slate-500">{t("Not Applicable")}</div>
+        </div>
+      </div>
 
-        {/* All Controls Tab */}
-        <TabsContent value="all-controls" className="mt-6 space-y-6">
-          {/* Status Cards */}
-          <div className="grid grid-cols-4 gap-4">
-            <div
-              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
-                selectedStatus === null
-                  ? "border-2 border-primary-500"
-                  : "border border-slate-200 hover:border-slate-300"
-              }`}
-              onClick={() => handleStatusCardClick(null)}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-                  <Layers className="h-5 w-5" />
-                </div>
+          {/* Charts Section */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* Functional Grouping Donut Chart */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-sm font-medium text-slate-500 mb-4">{t("Functional Grouping")}</h3>
+              <div className="h-[300px]">
+                {functionalGroupingData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={functionalGroupingData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={false}
+                      >
+                        {functionalGroupingData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-slate-200">
+                                <p className="text-sm font-medium text-slate-800">{data.name}: {data.value}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconType="square"
+                        iconSize={12}
+                        formatter={(value) => <span className="text-sm text-slate-600">{t(value)}</span>}
+                      />
+                      {/* Center text */}
+                      <text x="50%" y="45%" textAnchor="middle" className="fill-slate-500 text-sm">
+                        {t("Total")}
+                      </text>
+                      <text x="50%" y="55%" textAnchor="middle" className="fill-slate-800 text-2xl font-bold">
+                        {statusCounts.total}
+                      </text>
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    {t("No data available")}
+                  </div>
+                )}
               </div>
-              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.total}</div>
-              <div className="text-sm font-medium text-slate-500">{t("Total Controls")}</div>
             </div>
-            <div
-              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
-                selectedStatus === "Non Compliant"
-                  ? "border-2 border-primary-500"
-                  : "border border-slate-200 hover:border-slate-300"
-              }`}
-              onClick={() => handleStatusCardClick("Non Compliant")}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
+
+            {/* By Framework Bar Chart */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-sm font-medium text-slate-500 mb-4">{t("Controls by Framework")}</h3>
+              <div className="h-[300px]">
+                {frameworkChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={frameworkChartData}
+                      margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                      barCategoryGap="20%"
+                    >
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: '#475569' }}
+                        axisLine={{ stroke: '#e2e8f0' }}
+                        tickLine={false}
+                        angle={-45}
+                        textAnchor="end"
+                        height={50}
+                        interval={0}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#94a3b8' }}
+                        axisLine={{ stroke: '#e2e8f0' }}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            const total = data.compliant + data.nonCompliant + data.notApplicable;
+                            return (
+                              <div className="bg-white px-4 py-3 rounded-xl shadow-lg border border-slate-100">
+                                <p className="text-sm font-semibold text-slate-800 mb-2">{data.fullName || data.name}</p>
+                                <div className="space-y-1.5">
+                                  <p className="text-xs flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <span className="text-slate-600">{t("Compliant")}:</span>
+                                    <span className="font-semibold text-slate-800">{data.compliant}</span>
+                                    <span className="text-slate-400">({total > 0 ? Math.round((data.compliant / total) * 100) : 0}%)</span>
+                                  </p>
+                                  <p className="text-xs flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                                    <span className="text-slate-600">{t("Non Compliant")}:</span>
+                                    <span className="font-semibold text-slate-800">{data.nonCompliant}</span>
+                                    <span className="text-slate-400">({total > 0 ? Math.round((data.nonCompliant / total) * 100) : 0}%)</span>
+                                  </p>
+                                  <p className="text-xs flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                    <span className="text-slate-600">{t("Not Applicable")}:</span>
+                                    <span className="font-semibold text-slate-800">{data.notApplicable}</span>
+                                    <span className="text-slate-400">({total > 0 ? Math.round((data.notApplicable / total) * 100) : 0}%)</span>
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="top"
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ paddingBottom: '10px' }}
+                        formatter={(value) => <span className="text-xs text-slate-600">{t(value)}</span>}
+                      />
+                      <Bar dataKey="compliant" name="Compliant" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="nonCompliant" name="Non Compliant" stackId="a" fill="#f43f5e" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="notApplicable" name="Not Applicable" stackId="a" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    {t("No data available")}
+                  </div>
+                )}
               </div>
-              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.nonCompliant}</div>
-              <div className="text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
-            </div>
-            <div
-              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
-                selectedStatus === "Compliant"
-                  ? "border-2 border-primary-500"
-                  : "border border-slate-200 hover:border-slate-300"
-              }`}
-              onClick={() => handleStatusCardClick("Compliant")}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-                  <CheckCircle2 className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.compliant}</div>
-              <div className="text-sm font-medium text-slate-500">{t("Compliant")}</div>
-            </div>
-            <div
-              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
-                selectedStatus === "Not Applicable"
-                  ? "border-2 border-primary-500"
-                  : "border border-slate-200 hover:border-slate-300"
-              }`}
-              onClick={() => handleStatusCardClick("Not Applicable")}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-                  <XCircle className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.notApplicable}</div>
-              <div className="text-sm font-medium text-slate-500">{t("Not Applicable")}</div>
             </div>
           </div>
 
@@ -685,6 +779,17 @@ function ControlListPageContent() {
                   {frameworks.map((f) => (
                     <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedStatus || "all"} onValueChange={(v) => { setSelectedStatus(v === "all" ? null : v); setCurrentPage(0); }}>
+                <SelectTrigger className="w-[180px] bg-white">
+                  <SelectValue placeholder={t("Status")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white">
+                  <SelectItem value="all">{t("All Status")}</SelectItem>
+                  <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
+                  <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
+                  <SelectItem value="Not Applicable">{t("Not Applicable")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -944,123 +1049,8 @@ function ControlListPageContent() {
             </div>
           </div>
           </div>
-        </TabsContent>
 
-        {/* Dashboard Tab */}
-        <TabsContent value="dashboard" className="mt-6 space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            {/* Functional Grouping Donut Chart */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">{t("Functional Grouping")}</h3>
-              <div className="h-[300px]">
-                {functionalGroupingData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={functionalGroupingData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={70}
-                        outerRadius={100}
-                        paddingAngle={2}
-                        dataKey="value"
-                        label={false}
-                      >
-                        {functionalGroupingData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-slate-200">
-                                <p className="text-sm font-medium text-slate-800">{data.name}: {data.value}</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend
-                        layout="horizontal"
-                        align="center"
-                        verticalAlign="bottom"
-                        iconType="square"
-                        iconSize={12}
-                        formatter={(value) => <span className="text-sm text-slate-600">{t(value)}</span>}
-                      />
-                      {/* Center text */}
-                      <text x="50%" y="45%" textAnchor="middle" className="fill-slate-500 text-sm">
-                        {t("Total")}
-                      </text>
-                      <text x="50%" y="55%" textAnchor="middle" className="fill-slate-800 text-2xl font-bold">
-                        {statusCounts.total}
-                      </text>
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-slate-400">
-                    {t("No data available")}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* By Framework Bar Chart */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">{t("By Framework")}</h3>
-              <div className="h-[300px]">
-                {frameworkChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={frameworkChartData}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                      <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 12 }} />
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            const total = data.compliant + data.nonCompliant + data.notApplicable;
-                            return (
-                              <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-slate-200">
-                                <p className="text-sm font-semibold text-slate-800 mb-1">{data.fullName || data.name}</p>
-                                <p className="text-xs text-green-600">{t("Not-Applicable")}: {data.notApplicable} ({total > 0 ? Math.round((data.notApplicable / total) * 100) : 0}%)</p>
-                                <p className="text-xs text-orange-500">{t("Compliant")}: {data.compliant} ({total > 0 ? Math.round((data.compliant / total) * 100) : 0}%)</p>
-                                <p className="text-xs text-blue-600">{t("Non-Compliant")}: {data.nonCompliant} ({total > 0 ? Math.round((data.nonCompliant / total) * 100) : 0}%)</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend
-                        layout="horizontal"
-                        align="center"
-                        verticalAlign="bottom"
-                        iconType="square"
-                        iconSize={12}
-                        formatter={(value) => <span className="text-sm text-slate-600">{t(value)}</span>}
-                      />
-                      <Bar dataKey="notApplicable" name="Not-Applicable" stackId="a" fill="#22c55e" />
-                      <Bar dataKey="compliant" name="Compliant" stackId="a" fill="#f97316" />
-                      <Bar dataKey="nonCompliant" name="Non-Compliant" stackId="a" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-slate-400">
-                    {t("No data available")}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          
 
       {/* Create Control Dialog - 3 Step Wizard */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

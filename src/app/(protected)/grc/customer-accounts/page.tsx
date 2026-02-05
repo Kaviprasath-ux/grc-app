@@ -968,47 +968,47 @@ export default function CustomerAccountsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50">
-              <TableHead className="font-semibold text-slate-700">{t("Customer Code")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Customer Name")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Email")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Is Local User")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Name")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Last Login")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Blocked")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Active")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Action")}</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/80">
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Customer Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Customer Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Email")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Is Local User")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Last Login")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Blocked")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Active")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-slate-400">
+                <TableCell colSpan={9} className="h-24 text-center text-slate-500">
                   {t("No customer accounts found")}
                 </TableCell>
               </TableRow>
             ) : (
               customers.map((customer) => (
-                <TableRow key={customer.id} className="hover:bg-slate-50">
-                  <TableCell className="font-medium">{customer.customerCode}</TableCell>
-                  <TableCell>{customer.customerName}</TableCell>
-                  <TableCell>{customer.email}</TableCell>
-                  <TableCell>{customer.isLocalUser ? t("Yes") : t("No")}</TableCell>
-                  <TableCell>{customer.name}</TableCell>
-                  <TableCell>{customer.lastLogin || "-"}</TableCell>
-                  <TableCell>{customer.blocked ? t("Yes") : t("No")}</TableCell>
-                  <TableCell>
+                <TableRow key={customer.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.customerName}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.email}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.isLocalUser ? t("Yes") : t("No")}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.name}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.lastLogin || "-"}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.blocked ? t("Yes") : t("No")}</TableCell>
+                  <TableCell className="py-4">
                     <span className={customer.active
-                      ? "px-2 py-1 rounded text-xs font-medium bg-success-light text-success-dark"
+                      ? "px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700"
                       : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600"
                     }>
                       {customer.active ? t("Yes") : t("No")}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 pr-4">
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
@@ -1619,63 +1619,65 @@ export default function CustomerAccountsPage() {
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-5">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="font-semibold text-slate-700">{t("Frameworks Available")}</TableHead>
-                  <TableHead className="font-semibold text-slate-700">{t("Accounts Available")}</TableHead>
-                  <TableHead className="font-semibold text-slate-700">{t("Expiry date")}</TableHead>
-                  <TableHead className="font-semibold text-slate-700">{t("Status")}</TableHead>
-                  <TableHead className="font-semibold text-slate-700">{t("Action")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {subscriptionPlans.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-slate-400">
-                      {t("No subscription plans found")}
-                    </TableCell>
+            <div className="bg-white rounded-xl border border-slate-200">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50/80">
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Frameworks Available")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Accounts Available")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Expiry date")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">{t("Action")}</TableHead>
                   </TableRow>
-                ) : (
-                  subscriptionPlans.map((plan) => (
-                    <TableRow key={plan.id} className="hover:bg-slate-50">
-                      <TableCell>{plan.frameworksAvailable}</TableCell>
-                      <TableCell>{plan.accountsAvailable}</TableCell>
-                      <TableCell>{plan.expiryDate}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          plan.status === "Active" ? "bg-success-light text-success-dark" : "bg-slate-100 text-slate-600"
-                        }`}>
-                          {plan.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                            onClick={() => openEditSubscriptionDialog(plan)}
-                            title={t("Edit")}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                            onClick={() => handleDeleteSubscription(plan.id)}
-                            title={t("Delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {subscriptionPlans.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                        {t("No subscription plans found")}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    subscriptionPlans.map((plan) => (
+                      <TableRow key={plan.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                        <TableCell className="py-4 pl-4 text-sm text-slate-700">{plan.frameworksAvailable}</TableCell>
+                        <TableCell className="py-4 text-sm text-slate-700">{plan.accountsAvailable}</TableCell>
+                        <TableCell className="py-4 text-sm text-slate-700">{plan.expiryDate}</TableCell>
+                        <TableCell className="py-4">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            plan.status === "Active" ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-600"
+                          }`}>
+                            {plan.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4 pr-4">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                              onClick={() => openEditSubscriptionDialog(plan)}
+                              title={t("Edit")}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                              onClick={() => handleDeleteSubscription(plan.id)}
+                              title={t("Delete")}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {/* Fixed Footer */}

@@ -336,22 +336,22 @@ export default function CustomersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50">
-              <TableHead className="font-semibold text-slate-700">{t("Customer Code")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Customer Name")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Email")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("UserName")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Compliance Percentage")}</TableHead>
-              <TableHead className="font-semibold text-slate-700">{t("Action")}</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/80">
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Customer Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Customer Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Email")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("UserName")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Compliance Percentage")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-400">
+                <TableCell colSpan={6} className="h-24 text-center text-slate-500">
                   {t("No customers found")}
                 </TableCell>
               </TableRow>
@@ -359,14 +359,14 @@ export default function CustomersPage() {
               customers.map((customer) => (
                 <TableRow
                   key={customer.id}
-                  className="hover:bg-slate-50 cursor-pointer"
+                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer"
                   onDoubleClick={() => handleRowDoubleClick(customer)}
                 >
-                  <TableCell className="font-medium">{customer.customerCode}</TableCell>
-                  <TableCell>{customer.customerName}</TableCell>
-                  <TableCell>{customer.email}</TableCell>
-                  <TableCell>{customer.userName}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.customerName}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.email}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{customer.userName}</TableCell>
+                  <TableCell className="py-4">
                     <div className="flex items-center gap-2">
                       <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
                         <div
@@ -377,7 +377,7 @@ export default function CustomersPage() {
                       <span className="text-sm text-slate-600">{customer.compliancePercentage.toFixed(2)}%</span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 pr-4">
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
