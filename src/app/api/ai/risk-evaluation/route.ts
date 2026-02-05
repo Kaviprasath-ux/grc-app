@@ -73,7 +73,7 @@ async function handler(
         requestPayload = {
             Process_Details: {
                 Process_name: process.name,
-                Process_description: process.description || `Process: ${process.name}`,
+                Process_description: process.description ,
                 Department: process.department?.name || "General"
             }
         };

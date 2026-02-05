@@ -78,6 +78,7 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface Evidence {
   id: string;
@@ -196,6 +197,7 @@ export default function EvidencePage() {
   const artifactFileInputRef = useRef<HTMLInputElement>(null);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [artifactDragging, setArtifactDragging] = useState(false);
+  const [aiReviewLoading, setAiReviewLoading] = useState(false);
 
   // Link Evidence Dialog state
   const [linkEvidenceDialogOpen, setLinkEvidenceDialogOpen] = useState(false);
@@ -676,6 +678,90 @@ export default function EvidencePage() {
     setSelectedEvidenceIdsForLink([]);
   };
 
+  // AI Review Artifacts - processes each artifact file for its linked evidences
+  const handleAIReviewArtifacts = async () => {
+    console.log("[AI Review] Button clicked");
+    console.log("[AI Review] Total artifacts:", artifacts.length);
+    console.log("[AI Review] Artifacts:", artifacts);
+
+    // Count total artifact-evidence pairs to process
+    let totalPairs = 0;
+    artifacts.forEach((artifact) => {
+      console.log(`[AI Review] Artifact: ${artifact.fileName}, linkedEvidences:`, artifact.linkedEvidences);
+      totalPairs += artifact.linkedEvidences?.length || 0;
+    });
+
+    console.log("[AI Review] Total pairs to process:", totalPairs);
+
+    if (totalPairs === 0) {
+      toast.error(t("No artifacts linked to evidences. Please link artifacts first."));
+      return;
+    }
+
+    setAiReviewLoading(true);
+    toast.info(t("Starting AI Review for") + ` ${artifacts.length} ` + t("artifacts") + `...`);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      // FOR EACH Artifact
+      for (const artifact of artifacts) {
+        const linkedEvidences = artifact.linkedEvidences || [];
+
+        if (linkedEvidences.length === 0) {
+          console.log(`[AI Review] Skipping artifact ${artifact.fileName} - no linked evidences`);
+          continue;
+        }
+
+        // FOR EACH Linked Evidence
+        for (const link of linkedEvidences) {
+          try {
+            console.log(`[AI Review] Processing: ${artifact.fileName} → Evidence ${link.evidence.evidenceCode}`);
+            console.log(`[AI Review] Calling API with:`, { artifactId: artifact.id, evidenceId: link.evidenceId });
+
+            const response = await fetch("/api/ai/evidence/vault-query", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                artifactId: artifact.id,
+                evidenceId: link.evidenceId,
+              }),
+            });
+
+            console.log(`[AI Review] Response status:`, response.status);
+            const responseData = await response.json();
+            console.log(`[AI Review] Response data:`, responseData);
+
+            if (response.ok) {
+              successCount++;
+              console.log(`[AI Review] Success: ${artifact.fileName} → ${link.evidence.evidenceCode}`);
+            } else {
+              console.error(`[AI Review] Failed: ${artifact.fileName} → ${link.evidence.evidenceCode}:`, responseData.error);
+              failCount++;
+            }
+          } catch (error) {
+            console.error(`[AI Review] Error: ${artifact.fileName} → ${link.evidenceId}:`, error);
+            failCount++;
+          }
+        }
+      }
+
+      if (successCount > 0 && failCount === 0) {
+        toast.success(t("AI Review completed successfully for") + ` ${successCount} ` + t("artifact-evidence pairs"));
+      } else if (successCount > 0 && failCount > 0) {
+        toast.warning(`${successCount} ` + t("succeeded") + `, ${failCount} ` + t("failed"));
+      } else {
+        toast.error(t("AI Review failed for all artifacts"));
+      }
+    } catch (error) {
+      console.error("[AI Review] Error:", error);
+      toast.error(t("Failed to perform AI Review"));
+    } finally {
+      setAiReviewLoading(false);
+    }
+  };
+
   // Filter evidences for link dialog
   const filteredEvidencesForLink = evidences.filter((e) => {
     if (!linkEvidenceSearchTerm) return true;
@@ -958,9 +1044,24 @@ export default function EvidencePage() {
           {/* Add Artifact Header and AI Review Button */}
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold text-slate-800">{t("Add Artifact")}</h3>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Sparkles className="h-4 w-4 text-purple-500" />
-              {t("AI Review Artifacts")}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={handleAIReviewArtifacts}
+              disabled={aiReviewLoading || artifacts.length === 0}
+            >
+              {aiReviewLoading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+                  {t("Reviewing...")}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 text-purple-500" />
+                  {t("AI Review Artifacts")}
+                </>
+              )}
             </Button>
           </div>
 

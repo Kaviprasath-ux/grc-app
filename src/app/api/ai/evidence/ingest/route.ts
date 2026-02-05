@@ -8,6 +8,7 @@ import {
   notFoundResponse,
   badRequestResponse,
   errorResponse,
+  updateEvidenceAIStatus,
 } from "@/lib/ai-route-helpers";
 import fs from "fs";
 import path from "path";
@@ -60,7 +61,7 @@ export const POST = withAuth(
 
       // Prepare multipart form data for RunPod
       const formData = new FormData();
-      formData.append("base_id", evidence.frameworkId || evidence.customerAccountId);
+      formData.append("base_id",  evidence.customerAccountId);
       formData.append("file_code", evidence.evidenceCode);
       formData.append("document_id", evidence.id);
       formData.append("doc_type", "evidence"); // Consistent doc_type for all evidence documents
@@ -106,13 +107,8 @@ export const POST = withAuth(
         },
       });
 
-      // Update evidence AI status
-      await prisma.evidence.update({
-        where: { id: evidence.id },
-        data: {
-          aiIngestStatus: status,
-        },
-      });
+      // Update evidence AI status using helper
+      await updateEvidenceAIStatus(evidence.id, { ingestStatus: status });
 
       return NextResponse.json({
         job_id: jobId,

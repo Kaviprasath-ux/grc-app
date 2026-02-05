@@ -203,10 +203,23 @@ export const DELETE = withAuth(
       if (attachment.filePath) {
         try {
           // Handle both /uploads/... and uploads/... paths
+          // Files are stored in public/uploads/ but path in DB is /uploads/
           const relativePath = attachment.filePath.startsWith("/")
             ? attachment.filePath.slice(1)
             : attachment.filePath;
-          const absolutePath = path.join(process.cwd(), relativePath);
+
+          // Try public/uploads first (where files are actually stored)
+          let absolutePath = path.join(process.cwd(), "public", relativePath);
+
+          // Check if file exists at public/uploads, if not try uploads directly
+          const fs = await import("fs/promises");
+          try {
+            await fs.access(absolutePath);
+          } catch {
+            // Fallback to direct path (uploads/...)
+            absolutePath = path.join(process.cwd(), relativePath);
+          }
+
           await unlink(absolutePath);
           console.log(`[Policy Attachment] Deleted file: ${absolutePath}`);
         } catch (fileError) {

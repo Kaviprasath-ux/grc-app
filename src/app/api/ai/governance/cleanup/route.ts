@@ -1,147 +1,78 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import aiApiClient from "@/lib/ai-api-client";
-import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
+import { aiDeleteService } from "@/services/ai-delete-service";
+import {
+  unauthorizedResponse,
+  missingFieldResponse,
+  notFoundResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 /**
  * POST /api/ai/governance/cleanup
- * 
+ *
  * Cleans up AI-processed documents for a policy.
- * Fully aligned with RunPod /api/grc_delete OpenAPI contract.
+ * Uses aiDeleteService for consistent delete operations.
  */
 export async function POST(req: NextRequest) {
     const startTime = Date.now();
-    let userId: string | undefined;
 
     try {
         const session = await auth();
         if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return unauthorizedResponse();
         }
-        userId = session.user.id;
+        const userId = session.user.id;
 
         const body = await req.json();
         const { policyId } = body;
 
         if (!policyId) {
-            return NextResponse.json({ error: "policyId is required" }, { status: 400 });
+            return missingFieldResponse("policyId");
         }
 
-        // Fetch policy details for canonical metadata
+        // Verify policy exists
         const policy = await prisma.policy.findUnique({
-            where: { id: policyId }
+            where: { id: policyId },
+            select: { code: true },
         });
 
         if (!policy) {
-            return NextResponse.json({ error: "Policy not found" }, { status: 404 });
+            return notFoundResponse("Policy");
         }
 
-        // Step 1: Find all AI reviews with documentIds
-        const reviews = await prisma.policyAIReview.findMany({
-            where: {
-                policyId,
-                documentId: { not: null }
-            }
-        });
+        console.log(`[Governance Cleanup] Starting cleanup for policy: ${policy.code}`);
 
-        console.log(`[Governance Cleanup] Cleaning up ${reviews.length} AI docs for ${policy.code} (Contract Sync)`);
+        // Use aiDeleteService for consistent delete operations
+        const results = await aiDeleteService.deleteAllForPolicy(policyId, userId);
 
-        const results: any[] = [];
+        // Reset policy AI status using the service
+        await aiDeleteService.resetPolicyAIStatus(policyId);
 
-        // Step 2: Loop through and delete from RunPod
-        for (const review of reviews) {
-            if (!review.documentId) continue;
+        const latencyMs = Date.now() - startTime;
+        const successCount = results.filter(r => r.status === 'deleted').length;
 
-            const opStartTime = Date.now();
-            const runpodPayload = {
-                base_id: policyId,
-                doc_type: "policy",
-                document_id: review.documentId,
-                file_name: policy.code || "policy-doc"
-            };
-
-            try {
-                // Log AIOperation (Request) - Standard Atomic Hook
-                const operation = await aiAuditService.logOperation({
-                    endpoint: "/api/grc_delete",
-                    method: "POST",
-                    requestBody: runpodPayload,
-                    userId,
-                });
-
-                // Call RunPod grc_delete
-                // Use URLSearchParams for application/x-www-form-urlencoded
-                const params = new URLSearchParams();
-                params.append("base_id", runpodPayload.base_id);
-                params.append("doc_type", runpodPayload.doc_type);
-                params.append("document_id", runpodPayload.document_id);
-                params.append("file_name", runpodPayload.file_name);
-
-                const response = await aiApiClient.post("/api/grc_delete", params, {
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
-                    },
-                });
-
-                // Log AIOperation (Success Update)
-                if (operation) {
-                    await prisma.aIOperation.update({
-                        where: { id: operation.id },
-                        data: {
-                            responseBody: JSON.stringify(response.data),
-                            statusCode: 200,
-                            latencyMs: Date.now() - opStartTime,
-                        }
-                    });
-                }
-
-                results.push({ documentId: review.documentId, status: "deleted" });
-
-            } catch (error: any) {
-                console.error(`[Governance Cleanup] Failed to delete document ${review.documentId}:`, error);
-
-                // Standardized Error Logging
-                await aiAuditService.logOperation({
-                    endpoint: "/api/grc_delete",
-                    method: "POST",
-                    error: error.message || "Delete failed",
-                    statusCode: error.status || 500,
-                    latencyMs: Date.now() - opStartTime,
-                    userId,
-                });
-
-                results.push({ documentId: review.documentId, status: "failed", error: error.message });
-            }
-        }
-
-        // Step 3: Delete database records
-        await prisma.policyAIReview.deleteMany({
-            where: { policyId }
-        });
-
-        // Reset Policy AI status
-        await prisma.policy.update({
-            where: { id: policyId },
-            data: {
-                aiReviewStatus: "Pending",
-                aiReviewScore: 0,
-                aiReviewJustification: null,
-            }
-        });
+        console.log(`[Governance Cleanup] Completed for ${policy.code}: ${successCount}/${results.length} documents deleted in ${latencyMs}ms`);
 
         return NextResponse.json({
             success: true,
-            cleanupDetails: results
+            cleanupDetails: results,
+            summary: {
+                total: results.length,
+                deleted: successCount,
+                failed: results.length - successCount,
+            },
+            latencyMs,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latencyMs = Date.now() - startTime;
-        console.error("[Governance Cleanup] Global Error:", error);
+        const err = error as { message?: string; status?: number };
+        console.error("[Governance Cleanup] Error:", err.message);
 
-        return NextResponse.json(
-            { error: error.message || "Failed to perform policy cleanup" },
-            { status: error.status || 500 }
-        );
+        return errorResponse(err.message || "Failed to perform policy cleanup", err.status || 500, {
+            details: `Cleanup failed after ${latencyMs}ms`,
+        });
     }
 }

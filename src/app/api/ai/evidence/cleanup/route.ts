@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { aiDeleteService } from "@/services/ai-delete-service";
 import { prisma } from "@/lib/prisma";
+import {
+  unauthorizedResponse,
+  missingFieldResponse,
+  notFoundResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 /**
  * POST /api/ai/evidence/cleanup
@@ -11,23 +17,19 @@ import { prisma } from "@/lib/prisma";
  */
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
-  let userId: string | undefined;
 
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorizedResponse();
     }
-    userId = session.user.id;
+    const userId = session.user.id;
 
     const body = await req.json();
     const { evidenceId } = body;
 
     if (!evidenceId) {
-      return NextResponse.json(
-        { error: "evidenceId is required" },
-        { status: 400 }
-      );
+      return missingFieldResponse("evidenceId");
     }
 
     // Verify evidence exists
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!evidence) {
-      return NextResponse.json({ error: "Evidence not found" }, { status: 404 });
+      return notFoundResponse("Evidence");
     }
 
     console.log(
@@ -77,9 +79,8 @@ export async function POST(req: NextRequest) {
 
     console.error("[Evidence Cleanup] Error:", err.message);
 
-    return NextResponse.json(
-      { error: err.message || "Failed to perform evidence cleanup" },
-      { status: err.status || 500 }
-    );
+    return errorResponse(err.message || "Failed to perform evidence cleanup", err.status || 500, {
+      details: `Cleanup failed after ${latencyMs}ms`,
+    });
   }
 }

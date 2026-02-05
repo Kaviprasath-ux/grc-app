@@ -150,6 +150,7 @@ export function buildEvidencePayload(
   evidence: {
     id: string;
     evidenceCode: string;
+    description?: string | null;
     attachments?: Array<{ fileName: string }>;
   },
   userId: string
@@ -157,10 +158,8 @@ export function buildEvidencePayload(
   user_id: string;
   evidence_id: string;
   doc_type: string;
-  evidences: Array<{ evidence_code: string; evidence_artifact: string }>;
+  evidences: Array<{ evidence_code: string; evidence_description: string }>;
 } {
-  const artifactNames = evidence.attachments?.map(att => att.fileName).join(', ') || evidence.evidenceCode;
-
   return {
     user_id: userId,
     evidence_id: evidence.id,
@@ -168,9 +167,29 @@ export function buildEvidencePayload(
     evidences: [
       {
         evidence_code: evidence.evidenceCode,
-        evidence_artifact: artifactNames,
+        evidence_description: evidence.description || '',
       },
     ],
+  };
+}
+
+/**
+ * Build vault query payload for grc_evidence_vault_query
+ * Uses evidence description as the question
+ */
+export function buildVaultQueryPayload(
+  question: string,
+  userId: string,
+  docType: string = 'evidence'
+): {
+  question: string;
+  user_id: string;
+  doc_type: string;
+} {
+  return {
+    question,
+    user_id: userId,
+    doc_type: docType,
   };
 }
 
@@ -179,17 +198,24 @@ export function buildEvidencePayload(
  */
 export function buildIngestFormData(params: {
   baseId: string;
-  docType: 'policy' | 'evidence';
+  docType: string; // Supports: 'evidence', 'Policy', 'Standard', 'Procedure'
   fileCode: string;
   documentId: string;
-  file: File | Blob;
+  files: File | Blob | Array<File | Blob>;
 }): FormData {
   const formData = new FormData();
   formData.append('base_id', params.baseId);
   formData.append('doc_type', params.docType);
   formData.append('file_code', params.fileCode);
   formData.append('document_id', params.documentId);
-  formData.append('files', params.file);
+
+  // Support single file or multiple files
+  if (Array.isArray(params.files)) {
+    params.files.forEach(file => formData.append('files', file));
+  } else {
+    formData.append('files', params.files);
+  }
+
   return formData;
 }
 
@@ -201,6 +227,7 @@ export function buildPolicyQueryPayload(
     id: string;
     code: string | null;
     name: string;
+    documentType?: string | null;
     policyControls: Array<{
       control: {
         controlCode: string;
@@ -211,7 +238,8 @@ export function buildPolicyQueryPayload(
     }>;
   },
   evidences: Array<{ evidence_code: string; evidence_artifact: string }>,
-  userId: string
+  userId: string,
+  docType?: string // Optional override for document type
 ): {
   user_id: string;
   doc_type: string;
@@ -229,7 +257,7 @@ export function buildPolicyQueryPayload(
 
   return {
     user_id: userId,
-    doc_type: 'policy',
+    doc_type: docType || policy.documentType || 'Policy', // Use provided docType, or policy's documentType, or default
     policies: [
       {
         policy_name: policy.name,
@@ -401,19 +429,23 @@ export async function updateEvidenceAIStatus(
   evidenceId: string,
   status: {
     ingestStatus?: string;
+    ingestedAt?: Date;
     reviewStatus?: string;
     reviewedAt?: Date;
   }
 ): Promise<void> {
   const data: Record<string, unknown> = {};
-  if (status.ingestStatus) data.aiIngestStatus = status.ingestStatus;
-  if (status.reviewStatus) data.aiReviewStatus = status.reviewStatus;
-  if (status.reviewedAt) data.aiReviewedAt = status.reviewedAt;
+  if (status.ingestStatus !== undefined) data.aiIngestStatus = status.ingestStatus;
+  if (status.ingestedAt !== undefined) data.aiIngestedAt = status.ingestedAt;
+  if (status.reviewStatus !== undefined) data.aiReviewStatus = status.reviewStatus;
+  if (status.reviewedAt !== undefined) data.aiReviewedAt = status.reviewedAt;
 
-  await prisma.evidence.update({
-    where: { id: evidenceId },
-    data,
-  });
+  if (Object.keys(data).length > 0) {
+    await prisma.evidence.update({
+      where: { id: evidenceId },
+      data,
+    });
+  }
 }
 
 /**
@@ -533,4 +565,125 @@ export function extractRecommendations(
       control_code: c.control_code,
       recommendation: c.answer,
     }));
+}
+
+// ============================================================================
+// AI STATUS CONSTANTS
+// ============================================================================
+
+/**
+ * AI Job Status constants - used for async job tracking
+ */
+export const AI_JOB_STATUS = {
+  QUEUED: 'queued',
+  PROCESSING: 'processing',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+} as const;
+
+export type AIJobStatus = typeof AI_JOB_STATUS[keyof typeof AI_JOB_STATUS];
+
+/**
+ * AI Entity Status constants - used for evidence/policy AI fields
+ */
+export const AI_ENTITY_STATUS = {
+  // Ingest statuses
+  NOT_STARTED: 'NOT_STARTED',
+  QUEUED: 'QUEUED',
+  PROCESSING: 'PROCESSING',
+  INGESTED: 'INGESTED',
+
+  // Review statuses
+  NOT_READY: 'NOT_READY',
+  READY: 'ready',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+
+  // Policy-specific statuses
+  PENDING: 'Pending',
+} as const;
+
+export type AIEntityStatus = typeof AI_ENTITY_STATUS[keyof typeof AI_ENTITY_STATUS];
+
+// ============================================================================
+// VALIDATION HELPERS
+// ============================================================================
+
+/**
+ * Validate required fields in request body
+ * Returns the first missing field name, or null if all present
+ */
+export function validateRequiredFields(
+  body: Record<string, unknown>,
+  fields: string[]
+): string | null {
+  for (const field of fields) {
+    if (body[field] === undefined || body[field] === null || body[field] === '') {
+      return field;
+    }
+  }
+  return null;
+}
+
+/**
+ * Validate and return missing field response if any required field is missing
+ */
+export function validateAndRespond(
+  body: Record<string, unknown>,
+  fields: string[]
+): NextResponse<AIErrorResponse> | null {
+  const missingField = validateRequiredFields(body, fields);
+  if (missingField) {
+    return missingFieldResponse(missingField);
+  }
+  return null;
+}
+
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+export interface AIRouteErrorContext {
+  route: string;
+  startTime: number;
+  endpoint?: string;
+  userId?: string;
+}
+
+/**
+ * Standardized error handler for AI routes
+ * Logs the error and returns a consistent error response
+ */
+export function handleAIRouteError(
+  error: unknown,
+  context: AIRouteErrorContext
+): NextResponse<AIErrorResponse> {
+  const latencyMs = Date.now() - context.startTime;
+  const err = error as {
+    message?: string;
+    status?: number;
+    rawResponse?: string;
+    data?: unknown;
+    requestId?: string;
+  };
+
+  console.error(`[${context.route}] Error after ${latencyMs}ms:`, err.message);
+
+  // Build details string
+  let details: string | undefined;
+  if (err.rawResponse) {
+    details = err.rawResponse.substring(0, 200);
+  } else if (err.data) {
+    details = typeof err.data === 'string' ? err.data.substring(0, 200) : JSON.stringify(err.data).substring(0, 200);
+  }
+
+  return errorResponse(
+    err.message || `Failed to process ${context.route}`,
+    err.status || 500,
+    {
+      details,
+      requestId: err.requestId,
+    }
+  );
 }

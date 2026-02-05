@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  unauthorizedResponse,
+  badRequestResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 /**
  * POST /api/ai/governance/regenerate-policy
- * 
+ *
  * Regenerate a policy document by adding content for missing controls.
  * Aligned with RunPod /api/regenerate_policy/ OpenAPI contract.
  */
@@ -16,7 +22,7 @@ export async function POST(req: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return unauthorizedResponse();
         }
         userId = session.user.id;
 
@@ -28,10 +34,7 @@ export async function POST(req: NextRequest) {
         const policy_document = formData.get('policy_document') as File;
 
         if (!document_type || !document_name || !policy_document) {
-            return NextResponse.json(
-                { error: "document_type, document_name, and policy_document are required" },
-                { status: 400 }
-            );
+            return badRequestResponse("document_type, document_name, and policy_document are required");
         }
 
         // Extract arrays (framework_names and missing_controls)
@@ -39,10 +42,7 @@ export async function POST(req: NextRequest) {
         const missing_controls = formData.getAll('missing_controls') as string[];
 
         if (!framework_names.length || !missing_controls.length) {
-            return NextResponse.json(
-                { error: "framework_names and missing_controls are required" },
-                { status: 400 }
-            );
+            return badRequestResponse("framework_names and missing_controls are required");
         }
 
         // Construct backend FormData payload
@@ -63,9 +63,9 @@ export async function POST(req: NextRequest) {
         const blob = new Blob([fileBuffer], { type: policy_document.type });
         backendFormData.append('policy_document', blob, policy_document.name);
 
-        // Call backend API
+        // Call backend API using centralized endpoint constant
         const response = await aiApiClient.post(
-            '/api/regenerate_policy/',
+            AI_ENDPOINTS.REGENERATE_POLICY,
             backendFormData,
             {
                 headers: {
@@ -77,9 +77,9 @@ export async function POST(req: NextRequest) {
         const resultData = response.data;
         const latency = Date.now() - startTime;
 
-        // Log operation
+        // Log operation using centralized endpoint constant
         await aiAuditService.logOperation({
-            endpoint: '/api/regenerate_policy/',
+            endpoint: AI_ENDPOINTS.REGENERATE_POLICY,
             method: 'POST',
             requestBody: {
                 document_type,
@@ -95,27 +95,25 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json(resultData);
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latency = Date.now() - startTime;
+        const err = error as { message?: string; response?: { status?: number }; status?: number };
 
-        console.error("Error regenerating policy:", error);
+        console.error("[Governance Regenerate] Error:", err.message);
 
         await aiAuditService.logOperation({
-            endpoint: '/api/regenerate_policy/',
+            endpoint: AI_ENDPOINTS.REGENERATE_POLICY,
             method: 'POST',
             requestBody: null,
-            responseBody: { error: error.message },
+            responseBody: { error: err.message },
             userId,
             latencyMs: latency,
-            statusCode: error.response?.status || 500,
+            statusCode: err.response?.status || err.status || 500,
         });
 
-        return NextResponse.json(
-            {
-                error: "Failed to regenerate policy",
-                details: error.message,
-            },
-            { status: error.response?.status || 500 }
+        return errorResponse(
+            err.message || "Failed to regenerate policy",
+            err.response?.status || err.status || 500
         );
     }
 }

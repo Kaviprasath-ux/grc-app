@@ -28,6 +28,12 @@ export const AI_ENDPOINTS = {
   // Evidence
   // ─────────────────────────────────────────────────────────────────────────
   EVIDENCE_QUERY: '/api/grc_evidence_query',
+  EVIDENCE_VAULT_QUERY: '/api/grc_evidence_vault_query',
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Compliance Self-Assessment
+  // ─────────────────────────────────────────────────────────────────────────
+  SELF_ASSESSMENT_QUERY: '/api/grc_selfassesment_query',
 
   // ─────────────────────────────────────────────────────────────────────────
   // Risk Evaluation
@@ -81,6 +87,7 @@ export const ENDPOINT_NAMES: Record<string, string> = {
   [AI_ENDPOINTS.INGEST_RESULT]: 'Ingest Result Fetch',
   [AI_ENDPOINTS.POLICY_QUERY]: 'Policy Review',
   [AI_ENDPOINTS.EVIDENCE_QUERY]: 'Evidence Review',
+  [AI_ENDPOINTS.EVIDENCE_VAULT_QUERY]: 'Evidence Vault Query',
   [AI_ENDPOINTS.GENERATE_POLICY]: 'Policy Generation',
   [AI_ENDPOINTS.REGENERATE_POLICY]: 'Policy Regeneration',
   [AI_ENDPOINTS.DELETE]: 'Document Cleanup',

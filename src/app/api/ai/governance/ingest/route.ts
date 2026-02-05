@@ -46,9 +46,12 @@ export async function POST(req: NextRequest) {
         }
 
         // Canonical OpenAPI Payload construction
+        // Use documentType from policy record (Policy, Standard, Procedure)
+        const docType = policy.documentType || "Policy";
+
         const runpodFormData = new FormData();
-        runpodFormData.append("base_id", policyId);
-        runpodFormData.append("doc_type", "policy");
+        runpodFormData.append("base_id", policy.customerAccountId); // Use customerAccountId for tenant isolation
+        runpodFormData.append("doc_type", docType); // Use actual document type from policy record
         runpodFormData.append("file_code", policy.code || `POL-${policyId.substring(0, 8)}`);
         runpodFormData.append("document_id", policyId);
         runpodFormData.append("files", file); // OpenAPI expects 'files' array
@@ -58,15 +61,15 @@ export async function POST(req: NextRequest) {
             endpoint: AI_ENDPOINTS.INGEST,
             method: "POST",
             requestBody: {
-                base_id: policyId,
-                doc_type: "policy",
+                base_id: policy.customerAccountId,
+                doc_type: docType,
                 file_code: policy.code,
                 fileName: file.name
             },
             userId,
         });
 
-        console.log(`[Governance Ingest] Ingesting policy ${policy.code} (RunPod Contract Sync)`);
+        console.log(`[Governance Ingest] Ingesting ${docType} ${policy.code} (RunPod Contract Sync)`);
 
         // Step 2: Call RunPod via aiApiClient
         const response = await aiApiClient.post(AI_ENDPOINTS.INGEST, runpodFormData);

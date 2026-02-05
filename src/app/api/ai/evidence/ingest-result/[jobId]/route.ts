@@ -7,6 +7,8 @@ import {
   notFoundResponse,
   badRequestResponse,
   errorResponse,
+  buildEvidencePayload,
+  updateEvidenceAIStatus,
 } from "@/lib/ai-route-helpers";
 
 interface RouteContext {
@@ -101,14 +103,11 @@ export const GET = withAuth(
         },
       });
 
-      // Update evidence
-      await prisma.evidence.update({
-        where: { id: ingestJob.evidenceId },
-        data: {
-          aiIngestStatus: "ingested",
-          aiIngestedAt: new Date(),
-          aiReviewStatus: "ready",
-        },
+      // Update evidence using helper
+      await updateEvidenceAIStatus(ingestJob.evidenceId, {
+        ingestStatus: "ingested",
+        ingestedAt: new Date(),
+        reviewStatus: "ready",
       });
 
       // Track if review was auto-triggered
@@ -133,27 +132,11 @@ export const GET = withAuth(
           });
 
           if (fullEvidence) {
-            // Update status to IN_PROGRESS
-            await prisma.evidence.update({
-              where: { id: ingestJob.evidenceId },
-              data: { aiReviewStatus: "IN_PROGRESS" },
-            });
+            // Update status to IN_PROGRESS using helper
+            await updateEvidenceAIStatus(ingestJob.evidenceId, { reviewStatus: "IN_PROGRESS" });
 
-            // Prepare request body for /api/grc_evidence_query
-            // Use attachments (ingested files) for evidence_artifact - these match what was ingested
-            const reviewRequestBody = {
-              user_id: session.id,
-              evidence_id: fullEvidence.id,
-              doc_type: "evidence",
-              evidences: [
-                {
-                  evidence_code: fullEvidence.evidenceCode,
-                  evidence_artifact: fullEvidence.attachments
-                    .map((att) => att.fileName)
-                    .join(", ") || fullEvidence.evidenceCode,
-                },
-              ],
-            };
+            // Prepare request body for /api/grc_evidence_query using helper
+            const reviewRequestBody = buildEvidencePayload(fullEvidence, session.id);
 
             // Call RunPod evidence query endpoint via standardized aiApiClient
             console.log(`[Evidence Ingest Result] AUTO-TRIGGER evidence review`);
@@ -164,11 +147,8 @@ export const GET = withAuth(
             } catch (reviewApiError: unknown) {
               const reviewErr = reviewApiError as { message?: string };
               console.error(`[Evidence Ingest Result] AUTO-TRIGGER API error:`, reviewErr);
-              // Mark as failed if review API fails
-              await prisma.evidence.update({
-                where: { id: fullEvidence.id },
-                data: { aiReviewStatus: "FAILED" },
-              });
+              // Mark as failed if review API fails using helper
+              await updateEvidenceAIStatus(fullEvidence.id, { reviewStatus: "FAILED" });
               throw reviewApiError; // Re-throw to be caught by outer catch
             }
 
@@ -252,13 +232,10 @@ export const GET = withAuth(
               },
             });
 
-            // Update evidence to COMPLETED
-            await prisma.evidence.update({
-              where: { id: fullEvidence.id },
-              data: {
-                aiReviewStatus: "COMPLETED",
-                aiReviewedAt: new Date(),
-              },
+            // Update evidence to COMPLETED using helper
+            await updateEvidenceAIStatus(fullEvidence.id, {
+              reviewStatus: "COMPLETED",
+              reviewedAt: new Date(),
             });
 
             reviewTriggered = true;
@@ -267,11 +244,8 @@ export const GET = withAuth(
         } catch (autoTriggerError: unknown) {
           const autoErr = autoTriggerError as { message?: string };
           console.error("[Evidence Ingest Result] AUTO-TRIGGER error:", autoErr);
-          // Don't fail the ingest-result request, just log the error
-          await prisma.evidence.update({
-            where: { id: ingestJob.evidenceId },
-            data: { aiReviewStatus: "FAILED" },
-          });
+          // Don't fail the ingest-result request, just log the error using helper
+          await updateEvidenceAIStatus(ingestJob.evidenceId, { reviewStatus: "FAILED" });
         }
       }
 

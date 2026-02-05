@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  unauthorizedResponse,
+  missingFieldResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 /**
  * POST /api/ai/compliance/self-assessment
- * 
+ *
  * Run AI-powered self-assessment query on compliance/policy documents.
  * Aligned with RunPod /api/grc_selfassesment_query OpenAPI contract.
  */
@@ -16,7 +22,7 @@ export async function POST(req: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return unauthorizedResponse();
         }
         userId = session.user.id;
 
@@ -24,10 +30,7 @@ export async function POST(req: NextRequest) {
         const { question } = body;
 
         if (!question) {
-            return NextResponse.json(
-                { error: "question is required" },
-                { status: 400 }
-            );
+            return missingFieldResponse("question");
         }
 
         // Construct payload matching OpenAPI schema: queryPayLoad
@@ -36,18 +39,18 @@ export async function POST(req: NextRequest) {
             user_id: userId,
         };
 
-        // Call backend API
+        // Call backend API using centralized endpoint constant
         const response = await aiApiClient.post(
-            '/api/grc_selfassesment_query',
+            AI_ENDPOINTS.SELF_ASSESSMENT_QUERY,
             payload
         );
 
         const resultData = response.data;
         const latency = Date.now() - startTime;
 
-        // Log operation
+        // Log operation using centralized endpoint constant
         await aiAuditService.logOperation({
-            endpoint: '/api/grc_selfassesment_query',
+            endpoint: AI_ENDPOINTS.SELF_ASSESSMENT_QUERY,
             method: 'POST',
             requestBody: payload,
             responseBody: resultData,
@@ -57,27 +60,25 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json(resultData);
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latency = Date.now() - startTime;
+        const err = error as { message?: string; response?: { status?: number }; status?: number };
 
-        console.error("Error running self-assessment:", error);
+        console.error("[Self Assessment] Error:", err.message);
 
         await aiAuditService.logOperation({
-            endpoint: '/api/grc_selfassesment_query',
+            endpoint: AI_ENDPOINTS.SELF_ASSESSMENT_QUERY,
             method: 'POST',
             requestBody: null,
-            responseBody: { error: error.message },
+            responseBody: { error: err.message },
             userId,
             latencyMs: latency,
-            statusCode: error.response?.status || 500,
+            statusCode: err.response?.status || err.status || 500,
         });
 
-        return NextResponse.json(
-            {
-                error: "Failed to run self-assessment",
-                details: error.message,
-            },
-            { status: error.response?.status || 500 }
+        return errorResponse(
+            err.message || "Failed to run self-assessment",
+            err.response?.status || err.status || 500
         );
     }
 }

@@ -15,8 +15,8 @@ import { AI_ENDPOINTS } from '@/lib/ai-endpoints';
 // ============================================================================
 
 export interface DeleteFromRunPodParams {
-  baseId: string;      // Policy ID or Evidence ID
-  docType: 'policy' | 'evidence';
+  baseId: string;      // customerAccountId for tenant isolation
+  docType: string;     // 'evidence', 'Policy', 'Standard', 'Procedure'
   documentId: string;  // RunPod document ID
   fileName: string;    // File name or code
   userId?: string;     // For audit logging
@@ -24,7 +24,8 @@ export interface DeleteFromRunPodParams {
 
 export interface DeleteResult {
   documentId: string;
-  status: 'deleted' | 'failed';
+  status: 'deleted' | 'not_found' | 'failed';
+  message?: string;
   error?: string;
 }
 
@@ -64,6 +65,12 @@ export async function deleteFromRunPod(params: DeleteFromRunPodParams): Promise<
       },
     });
 
+    // Parse RunPod response: { messages: string[], status: boolean }
+    const runpodResponse = response.data as {
+      messages?: string[];
+      status?: boolean;
+    };
+
     // Log AIOperation (Success)
     if (operation) {
       await prisma.aIOperation.update({
@@ -76,8 +83,14 @@ export async function deleteFromRunPod(params: DeleteFromRunPodParams): Promise<
       });
     }
 
-    console.log(`[AI Delete] ✓ Successfully deleted document: ${documentId}`);
-    return { documentId, status: 'deleted' };
+    // Check RunPod status: true = deleted, false = not found (not an error)
+    if (runpodResponse.status === true) {
+      console.log(`[AI Delete] ✓ Successfully deleted document: ${documentId}`);
+      return { documentId, status: 'deleted', message: runpodResponse.messages?.join(', ') };
+    } else {
+      console.log(`[AI Delete] ○ No embedding found for document: ${documentId} (${fileName})`);
+      return { documentId, status: 'not_found', message: runpodResponse.messages?.join(', ') };
+    }
 
   } catch (error: unknown) {
     const err = error as { message?: string; status?: number };
@@ -107,16 +120,19 @@ export async function deleteFromRunPod(params: DeleteFromRunPodParams): Promise<
 export async function deleteAllForPolicy(policyId: string, userId?: string): Promise<DeleteResult[]> {
   console.log(`[AI Delete] Cleaning up all AI documents for policy: ${policyId}`);
 
-  // Get policy details
+  // Get policy details including customerAccountId and documentType (to match ingest)
   const policy = await prisma.policy.findUnique({
     where: { id: policyId },
-    select: { code: true, name: true },
+    select: { code: true, name: true, customerAccountId: true, documentType: true },
   });
 
   if (!policy) {
     console.warn(`[AI Delete] Policy not found: ${policyId}`);
     return [];
   }
+
+  // Use same docType as ingest (Policy, Standard, or Procedure)
+  const docType = policy.documentType || 'Policy';
 
   // Find all PolicyAIReview records with documentIds
   const reviews = await prisma.policyAIReview.findMany({
@@ -135,8 +151,8 @@ export async function deleteAllForPolicy(policyId: string, userId?: string): Pro
     if (!review.documentId) continue;
 
     const result = await deleteFromRunPod({
-      baseId: policyId,
-      docType: 'policy',
+      baseId: policy.customerAccountId, // Use customerAccountId to match ingest
+      docType: docType, // Use actual documentType to match ingest
       documentId: review.documentId,
       fileName: policy.code || policy.name || 'policy-doc',
       userId,
@@ -150,7 +166,10 @@ export async function deleteAllForPolicy(policyId: string, userId?: string): Pro
     where: { policyId },
   });
 
-  console.log(`[AI Delete] Completed cleanup for policy ${policy.code}: ${results.filter(r => r.status === 'deleted').length}/${results.length} successful`);
+  const deletedCount = results.filter(r => r.status === 'deleted').length;
+  const notFoundCount = results.filter(r => r.status === 'not_found').length;
+  const failedCount = results.filter(r => r.status === 'failed').length;
+  console.log(`[AI Delete] Completed cleanup for policy ${policy.code}: ${deletedCount} deleted, ${notFoundCount} not found, ${failedCount} failed`);
 
   return results;
 }
@@ -179,10 +198,10 @@ export async function resetPolicyAIStatus(policyId: string): Promise<void> {
 export async function deleteAllForEvidence(evidenceId: string, userId?: string): Promise<DeleteResult[]> {
   console.log(`[AI Delete] Cleaning up all AI documents for evidence: ${evidenceId}`);
 
-  // Get evidence details
+  // Get evidence details including customerAccountId (to match ingest)
   const evidence = await prisma.evidence.findUnique({
     where: { id: evidenceId },
-    select: { evidenceCode: true, name: true },
+    select: { evidenceCode: true, name: true, customerAccountId: true },
   });
 
   if (!evidence) {
@@ -207,7 +226,7 @@ export async function deleteAllForEvidence(evidenceId: string, userId?: string):
     if (!review.documentId) continue;
 
     const result = await deleteFromRunPod({
-      baseId: evidenceId,
+      baseId: evidence.customerAccountId, // Use customerAccountId to match ingest
       docType: 'evidence',
       documentId: review.documentId,
       fileName: evidence.evidenceCode || evidence.name || 'evidence-doc',
@@ -229,7 +248,7 @@ export async function deleteAllForEvidence(evidenceId: string, userId?: string):
     if (!job.runpodJobId) continue;
 
     const result = await deleteFromRunPod({
-      baseId: evidenceId,
+      baseId: evidence.customerAccountId, // Use customerAccountId to match ingest
       docType: 'evidence',
       documentId: job.runpodJobId,
       fileName: evidence.evidenceCode || evidence.name || 'evidence-doc',
@@ -254,7 +273,10 @@ export async function deleteAllForEvidence(evidenceId: string, userId?: string):
     where: { evidenceId },
   });
 
-  console.log(`[AI Delete] Completed cleanup for evidence ${evidence.evidenceCode}: ${results.filter(r => r.status === 'deleted').length}/${results.length} successful`);
+  const deletedCount = results.filter(r => r.status === 'deleted').length;
+  const notFoundCount = results.filter(r => r.status === 'not_found').length;
+  const failedCount = results.filter(r => r.status === 'failed').length;
+  console.log(`[AI Delete] Completed cleanup for evidence ${evidence.evidenceCode}: ${deletedCount} deleted, ${notFoundCount} not found, ${failedCount} failed`);
 
   return results;
 }

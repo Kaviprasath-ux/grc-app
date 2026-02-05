@@ -38,11 +38,12 @@ export const POST = withAuth(
       // Verify evidence exists and user has access
       const evidence = await prisma.evidence.findUnique({
         where: { id: evidenceId },
-        include: {
-          attachments: {
-            select: { id: true, fileName: true },
-            orderBy: { uploadedAt: 'desc' },
-          },
+        select: {
+          id: true,
+          evidenceCode: true,
+          description: true,
+          customerAccountId: true,
+          aiIngestStatus: true,
         },
       });
 

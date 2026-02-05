@@ -84,27 +84,30 @@ export async function POST(req: NextRequest) {
     }
 
     // Map Evidences (Flat unique list across all controls)
+    // Use evidence_artifact per OpenAPI spec, with fallback: artifact name || description || empty
     const evidenceMap = new Map<string, { evidence_code: string; evidence_artifact: string }>();
     policy.policyControls.forEach(pc => {
       pc.control.evidenceControls.forEach(ec => {
         const e = ec.evidence;
         if (!evidenceMap.has(e.id)) {
-          const artifactName =
-            e.linkedArtifacts?.[0]?.artifact?.fileName ||
-            e.attachments?.[0]?.fileName ||
-            'no-artifact';
+          // Fallback chain: artifact name → description → empty
+          const artifactName = e.linkedArtifacts?.[0]?.artifact?.fileName ||
+                               e.attachments?.[0]?.fileName || '';
           evidenceMap.set(e.id, {
             evidence_code: e.evidenceCode,
-            evidence_artifact: artifactName,
+            evidence_artifact: e.description || '',
           });
         }
       });
     });
 
+    // Use documentType from policy record (Policy, Standard, Procedure)
+    const docType = policy.documentType || "Policy";
+
     // Construct the payload for RunPod
     const runpodPayload = {
       user_id: userId,
-      doc_type: 'policy',
+      doc_type: docType, // Use actual document type from policy record
       policies: [
         {
           policy_name: policy.name,
