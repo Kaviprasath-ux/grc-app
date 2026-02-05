@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
  * Framework → RequirementCategories → Requirements → Controls → Evidence/Policy
  */
 
-interface AIResultData {
+export interface AIResultData {
   framework_name?: string;
   framework_code?: string;
   total_requirements?: number;

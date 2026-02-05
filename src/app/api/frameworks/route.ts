@@ -51,7 +51,34 @@ export const GET = withAuth(
       // 1. Fetch their own frameworks (subscribed)
       // 2. Fetch master frameworks from GRC Admin accounts (for "Not Subscribed" filter)
 
-      const customerAccountId = session.customerAccountId;
+      // Special handling for DepartmentReviewer and DepartmentContributor:
+      // They should see the same frameworks as their creator
+      const isDepartmentRole = session.roles?.some((role: string) =>
+        ['DepartmentContributor', 'DepartmentReviewer'].includes(role)
+      );
+
+      let customerAccountId = session.customerAccountId;
+
+      // For DR/DC users, check if they have a creator and use the creator's customer account
+      if (isDepartmentRole && session.id) {
+        const currentUser = await prisma.user.findUnique({
+          where: { id: session.id },
+          select: {
+            createdById: true,
+            createdBy: {
+              select: {
+                customerAccountId: true,
+              },
+            },
+          },
+        });
+
+        // If the user was created by someone, use the creator's customer account
+        if (currentUser?.createdBy?.customerAccountId) {
+          customerAccountId = currentUser.createdBy.customerAccountId;
+        }
+      }
+
       if (!customerAccountId) {
         return NextResponse.json([]);
       }

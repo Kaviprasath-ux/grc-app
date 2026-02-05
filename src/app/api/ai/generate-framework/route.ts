@@ -61,9 +61,7 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
             );
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // DUPLICATE DETECTION: Check if framework already exists
-        // ═══════════════════════════════════════════════════════════════
+
         const existingFramework = await prisma.framework.findFirst({
             where: {
                 ...(session.customerAccountId && { customerAccountId: session.customerAccountId }),
@@ -191,7 +189,7 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
         // Call Python backend via centralized client (no Content-Type for FormData - fetch sets boundary)
         const response = await aiApiClient.post(endpoint, backendFormData);
 
-        const result = response.data;
+        const result = response.data as { job_id?: string; status?: string };
         jobId = result.job_id;
         const latency = Date.now() - startTime;
 

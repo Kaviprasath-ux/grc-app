@@ -15,6 +15,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +76,10 @@ import {
   Download,
   ArrowLeft,
   Home,
+  Layers,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -142,6 +159,8 @@ function ControlListPageContent() {
   const [integratedFrameworkFilter, setIntegratedFrameworkFilter] = useState<string>(
     searchParams.get("frameworkId") || "all"
   );
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
 
   // Column visibility
   const [visibleColumns, setVisibleColumns] = useState({
@@ -184,13 +203,38 @@ function ControlListPageContent() {
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Create domain dialog
+  const [isCreateDomainDialogOpen, setIsCreateDomainDialogOpen] = useState(false);
+  const [newDomain, setNewDomain] = useState({ code: "", name: "" });
+  const [creatingDomain, setCreatingDomain] = useState(false);
+
+  // Status counts for cards
+  const [statusCounts, setStatusCounts] = useState({
+    total: 0,
+    nonCompliant: 0,
+    compliant: 0,
+    notApplicable: 0,
+  });
+
+  // Active tab state
+  const [activeTab, setActiveTab] = useState("all-controls");
+
+  // Selected status filter for tile cards
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
+  // Dashboard data
+  const [allControlsForDashboard, setAllControlsForDashboard] = useState<Control[]>([]);
+  const [functionalGroupingData, setFunctionalGroupingData] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [frameworkChartData, setFrameworkChartData] = useState<{ name: string; compliant: number; nonCompliant: number; notApplicable: number }[]>([]);
+
   useEffect(() => {
     fetchFilterOptions();
+    fetchStatusCounts();
   }, [session?.user?.id]);
 
   useEffect(() => {
-    fetchControls();
-  }, [currentPage, integratedFrameworkFilter]);
+    fetchStatusCounts();
+  }, []);
 
   const fetchFilterOptions = async () => {
     try {
@@ -223,6 +267,71 @@ function ControlListPageContent() {
     }
   };
 
+  const fetchStatusCounts = async () => {
+    try {
+      // Fetch all controls to get status counts (without pagination)
+      const response = await fetch("/api/controls?limit=10000");
+      if (response.ok) {
+        const data = await response.json();
+        const allControls = data.data || [];
+        setAllControlsForDashboard(allControls);
+
+        const counts = {
+          total: allControls.length,
+          nonCompliant: allControls.filter((c: Control) => c.status === "Non Compliant").length,
+          compliant: allControls.filter((c: Control) => c.status === "Compliant").length,
+          notApplicable: allControls.filter((c: Control) => c.status === "Not Applicable").length,
+        };
+        setStatusCounts(counts);
+
+        // Calculate Functional Grouping data for donut chart
+        const groupingColors: Record<string, string> = {
+          "Govern": "#3b82f6",
+          "Identify": "#f97316",
+          "Protect": "#22c55e",
+          "Detect": "#ef4444",
+          "Respond": "#a855f7",
+          "Recover": "#78350f",
+        };
+        const groupingCounts: Record<string, number> = {};
+        allControls.forEach((c: Control) => {
+          const group = c.functionalGrouping || "Unknown";
+          groupingCounts[group] = (groupingCounts[group] || 0) + 1;
+        });
+        const fgData = Object.entries(groupingCounts)
+          .filter(([name]) => FUNCTIONAL_GROUPINGS.includes(name))
+          .map(([name, value]) => ({
+            name,
+            value,
+            color: groupingColors[name] || "#64748b",
+          }));
+        setFunctionalGroupingData(fgData);
+
+        // Calculate By Framework data for bar chart
+        const frameworkStats: Record<string, { compliant: number; nonCompliant: number; notApplicable: number }> = {};
+        allControls.forEach((c: Control) => {
+          const fwName = c.framework?.name || "No Framework";
+          if (!frameworkStats[fwName]) {
+            frameworkStats[fwName] = { compliant: 0, nonCompliant: 0, notApplicable: 0 };
+          }
+          if (c.status === "Compliant") frameworkStats[fwName].compliant++;
+          else if (c.status === "Non Compliant") frameworkStats[fwName].nonCompliant++;
+          else if (c.status === "Not Applicable") frameworkStats[fwName].notApplicable++;
+        });
+        const fwData = Object.entries(frameworkStats).map(([name, stats]) => ({
+          name: name.length > 8 ? name.substring(0, 8) + ".." : name,
+          fullName: name,
+          compliant: stats.compliant,
+          nonCompliant: stats.nonCompliant,
+          notApplicable: stats.notApplicable,
+        }));
+        setFrameworkChartData(fwData);
+      }
+    } catch (error) {
+      console.error("Error fetching status counts:", error);
+    }
+  };
+
   const fetchControls = useCallback(async () => {
     try {
       setLoading(true);
@@ -232,7 +341,14 @@ function ControlListPageContent() {
       if (integratedFrameworkFilter && integratedFrameworkFilter !== "all") {
         params.set("frameworkId", integratedFrameworkFilter);
       }
+      if (departmentFilter && departmentFilter !== "all") {
+        params.set("departmentId", departmentFilter);
+      }
+      if (assigneeFilter && assigneeFilter !== "all") {
+        params.set("assigneeId", assigneeFilter);
+      }
       if (search) params.set("search", search);
+      if (selectedStatus) params.set("status", selectedStatus);
 
       const response = await fetch(`/api/controls?${params.toString()}`);
       if (response.ok) {
@@ -245,11 +361,24 @@ function ControlListPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, integratedFrameworkFilter, search]);
+  }, [currentPage, integratedFrameworkFilter, departmentFilter, assigneeFilter, search, selectedStatus]);
+
+  useEffect(() => {
+    fetchControls();
+  }, [fetchControls]);
 
   const handleSearch = () => {
     setCurrentPage(0);
     fetchControls();
+  };
+
+  const handleStatusCardClick = (status: string | null) => {
+    if (selectedStatus === status) {
+      setSelectedStatus(null);
+    } else {
+      setSelectedStatus(status);
+    }
+    setCurrentPage(0);
   };
 
   const handleSort = (field: string) => {
@@ -421,6 +550,58 @@ function ControlListPageContent() {
     }
   };
 
+  const handleCreateDomain = async () => {
+    if (!newDomain.name) {
+      toast({
+        title: t("Error"),
+        description: t("Domain name is required"),
+        variant: "destructive"
+      });
+      return;
+    }
+    setCreatingDomain(true);
+    try {
+      const response = await fetch("/api/control-domains", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newDomain),
+      });
+
+      if (response.ok) {
+        const createdDomain = await response.json();
+        toast({
+          title: t("Success"),
+          description: t("Domain created successfully"),
+        });
+        setIsCreateDomainDialogOpen(false);
+        setNewDomain({ code: "", name: "" });
+        // Refresh domains list and select the newly created domain
+        const domainRes = await fetch("/api/control-domains");
+        if (domainRes.ok) {
+          setDomains(await domainRes.json());
+        }
+        // Auto-select the newly created domain
+        setNewControl({ ...newControl, domainId: createdDomain.id });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: t("Error"),
+          description: errorData.error || t("Failed to create domain"),
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error creating domain:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to create domain"),
+        variant: "destructive"
+      });
+    } finally {
+      setCreatingDomain(false);
+    }
+  };
+
   // The /api/users and /api/departments endpoints already apply tenant filtering,
   // so data is already scoped to the user's customerAccountId.
   const getCustomerScopedUsers = () => users;
@@ -473,65 +654,164 @@ function ControlListPageContent() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder={t("Search by control code or name...")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="w-[300px] bg-white"
-          />
-          <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
-            <SelectTrigger className="w-[200px] bg-white">
-              <SelectValue placeholder={t("Integrated Framework")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-              <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-              {frameworks.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <PermissionGate resource="compliance.controls" action="delete">
-            <Button
-              size="sm"
-              onClick={() => setIsDeleteAllDialogOpen(true)}
-              variant="outline"
-              className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t("Delete All")}
-            </Button>
-          </PermissionGate>
-          <PermissionGate resource="compliance.controls" action="create">
-            <Button size="sm" onClick={handleImport} variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              {t("Import")}
-            </Button>
-          </PermissionGate>
-          {/* Show New Control button for Customer Admin or users with create permission */}
-          {isCustomerAdmin ? (
-            <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("New Control")}
-            </Button>
-          ) : (
-            <PermissionGate resource="compliance.controls" action="create">
-              <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t("New Control")}
-              </Button>
-            </PermissionGate>
-          )}
-        </div>
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="all-controls">{t("All Controls")}</TabsTrigger>
+          <TabsTrigger value="dashboard">{t("Dashboard")}</TabsTrigger>
+        </TabsList>
 
-      {/* Data Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+        {/* All Controls Tab */}
+        <TabsContent value="all-controls" className="mt-6 space-y-6">
+          {/* Status Cards */}
+          <div className="grid grid-cols-4 gap-4">
+            <div
+              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                selectedStatus === null
+                  ? "border-2 border-primary-500"
+                  : "border border-slate-200 hover:border-slate-300"
+              }`}
+              onClick={() => handleStatusCardClick(null)}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <Layers className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.total}</div>
+              <div className="text-sm font-medium text-slate-500">{t("Total Controls")}</div>
+            </div>
+            <div
+              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                selectedStatus === "Non Compliant"
+                  ? "border-2 border-primary-500"
+                  : "border border-slate-200 hover:border-slate-300"
+              }`}
+              onClick={() => handleStatusCardClick("Non Compliant")}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.nonCompliant}</div>
+              <div className="text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
+            </div>
+            <div
+              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                selectedStatus === "Compliant"
+                  ? "border-2 border-primary-500"
+                  : "border border-slate-200 hover:border-slate-300"
+              }`}
+              onClick={() => handleStatusCardClick("Compliant")}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.compliant}</div>
+              <div className="text-sm font-medium text-slate-500">{t("Compliant")}</div>
+            </div>
+            <div
+              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                selectedStatus === "Not Applicable"
+                  ? "border-2 border-primary-500"
+                  : "border border-slate-200 hover:border-slate-300"
+              }`}
+              onClick={() => handleStatusCardClick("Not Applicable")}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <XCircle className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.notApplicable}</div>
+              <div className="text-sm font-medium text-slate-500">{t("Not Applicable")}</div>
+            </div>
+          </div>
+
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder={t("Search by control code or name...")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="w-[300px] bg-white"
+              />
+              <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
+                <SelectTrigger className="w-[180px] bg-white">
+                  <SelectValue placeholder={t("Integrated Framework")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                  {frameworks.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-[160px] bg-white">
+                  <SelectValue placeholder={t("Department")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">{t("All Departments")}</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                <SelectTrigger className="w-[160px] bg-white">
+                  <SelectValue placeholder={t("Assignee")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">{t("All Assignees")}</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <PermissionGate resource="compliance.controls" action="delete">
+                <Button
+                  size="sm"
+                  onClick={() => setIsDeleteAllDialogOpen(true)}
+                  variant="outline"
+                  className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t("Delete All")}
+                </Button>
+              </PermissionGate>
+              <PermissionGate resource="compliance.controls" action="create">
+                <Button size="sm" onClick={handleImport} variant="outline">
+                  <Upload className="h-4 w-4 mr-2" />
+                  {t("Import")}
+                </Button>
+              </PermissionGate>
+              {/* Show New Control button for Customer Admin or users with create permission */}
+              {isCustomerAdmin ? (
+                <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t("New Control")}
+                </Button>
+              ) : (
+                <PermissionGate resource="compliance.controls" action="create">
+                  <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t("New Control")}
+                  </Button>
+                </PermissionGate>
+              )}
+            </div>
+          </div>
+
+          {/* Data Table */}
+          <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
@@ -748,9 +1028,126 @@ function ControlListPageContent() {
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
+            </div>
           </div>
-        </div>
-      </div>
+          </div>
+        </TabsContent>
+
+        {/* Dashboard Tab */}
+        <TabsContent value="dashboard" className="mt-6 space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Functional Grouping Donut Chart */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">{t("Functional Grouping")}</h3>
+              <div className="h-[300px]">
+                {functionalGroupingData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={functionalGroupingData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={false}
+                      >
+                        {functionalGroupingData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-slate-200">
+                                <p className="text-sm font-medium text-slate-800">{data.name}: {data.value}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconType="square"
+                        iconSize={12}
+                        formatter={(value) => <span className="text-sm text-slate-600">{t(value)}</span>}
+                      />
+                      {/* Center text */}
+                      <text x="50%" y="45%" textAnchor="middle" className="fill-slate-500 text-sm">
+                        {t("Total")}
+                      </text>
+                      <text x="50%" y="55%" textAnchor="middle" className="fill-slate-800 text-2xl font-bold">
+                        {statusCounts.total}
+                      </text>
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    {t("No data available")}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* By Framework Bar Chart */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">{t("By Framework")}</h3>
+              <div className="h-[300px]">
+                {frameworkChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={frameworkChartData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                      <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 12 }} />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            const total = data.compliant + data.nonCompliant + data.notApplicable;
+                            return (
+                              <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-slate-200">
+                                <p className="text-sm font-semibold text-slate-800 mb-1">{data.fullName || data.name}</p>
+                                <p className="text-xs text-green-600">{t("Not-Applicable")}: {data.notApplicable} ({total > 0 ? Math.round((data.notApplicable / total) * 100) : 0}%)</p>
+                                <p className="text-xs text-orange-500">{t("Compliant")}: {data.compliant} ({total > 0 ? Math.round((data.compliant / total) * 100) : 0}%)</p>
+                                <p className="text-xs text-blue-600">{t("Non-Compliant")}: {data.nonCompliant} ({total > 0 ? Math.round((data.nonCompliant / total) * 100) : 0}%)</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconType="square"
+                        iconSize={12}
+                        formatter={(value) => <span className="text-sm text-slate-600">{t(value)}</span>}
+                      />
+                      <Bar dataKey="notApplicable" name="Not-Applicable" stackId="a" fill="#22c55e" />
+                      <Bar dataKey="compliant" name="Compliant" stackId="a" fill="#f97316" />
+                      <Bar dataKey="nonCompliant" name="Non-Compliant" stackId="a" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    {t("No data available")}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Create Control Dialog - 3 Step Wizard */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -789,17 +1186,27 @@ function ControlListPageContent() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")}</Label>
-                      <Select value={newControl.domainId} onValueChange={(v) => setNewControl({ ...newControl, domainId: v })}>
-                        <SelectTrigger className="mt-1.5 bg-white w-full">
-                          <SelectValue placeholder={t("Select domain")} />
-                        </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                          {domains.map((d) => (
-                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")} <span className="text-red-500">*</span></Label>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Select value={newControl.domainId} onValueChange={(v) => setNewControl({ ...newControl, domainId: v })}>
+                          <SelectTrigger className="bg-white flex-1">
+                            <SelectValue placeholder={t("Select domain")} />
+                          </SelectTrigger>
+                          <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                            {domains.map((d) => (
+                              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          size="icon"
+                          onClick={() => setIsCreateDomainDialogOpen(true)}
+                          className="h-10 w-10 shrink-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Functional Grouping")}</Label>
@@ -863,45 +1270,32 @@ function ControlListPageContent() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Owner")}</Label>
-                      <Select value={newControl.ownerId} onValueChange={(v) => setNewControl({ ...newControl, ownerId: v })}>
+                      <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
+                      <Select
+                        value={newControl.assigneeId}
+                        onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}
+                        disabled={!newControl.departmentId}
+                      >
                         <SelectTrigger className="mt-1.5 bg-white w-full">
-                          <SelectValue placeholder={t("Select owner")} />
+                          <SelectValue placeholder={
+                            !newControl.departmentId
+                              ? t("Select department first")
+                              : t("Select assignee")
+                          } />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                          {getCustomerScopedUsers().map((u) => (
-                            <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                          ))}
+                          {getFilteredUsersForAssignee().length > 0 ? (
+                            getFilteredUsersForAssignee().map((u) => (
+                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                            ))
+                          ) : (
+                            <div className="py-2 px-2 text-sm text-slate-400 text-center">
+                              {t("No department reviewers found")}
+                            </div>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
-                    <Select
-                      value={newControl.assigneeId}
-                      onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}
-                      disabled={!newControl.departmentId}
-                    >
-                      <SelectTrigger className="mt-1.5 bg-white w-full">
-                        <SelectValue placeholder={
-                          !newControl.departmentId
-                            ? t("Select department first")
-                            : t("Select assignee")
-                        } />
-                      </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                        {getFilteredUsersForAssignee().length > 0 ? (
-                          getFilteredUsersForAssignee().map((u) => (
-                            <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                          ))
-                        ) : (
-                          <div className="py-2 px-2 text-sm text-slate-400 text-center">
-                            {t("No department reviewers found")}
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
               )}
@@ -934,10 +1328,6 @@ function ControlListPageContent() {
                     <div>
                       <span className="text-slate-400">{t("Department")}:</span>
                       <p className="font-medium">{getCustomerScopedDepartments().find(d => d.id === newControl.departmentId)?.name || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">{t("Owner")}:</span>
-                      <p className="font-medium">{getCustomerScopedUsers().find(u => u.id === newControl.ownerId)?.fullName || "-"}</p>
                     </div>
                     <div>
                       <span className="text-slate-400">{t("Assignee")}:</span>
@@ -1067,6 +1457,53 @@ function ControlListPageContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Domain Dialog */}
+      <Dialog open={isCreateDomainDialogOpen} onOpenChange={setIsCreateDomainDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Domain")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Domain Code")}</Label>
+              <Input
+                value={newDomain.code}
+                onChange={(e) => setNewDomain({ ...newDomain, code: e.target.value })}
+                placeholder={t("Enter domain code")}
+                className="mt-1.5 bg-white"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Domain Name")} <span className="text-red-500">*</span></Label>
+              <Input
+                value={newDomain.name}
+                onChange={(e) => setNewDomain({ ...newDomain, name: e.target.value })}
+                placeholder={t("Enter domain name")}
+                className="mt-1.5 bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => {
+              setIsCreateDomainDialogOpen(false);
+              setNewDomain({ code: "", name: "" });
+            }}>
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleCreateDomain}
+              disabled={!newDomain.name || creatingDomain}
+            >
+              {creatingDomain ? t("Creating...") : t("Create")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

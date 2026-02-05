@@ -947,8 +947,8 @@ export default function ExceptionsPage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <ClipboardList className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
-            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
+            <h3 className="text-sm font-medium text-slate-500">{t("Status")}</h3>
+            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
@@ -1016,8 +1016,8 @@ export default function ExceptionsPage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Layers className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold text-slate-800">{t("Type")}</h3>
-            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
+            <h3 className="text-sm font-medium text-slate-500">{t("Type")}</h3>
+            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
@@ -1077,8 +1077,8 @@ export default function ExceptionsPage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Building2 className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
-            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
+            <h3 className="text-sm font-medium text-slate-500">{t("Department")}</h3>
+            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
@@ -1198,16 +1198,16 @@ export default function ExceptionsPage() {
         <div className="bg-white rounded-xl border border-slate-200">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 py-3 pl-4">{t("Exception Code")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Exception")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Category")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Reference")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Requester")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("End Date")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Department")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Status")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Actions")}</TableHead>
+              <TableRow className="border-b border-slate-100 bg-slate-50/80">
+                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Exception Code")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Exception")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Category")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Reference")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Requester")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("End Date")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1225,13 +1225,13 @@ export default function ExceptionsPage() {
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer"
                     onClick={() => router.push(`/compliance/exceptions/${exception.id}`)}
                   >
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">
+                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">
                       {exception.exceptionCode}
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">
+                    <TableCell className="py-4 text-sm text-slate-700">
                       <span className="line-clamp-1">{exception.name}</span>
                     </TableCell>
-                    <TableCell className="py-3 text-sm">
+                    <TableCell className="py-4 text-sm">
                       <Badge
                         className={
                           categoryColors[exception.category] || "bg-slate-100 text-slate-600"
@@ -1240,22 +1240,22 @@ export default function ExceptionsPage() {
                         {exception.category}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{getReference(exception)}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">
+                    <TableCell className="py-4 text-sm text-slate-700">{getReference(exception)}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">
                       {exception.requester?.fullName ||
                         exception.requester?.userName ||
                         exception.requester?.name ||
                         "-"}
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">
+                    <TableCell className="py-4 text-sm text-slate-700">
                       {exception.endDate
                         ? new Date(exception.endDate).toLocaleDateString(
                             "en-GB"
                           )
                         : "-"}
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{exception.department?.name || "-"}</TableCell>
-                    <TableCell className="py-3 text-sm">
+                    <TableCell className="py-4 text-sm text-slate-700">{exception.department?.name || "-"}</TableCell>
+                    <TableCell className="py-4 text-sm">
                       <Badge
                         className={
                           statusColors[exception.status] || "bg-slate-100 text-slate-600"
@@ -1264,7 +1264,7 @@ export default function ExceptionsPage() {
                         {exception.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-3 text-sm">
+                    <TableCell className="py-4 text-sm">
                       <div className="flex items-center gap-1">
                         <PermissionGate resource="compliance.exceptions" action="edit">
                           <Button

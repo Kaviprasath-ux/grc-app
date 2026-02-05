@@ -15,15 +15,36 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get("limit") || "50");
 
       const tenantFilter = getTenantFilter(session);
-      const where: Record<string, unknown> = { ...tenantFilter };
+      const where: Record<string, unknown> = {
+        ...tenantFilter,
+        // Only show KPIs that are linked to Evidence
+        evidenceId: { not: null },
+      };
+
+      // Department-based filtering for DepartmentContributor and DepartmentReviewer roles
+      // These roles should only see KPIs belonging to their department (via evidence's department)
+      const isDepartmentRole = session.roles?.some((role: string) =>
+        ['DepartmentContributor', 'DepartmentReviewer'].includes(role)
+      );
+      if (isDepartmentRole && session.departmentId) {
+        // Filter by KPI's evidence's department
+        where.evidence = { departmentId: session.departmentId };
+      } else if (departmentId) {
+        where.departmentId = departmentId;
+      }
+
       if (status) where.status = status;
-      if (departmentId) where.departmentId = departmentId;
       if (evidenceId) where.evidenceId = evidenceId;
       if (search) {
-        where.OR = [
-          { code: { contains: search } },
-          { objective: { contains: search } },
-          { description: { contains: search } },
+        where.AND = [
+          ...(where.AND as unknown[] || []),
+          {
+            OR: [
+              { code: { contains: search } },
+              { objective: { contains: search } },
+              { description: { contains: search } },
+            ],
+          },
         ];
       }
 

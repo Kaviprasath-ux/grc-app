@@ -122,6 +122,7 @@ interface InternalAuditRisk {
   residualScore: number | null;
   riskLevel: string | null;
   status: string;
+  engagementId?: string | null; // Link to audit engagement/plan
 }
 
 interface InternalAuditRiskDetail {
@@ -187,10 +188,18 @@ export default function RiskRegisterPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
 
-  // AI Recommendations dialog
+  // AI Recommendations dialog (legacy)
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState<AIRecommendationsResponse | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
+
+  // AI Audit Selection dialog (new - frontend filtered)
+  const [aiAuditSelectionOpen, setAiAuditSelectionOpen] = useState(false);
+
+  // Check if user is Audit Head
+  const isAuditHead = session?.user?.roles?.some(
+    (role) => role === "AuditHead"
+  ) ?? false;
 
   // Add/Edit Risk Modal states
   const [isAddRiskOpen, setIsAddRiskOpen] = useState(false);
@@ -782,6 +791,52 @@ export default function RiskRegisterPage() {
     });
   };
 
+  // AI Audit Selection - Filter risks for popup
+  // Rules: High/Medium risk level, no audit plan (engagementId null), active status (Open)
+  const getEligibleRisksForAIAudit = () => {
+    return risks.filter((risk) => {
+      // Must be High or Medium risk level
+      const isHighOrMedium = risk.riskLevel === "High" || risk.riskLevel === "Medium";
+      // Must not have an associated audit plan
+      const hasNoAuditPlan = !risk.engagementId;
+      // Must be active (Open status)
+      const isActive = risk.status === "Open";
+
+      return isHighOrMedium && hasNoAuditPlan && isActive;
+    });
+  };
+
+  // Group eligible risks by department
+  const getEligibleRisksGroupedByDepartment = () => {
+    const eligibleRisks = getEligibleRisksForAIAudit();
+    const grouped: Record<string, { department: Department; risks: InternalAuditRisk[] }> = {};
+
+    eligibleRisks.forEach((risk) => {
+      const deptKey = risk.departmentId || "unassigned";
+      const deptName = risk.department?.name || "Unassigned";
+
+      if (!grouped[deptKey]) {
+        grouped[deptKey] = {
+          department: risk.department || { id: "unassigned", name: "Unassigned" },
+          risks: [],
+        };
+      }
+      grouped[deptKey].risks.push(risk);
+    });
+
+    // Sort departments alphabetically, but put "Unassigned" at the end
+    return Object.values(grouped).sort((a, b) => {
+      if (a.department.name === "Unassigned") return 1;
+      if (b.department.name === "Unassigned") return -1;
+      return a.department.name.localeCompare(b.department.name);
+    });
+  };
+
+  // Open AI Audit Selection popup
+  const openAIAuditSelection = () => {
+    setAiAuditSelectionOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -862,11 +917,11 @@ export default function RiskRegisterPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchAIRecommendations}
+            onClick={openAIAuditSelection}
             className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            {t("AI Audits")}
+            {t("AI Audit")}
           </Button>
           {!isReadOnlyRole && (
             <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
@@ -919,15 +974,6 @@ export default function RiskRegisterPage() {
                 <TableCell className="py-3 pr-4">
                   {!isReadOnlyRole && (
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openViewRiskModal(risk)}
-                        title="View"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1228,6 +1274,129 @@ export default function RiskRegisterPage() {
               <p>{t("Failed to load recommendations. Please try again.")}</p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Audit Selection Dialog - Frontend filtered risks grouped by department */}
+      <Dialog open={aiAuditSelectionOpen} onOpenChange={setAiAuditSelectionOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <Sparkles className="h-5 w-5 text-purple-500" />
+                {t("AI Audit")} – {t("Risk Selection")}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-slate-500 mt-2">
+              {t("Review eligible risks grouped by department. Only High and Medium risks without audit plans are shown.")}
+            </p>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {(() => {
+              const groupedRisks = getEligibleRisksGroupedByDepartment();
+
+              if (groupedRisks.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <Sparkles className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                    <p className="text-slate-600 font-medium">{t("No Eligible Risks Found")}</p>
+                    <p className="text-sm text-slate-500 mt-2">
+                      {t("All risks either have Low risk level, are already linked to audit plans, or are not active.")}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-6">
+                  {/* Summary */}
+                  <div className="bg-slate-50 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-600">
+                        <span className="font-semibold text-slate-800">{getEligibleRisksForAIAudit().length}</span> {t("eligible risks")} {t("across")} <span className="font-semibold text-slate-800">{groupedRisks.length}</span> {t("departments")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-risk-high-bg text-risk-high">
+                        {t("High")}
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-risk-medium-bg text-risk-medium">
+                        {t("Medium")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Department Groups */}
+                  {groupedRisks.map((group) => (
+                    <div key={group.department.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                      {/* Department Header */}
+                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-4 w-4 text-primary-600" />
+                          <h3 className="font-semibold text-slate-800">{group.department.name}</h3>
+                          <span className="text-xs text-slate-500">({group.risks.length} {t("risks")})</span>
+                        </div>
+                        {/* Generate Audit Plan button - visible only to Audit Head, non-functional placeholder */}
+                        {isAuditHead && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+                            onClick={() => {
+                              // Placeholder - no action
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            {t("Generate Audit Plan")}
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Risk List */}
+                      <div className="divide-y divide-slate-100">
+                        {group.risks.map((risk) => (
+                          <div key={risk.id} className="px-4 py-3 hover:bg-slate-50/50">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-mono text-slate-400">{risk.riskId}</span>
+                                  <span className="font-medium text-slate-800">{risk.riskName}</span>
+                                </div>
+                                {risk.riskDescription && (
+                                  <p className="text-sm text-slate-500 line-clamp-2">{risk.riskDescription}</p>
+                                )}
+                                {risk.category && (
+                                  <p className="text-xs text-slate-400 mt-1">
+                                    {t("Category")}: {risk.category.name}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex-shrink-0">
+                                {getRiskLevelBadge(risk.riskLevel)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setAiAuditSelectionOpen(false)}
+            >
+              {t("Cancel")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1903,6 +2072,73 @@ export default function RiskRegisterPage() {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* File Upload Section */}
+                <div className="mt-4">
+                  <Label className="text-sm font-medium text-slate-700">{t("Attachments")}</Label>
+                  <div
+                    className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                      isDragOver ? "border-primary bg-primary-50" : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? (
+                      <div className="flex flex-col items-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+                        <p className="text-slate-500 text-sm">{t("Uploading...")}</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                        <p className="text-slate-600 text-sm font-medium">{t("Drag and drop files here")}</p>
+                        <p className="text-slate-400 text-xs mt-1">{t("or click to browse")}</p>
+                      </div>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
+                      onChange={handleAttachmentSelect}
+                      multiple
+                    />
+                  </div>
+
+                  {/* Uploaded Files List */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {uploadedFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+                        >
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-slate-500" />
+                            <div>
+                              <p className="text-sm font-medium text-slate-700">{file.name}</p>
+                              <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(file.id);
+                            }}
+                            className="h-8 w-8 p-0 text-slate-400 hover:text-semantic-error"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

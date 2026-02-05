@@ -197,6 +197,11 @@ export default function InternalAuditDashboard() {
     !session?.user?.roles?.includes("AuditHead") &&
     !session?.user?.roles?.includes("Auditor");
 
+  // Only AuditHead and AuditManager can access drill-down reports
+  const canDrillDown =
+    session?.user?.roles?.includes("AuditHead") ||
+    session?.user?.roles?.includes("AuditManager");
+
   useEffect(() => {
     fetchDashboard();
   }, []);
@@ -239,8 +244,9 @@ export default function InternalAuditDashboard() {
     }
   };
 
-  // Handle card clicks
+  // Handle card clicks - only AuditHead and AuditManager can drill down
   const handleRiskCardClick = (filter: string, title: string) => {
+    if (!canDrillDown) return;
     setDrillDown({
       open: true,
       type: 'risks',
@@ -251,6 +257,7 @@ export default function InternalAuditDashboard() {
   };
 
   const handleAuditCardClick = (filter: string, title: string) => {
+    if (!canDrillDown) return;
     setDrillDown({
       open: true,
       type: 'audits',
@@ -261,6 +268,7 @@ export default function InternalAuditDashboard() {
   };
 
   const handleCapaClick = (department: string, status: string) => {
+    if (!canDrillDown) return;
     setDrillDown({
       open: true,
       type: 'capa',
@@ -272,6 +280,7 @@ export default function InternalAuditDashboard() {
   };
 
   const handleAuditPlanClick = (auditId: string, title: string) => {
+    if (!canDrillDown) return;
     setDrillDown({
       open: true,
       type: 'audit-detail',
@@ -284,6 +293,7 @@ export default function InternalAuditDashboard() {
   // Handle chart bar click
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChartBarClick = (data: any) => {
+    if (!canDrillDown) return;
     if (data && data.name) {
       const riskLevel = data.name.toLowerCase();
       handleRiskCardClick(riskLevel, `${data.name} Risk Details`);
@@ -715,28 +725,28 @@ export default function InternalAuditDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div onClick={() => handleRiskCardClick('all', t('All Risks'))} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+        <div onClick={() => handleRiskCardClick('all', t('All Risks'))} className={canDrillDown ? "cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors" : ""}>
           <StatsCard
             label={t("Total Risks")}
             value={data?.riskStats.total || 0}
             icon={Shield}
           />
         </div>
-        <div onClick={() => handleRiskCardClick('extreme', t('Extreme Severity Risks'))} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+        <div onClick={() => handleRiskCardClick('extreme', t('Extreme Severity Risks'))} className={canDrillDown ? "cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors" : ""}>
           <StatsCard
             label={t("Extreme Severity")}
             value={data?.riskStats.extreme || 0}
             icon={AlertTriangle}
           />
         </div>
-        <div onClick={() => handleAuditCardClick('ongoing', t('Ongoing Audits'))} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+        <div onClick={() => handleAuditCardClick('ongoing', t('Ongoing Audits'))} className={canDrillDown ? "cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors" : ""}>
           <StatsCard
             label={t("Ongoing Audits")}
             value={data?.auditStats.ongoing || 0}
             icon={Activity}
           />
         </div>
-        <div onClick={() => handleAuditCardClick('completed', t('Completed Audits'))} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+        <div onClick={() => handleAuditCardClick('completed', t('Completed Audits'))} className={canDrillDown ? "cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors" : ""}>
           <StatsCard
             label={t("Completed Audits")}
             value={data?.auditStats.completed || 0}
@@ -751,7 +761,7 @@ export default function InternalAuditDashboard() {
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="px-6 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Risk by Rating")}</h3>
-            <p className="text-xs text-slate-400 mt-1">{t("Click on a bar to view risks of that severity")}</p>
+            {canDrillDown && <p className="text-xs text-slate-400 mt-1">{t("Click on a bar to view risks of that severity")}</p>}
           </div>
           <div className="p-6 space-y-4">
             {riskChartData.map((item) => {
@@ -760,7 +770,7 @@ export default function InternalAuditDashboard() {
               return (
                 <div
                   key={item.name}
-                  className="cursor-pointer group"
+                  className={canDrillDown ? "cursor-pointer group" : "group"}
                   onClick={() => handleRiskCardClick(item.name.toLowerCase(), `${item.name} ${t("Severity Risks")}`)}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -798,7 +808,7 @@ export default function InternalAuditDashboard() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <div>
               <h3 className="text-base font-semibold text-slate-800">{t("CAPA Status Overview")}</h3>
-              <p className="text-xs text-slate-400 mt-1">{t("Click on a status badge to view details")}</p>
+              {canDrillDown && <p className="text-xs text-slate-400 mt-1">{t("Click on a status badge to view details")}</p>}
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Button
@@ -838,7 +848,7 @@ export default function InternalAuditDashboard() {
                         <div className="flex gap-1">
                           {dept.open.high > 0 && (
                             <Badge
-                              className="bg-red-500 text-white text-xs cursor-pointer hover:bg-red-600"
+                              className={`bg-red-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-red-600" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               H: {dept.open.high}
@@ -846,7 +856,7 @@ export default function InternalAuditDashboard() {
                           )}
                           {dept.open.medium > 0 && (
                             <Badge
-                              className="bg-blue-500 text-white text-xs cursor-pointer hover:bg-blue-600"
+                              className={`bg-blue-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-blue-600" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               M: {dept.open.medium}
@@ -854,7 +864,7 @@ export default function InternalAuditDashboard() {
                           )}
                           {dept.open.low > 0 && (
                             <Badge
-                              className="bg-green-500 text-white text-xs cursor-pointer hover:bg-green-600"
+                              className={`bg-green-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-green-600" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               L: {dept.open.low}
@@ -870,7 +880,7 @@ export default function InternalAuditDashboard() {
                         <div className="flex gap-1">
                           {dept.closed.high > 0 && (
                             <Badge
-                              className="bg-red-500 text-white text-xs cursor-pointer hover:bg-red-600"
+                              className={`bg-red-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-red-600" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               H: {dept.closed.high}
@@ -878,7 +888,7 @@ export default function InternalAuditDashboard() {
                           )}
                           {dept.closed.medium > 0 && (
                             <Badge
-                              className="bg-blue-500 text-white text-xs cursor-pointer hover:bg-blue-600"
+                              className={`bg-blue-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-blue-600" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               M: {dept.closed.medium}
@@ -886,7 +896,7 @@ export default function InternalAuditDashboard() {
                           )}
                           {dept.closed.low > 0 && (
                             <Badge
-                              className="bg-green-500 text-white text-xs cursor-pointer hover:bg-green-600"
+                              className={`bg-green-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-green-600" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               L: {dept.closed.low}
@@ -912,7 +922,7 @@ export default function InternalAuditDashboard() {
           <h3 className="text-base font-semibold text-slate-800">
             {t("Annual Audit Plan")} - {data?.currentYear || new Date().getFullYear()}
           </h3>
-          <p className="text-xs text-slate-400 mt-1">{t("Click on an audit row to view details")}</p>
+          {canDrillDown && <p className="text-xs text-slate-400 mt-1">{t("Click on an audit row to view details")}</p>}
         </div>
         <div className="p-6">
           <div className="overflow-x-auto">
@@ -931,11 +941,11 @@ export default function InternalAuditDashboard() {
                   data.annualAuditPlan.map((audit) => (
                     <TableRow
                       key={audit.id}
-                      className="cursor-pointer hover:bg-slate-50"
+                      className={canDrillDown ? "cursor-pointer hover:bg-slate-50" : ""}
                       onClick={() => handleAuditPlanClick(audit.id, audit.engagementTitle || audit.auditId)}
                     >
                       <TableCell className="font-medium">
-                        <span className="text-blue-600 hover:underline">
+                        <span className={canDrillDown ? "text-blue-600 hover:underline" : "text-slate-800"}>
                           {audit.engagementTitle || audit.auditId}
                         </span>
                       </TableCell>
@@ -1004,7 +1014,7 @@ export default function InternalAuditDashboard() {
                           <TableCell key={month} className="p-1">
                             {isStart ? (
                               <Badge
-                                className="bg-blue-500 text-white text-xs whitespace-nowrap cursor-pointer hover:bg-blue-600"
+                                className={`bg-blue-500 text-white text-xs whitespace-nowrap ${canDrillDown ? "cursor-pointer hover:bg-blue-600" : ""}`}
                                 onClick={() => handleAuditPlanClick(assignment.auditId, assignment.engagementTitle)}
                                 title={assignment.engagementTitle}
                               >
@@ -1012,7 +1022,7 @@ export default function InternalAuditDashboard() {
                               </Badge>
                             ) : assignment ? (
                               <div
-                                className="h-6 bg-blue-200 rounded-sm cursor-pointer hover:bg-blue-300"
+                                className={`h-6 bg-blue-200 rounded-sm ${canDrillDown ? "cursor-pointer hover:bg-blue-300" : ""}`}
                                 onClick={() => handleAuditPlanClick(assignment.auditId, assignment.engagementTitle)}
                                 title={assignment.engagementTitle}
                               ></div>

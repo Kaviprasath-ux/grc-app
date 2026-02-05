@@ -3,6 +3,12 @@ import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  missingFieldResponse,
+  badRequestResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 export const dynamic = 'force-dynamic';
 
@@ -44,34 +50,28 @@ async function handler(
 ) {
     const startTime = Date.now();
     const { jobId } = await context.params;
-    const endpoint = `/api/semanticMatch_process_asset_riskV2_result/${jobId}`;
 
     try {
         if (!jobId) {
-            return NextResponse.json(
-                { error: "Job ID is required" },
-                { status: 400 }
-            );
+            return missingFieldResponse("jobId");
         }
 
         // Fetch result from RunPod
-        const response = await aiApiClient.get(endpoint);
-        const result = response.data;
+        const response = await aiApiClient.get(`${AI_ENDPOINTS.SEMANTIC_MATCH_RESULT}/${jobId}`);
+        const result = response.data as { matches?: SemanticMatchResult[]; results?: SemanticMatchResult[] };
         const latency = Date.now() - startTime;
 
-        console.log(`[AI] GET  ${endpoint} → completed`);
+        console.log(`[Risk Semantic Match Result] Job ${jobId} completed`);
 
         // Get job metadata for customerAccountId
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const job = await (prisma.aIJob as any).findFirst({
             where: { providerJobId: jobId }
         });
 
         const customerAccountId = session.customerAccountId;
         if (!customerAccountId) {
-            return NextResponse.json(
-                { error: "Customer account required" },
-                { status: 400 }
-            );
+            return badRequestResponse("Customer account required");
         }
 
         // Process semantic matching results
@@ -189,8 +189,9 @@ async function handler(
                     processedRisks.push({ ...created, action: 'created' });
                     stats.created++;
                 }
-            } catch (err: any) {
-                console.log(`[AI] Error processing risk: ${err.message}`);
+            } catch (err: unknown) {
+                const processErr = err as { message?: string };
+                console.error(`[Risk Semantic Match Result] Error processing risk:`, processErr.message);
                 stats.errors++;
             }
         }
@@ -204,7 +205,7 @@ async function handler(
         // Log operation
         await aiAuditService.logOperation({
             jobId,
-            endpoint,
+            endpoint: AI_ENDPOINTS.SEMANTIC_MATCH_RESULT,
             method: 'GET',
             responseBody: { stats, processedCount: processedRisks.length },
             statusCode: response.status,
@@ -212,7 +213,7 @@ async function handler(
             userId: session.id
         });
 
-        console.log(`[AI] Risk semantic match complete: created=${stats.created}, updated=${stats.updated}, skipped=${stats.skipped}`);
+        console.log(`[Risk Semantic Match Result] Complete: created=${stats.created}, updated=${stats.updated}, skipped=${stats.skipped}`);
 
         return NextResponse.json({
             success: true,
@@ -220,26 +221,26 @@ async function handler(
             stats,
             risks: processedRisks,
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latency = Date.now() - startTime;
-        console.log(`[AI] GET  ${endpoint} → ${error.status || 500} (error: ${error.message})`);
+        const err = error as { message?: string; status?: number };
+        console.error(`[Risk Semantic Match Result] Error:`, err);
 
-        await aiAuditService.updateJobStatus(jobId, 'FAILED', null, error.message);
+        await aiAuditService.updateJobStatus(jobId, 'FAILED', null, err.message);
 
         await aiAuditService.logOperation({
             jobId,
-            endpoint,
+            endpoint: AI_ENDPOINTS.SEMANTIC_MATCH_RESULT,
             method: 'GET',
-            error: error.message,
-            statusCode: error.status || 500,
+            error: err.message,
+            statusCode: err.status || 500,
             latencyMs: latency,
             userId: session.id
         });
 
-        return NextResponse.json(
-            { error: "Failed to get job result", details: error.message },
-            { status: error.status || 500 }
-        );
+        return errorResponse("Failed to get job result", err.status || 500, {
+            details: err.message,
+        });
     }
 }
 

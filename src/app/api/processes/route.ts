@@ -62,13 +62,19 @@ export async function POST(request: NextRequest) {
       accountableId,
       consultedId,
       informedId,
-      controls, // Array of extracted controls { title, description }
     } = body;
 
     if (!name) {
       return NextResponse.json(
         { error: "Process name is required" },
         { status: 400 }
+      );
+    }
+
+    if (!customerAccountId) {
+      return NextResponse.json(
+        { error: "User must belong to a customer account" },
+        { status: 403 }
       );
     }
 

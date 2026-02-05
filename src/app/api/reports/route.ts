@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter } from "@/lib/api-auth";
 
-// GET compliance reports data
-export async function GET() {
+// GET compliance reports data - filtered by customer account and department for department roles
+export const GET = withAuth(
+  async (req, context, session) => {
   try {
+    const tenantFilter = getTenantFilter(session);
+
+    // Department-based filtering for DepartmentContributor and DepartmentReviewer roles
+    const isDepartmentRole = session.roles?.some((role: string) =>
+      ['DepartmentContributor', 'DepartmentReviewer'].includes(role)
+    );
+
+    // Build where clauses with tenant and optional department filtering
+    const baseWhere = { ...tenantFilter };
+    const departmentWhere = isDepartmentRole && session.departmentId
+      ? { ...tenantFilter, departmentId: session.departmentId }
+      : baseWhere;
+
     // Get all statistics in parallel
     const [
       policyStats,
@@ -13,34 +28,42 @@ export async function GET() {
       kpiStats,
       riskStats,
     ] = await Promise.all([
-      // Policy stats by status
+      // Policy stats by status (filtered by department for department roles)
       prisma.policy.groupBy({
         by: ["status"],
+        where: departmentWhere,
         _count: { id: true },
       }),
-      // Evidence stats by status
+      // Evidence stats by status (filtered by department for department roles)
       prisma.evidence.groupBy({
         by: ["status"],
+        where: departmentWhere,
         _count: { id: true },
       }),
-      // Control stats by status
+      // Control stats by status (filtered by department for department roles)
       prisma.control.groupBy({
         by: ["status"],
+        where: departmentWhere,
         _count: { id: true },
       }),
-      // Exception stats by status
+      // Exception stats by status (filtered by department for department roles)
       prisma.exception.groupBy({
         by: ["status"],
+        where: departmentWhere,
         _count: { id: true },
       }),
-      // KPI stats by status
+      // KPI stats by status (filtered by evidence's department for department roles)
       prisma.kPI.groupBy({
         by: ["status"],
+        where: isDepartmentRole && session.departmentId
+          ? { ...tenantFilter, evidence: { departmentId: session.departmentId } }
+          : baseWhere,
         _count: { id: true },
       }),
-      // Risk stats by riskRating
+      // Risk stats by riskRating (uses tenant filter only - risks may not have department)
       prisma.risk.groupBy({
         by: ["riskRating"],
+        where: baseWhere,
         _count: { id: true },
       }),
     ]);
@@ -167,4 +190,6 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+  },
+  { resource: "compliance.dashboard", action: "view" }
+);

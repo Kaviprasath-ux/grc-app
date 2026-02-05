@@ -74,6 +74,8 @@ import {
   BadgeCheck,
   CheckCircle2,
   AlertTriangle,
+  Link2,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -94,11 +96,16 @@ interface Evidence {
 
 interface Artifact {
   id: string;
-  name: string;
-  type: string;
-  size: number;
+  artifactCode: string;
+  fileName: string;
+  fileType: string | null;
+  filePath: string;
   uploadedAt: string;
-  uploadedBy: string;
+  uploadedBy?: { id: string; fullName: string } | null;
+  linkedEvidences?: Array<{
+    evidenceId: string;
+    evidence: { id: string; evidenceCode: string; name: string };
+  }>;
 }
 
 interface Control {
@@ -190,6 +197,12 @@ export default function EvidencePage() {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [artifactDragging, setArtifactDragging] = useState(false);
 
+  // Link Evidence Dialog state
+  const [linkEvidenceDialogOpen, setLinkEvidenceDialogOpen] = useState(false);
+  const [selectedArtifactForLink, setSelectedArtifactForLink] = useState<Artifact | null>(null);
+  const [selectedEvidenceIdsForLink, setSelectedEvidenceIdsForLink] = useState<string[]>([]);
+  const [linkEvidenceSearchTerm, setLinkEvidenceSearchTerm] = useState("");
+
   // Delete dialogs
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
 
@@ -197,7 +210,7 @@ export default function EvidencePage() {
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
 
-  // Status counts
+  // Status counts (original - not affected by status filter)
   const [statusCounts, setStatusCounts] = useState<StatusCount[]>([
     { status: "Not Uploaded", count: 0 },
     { status: "Draft", count: 0 },
@@ -205,6 +218,49 @@ export default function EvidencePage() {
     { status: "Published", count: 0, total: 0 },
     { status: "Need Attention", count: 0 },
   ]);
+
+  // Selected status filter for tile cards
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
+  // Fetch status counts separately (without status filter)
+  const fetchStatusCounts = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
+      if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
+      if (searchTerm) params.append("search", searchTerm);
+      // Don't include status filter - we want total counts
+      params.append("limit", "1000"); // Get all to count
+
+      const response = await fetch(`/api/evidences?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        const allEvidences = data.data || [];
+        const counts: Record<string, number> = {
+          "Not Uploaded": 0,
+          "Draft": 0,
+          "Validated": 0,
+          "Published": 0,
+          "Need Attention": 0,
+        };
+        allEvidences.forEach((e: Evidence) => {
+          if (counts[e.status] !== undefined) {
+            counts[e.status]++;
+          }
+        });
+        const totalCount = allEvidences.length;
+        setStatusCounts([
+          { status: "Not Uploaded", count: counts["Not Uploaded"] },
+          { status: "Draft", count: counts["Draft"] },
+          { status: "Validated", count: counts["Validated"] },
+          { status: "Published", count: counts["Published"], total: totalCount },
+          { status: "Need Attention", count: counts["Need Attention"] },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching status counts:", error);
+    }
+  }, [frameworkFilter, departmentFilter, searchTerm]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -244,6 +300,7 @@ export default function EvidencePage() {
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
       if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
       if (searchTerm) params.append("search", searchTerm);
+      if (selectedStatus) params.append("status", selectedStatus);
       params.append("page", currentPage.toString());
       params.append("limit", itemsPerPage.toString());
 
@@ -253,35 +310,13 @@ export default function EvidencePage() {
         setEvidences(data.data || []);
         setTotal(data.pagination?.total || 0);
         setTotalPages(data.pagination?.totalPages || 1);
-
-        // Calculate status counts from the data
-        const allEvidences = data.data || [];
-        const counts: Record<string, number> = {
-          "Not Uploaded": 0,
-          "Draft": 0,
-          "Validated": 0,
-          "Published": 0,
-          "Need Attention": 0,
-        };
-        allEvidences.forEach((e: Evidence) => {
-          if (counts[e.status] !== undefined) {
-            counts[e.status]++;
-          }
-        });
-        setStatusCounts([
-          { status: "Not Uploaded", count: counts["Not Uploaded"] },
-          { status: "Draft", count: counts["Draft"] },
-          { status: "Validated", count: counts["Validated"] },
-          { status: "Published", count: counts["Published"], total: data.pagination?.total || 0 },
-          { status: "Need Attention", count: counts["Need Attention"] },
-        ]);
       }
     } catch (error) {
       console.error("Error fetching evidences:", error);
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, departmentFilter, searchTerm, currentPage]);
+  }, [frameworkFilter, departmentFilter, searchTerm, selectedStatus, currentPage]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
@@ -337,6 +372,11 @@ export default function EvidencePage() {
   useEffect(() => {
     fetchEvidences();
   }, [fetchEvidences]);
+
+  // Fetch status counts separately (only when non-status filters change)
+  useEffect(() => {
+    fetchStatusCounts();
+  }, [fetchStatusCounts]);
 
   // The /api/users and /api/departments endpoints already apply tenant filtering,
   // so data is already scoped to the user's customerAccountId.
@@ -515,16 +555,25 @@ export default function EvidencePage() {
     }
   };
 
-  const handleArtifactUpload = (files: FileList) => {
-    const newArtifacts: Artifact[] = Array.from(files).map((file, index) => ({
-      id: `new-${Date.now()}-${index}`,
-      name: file.name,
-      type: getFileType(file.name),
-      size: file.size,
-      uploadedAt: new Date().toISOString().split('T')[0],
-      uploadedBy: session?.user?.name || "Current User",
-    }));
-    setArtifacts([...newArtifacts, ...artifacts]);
+  const handleArtifactUpload = async (files: FileList) => {
+    for (const file of Array.from(files)) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/artifacts", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          // Refresh artifacts list after upload
+          await fetchArtifacts();
+        }
+      } catch (error) {
+        console.error("Error uploading artifact:", error);
+      }
+    }
   };
 
   const getFileType = (filename: string): string => {
@@ -537,13 +586,12 @@ export default function EvidencePage() {
   };
 
   const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'pdf': return <FileText className="h-5 w-5 text-red-500" />;
-      case 'image': return <Image className="h-5 w-5 text-blue-500" />;
-      case 'spreadsheet': return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
-      case 'document': return <FileType className="h-5 w-5 text-blue-600" />;
-      default: return <File className="h-5 w-5 text-slate-500" />;
-    }
+    const ext = type.toLowerCase();
+    if (ext === 'pdf') return <FileText className="h-5 w-5 text-red-500" />;
+    if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext)) return <Image className="h-5 w-5 text-blue-500" />;
+    if (['xlsx', 'xls', 'csv'].includes(ext)) return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
+    if (['doc', 'docx'].includes(ext)) return <FileType className="h-5 w-5 text-blue-600" />;
+    return <File className="h-5 w-5 text-slate-500" />;
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -552,9 +600,91 @@ export default function EvidencePage() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const handleDeleteArtifact = (id: string) => {
-    setArtifacts(artifacts.filter(a => a.id !== id));
+  const handleDeleteArtifact = async (id: string) => {
+    try {
+      const response = await fetch(`/api/artifacts/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        await fetchArtifacts();
+      }
+    } catch (error) {
+      console.error("Error deleting artifact:", error);
+    }
   };
+
+  // Fetch artifacts from API
+  const fetchArtifacts = useCallback(async () => {
+    try {
+      const response = await fetch("/api/artifacts");
+      if (response.ok) {
+        const data = await response.json();
+        setArtifacts(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching artifacts:", error);
+    }
+  }, []);
+
+  // Fetch artifacts when switching to artifacts tab
+  useEffect(() => {
+    if (activeTab === "artifacts" && isCustomerAdmin) {
+      fetchArtifacts();
+    }
+  }, [activeTab, isCustomerAdmin, fetchArtifacts]);
+
+  // Link Evidence Dialog handlers
+  const openLinkEvidenceDialog = (artifact: Artifact) => {
+    setSelectedArtifactForLink(artifact);
+    // Extract evidence IDs from linkedEvidences array
+    const linkedIds = artifact.linkedEvidences?.map((le) => le.evidenceId) || [];
+    setSelectedEvidenceIdsForLink(linkedIds);
+    setLinkEvidenceSearchTerm("");
+    setLinkEvidenceDialogOpen(true);
+  };
+
+  const toggleEvidenceForLink = (evidenceId: string) => {
+    setSelectedEvidenceIdsForLink((prev) =>
+      prev.includes(evidenceId)
+        ? prev.filter((id) => id !== evidenceId)
+        : [...prev, evidenceId]
+    );
+  };
+
+  const handleLinkEvidences = async () => {
+    if (!selectedArtifactForLink) return;
+
+    try {
+      // Call API to link evidences
+      const response = await fetch(`/api/artifacts/${selectedArtifactForLink.id}/link-evidences`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ evidenceIds: selectedEvidenceIdsForLink }),
+      });
+
+      if (response.ok) {
+        // Refresh artifacts to get updated linked evidences
+        await fetchArtifacts();
+      }
+    } catch (error) {
+      console.error("Error linking evidences:", error);
+    }
+
+    // Close the dialog
+    setLinkEvidenceDialogOpen(false);
+    setSelectedArtifactForLink(null);
+    setSelectedEvidenceIdsForLink([]);
+  };
+
+  // Filter evidences for link dialog
+  const filteredEvidencesForLink = evidences.filter((e) => {
+    if (!linkEvidenceSearchTerm) return true;
+    const search = linkEvidenceSearchTerm.toLowerCase();
+    return (
+      e.evidenceCode.toLowerCase().includes(search) ||
+      e.name.toLowerCase().includes(search)
+    );
+  });
 
   const toggleControlSelection = (controlId: string) => {
     setSelectedControlIds((prev) =>
@@ -632,7 +762,19 @@ export default function EvidencePage() {
               return (
                 <div
                   key={statusItem.status}
-                  className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"
+                  className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                    selectedStatus === statusItem.status
+                      ? "border-2 border-primary-500"
+                      : "border border-slate-200 hover:border-slate-300"
+                  }`}
+                  onClick={() => {
+                    if (selectedStatus === statusItem.status) {
+                      setSelectedStatus(null);
+                    } else {
+                      setSelectedStatus(statusItem.status);
+                    }
+                    setCurrentPage(1);
+                  }}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
@@ -872,15 +1014,26 @@ export default function EvidencePage() {
                     className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
                   >
                     <div className="flex-shrink-0">
-                      {getFileIcon(artifact.type)}
+                      {getFileIcon(artifact.fileType || "")}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-800 truncate">{artifact.name}</p>
+                      <p className="font-medium text-primary truncate">
+                        {artifact.artifactCode} : {artifact.fileName}
+                      </p>
                       <p className="text-sm text-slate-500">
-                        {formatFileSize(artifact.size)} • {t("Uploaded by")} {artifact.uploadedBy} • {artifact.uploadedAt}
+                        {t("By")} {artifact.uploadedBy?.fullName || "Unknown"}, {new Date(artifact.uploadedAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-primary"
+                        onClick={() => openLinkEvidenceDialog(artifact)}
+                        title={t("Link to Evidence")}
+                      >
+                        <Link2 className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -942,6 +1095,7 @@ export default function EvidencePage() {
             {/* Step 1: Basic Information */}
             {createStep === 1 && (
               <div className="space-y-4">
+                
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Evidence Requirement")} *</Label>
                   <Input
@@ -1075,7 +1229,7 @@ export default function EvidencePage() {
                     </TableHeader>
                     <TableBody>
                       {filteredControls.map((control) => (
-                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer" onClick={() => toggleControlSelection(control.id)}>
+                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                           <TableCell className="py-4 pl-4">
                             <Checkbox
                               checked={selectedControlIds.includes(control.id)}
@@ -1269,6 +1423,78 @@ export default function EvidencePage() {
             </Button>
             <Button onClick={handleImportSubmit} disabled={!importFile || importing}>
               {importing ? t("Importing...") : t("Import")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Evidence Dialog */}
+      <Dialog open={linkEvidenceDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedArtifactForLink(null);
+          setSelectedEvidenceIdsForLink([]);
+          setLinkEvidenceSearchTerm("");
+        }
+        setLinkEvidenceDialogOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[80vh] flex flex-col">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+            <DialogTitle className="text-lg font-semibold text-primary">
+              {t("Select Evidence")}
+            </DialogTitle>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {/* Search */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder={t("Search by Evidence Code , Name")}
+                value={linkEvidenceSearchTerm}
+                onChange={(e) => setLinkEvidenceSearchTerm(e.target.value)}
+                className="pl-10 border-primary"
+              />
+            </div>
+
+            {/* Evidence List */}
+            <div className="space-y-3">
+              {filteredEvidencesForLink.map((evidence) => {
+                const isSelected = selectedEvidenceIdsForLink.includes(evidence.id);
+                return (
+                  <div
+                    key={evidence.id}
+                    onClick={() => toggleEvidenceForLink(evidence.id)}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-primary/30 hover:border-primary/50"
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                      isSelected ? "bg-primary border-primary" : "border-slate-300"
+                    }`}>
+                      {isSelected && <Check className="h-3 w-3 text-white" />}
+                    </div>
+                    <span className="text-sm text-primary font-medium">
+                      {evidence.evidenceCode} : {evidence.name}
+                    </span>
+                  </div>
+                );
+              })}
+              {filteredEvidencesForLink.length === 0 && (
+                <div className="text-center py-8 text-slate-500">
+                  {t("No evidences found")}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 flex justify-end flex-shrink-0">
+            <Button onClick={handleLinkEvidences}>
+              {t("Link Evidences")}
             </Button>
           </div>
         </DialogContent>

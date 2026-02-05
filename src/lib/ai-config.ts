@@ -1,21 +1,26 @@
 /**
  * AI Backend Configuration
- * RunPod API Integration for Evidence AI Review
+ * Uses AI_API_BASE_URL as the single source for AI backend URL.
+ *
+ * NOTE: Consider using aiApiClient directly instead of this config.
+ * This file is kept for backward compatibility.
  */
 
+import { AI_ENDPOINTS } from './ai-endpoints';
+
 export const AI_CONFIG = {
-  // RunPod Base URL (remove trailing slash)
-  baseUrl: (process.env.PYTHON_BACKEND_URL || 'https://your-runpod-endpoint.com').replace(/\/$/, ''),
+  // AI API Base URL (remove trailing slash)
+  baseUrl: (process.env.AI_API_BASE_URL || '').replace(/\/$/, ''),
 
   // API Authentication
   apiSecret: process.env.PYTHON_API_SECRET || '',
 
-  // Endpoints
+  // Endpoints - imported from central ai-endpoints.ts
   endpoints: {
-    ingest: '/api/grc_ingest',
-    ingestStatus: '/api/grc_ingest_status',
-    ingestResult: '/api/grc_ingest_result',
-    evidenceQuery: '/api/grc_evidence_query',
+    ingest: AI_ENDPOINTS.INGEST,
+    ingestStatus: AI_ENDPOINTS.INGEST_STATUS,
+    ingestResult: AI_ENDPOINTS.INGEST_RESULT,
+    evidenceQuery: AI_ENDPOINTS.EVIDENCE_QUERY,
   },
 
   // Polling configuration
@@ -31,8 +36,8 @@ export const AI_CONFIG = {
 export function validateAIConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (!AI_CONFIG.baseUrl || AI_CONFIG.baseUrl === 'https://your-runpod-endpoint.com') {
-    errors.push('RUNPOD_API_URL is not configured');
+  if (!AI_CONFIG.baseUrl) {
+    errors.push('AI_API_BASE_URL is not configured');
   }
 
   if (!AI_CONFIG.apiSecret) {
@@ -46,7 +51,7 @@ export function validateAIConfig(): { valid: boolean; errors: string[] } {
 }
 
 /**
- * Get RunPod API headers
+ * Get AI API headers for JSON requests
  */
 export function getAIHeaders(): Record<string, string> {
   return {
@@ -56,7 +61,8 @@ export function getAIHeaders(): Record<string, string> {
 }
 
 /**
- * Get RunPod multipart headers (without Content-Type, let fetch set boundary)
+ * Get AI API headers for multipart/form-data requests
+ * (without Content-Type, let fetch set boundary)
  */
 export function getAIMultipartHeaders(): Record<string, string> {
   return {

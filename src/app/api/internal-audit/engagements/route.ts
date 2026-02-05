@@ -172,6 +172,13 @@ export const POST = withAuth(
       const count = await prisma.auditEngagement.count();
       const auditId = String(count + 1).padStart(4, '0');
 
+      if (!customerAccountId) {
+        return NextResponse.json(
+          { error: 'User must belong to a customer account' },
+          { status: 403 }
+        );
+      }
+
       const engagement = await prisma.auditEngagement.create({
         data: {
           auditId,

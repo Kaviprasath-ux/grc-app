@@ -83,6 +83,16 @@ interface User {
   email: string;
 }
 
+interface AuditType {
+  id: string;
+  name: string;
+}
+
+interface ScoringRange {
+  id: string;
+  label: string;
+}
+
 interface Engagement {
   id: string;
   auditId: string;
@@ -112,6 +122,11 @@ interface UploadedFile {
   type: string;
 }
 
+interface Process {
+  id: string;
+  name: string;
+}
+
 interface EngagementFormData {
   engagementTitle: string;
   engagementObjective: string;
@@ -122,6 +137,7 @@ interface EngagementFormData {
   auditType: string;
   auditorId: string;
   auditeeId: string;
+  processId: string;
   startDate: string;
   targetDate: string;
   initialObservation: string;
@@ -147,6 +163,7 @@ const emptyFormData: EngagementFormData = {
   auditType: "",
   auditorId: "",
   auditeeId: "",
+  processId: "",
   startDate: "",
   targetDate: "",
   initialObservation: "",
@@ -188,6 +205,9 @@ export default function AuditPlanningPage() {
   const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
   const [auditors, setAuditors] = useState<User[]>([]);
   const [auditees, setAuditees] = useState<User[]>([]);
+  const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
+  const [auditRatings, setAuditRatings] = useState<ScoringRange[]>([]);
+  const [processes, setProcesses] = useState<Process[]>([]);
   const [saving, setSaving] = useState(false);
   const [engagementForm, setEngagementForm] = useState<EngagementFormData>(emptyFormData);
   const [tasks, setTasks] = useState<AuditTask[]>([...defaultTasks]);
@@ -288,9 +308,12 @@ export default function AuditPlanningPage() {
 
   const fetchAuditorsAndAuditees = async () => {
     try {
-      const [auditeesRes, auditorsRes] = await Promise.all([
-        fetch("/api/users?forAuditHead=auditees"),
-        fetch("/api/users?forAuditHead=auditors"),
+      const [auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, processesRes] = await Promise.all([
+        fetch("/api/internal-audit/users?role=Auditee"),
+        fetch("/api/internal-audit/users?role=auditors"),
+        fetch("/api/internal-audit/audit-types"),
+        fetch("/api/internal-audit/scoring-ranges"),
+        fetch("/api/internal-audit/processes"),
       ]);
 
       if (auditeesRes.ok) {
@@ -300,6 +323,20 @@ export default function AuditPlanningPage() {
       if (auditorsRes.ok) {
         const auditorsData = await auditorsRes.json();
         setAuditors(auditorsData.users || auditorsData || []);
+      }
+      if (auditTypesRes.ok) {
+        const auditTypesData = await auditTypesRes.json();
+        setAuditTypes(auditTypesData || []);
+      }
+      if (scoringRangesRes.ok) {
+        const scoringRangesData = await scoringRangesRes.json();
+        // Get unique labels from scoring ranges for audit ratings
+        const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
+        setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
+      }
+      if (processesRes.ok) {
+        const processesData = await processesRes.json();
+        setProcesses(processesData || []);
       }
     } catch (error) {
       console.error("Failed to fetch auditors/auditees:", error);
@@ -348,6 +385,7 @@ export default function AuditPlanningPage() {
           auditType: data.auditType || "",
           auditorId: data.assignedAuditorId || "",
           auditeeId: data.auditeeId || "",
+          processId: data.processId || "",
           startDate: data.plannedStartDate ? data.plannedStartDate.split("T")[0] : "",
           targetDate: data.plannedEndDate ? data.plannedEndDate.split("T")[0] : "",
           initialObservation: data.initialObservation || "",
@@ -769,6 +807,32 @@ export default function AuditPlanningPage() {
         </div>
       </div>
 
+      {/* Process */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">{t("Process")}</Label>
+        <Select
+          value={engagementForm.processId}
+          onValueChange={(value) => setEngagementForm({ ...engagementForm, processId: value })}
+        >
+          <SelectTrigger className="w-full bg-white">
+            <SelectValue placeholder={t("Select Process")} />
+          </SelectTrigger>
+          <SelectContent>
+            {processes.length > 0 ? (
+              processes.map((process) => (
+                <SelectItem key={process.id} value={process.id}>
+                  {process.name}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="none" disabled>
+                {t("No processes available")}
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Two columns for Audit Rating and Audit Type */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -781,9 +845,17 @@ export default function AuditPlanningPage() {
               <SelectValue placeholder={t("Select rating")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Satisfactory">{t("Satisfactory")}</SelectItem>
-              <SelectItem value="Needs Improvement">{t("Needs Improvement")}</SelectItem>
-              <SelectItem value="Unsatisfactory">{t("Unsatisfactory")}</SelectItem>
+              {auditRatings.length > 0 ? (
+                auditRatings.map((rating) => (
+                  <SelectItem key={rating.id} value={rating.label}>
+                    {rating.label}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No ratings configured")}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -797,12 +869,17 @@ export default function AuditPlanningPage() {
               <SelectValue placeholder={t("Select type")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Internal Audit">{t("Internal Audit")}</SelectItem>
-              <SelectItem value="Compliance Audit">{t("Compliance Audit")}</SelectItem>
-              <SelectItem value="Financial Audit">{t("Financial Audit")}</SelectItem>
-              <SelectItem value="Operational Audit">{t("Operational Audit")}</SelectItem>
-              <SelectItem value="IT Audit">{t("IT Audit")}</SelectItem>
-              <SelectItem value="Assurance">{t("Assurance")}</SelectItem>
+              {auditTypes.length > 0 ? (
+                auditTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.name}>
+                    {type.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No audit types configured")}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>

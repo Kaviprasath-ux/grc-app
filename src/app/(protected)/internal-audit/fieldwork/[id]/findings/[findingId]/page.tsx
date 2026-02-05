@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +20,12 @@ import {
   Loader2,
   Save,
   Edit2,
+  Upload,
+  X,
+  Trash2,
+  Paperclip,
+  Eye,
+  Download,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -53,6 +59,15 @@ interface Finding {
   recommendation: string;
 }
 
+interface Attachment {
+  id: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  uploadedAt: string;
+}
+
 export default function ViewFindingPage() {
   const router = useRouter();
   const params = useParams();
@@ -69,11 +84,19 @@ export default function ViewFindingPage() {
 
   const [formData, setFormData] = useState<Finding | null>(null);
 
+  // Attachment states
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [newAttachments, setNewAttachments] = useState<File[]>([]);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [deletingAttachment, setDeletingAttachment] = useState<string | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const loadData = async () => {
       if (engagementId && findingId) {
         await fetchFinding();
         await fetchUsers();
+        await fetchAttachments();
       }
     };
     loadData();
@@ -113,6 +136,69 @@ export default function ViewFindingPage() {
       }
     } catch (error) {
       console.error("Failed to fetch auditees:", error);
+    }
+  };
+
+  const fetchAttachments = async () => {
+    try {
+      const response = await fetch(`/api/internal-audit/findings/${findingId}/attachments`);
+      if (response.ok) {
+        const data = await response.json();
+        setAttachments(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch attachments:", error);
+    }
+  };
+
+  const handleUploadAttachment = async () => {
+    if (newAttachments.length === 0) return;
+
+    setUploadingAttachment(true);
+    try {
+      const formData = new FormData();
+      newAttachments.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      const response = await fetch(`/api/internal-audit/findings/${findingId}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast.success(t("Attachments uploaded successfully"));
+        setNewAttachments([]);
+        fetchAttachments();
+      } else {
+        toast.error(t("Failed to upload attachments"));
+      }
+    } catch (error) {
+      console.error("Error uploading attachments:", error);
+      toast.error(t("Failed to upload attachments"));
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    setDeletingAttachment(attachmentId);
+    try {
+      const response = await fetch(`/api/internal-audit/findings/${findingId}/attachments?attachmentId=${attachmentId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success(t("Attachment deleted successfully"));
+        fetchAttachments();
+      } else {
+        toast.error(t("Failed to delete attachment"));
+      }
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+      toast.error(t("Failed to delete attachment"));
+    } finally {
+      setDeletingAttachment(null);
     }
   };
 
@@ -358,6 +444,136 @@ export default function ViewFindingPage() {
             )}
           </div>
 
+          {/* Upload Attachment */}
+          <div className="space-y-2">
+            <Label className="text-[#1e3a5f] font-medium">{t("Upload Attachment")}</Label>
+            <div className="space-y-3">
+              {/* Upload Controls */}
+              {isEditing && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => attachmentInputRef.current?.click()}
+                    disabled={uploadingAttachment}
+                  >
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Choose Files")}
+                  </Button>
+                  {newAttachments.length > 0 && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleUploadAttachment}
+                      disabled={uploadingAttachment}
+                    >
+                      {uploadingAttachment ? (
+                        <>
+                          <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                          {t("Uploading...")}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                          {t("Upload")} ({newAttachments.length})
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <input
+                    type="file"
+                    ref={attachmentInputRef}
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setNewAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+                        e.target.value = "";
+                      }
+                    }}
+                    className="hidden"
+                    multiple
+                  />
+                </div>
+              )}
+
+              {/* New Attachments to be uploaded */}
+              {newAttachments.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-sm text-slate-500">{t("Files to upload")}:</p>
+                  {newAttachments.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-yellow-50 rounded border border-yellow-200 text-sm">
+                      <span className="truncate flex-1">{file.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setNewAttachments(prev => prev.filter((_, i) => i !== index))}
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Existing Attachments */}
+              {attachments.length > 0 ? (
+                <div className="space-y-1">
+                  {attachments.map((att) => (
+                    <div key={att.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border text-sm">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Paperclip className="h-4 w-4 text-slate-500 flex-shrink-0" />
+                        <span className="truncate">{att.fileName}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => window.open(`/api${att.filePath}`, "_blank")}
+                          title={t("View")}
+                        >
+                          <Eye className="h-4 w-4 text-slate-600" />
+                        </Button>
+                        <a
+                          href={`/api${att.filePath}`}
+                          download={att.fileName}
+                          className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-slate-100"
+                          title={t("Download")}
+                        >
+                          <Download className="h-4 w-4 text-slate-600" />
+                        </a>
+                        {isEditing && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            disabled={deletingAttachment === att.id}
+                            title={t("Delete")}
+                          >
+                            {deletingAttachment === att.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 bg-gray-50 rounded-md border text-slate-500 text-sm">
+                  {t("No attachments")}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Corrective & Preventive Actions (CAPA) Section */}
           <div className="pt-4">
             <h2 className="text-lg font-semibold text-[#1e3a5f] mb-4">
@@ -405,17 +621,15 @@ export default function ViewFindingPage() {
                   <SelectContent>
                     <SelectItem value="none">{t("Select status")}</SelectItem>
                     <SelectItem value="Open">{t("Open")}</SelectItem>
-                    <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                    <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
                     <SelectItem value="Closed">{t("Closed")}</SelectItem>
-                    <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md border">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     formData.status === 'Closed' ? 'bg-green-100 text-green-800' :
-                    formData.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                    formData.status === 'Overdue' ? 'bg-red-100 text-red-800' :
+                    formData.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {t(formData.status)}

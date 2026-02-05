@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Sparkles, Search, Download, Upload, Home, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, Search, Download, Upload, Home, ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -112,6 +113,14 @@ export default function AssetClassificationPage() {
     availability: "low",
     availabilityScore: 0,
   });
+
+  // AI Risk Evaluation state
+  const [isAIRiskDialogOpen, setIsAIRiskDialogOpen] = useState(false);
+  const [aiRiskJobId, setAiRiskJobId] = useState<string | null>(null);
+  const [aiRiskStatus, setAiRiskStatus] = useState<"queued" | "processing" | "completed" | "error" | null>(null);
+  const [aiRiskResults, setAiRiskResults] = useState<any>(null);
+  const [isPolling, setIsPolling] = useState(false);
+  const [currentClassificationForAI, setCurrentClassificationForAI] = useState<CIAClassification | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -362,6 +371,109 @@ export default function AssetClassificationPage() {
     document.body.removeChild(link);
   };
 
+  // AI Risk Evaluation handlers
+  const handleAIRiskEvaluation = async (classification: CIAClassification) => {
+    setCurrentClassificationForAI(classification);
+    setIsAIRiskDialogOpen(true);
+    setAiRiskStatus("queued");
+    setAiRiskResults(null);
+    setAiRiskJobId(null);
+
+    try {
+      // Step 1: Submit job
+      const submitResponse = await fetch("/api/assets/classification/aiRisk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ classificationId: classification.id }),
+      });
+
+      if (!submitResponse.ok) {
+        const error = await submitResponse.json();
+        throw new Error(error.error || "Failed to start AI risk evaluation");
+      }
+
+      const submitData = await submitResponse.json();
+      const jobId = submitData.job_id || submitData.jobId;
+
+      if (!jobId) {
+        throw new Error("No job ID returned from server");
+      }
+
+      setAiRiskJobId(jobId);
+      setAiRiskStatus("processing");
+      setIsPolling(true);
+
+      // Step 2: Poll for status and result
+      await pollJobStatus(jobId);
+    } catch (error: any) {
+      console.error("Error starting AI risk evaluation:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start AI risk evaluation",
+        variant: "destructive",
+      });
+      setAiRiskStatus("error");
+      setIsPolling(false);
+    }
+  };
+
+  const pollJobStatus = async (jobId: string) => {
+    const maxAttempts = 30; // 30 attempts * 2 seconds = 60 seconds max
+    let attempts = 0;
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        setIsPolling(false);
+        setAiRiskStatus("error");
+        toast({
+          title: "Timeout",
+          description: "AI risk evaluation timed out. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/assets/classification/aiRisk?jobId=${jobId}`);
+        const data = await response.json();
+
+        if (data.status === "completed") {
+          setAiRiskStatus("completed");
+          setAiRiskResults(data);
+          setIsPolling(false);
+          toast({
+            title: "Success",
+            description: "AI risk evaluation completed successfully",
+          });
+        } else if (data.status === "error") {
+          setAiRiskStatus("error");
+          setIsPolling(false);
+          toast({
+            title: "Error",
+            description: data.error || "AI risk evaluation failed",
+            variant: "destructive",
+          });
+        } else {
+          // Still processing, poll again
+          setAiRiskStatus(data.status || "processing");
+          attempts++;
+          setTimeout(poll, 2000); // Poll every 2 seconds
+        }
+      } catch (error: any) {
+        console.error("Error polling job status:", error);
+        setIsPolling(false);
+        setAiRiskStatus("error");
+        toast({
+          title: "Error",
+          description: "Failed to check job status",
+          variant: "destructive",
+        });
+      }
+    };
+
+    poll();
+  };
+
   // Grid Columns matching UAT
   const ciaColumns: ColumnDef<CIAClassification>[] = [
     {
@@ -407,9 +519,14 @@ export default function AssetClassificationPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toast({ title: t("Info"), description: t("AI Risk Evaluation - Coming Soon") })}
+            onClick={() => handleAIRiskEvaluation(row.original)}
+            disabled={isPolling}
           >
-            <Sparkles className="h-4 w-4 mr-1" />
+            {isPolling && currentClassificationForAI?.id === row.original.id ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-1" />
+            )}
             {t("AI Risk Evaluation")}
           </Button>
           <Button
@@ -964,6 +1081,124 @@ export default function AssetClassificationPage() {
               setIsAddCIARatingOpen(false);
             }}>{t("Cancel")}</Button>
             <Button onClick={handleAddCIARating}>{t("Save")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Risk Evaluation Results Dialog */}
+      <Dialog open={isAIRiskDialogOpen} onOpenChange={setIsAIRiskDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <Sparkles className="h-5 w-5 text-primary-600" />
+                AI Risk Evaluation
+              </DialogTitle>
+              {currentClassificationForAI && (
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  Asset: {currentClassificationForAI.subCategory?.name} - {currentClassificationForAI.group?.name}
+                </DialogDescription>
+              )}
+            </DialogHeader>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {/* Loading State */}
+            {(aiRiskStatus === "queued" || aiRiskStatus === "processing") && (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full border-4 border-slate-200"></div>
+                  <div className="absolute top-0 left-0 w-16 h-16 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
+                <p className="text-sm text-slate-500 font-medium">
+                  {aiRiskStatus === "queued" ? "Starting AI analysis..." : "Processing risk evaluation..."}
+                </p>
+                {aiRiskJobId && (
+                  <p className="text-xs text-slate-400">Job ID: {aiRiskJobId}</p>
+                )}
+              </div>
+            )}
+
+            {/* Error State */}
+            {aiRiskStatus === "error" && (
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-900 mb-2">Error</h4>
+                <p className="text-sm text-red-700">Failed to complete AI risk evaluation. Please try again.</p>
+              </div>
+            )}
+
+            {/* Results State */}
+            {aiRiskStatus === "completed" && aiRiskResults && (
+              <div className="space-y-4">
+                <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
+                  <h4 className="font-medium text-primary-900 mb-2">Risk Assessment Summary</h4>
+                  <p className="text-sm text-primary-700">
+                    AI analysis completed for {currentClassificationForAI?.subCategory?.name} - {currentClassificationForAI?.group?.name}
+                  </p>
+                </div>
+
+                {aiRiskResults.results?.risks && aiRiskResults.results.risks.length > 0 ? (
+                  <div className="space-y-3">
+                    {aiRiskResults.results.risks.map((risk: any, index: number) => (
+                      <div key={index} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <h5 className="font-medium text-sm text-slate-800">{risk.Risk_name}</h5>
+                          <Badge
+                            variant={
+                              risk.Inherent_risk_rating === 'High'
+                                ? 'destructive'
+                                : risk.Inherent_risk_rating === 'Medium'
+                                  ? 'secondary'
+                                  : 'outline'
+                            }
+                          >
+                            {risk.Inherent_risk_rating || 'N/A'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-600 mb-2">{risk.Risk_description}</p>
+                        {risk.Is_Matched && (
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span className="font-medium">Matched:</span>
+                            <span>{risk.Matched_Risk_Code}</span>
+                            <span className="text-primary-600">
+                              ({(risk.Similarity_Score * 100).toFixed(0)}% match)
+                            </span>
+                          </div>
+                        )}
+                        {risk.Threats && risk.Threats.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-slate-200">
+                            <p className="text-xs font-medium text-slate-500 mb-1">Threats:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {risk.Threats.map((threat: any, tIndex: number) => (
+                                <Badge key={tIndex} variant="outline" className="text-xs">
+                                  {threat.threat_name}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500 text-center py-4">
+                    No risks identified for this asset classification.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsAIRiskDialogOpen(false)}>
+              Close
+            </Button>
+            {aiRiskStatus === "completed" && (
+              <Button onClick={() => currentClassificationForAI && handleAIRiskEvaluation(currentClassificationForAI)}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Regenerate
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

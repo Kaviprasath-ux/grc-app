@@ -44,10 +44,7 @@ export async function calculateFrameworkCharts(
 
   try {
     console.log(`
-╔════════════════════════════════════════════════════════════════╗
-║          📊 CHART CALCULATION SERVICE - STARTING                 ║
-╚════════════════════════════════════════════════════════════════╝
-[${new Date().toISOString()}]
+
 
 📋 CALCULATING CHARTS FOR FRAMEWORK: ${frameworkId}
 `);
@@ -72,27 +69,10 @@ export async function calculateFrameworkCharts(
       },
     };
 
-    console.log(`
-✅ CHART CALCULATIONS COMPLETE
-[${new Date().toISOString()}]
-
-📊 RESULTS:
-  • Compliance: ${compliance.percentage.toFixed(1)}% (${compliance.details.compliant}/${compliance.details.total})
-  • Policy: ${policy.percentage.toFixed(1)}% (${policy.details.published}/${policy.details.total})
-  • Evidence: ${evidence.percentage.toFixed(1)}% (${evidence.details.published}/${evidence.details.total})
-  • Processing Time: ${totalTime}ms
-`);
 
     return result;
   } catch (error) {
-    console.error(`
-❌ CHART CALCULATION FAILED
-[${new Date().toISOString()}]
-
-Error: ${error instanceof Error ? error.message : String(error)}
-Framework: ${frameworkId}
-`);
-
+    console.error(`❌ Error calculating framework charts:`, error);
     // Return safe defaults on error
     return {
       compliancePercentage: 0,
@@ -188,7 +168,7 @@ async function calculateComplianceChart(frameworkId: string) {
     // Calculate percentage
     const percentage = totalControls > 0 ? (compliantControls / totalControls) * 100 : 0;
 
-    console.log(`  ✅ Compliance: ${percentage.toFixed(1)}% (${compliantControls}/${totalControls})`);
+    
 
     return {
       percentage: Math.max(0, Math.min(100, percentage)), // Ensure 0-100 range
@@ -307,7 +287,7 @@ async function calculatePolicyChart(frameworkId: string) {
     // Calculate percentage
     const percentage = totalPolicies > 0 ? (publishedPolicies / totalPolicies) * 100 : 0;
 
-    console.log(`  ✅ Policy: ${percentage.toFixed(1)}% (${publishedPolicies}/${totalPolicies})`);
+    
 
     return {
       percentage: Math.max(0, Math.min(100, percentage)),
@@ -426,7 +406,7 @@ async function calculateEvidenceChart(frameworkId: string) {
     // Calculate percentage
     const percentage = totalEvidences > 0 ? (publishedEvidences / totalEvidences) * 100 : 0;
 
-    console.log(`  ✅ Evidence: ${percentage.toFixed(1)}% (${publishedEvidences}/${totalEvidences})`);
+    
 
     return {
       percentage: Math.max(0, Math.min(100, percentage)),

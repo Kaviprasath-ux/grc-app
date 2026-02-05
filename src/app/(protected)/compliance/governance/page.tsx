@@ -384,6 +384,11 @@ export default function GovernancePage() {
       setStatusFilter(status);
     }
     setCurrentPage(1);
+    // If on Dashboard tab, switch to Policy tab to show filtered results
+    if (activeTab === "Dashboard") {
+      setActiveTab("Policy");
+      setActiveDocType("Policy");
+    }
   };
 
   const handleCreatePolicy = async () => {
@@ -684,49 +689,37 @@ export default function GovernancePage() {
   const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
-  // Status card component
-  const StatusCard = ({ icon: Icon, count, label, status, secondaryCount }: {
+  // Status card component - Simple white cards with blue icons (matching Evidence page)
+  const StatusCard = ({ icon: Icon, count, label, status, secondaryCount, onClick, isSelected }: {
     icon: React.ElementType;
     count: number;
     label: string;
     status: string;
     secondaryCount?: number;
-  }) => (
-    <div
-      className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-all ${
-        statusFilter === status ? "ring-2 ring-primary-500" : ""
-      }`}
-      style={{
-        background: "linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 50%, #1e3a5f 100%)",
-      }}
-      onClick={() => handleStatusCardClick(status)}
-    >
-      <div className="relative z-10">
-        <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-            <Icon className="h-5 w-5 text-white/80" />
+    onClick?: () => void;
+    isSelected?: boolean;
+  }) => {
+    return (
+      <div
+        className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+          isSelected
+            ? "border-2 border-primary-500"
+            : "border border-slate-200 hover:border-slate-300"
+        }`}
+        onClick={onClick}
+      >
+        <div className="flex items-start justify-between mb-3">
+          <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+            <Icon className="h-5 w-5" />
           </div>
         </div>
-        <div className="text-center">
-          <div className="text-4xl font-bold text-white mb-2">
-            {secondaryCount !== undefined ? `${count}/${secondaryCount}` : count}
-          </div>
-          <div className="text-white/80 text-sm font-medium">{label}</div>
+        <div className="text-3xl font-bold text-slate-800 mb-1">
+          {secondaryCount !== undefined ? `${count}/${secondaryCount}` : count}
         </div>
+        <div className="text-sm font-medium text-slate-500">{label}</div>
       </div>
-      {/* Decorative background pattern */}
-      <div className="absolute inset-0 opacity-20">
-        <svg className="w-full h-full" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="1" cy="1" r="1" fill="white" opacity="0.3" />
-            </pattern>
-          </defs>
-          <rect width="200" height="200" fill="url(#grid)" />
-        </svg>
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (permissionsLoading) {
     return (
@@ -749,24 +742,17 @@ export default function GovernancePage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
+          <span>{t("Home")}</span>
         </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-slate-500">{t("Compliance")}</span>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{t("Governance")}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-primary-700">{t("Governance")}</h1>
-        {isCustomerAdmin && activeTab !== "Dashboard" && activeTab !== "Information Security Vault" && (
-          <Button onClick={() => {
-            setNewPolicy({ ...newPolicy, documentType: activeDocType });
-            setIsCreateDialogOpen(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("New Governance")}
-          </Button>
-        )}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
       </div>
 
       {/* Tabs - Only show for Customer Administrator */}
@@ -790,23 +776,45 @@ export default function GovernancePage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <div className="grid grid-cols-5 gap-4">
-                  <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" />
-                  <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" />
-                  <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" />
-                  <StatusCard icon={ArrowUpFromLine} count={statusCounts.published} label={t("Published")} status="Published" />
-                  <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" />
-                </div>
+              <div className="grid grid-cols-5 gap-4">
+                <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
+                <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
+                <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
+                <StatusCard icon={ArrowUpFromLine} count={statusCounts.published} label={t("Published")} status="Published" onClick={() => handleStatusCardClick("Published")} isSelected={statusFilter === "Published"} />
+                <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" onClick={() => handleStatusCardClick("Needs Review")} isSelected={statusFilter === "Needs Review"} />
               </div>
             )}
           </TabsContent>
 
           {/* Policy, Standard, Procedure Tabs */}
           {["Policy", "Standard", "Procedure"].map((docType) => (
-            <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
-              {/* Framework Filter */}
-              <div className="flex justify-end">
+            <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
+              {/* Status Cards */}
+              <div className="grid grid-cols-5 gap-4">
+                <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
+                <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
+                <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
+                <StatusCard
+                  icon={ArrowUpFromLine}
+                  count={statusCounts.published}
+                  secondaryCount={statusCounts.total}
+                  label={t("Published")}
+                  status="Published"
+                  onClick={() => handleStatusCardClick("Published")}
+                  isSelected={statusFilter === "Published"}
+                />
+                <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" onClick={() => handleStatusCardClick("Needs Review")} isSelected={statusFilter === "Needs Review"} />
+              </div>
+
+              {/* Search, Filter, and Action Buttons Row */}
+              <div className="flex items-center gap-3">
+                <Input
+                  placeholder={t("Search by code, name, department, assignee, approver...")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="max-w-md bg-white"
+                />
                 <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
                   <SelectTrigger className="w-[200px] bg-white">
                     <SelectValue placeholder={t("Integrated Framework")} />
@@ -818,40 +826,12 @@ export default function GovernancePage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              {/* Status Cards */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <div className="grid grid-cols-5 gap-4">
-                  <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" />
-                  <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" />
-                  <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" />
-                  <StatusCard
-                    icon={ArrowUpFromLine}
-                    count={statusCounts.published}
-                    secondaryCount={statusCounts.total}
-                    label={t("Published")}
-                    status="Published"
-                  />
-                  <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" />
-                </div>
-              </div>
-
-              {/* Search, Filter, and Action Buttons Row */}
-              <div className="flex items-center gap-3">
-                <Input
-                  placeholder={t("Search By Code, Name, Department, Assignee, Approver")}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="flex-1 bg-white"
-                />
                 <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-                  <SelectTrigger className="w-[150px] bg-white">
+                  <SelectTrigger className="w-[160px] bg-white">
                     <SelectValue placeholder={t("Status")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white">
-                    <SelectItem value="all">{t("Status")}</SelectItem>
+                    <SelectItem value="all">{t("All Statuses")}</SelectItem>
                     <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
                     <SelectItem value="Draft">{t("Draft")}</SelectItem>
                     <SelectItem value="Approved">{t("Approved")}</SelectItem>
@@ -859,9 +839,17 @@ export default function GovernancePage() {
                     <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
                   </SelectContent>
                 </Select>
+                <div className="flex-1" />
                 <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Export")}
+                </Button>
+                <Button size="sm" onClick={() => {
+                  setNewPolicy({ ...newPolicy, documentType: activeDocType });
+                  setIsCreateDialogOpen(true);
+                }}>
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("New Governance")}
                 </Button>
               </div>
 
@@ -874,38 +862,40 @@ export default function GovernancePage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200">
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-primary-700">
-                        <TableHead className="text-xs font-semibold text-white py-4 pl-4">{t("Code")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-white py-4">{t("Name")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-white py-4">{t("Status")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-white py-4">{t("Assignee")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-white py-4">{t("Approver")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-white py-4">{t("Department Name")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-white py-4">{t("Action")}</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50/80">
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Code")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Assignee")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Approver")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {policies.map((policy) => (
                         <TableRow
                           key={policy.id}
-                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50 transition-colors"
                           onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
                         >
-                          <TableCell className="py-3 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{policy.name}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{policy.status}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
-                          <TableCell className="py-3">
+                          <TableCell className="py-3.5 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
+                          <TableCell className="py-3.5 text-sm text-slate-700 max-w-[250px] truncate" title={policy.name}>{policy.name}</TableCell>
+                          <TableCell className="py-3.5">
+                            <Badge className={getStatusBadgeColor(policy.status)}>{t(policy.status)}</Badge>
+                          </TableCell>
+                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3.5 pr-4">
                             <div className="flex gap-1">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                                className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openEditDialog(policy);
@@ -916,7 +906,7 @@ export default function GovernancePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                                className="h-8 w-8 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setPolicyToDelete(policy);
@@ -931,8 +921,11 @@ export default function GovernancePage() {
                       ))}
                       {policies.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center text-slate-500">
-                            {t(`No ${docType.toLowerCase()}s found`)}
+                          <TableCell colSpan={7} className="h-32 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <FileText className="h-8 w-8 text-slate-300" />
+                              <p className="text-slate-500">{t(`No ${docType.toLowerCase()}s found`)}</p>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}
@@ -940,21 +933,24 @@ export default function GovernancePage() {
                   </Table>
 
                   {/* Pagination */}
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/30">
                     <span className="text-sm text-slate-500">
-                      {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t(`No ${docType.toLowerCase()}s`)}
+                      {total > 0 ? `${t("Showing")} ${startItem}-${endItem} ${t("of")} ${total}` : t(`No ${docType.toLowerCase()}s`)}
                     </span>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="h-8 w-8">
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="h-8 w-8 disabled:opacity-40">
                         <ChevronsLeft className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-8 w-8">
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-8 w-8 disabled:opacity-40">
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-8 w-8">
+                      <span className="text-sm text-slate-600 px-2">
+                        {currentPage} / {totalPages || 1}
+                      </span>
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-8 w-8 disabled:opacity-40">
                         <ChevronRight className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} className="h-8 w-8">
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} className="h-8 w-8 disabled:opacity-40">
                         <ChevronsRight className="h-4 w-4" />
                       </Button>
                     </div>
@@ -965,91 +961,108 @@ export default function GovernancePage() {
           ))}
 
           {/* Information Security Vault Tab */}
-          <TabsContent value="Information Security Vault" className="mt-6 space-y-4">
+          <TabsContent value="Information Security Vault" className="mt-6 space-y-6">
             {/* File Upload Area */}
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isVaultDragging ? "border-primary bg-primary-50" : "border-slate-300 hover:border-slate-400"
-              }`}
-              onDragOver={handleVaultDragOver}
-              onDragLeave={handleVaultDragLeave}
-              onDrop={handleVaultDrop}
-              onClick={() => document.getElementById("vault-file")?.click()}
-            >
-              <p className="text-slate-600">{t("Drag and drop or select file.")}</p>
-              <input
-                type="file"
-                className="hidden"
-                id="vault-file"
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (files && files.length > 0) {
-                    uploadVaultFile(files[0]);
-                  }
-                }}
-              />
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
+                  isVaultDragging
+                    ? "border-primary-400 bg-primary-50"
+                    : "border-slate-200 hover:border-primary-300 hover:bg-slate-50"
+                }`}
+                onDragOver={handleVaultDragOver}
+                onDragLeave={handleVaultDragLeave}
+                onDrop={handleVaultDrop}
+                onClick={() => document.getElementById("vault-file")?.click()}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center">
+                    <Upload className="h-6 w-6 text-primary-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{t("Drag and drop files here")}</p>
+                    <p className="text-xs text-slate-500 mt-1">{t("or click to browse from your computer")}</p>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  id="vault-file"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      uploadVaultFile(files[0]);
+                    }
+                  }}
+                />
+              </div>
             </div>
 
             {/* Vault Documents Table */}
             {vaultLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-12">
                 <div className="relative h-8 w-8">
                   <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
                   <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-slate-200">
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-primary-700">
-                      <TableHead className="text-xs font-semibold text-white py-4 pl-4">{t("Document ID")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-white py-4">{t("Document Name")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-white py-4">{t("Type")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-white py-4">{t("Status")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-white py-4">{t("Date Uploaded")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-white py-4">{t("Actions")}</TableHead>
+                    <TableRow className="border-b border-slate-100 bg-slate-50/80">
+                      <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Document ID")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Document Name")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Type")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Uploaded")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[120px]">{t("Actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {vaultDocuments.map((doc) => (
-                      <TableRow key={doc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                        <TableCell className="py-3 pl-4 text-sm font-medium text-slate-900">{doc.documentId}</TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{doc.name}</TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{doc.type}</TableCell>
-                        <TableCell className="py-3">
-                          <Badge className={getStatusBadgeColor(doc.status)}>{doc.status}</Badge>
+                      <TableRow key={doc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <TableCell className="py-3.5 pl-4 text-sm font-medium text-slate-900">{doc.documentId}</TableCell>
+                        <TableCell className="py-3.5 text-sm text-slate-700 max-w-[250px] truncate" title={doc.name}>{doc.name}</TableCell>
+                        <TableCell className="py-3.5">
+                          <Badge variant="outline" className="text-xs">{doc.type}</Badge>
                         </TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">
+                        <TableCell className="py-3.5">
+                          <Badge className={getStatusBadgeColor(doc.status)}>{t(doc.status)}</Badge>
+                        </TableCell>
+                        <TableCell className="py-3.5 text-sm text-slate-600">
                           {new Date(doc.uploadedAt).toLocaleDateString("en-GB", {
                             day: "2-digit",
-                            month: "2-digit",
+                            month: "short",
                             year: "numeric",
                           })}
                         </TableCell>
-                        <TableCell className="py-3">
+                        <TableCell className="py-3.5 pr-4">
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                              className="h-8 w-8 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                               onClick={() => openLinkDialog(doc)}
+                              title={t("Link Governance")}
                             >
                               <Link2 className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                               onClick={() => window.open(`/api/governance-vault/${doc.id}/download`, "_blank")}
+                              title={t("Download")}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                              className="h-8 w-8 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                               onClick={() => handleDeleteVaultDoc(doc.id)}
+                              title={t("Delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1059,8 +1072,12 @@ export default function GovernancePage() {
                     ))}
                     {vaultDocuments.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center text-slate-500">
-                          {t("No documents found")}
+                        <TableCell colSpan={6} className="h-32 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <FileText className="h-8 w-8 text-slate-300" />
+                            <p className="text-slate-500">{t("No documents found")}</p>
+                            <p className="text-xs text-slate-400">{t("Upload documents to get started")}</p>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}
@@ -1081,6 +1098,7 @@ export default function GovernancePage() {
 
           {["Policy", "Standard", "Procedure"].map((docType) => (
             <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
+              {/* Search and Actions Bar */}
               <div className="flex items-center gap-3">
                 <Input
                   placeholder={t(`Search by ${docType.toLowerCase()} name or code...`)}
@@ -1103,13 +1121,13 @@ export default function GovernancePage() {
                 <div className="flex-1" />
                 <PermissionGate resource="compliance.governance" action="delete">
                   <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Delete All")}
                   </Button>
                 </PermissionGate>
                 <PermissionGate resource="compliance.governance" action="create">
                   <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Import")}
                   </Button>
                 </PermissionGate>
@@ -1118,55 +1136,55 @@ export default function GovernancePage() {
                     setNewPolicy({ ...newPolicy, documentType: activeDocType });
                     setIsCreateDialogOpen(true);
                   }}>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("New Governance")}
                   </Button>
                 </PermissionGate>
               </div>
 
               {loading ? (
-                <div className="flex items-center justify-center py-8">
+                <div className="flex items-center justify-center py-12">
                   <div className="relative h-8 w-8">
                     <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
                     <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200">
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Code")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Name")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Approver")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department Name")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Action")}</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50/80">
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Code")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Assignee")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Approver")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {policies.map((policy) => (
                         <TableRow
                           key={policy.id}
-                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50 transition-colors"
                           onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
                         >
-                          <TableCell className="py-3 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{policy.name}</TableCell>
-                          <TableCell className="py-3">
-                            <Badge className={getStatusBadgeColor(policy.status)}>{policy.status}</Badge>
+                          <TableCell className="py-3.5 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
+                          <TableCell className="py-3.5 text-sm text-slate-700 max-w-[250px] truncate" title={policy.name}>{policy.name}</TableCell>
+                          <TableCell className="py-3.5">
+                            <Badge className={getStatusBadgeColor(policy.status)}>{t(policy.status)}</Badge>
                           </TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
-                          <TableCell className="py-3">
+                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3.5 pr-4">
                             <div className="flex gap-1">
                               <PermissionGate resource="compliance.governance" action="edit">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                                  className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     openEditDialog(policy);
@@ -1179,7 +1197,7 @@ export default function GovernancePage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setPolicyToDelete(policy);
@@ -1195,29 +1213,35 @@ export default function GovernancePage() {
                       ))}
                       {policies.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center text-slate-500">
-                            {t(`No ${docType.toLowerCase()}s found`)}
+                          <TableCell colSpan={7} className="h-32 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <FileText className="h-8 w-8 text-slate-300" />
+                              <p className="text-slate-500">{t(`No ${docType.toLowerCase()}s found`)}</p>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
 
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/30">
                     <span className="text-sm text-slate-500">
-                      {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t(`No ${docType.toLowerCase()}s`)}
+                      {total > 0 ? `${t("Showing")} ${startItem}-${endItem} ${t("of")} ${total}` : t(`No ${docType.toLowerCase()}s`)}
                     </span>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="h-8 w-8">
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="h-8 w-8 disabled:opacity-40">
                         <ChevronsLeft className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-8 w-8">
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-8 w-8 disabled:opacity-40">
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-8 w-8">
+                      <span className="text-sm text-slate-600 px-2">
+                        {currentPage} / {totalPages || 1}
+                      </span>
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-8 w-8 disabled:opacity-40">
                         <ChevronRight className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} className="h-8 w-8">
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} className="h-8 w-8 disabled:opacity-40">
                         <ChevronsRight className="h-4 w-4" />
                       </Button>
                     </div>
@@ -1232,28 +1256,28 @@ export default function GovernancePage() {
       {/* Link Governance Dialog */}
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
         <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" showCloseButton={false}>
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-primary-700">{t("Select Governance")}</DialogTitle>
-            <Button variant="ghost" size="icon" onClick={() => setIsLinkDialogOpen(false)}>
+          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Governance Documents")}</DialogTitle>
+            <Button variant="ghost" size="icon" onClick={() => setIsLinkDialogOpen(false)} className="h-8 w-8 text-slate-400 hover:text-slate-600">
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-4">
+          <div className="overflow-y-auto flex-1 px-6 py-5">
             {/* Search and Filter */}
             <div className="flex gap-3 mb-4">
               <Input
-                placeholder={t("Search By Code , Name")}
+                placeholder={t("Search by code or name...")}
                 value={linkSearch}
                 onChange={(e) => setLinkSearch(e.target.value)}
-                className="flex-1 border-primary-300 rounded-full"
+                className="flex-1 bg-slate-50 border-slate-200"
               />
               <Select value={linkDocTypeFilter} onValueChange={setLinkDocTypeFilter}>
-                <SelectTrigger className="w-[150px] bg-slate-100 border-0">
-                  <SelectValue placeholder={t("Document Type")} />
+                <SelectTrigger className="w-[160px] bg-slate-50 border-slate-200">
+                  <SelectValue placeholder={t("All Types")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="bg-white">
-                  <SelectItem value="all">{t("Document Type")}</SelectItem>
+                  <SelectItem value="all">{t("All Types")}</SelectItem>
                   <SelectItem value="Policy">{t("Policy")}</SelectItem>
                   <SelectItem value="Standard">{t("Standard")}</SelectItem>
                   <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
@@ -1261,15 +1285,22 @@ export default function GovernancePage() {
               </Select>
             </div>
 
+            {/* Selected count */}
+            {selectedGovernanceIds.length > 0 && (
+              <div className="mb-3 text-sm text-slate-500">
+                {selectedGovernanceIds.length} {t("selected")}
+              </div>
+            )}
+
             {/* Governance List */}
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
               {filteredGovernanceForLink.map((gov) => (
                 <div
                   key={gov.id}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
                     selectedGovernanceIds.includes(gov.id)
-                      ? "border-primary-500 bg-primary-50"
-                      : "border-primary-200 hover:border-primary-300"
+                      ? "border-primary-400 bg-primary-50 shadow-sm"
+                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                   onClick={() => {
                     if (selectedGovernanceIds.includes(gov.id)) {
@@ -1288,24 +1319,31 @@ export default function GovernancePage() {
                         setSelectedGovernanceIds(selectedGovernanceIds.filter((id) => id !== gov.id));
                       }
                     }}
-                    className="border-primary-300"
+                    className="border-slate-300 data-[state=checked]:border-primary-500"
                   />
-                  <span className="text-primary-700 font-medium">
-                    {gov.code} : {gov.name}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-slate-800">{gov.code}</span>
+                    <span className="text-slate-400 mx-2">·</span>
+                    <span className="text-sm text-slate-600 truncate">{gov.name}</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs shrink-0">{gov.documentType}</Badge>
                 </div>
               ))}
               {filteredGovernanceForLink.length === 0 && (
-                <div className="text-center py-8 text-slate-500">
-                  {t("No governance found")}
+                <div className="text-center py-10">
+                  <FileText className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-slate-500">{t("No governance documents found")}</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 flex-shrink-0">
-            <Button onClick={handleLinkGovernance}>
-              {t("Link Governance")}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/30 flex-shrink-0">
+            <Button variant="outline" onClick={() => setIsLinkDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleLinkGovernance} disabled={selectedGovernanceIds.length === 0}>
+              {t("Link Selected")}
             </Button>
           </div>
         </DialogContent>

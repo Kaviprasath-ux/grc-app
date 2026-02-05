@@ -97,6 +97,8 @@ model CustomerAccount {
   auditLocations         AuditLocation[]
   processFrequencies     ProcessFrequency[]
   natureOfImplementations NatureOfImplementation[]
+  internalAuditProcesses InternalAuditProcess[]
+  governanceTemplates    GovernanceTemplate[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -303,6 +305,10 @@ model User {
   reportingManagerId  String?
   reportingManager    User?            @relation("ReportingManagerReports", fields: [reportingManagerId], references: [id])
   directReports       User[]           @relation("ReportingManagerReports")
+  // Creator - tracks who created this user (for DR/DC framework visibility)
+  createdById         String?
+  createdBy           User?            @relation("UserCreator", fields: [createdById], references: [id])
+  createdUsers        User[]           @relation("UserCreator")
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   // Relations
@@ -346,6 +352,7 @@ model User {
   ownedLocations          AuditLocation[]          @relation("AuditHeadLocations")
   ownedProcessFrequencies ProcessFrequency[]       @relation("AuditHeadProcessFrequencies")
   ownedNatureOfImplementations NatureOfImplementation[] @relation("AuditHeadNatureOfImplementations")
+  ownedInternalAuditProcesses InternalAuditProcess[] @relation("AuditHeadProcesses")
   // Process RACI relations
   responsibleProcesses Process[]          @relation("ProcessResponsible")
   accountableProcesses Process[]          @relation("ProcessAccountable")
@@ -357,6 +364,8 @@ model User {
   // AI relations
   aiOperations        AIOperation[]
   aiJobs              AIJob[]
+  // Governance Templates
+  uploadedTemplates   GovernanceTemplate[] @relation("TemplateUploader")
 }
 
 // Stakeholders
@@ -2253,6 +2262,25 @@ model NatureOfImplementation {
   @@index([auditHeadId])
 }
 
+// Internal Audit Process (for audit head specific process settings)
+model InternalAuditProcess {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadProcesses", fields: [auditHeadId], references: [id])
+  name              String
+  description       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+}
+
 // ==================== INTERNAL AUDIT RISK REGISTER ====================
 
 // Internal Audit Risk (separate from general Risk for the Internal Audit module)
@@ -2666,16 +2694,20 @@ model DocumentSearch {
 
 // Governance Templates (Policy, Standard, Procedure templates)
 model GovernanceTemplate {
-  id             String   @id @default(cuid())
-  name           String
-  governanceType String   @default("Policy") // Policy, Standard, Procedure
-  fileName       String
-  fileType       String? // pdf, docx, xlsx, etc.
-  fileSize       Int?
-  filePath       String
-  uploadedBy     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  governanceType    String           @default("Policy") // Policy, Standard, Procedure
+  fileName          String
+  fileType          String?          // docx only for AI generation
+  fileSize          Int?
+  filePath          String
+  uploadedById      String?
+  uploadedBy        User?            @relation("TemplateUploader", fields: [uploadedById], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 }
 
 // ==================== AUDIT LOGS ====================

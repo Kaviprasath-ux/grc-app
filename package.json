@@ -9,8 +9,8 @@
     "i18n:init": "npx tsx scripts/init-translations.ts",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
-    "db:seed-bts": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed-customer-bts.ts",
+    "db:seed": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
+    "db:seed-bts": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-customer-bts.ts",
     "db:reset": "npx prisma migrate reset --force",
     "db:migrate-audit-head": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/migrate-audit-head-data.ts",
     "test:e2e": "playwright test",
@@ -19,7 +19,7 @@
     "test:e2e:codegen": "playwright codegen http://localhost:3000"
   },
   "prisma": {
-    "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    "seed": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -46,6 +46,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-visually-hidden": "^1.2.4",
     "@tanstack/react-table": "^8.21.3",
+    "@vercel/blob": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

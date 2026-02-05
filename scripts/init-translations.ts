@@ -461,6 +461,8 @@ const translations: [string, string, string][] = [
   ['Accountable', 'المحاسب', 'Uzraugošais'],
   ['Consulted', 'المستشار', 'Konsultējamais'],
   ['Informed', 'المُبلَّغ', 'Informējamais'],
+  ['Select Process', 'اختر العملية', 'Izvēlēties procesu'],
+  ['No processes available', 'لا توجد عمليات متاحة', 'Nav pieejamu procesu'],
 
   // ==========================================
   // ORGANIZATION - BIA

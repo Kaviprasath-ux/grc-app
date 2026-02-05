@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { withAuthOnly } from "@/lib/api-auth";
 
 async function handler(req: NextRequest) {

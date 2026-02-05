@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -133,7 +133,6 @@ interface EvidenceRequest {
   title: string;
   description: string;
   status: string;
-  dueDate: string | null;
   auditee: string;
   auditeeId?: string | null;
   numberOfSamples?: string | null;
@@ -171,6 +170,7 @@ interface UploadedFile {
 export default function FieldworkDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const engagementId = params.id as string;
   const { data: session } = useSession();
   const { t } = useLanguage();
@@ -179,6 +179,10 @@ export default function FieldworkDetailsPage() {
   const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
   const isAuditee = useHasRole("Auditee");
+
+  // Check URL mode parameter (view = read-only, edit = editable)
+  const urlMode = searchParams.get("mode");
+  const isViewMode = urlMode === "view";
 
   // Check if user is part of the audit team (not just an auditee)
   const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
@@ -190,6 +194,9 @@ export default function FieldworkDetailsPage() {
 
   // Check if engagement is completed (read-only mode)
   const isCompleted = engagement?.status === "Completed";
+
+  // Page is read-only if in view mode OR engagement is completed
+  const isReadOnly = isViewMode || isCompleted;
 
   // Collapsible section states
   const [engagementDetailsOpen, setEngagementDetailsOpen] = useState(true);
@@ -262,7 +269,6 @@ export default function FieldworkDetailsPage() {
     description: "",
     auditee: "",
     auditeeId: "",
-    dueDate: "",
     status: "",
     numberOfSamples: "",
   });
@@ -344,13 +350,14 @@ export default function FieldworkDetailsPage() {
     status: "",
     targetClosureDate: "",
   });
+  const [findingAttachments, setFindingAttachments] = useState<File[]>([]);
+  const findingAttachmentInputRef = useRef<HTMLInputElement>(null);
 
   const [newEvidence, setNewEvidence] = useState({
     title: "",
     description: "",
     auditee: "",
     auditeeId: "",
-    dueDate: "",
     numberOfSamples: "",
   });
 
@@ -804,6 +811,21 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
+        const newFinding = await response.json();
+
+        // Upload attachments if any
+        if (findingAttachments.length > 0) {
+          const formData = new FormData();
+          findingAttachments.forEach((file) => {
+            formData.append("files", file);
+          });
+
+          await fetch(`/api/internal-audit/findings/${newFinding.id}/attachments`, {
+            method: "POST",
+            body: formData,
+          });
+        }
+
         toast.success(t("Finding added successfully"));
         setAddFullFindingDialogOpen(false);
         setFullFinding({
@@ -818,6 +840,7 @@ export default function FieldworkDetailsPage() {
           status: "",
           targetClosureDate: "",
         });
+        setFindingAttachments([]);
         fetchFindings();
       } else {
         const error = await response.json();
@@ -1012,7 +1035,6 @@ export default function FieldworkDetailsPage() {
       description: er.description || "",
       auditee: er.auditee || "",
       auditeeId: er.auditeeId || "",
-      dueDate: er.dueDate ? new Date(er.dueDate).toISOString().split("T")[0] : "",
       status: er.status || "Pending",
       numberOfSamples: er.numberOfSamples || "",
     });
@@ -1039,7 +1061,6 @@ export default function FieldworkDetailsPage() {
             description: editEvidence.description,
             auditee: editEvidence.auditee,
             auditeeId: editEvidence.auditeeId || null,
-            dueDate: editEvidence.dueDate || null,
             status: editEvidence.status,
             numberOfSamples: editEvidence.numberOfSamples || null,
           }),
@@ -1451,7 +1472,6 @@ export default function FieldworkDetailsPage() {
         description: newEvidence.description,
         auditee: newEvidence.auditee,
         auditeeId: newEvidence.auditeeId || null,
-        dueDate: newEvidence.dueDate,
         numberOfSamples: newEvidence.numberOfSamples || null,
         status: "Pending",
       };
@@ -1465,7 +1485,7 @@ export default function FieldworkDetailsPage() {
       if (response.ok) {
         toast.success(t("Evidence request added successfully"));
         setAddEvidenceDialogOpen(false);
-        setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", dueDate: "", numberOfSamples: "" });
+        setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", numberOfSamples: "" });
         fetchEvidenceRequests();
       } else {
         toast.error(t("Failed to add evidence request"));
@@ -1641,7 +1661,7 @@ export default function FieldworkDetailsPage() {
                   e.stopPropagation();
                   handleMarkAsCompleted();
                 }}
-                disabled={markingComplete}
+                disabled={markingComplete || isReadOnly}
               >
                 {markingComplete ? (
                   <>
@@ -1702,6 +1722,7 @@ export default function FieldworkDetailsPage() {
                   setUploadCategory("workpapers");
                   setUploadDialogOpen(true);
                 }}
+                disabled={isReadOnly}
               >
                 <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Upload Workpaper")}
@@ -1755,6 +1776,7 @@ export default function FieldworkDetailsPage() {
                           setWorkpaperToDelete(wp);
                           setDeleteWorkpaperDialogOpen(true);
                         }}
+                        disabled={isReadOnly}
                       >
                         <Trash2 className="h-5 w-5 text-red-500" />
                       </Button>
@@ -1783,7 +1805,7 @@ export default function FieldworkDetailsPage() {
               <Button
                 size="sm"
                 onClick={handleGenerateAIWorkpapers}
-                disabled={generatingWorkpapers || isCompleted}
+                disabled={generatingWorkpapers || isReadOnly}
               >
                 {generatingWorkpapers ? (
                   <>
@@ -1849,6 +1871,7 @@ export default function FieldworkDetailsPage() {
                             size="icon"
                             title={t("Edit")}
                             onClick={() => handleOpenEditAIWorkpaper(wp)}
+                            disabled={isReadOnly}
                           >
                             <Pencil className="h-4 w-4 text-primary-600" />
                           </Button>
@@ -1860,6 +1883,7 @@ export default function FieldworkDetailsPage() {
                               setSelectedAIWorkpaper(wp);
                               setDeleteAIWorkpaperDialogOpen(true);
                             }}
+                            disabled={isReadOnly}
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
@@ -1890,7 +1914,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleAddTask}
-              disabled={addingTask || isCompleted}
+              disabled={addingTask || isReadOnly}
             >
               {addingTask ? (
                 <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
@@ -1967,7 +1991,7 @@ export default function FieldworkDetailsPage() {
                             variant="outline"
                             size="sm"
                             className="text-xs"
-                            disabled={uploadingTaskDocument === task.id || isCompleted}
+                            disabled={uploadingTaskDocument === task.id || isReadOnly}
                             onClick={() => {
                               const input = document.createElement("input");
                               input.type = "file";
@@ -2014,7 +2038,7 @@ export default function FieldworkDetailsPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleSaveTask(task)}
-                              disabled={savingTask === task.id || isCompleted}
+                              disabled={savingTask === task.id || isReadOnly}
                               title={t("Save task")}
                             >
                               {savingTask === task.id ? (
@@ -2028,7 +2052,7 @@ export default function FieldworkDetailsPage() {
                               size="icon"
                               onClick={() => handleDeleteTask(task.id)}
                               title={t("Delete task")}
-                              disabled={isCompleted}
+                              disabled={isReadOnly}
                             >
                               <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
@@ -2067,7 +2091,7 @@ export default function FieldworkDetailsPage() {
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-700"
                     onClick={handleAIReview}
-                    disabled={generatingAIReview || isCompleted}
+                    disabled={generatingAIReview || isReadOnly}
                   >
                     {generatingAIReview ? (
                       <>
@@ -2087,7 +2111,7 @@ export default function FieldworkDetailsPage() {
                 <Button
                   size="sm"
                   onClick={() => setAddEvidenceDialogOpen(true)}
-                  disabled={isCompleted}
+                  disabled={isReadOnly}
                 >
                   <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Add Evidence Request")}
@@ -2240,7 +2264,6 @@ export default function FieldworkDetailsPage() {
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Due Date")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
@@ -2261,7 +2284,6 @@ export default function FieldworkDetailsPage() {
                       <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
                       <TableCell>{er.auditee || "-"}</TableCell>
                       <TableCell>{er.numberOfSamples || "-"}</TableCell>
-                      <TableCell>{formatDate(er.dueDate)}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' :
@@ -2324,6 +2346,7 @@ export default function FieldworkDetailsPage() {
                                 size="icon"
                                 title={t("Edit")}
                                 onClick={() => handleOpenViewEvidence(er, true)}
+                                disabled={isReadOnly}
                               >
                                 <Pencil className="h-4 w-4 text-primary-600" />
                               </Button>
@@ -2335,6 +2358,7 @@ export default function FieldworkDetailsPage() {
                                   setEvidenceToDelete(er);
                                   setDeleteEvidenceDialogOpen(true);
                                 }}
+                                disabled={isReadOnly}
                               >
                                 <Trash2 className="h-4 w-4 text-red-600" />
                               </Button>
@@ -2370,6 +2394,7 @@ export default function FieldworkDetailsPage() {
                 setNewDocument({ title: "", documentType: "", description: "" });
                 setNewDocumentDialogOpen(true);
               }}
+              disabled={isReadOnly}
             >
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Upload Document")}
@@ -2419,6 +2444,7 @@ export default function FieldworkDetailsPage() {
                                 size="icon"
                                 title={t("Edit")}
                                 onClick={() => handleOpenViewDocument(doc, true)}
+                                disabled={isReadOnly}
                               >
                                 <Pencil className="h-4 w-4 text-primary-600" />
                               </Button>
@@ -2430,6 +2456,7 @@ export default function FieldworkDetailsPage() {
                                   setDocumentToDelete(doc);
                                   setDeleteDocumentDialogOpen(true);
                                 }}
+                                disabled={isReadOnly}
                               >
                                 <Trash2 className="h-4 w-4 text-red-600" />
                               </Button>
@@ -2462,7 +2489,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={() => setAddFullFindingDialogOpen(true)}
-              disabled={isCompleted}
+              disabled={isReadOnly}
             >
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Add Finding")}
@@ -2503,8 +2530,7 @@ export default function FieldworkDetailsPage() {
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' :
-                          finding.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                          finding.status === 'Overdue' ? 'bg-red-100 text-red-800' :
+                          finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
                           'bg-slate-100 text-slate-800'
                         }`}>
                           {finding.status}
@@ -2527,6 +2553,7 @@ export default function FieldworkDetailsPage() {
                                 size="icon"
                                 onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}?edit=true`)}
                                 title={t("Edit")}
+                                disabled={isReadOnly}
                               >
                                 <Pencil className="h-4 w-4 text-primary-600" />
                               </Button>
@@ -2538,6 +2565,7 @@ export default function FieldworkDetailsPage() {
                                   setDeleteFindingDialogOpen(true);
                                 }}
                                 title={t("Delete")}
+                                disabled={isReadOnly}
                               >
                                 <Trash2 className="h-4 w-4 text-red-600" />
                               </Button>
@@ -2656,7 +2684,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleUploadFiles}
-              disabled={uploading || uploadedFiles.length === 0 || isCompleted}
+              disabled={uploading || uploadedFiles.length === 0 || isReadOnly}
             >
               {uploading ? (
                 <>
@@ -2731,7 +2759,7 @@ export default function FieldworkDetailsPage() {
             <Button variant="outline" size="sm" onClick={() => setAddFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleAddFinding}>
+            <Button size="sm" onClick={handleAddFinding} disabled={isReadOnly}>
               {t("Add Finding")}
             </Button>
           </div>
@@ -2839,6 +2867,54 @@ export default function FieldworkDetailsPage() {
               />
             </div>
 
+            {/* Upload Attachment */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Upload Attachment")}</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => findingAttachmentInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Choose Files")}
+                  </Button>
+                  <input
+                    type="file"
+                    ref={findingAttachmentInputRef}
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setFindingAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+                        e.target.value = "";
+                      }
+                    }}
+                    className="hidden"
+                    multiple
+                  />
+                </div>
+                {findingAttachments.length > 0 && (
+                  <div className="space-y-1">
+                    {findingAttachments.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded border text-sm">
+                        <span className="truncate flex-1">{file.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => setFindingAttachments(prev => prev.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* CAPA Section Header */}
             <div className="pt-2 border-t border-slate-100">
               <h3 className="text-sm font-semibold text-slate-800">{t("Corrective & Preventive Actions (CAPA)")}</h3>
@@ -2876,9 +2952,8 @@ export default function FieldworkDetailsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Open">{t("Open")}</SelectItem>
-                  <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                  <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
                   <SelectItem value="Closed">{t("Closed")}</SelectItem>
-                  <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -2898,7 +2973,7 @@ export default function FieldworkDetailsPage() {
             <Button variant="outline" size="sm" onClick={() => setAddFullFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleAddFullFinding} disabled={savingFullFinding}>
+            <Button size="sm" onClick={handleAddFullFinding} disabled={savingFullFinding || isReadOnly}>
               {savingFullFinding ? (
                 <>
                   <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
@@ -2975,21 +3050,13 @@ export default function FieldworkDetailsPage() {
                 placeholder={t("Enter number of samples required")}
               />
             </div>
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-end text-slate-500">{t("Due Date")}</Label>
-              <DatePicker
-                value={newEvidence.dueDate}
-                onChange={(date) => setNewEvidence({ ...newEvidence, dueDate: date ? date.toISOString().split('T')[0] : "" })}
-                placeholder={t("Select due date")}
-              />
-            </div>
           </div>
           {/* Fixed Footer */}
           <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setAddEvidenceDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleAddEvidence}>
+            <Button size="sm" onClick={handleAddEvidence} disabled={isReadOnly}>
               {t("Add Evidence Request")}
             </Button>
           </div>
@@ -3022,7 +3089,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteFinding}
-              disabled={deletingFinding || isCompleted}
+              disabled={deletingFinding || isReadOnly}
             >
               {deletingFinding ? (
                 <>
@@ -3152,7 +3219,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleUploadDocument}
-              disabled={uploading || isCompleted}
+              disabled={uploading || isReadOnly}
             >
               {uploading ? (
                 <>
@@ -3193,7 +3260,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteDocument}
-              disabled={deletingDocument || isCompleted}
+              disabled={deletingDocument || isReadOnly}
             >
               {deletingDocument ? (
                 <>
@@ -3234,7 +3301,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteWorkpaper}
-              disabled={deletingWorkpaper || isCompleted}
+              disabled={deletingWorkpaper || isReadOnly}
             >
               {deletingWorkpaper ? (
                 <>
@@ -3319,7 +3386,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleUpdateAIWorkpaper}
-              disabled={savingAIWorkpaper || isCompleted}
+              disabled={savingAIWorkpaper || isReadOnly}
             >
               {savingAIWorkpaper ? (
                 <>
@@ -3360,7 +3427,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteAIWorkpaper}
-              disabled={deletingAIWorkpaper || isCompleted}
+              disabled={deletingAIWorkpaper || isReadOnly}
             >
               {deletingAIWorkpaper ? (
                 <>
@@ -3448,7 +3515,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleAddSelectedWorkpapers}
-              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isCompleted}
+              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isReadOnly}
             >
               {addingGeneratedWorkpapers ? (
                 <>
@@ -3573,7 +3640,7 @@ export default function FieldworkDetailsPage() {
               <Button
                 size="sm"
                 onClick={handleUpdateDocument}
-                disabled={savingDocument || isCompleted}
+                disabled={savingDocument || isReadOnly}
               >
                 {savingDocument ? (
                   <>
@@ -3730,12 +3797,13 @@ export default function FieldworkDetailsPage() {
                         <Eye className="h-4 w-4 text-slate-600" />
                       </a>
                       <button
-                        className="p-1 hover:bg-red-50 rounded"
+                        className="p-1 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         title={t("Delete")}
                         onClick={() => {
                           // TODO: Implement delete attachment
                           toast.info(t("Delete attachment functionality coming soon"));
                         }}
+                        disabled={isReadOnly}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </button>
@@ -3747,12 +3815,6 @@ export default function FieldworkDetailsPage() {
             {/* View mode fields */}
             {!isEditingEvidence && (
               <>
-                <div className="space-y-2">
-                  <Label className="text-slate-700 font-medium">{t("Due Date")}</Label>
-                  <div className="p-3 bg-slate-50 rounded-md border">
-                    {selectedEvidence?.dueDate ? formatDate(selectedEvidence.dueDate) : "-"}
-                  </div>
-                </div>
                 <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">{t("Status")}</Label>
                   <div className="p-3 bg-slate-50 rounded-md border">
@@ -3902,7 +3964,7 @@ export default function FieldworkDetailsPage() {
                 <Button
                   size="sm"
                   onClick={handleUpdateEvidence}
-                  disabled={savingEvidence || isCompleted}
+                  disabled={savingEvidence || isReadOnly}
                 >
                   {savingEvidence ? (
                     <>
@@ -3975,7 +4037,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleSendClarification}
-              disabled={sendingClarification || !clarificationDocument || isCompleted}
+              disabled={sendingClarification || !clarificationDocument || isReadOnly}
             >
               {sendingClarification ? (
                 <>
@@ -4106,7 +4168,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleSendResponse}
-              disabled={sendingResponse || isCompleted}
+              disabled={sendingResponse || isReadOnly}
             >
               {sendingResponse ? (
                 <>
@@ -4147,7 +4209,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteEvidence}
-              disabled={deletingEvidence || isCompleted}
+              disabled={deletingEvidence || isReadOnly}
             >
               {deletingEvidence ? (
                 <>
@@ -4280,7 +4342,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleUploadAttachment}
-              disabled={uploadingAttachment || isCompleted}
+              disabled={uploadingAttachment || isReadOnly}
             >
               {uploadingAttachment ? (
                 <>

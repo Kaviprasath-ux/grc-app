@@ -169,7 +169,7 @@ export default function AddEngagementPage() {
         fetch("/api/internal-audit/users?role=auditors"), // Audit Head + Audit Managers
         fetch("/api/internal-audit/audit-types"), // Audit Types from settings
         fetch("/api/internal-audit/scoring-ranges"), // Scoring Ranges for audit ratings
-        fetch("/api/processes"), // Processes
+        fetch("/api/internal-audit/processes"), // Internal Audit Processes
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
@@ -192,7 +192,7 @@ export default function AddEngagementPage() {
       if (scoringRangesRes.ok) {
         const scoringRangesData = await scoringRangesRes.json();
         // Get unique labels from scoring ranges for audit ratings
-        const uniqueLabels = [...new Set(scoringRangesData.map((r: ScoringRange) => r.label))] as string[];
+        const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
         setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
       }
       if (processesRes.ok) {
@@ -610,13 +610,13 @@ export default function AddEngagementPage() {
 
         {/* Process */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Process</Label>
+          <Label className="text-blue-800">{t("Process")}</Label>
           <Select
             value={formData.processId}
             onValueChange={(value) => setFormData({ ...formData, processId: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Process" />
+              <SelectValue placeholder={t("Select Process")} />
             </SelectTrigger>
             <SelectContent>
               {processes.length > 0 ? (
@@ -627,7 +627,7 @@ export default function AddEngagementPage() {
                 ))
               ) : (
                 <SelectItem value="none" disabled>
-                  No processes available
+                  {t("No processes available")}
                 </SelectItem>
               )}
             </SelectContent>

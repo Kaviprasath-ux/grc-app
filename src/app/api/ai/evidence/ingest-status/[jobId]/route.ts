@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { AI_CONFIG, getAIHeaders } from "@/lib/ai-config";
+import aiApiClient from "@/lib/ai-api-client";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  notFoundResponse,
+  errorResponse,
+  isTerminalStatus,
+} from "@/lib/ai-route-helpers";
 
 interface RouteContext {
   params: Promise<{ jobId: string }>;
@@ -30,10 +36,7 @@ export const GET = withAuth(
       });
 
       if (!ingestJob) {
-        return NextResponse.json(
-          { error: "Ingest job not found" },
-          { status: 404 }
-        );
+        return notFoundResponse("Ingest job");
       }
 
       if (!validateTenantAccess(session, ingestJob.evidence.customerAccountId)) {
@@ -42,7 +45,7 @@ export const GET = withAuth(
 
       // If already completed or failed, return cached status
       const currentStatus = ingestJob.status.toLowerCase();
-      if (currentStatus === "completed" || currentStatus === "failed") {
+      if (isTerminalStatus(currentStatus)) {
         return NextResponse.json({
           job_id: ingestJob.runpodJobId,
           status: currentStatus,
@@ -50,27 +53,20 @@ export const GET = withAuth(
         });
       }
 
-      // Call RunPod status endpoint
-      const runpodUrl = `${AI_CONFIG.baseUrl}${AI_CONFIG.endpoints.ingestStatus}/${jobId}`;
-      console.log(`[AI] GET  ${AI_CONFIG.endpoints.ingestStatus}/${jobId} → polling`);
-
-      const runpodResponse = await fetch(runpodUrl, {
-        method: "GET",
-        headers: getAIHeaders(),
-      });
-      console.info(`[AI] Response Status: ${runpodResponse.status}`);
-      
-
-      if (!runpodResponse.ok) {
-        const errorText = await runpodResponse.text();
-        console.log(`[AI] GET  ${AI_CONFIG.endpoints.ingestStatus}/${jobId} → ${runpodResponse.status} (error)`);
+      // Call RunPod status endpoint via standardized aiApiClient
+      let response;
+      try {
+        response = await aiApiClient.get(`${AI_ENDPOINTS.INGEST_STATUS}/${jobId}`);
+      } catch (apiError: unknown) {
+        const err = apiError as { message?: string; requestId?: string; status?: number };
+        console.error(`[Evidence Ingest Status] API error:`, err);
 
         // Update job to failed
         await prisma.evidenceAIIngestJob.update({
           where: { id: ingestJob.id },
           data: {
             status: "failed",
-            error: `Status check failed: ${errorText}`,
+            error: `Status check failed: ${err.message}`,
             completedAt: new Date(),
           },
         });
@@ -80,17 +76,16 @@ export const GET = withAuth(
           data: { aiIngestStatus: "failed" },
         });
 
-        return NextResponse.json(
-          { job_id: jobId, status: "failed", error: errorText },
-          { status: 502 }
-        );
+        return errorResponse(err.message || "Status check failed", err.status || 502, {
+          jobId,
+          currentStatus: "failed",
+          requestId: err.requestId,
+        });
       }
 
       // Response: { "job_id": "...", "status": "completed", "error": null }
-      const runpodData = await runpodResponse.json();
+      const runpodData = response.data as { status?: string; error?: string | null };
       const newStatus = runpodData.status?.toLowerCase() || "queued";
-
-      console.log(`[AI] GET  ${AI_CONFIG.endpoints.ingestStatus}/${jobId} → ${newStatus}`, JSON.stringify(runpodData));
 
       // Update job status
       const updatedJob = await prisma.evidenceAIIngestJob.update({
@@ -112,17 +107,69 @@ export const GET = withAuth(
         },
       });
 
+      // AUTO-FETCH RESULT: When status becomes "completed", fetch and store the result
+      let resultData = null;
+      if (newStatus === "completed") {
+        try {
+          // Check if result already exists
+          const existingResult = await prisma.evidenceAIIngestResult.findUnique({
+            where: { jobId: jobId },
+          });
+
+          if (!existingResult) {
+            // Fetch result from RunPod via standardized aiApiClient
+            console.log(`[Evidence Ingest Status] AUTO-FETCH result for job ${jobId}`);
+
+            try {
+              const resultResponse = await aiApiClient.get(`${AI_ENDPOINTS.INGEST_RESULT}/${jobId}`);
+              const resultJson = resultResponse.data as { result?: { messages?: unknown[]; status?: boolean } };
+              const messages = resultJson.result?.messages || [];
+
+              // Store the result
+              await prisma.evidenceAIIngestResult.create({
+                data: {
+                  evidenceId: ingestJob.evidenceId,
+                  jobId: jobId,
+                  extractedText: JSON.stringify(messages),
+                  embeddings: null,
+                  metadata: JSON.stringify({ status: resultJson.result?.status }),
+                  indexingStatus: resultJson.result?.status ? "success" : "failed",
+                },
+              });
+
+              // Update job with result
+              await prisma.evidenceAIIngestJob.update({
+                where: { id: ingestJob.id },
+                data: {
+                  result: JSON.stringify(resultJson),
+                },
+              });
+
+              resultData = resultJson;
+              console.log(`[Evidence Ingest Status] AUTO-FETCH result stored for job ${jobId}`);
+            } catch (fetchError: unknown) {
+              const fetchErr = fetchError as { message?: string };
+              console.error(`[Evidence Ingest Status] AUTO-FETCH result failed:`, fetchErr.message);
+            }
+          }
+        } catch (autoFetchError) {
+          console.error("[Evidence Ingest Status] AUTO-FETCH result error:", autoFetchError);
+          // Don't fail the status request, just log the error
+        }
+      }
+
       return NextResponse.json({
         job_id: updatedJob.runpodJobId,
         status: updatedJob.status,
         error: updatedJob.error || null,
+        resultFetched: resultData !== null,
       });
-    } catch (error) {
-      console.error("Error polling ingest status:", error);
-      return NextResponse.json(
-        { error: "Failed to poll ingest status", details: String(error) },
-        { status: 500 }
-      );
+    } catch (error: unknown) {
+      const err = error as { message?: string; requestId?: string; status?: number };
+      console.error("[Evidence Ingest Status] Error:", err);
+      return errorResponse(err.message || "Failed to poll ingest status", err.status || 500, {
+        requestId: err.requestId,
+      });
     }
   },
   { resource: "compliance.evidence", action: "view" }

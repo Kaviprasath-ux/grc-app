@@ -1,0 +1,536 @@
+/**
+ * ai-route-helpers.ts
+ *
+ * Reusable utilities for AI API routes to eliminate DRY violations.
+ * Contains common patterns for error handling, response formatting,
+ * payload construction, and database operations.
+ */
+
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface AIErrorResponse {
+  error: string;
+  details?: string;
+  requestId?: string;
+  message?: string;
+  jobId?: string;
+  status?: string;
+}
+
+export interface AISuccessResponse {
+  success: boolean;
+  [key: string]: unknown;
+}
+
+export interface AIJobSubmitResponse {
+  job_id: string;
+  status: string;
+  message?: string;
+}
+
+// ============================================================================
+// ERROR RESPONSE BUILDERS
+// ============================================================================
+
+/**
+ * Create a standardized error response
+ */
+export function errorResponse(
+  message: string,
+  status: number = 500,
+  details?: {
+    details?: string;
+    requestId?: string;
+    jobId?: string;
+    currentStatus?: string;
+  }
+): NextResponse<AIErrorResponse> {
+  const body: AIErrorResponse = { error: message };
+
+  if (details?.details) body.details = details.details;
+  if (details?.requestId) body.requestId = details.requestId;
+  if (details?.jobId) body.jobId = details.jobId;
+  if (details?.currentStatus) body.status = details.currentStatus;
+
+  return NextResponse.json(body, { status });
+}
+
+/**
+ * Create unauthorized response
+ */
+export function unauthorizedResponse(): NextResponse<AIErrorResponse> {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}
+
+/**
+ * Create not found response
+ */
+export function notFoundResponse(resource: string): NextResponse<AIErrorResponse> {
+  return NextResponse.json({ error: `${resource} not found` }, { status: 404 });
+}
+
+/**
+ * Create bad request response
+ */
+export function badRequestResponse(message: string): NextResponse<AIErrorResponse> {
+  return NextResponse.json({ error: message }, { status: 400 });
+}
+
+/**
+ * Create validation error response for required fields
+ */
+export function missingFieldResponse(fieldName: string): NextResponse<AIErrorResponse> {
+  return NextResponse.json({ error: `${fieldName} is required` }, { status: 400 });
+}
+
+// ============================================================================
+// SUCCESS RESPONSE BUILDERS
+// ============================================================================
+
+/**
+ * Create job submitted response
+ */
+export function jobSubmittedResponse(
+  jobId: string,
+  status: string = 'queued',
+  additionalData?: Record<string, unknown>
+): NextResponse<AIJobSubmitResponse> {
+  return NextResponse.json({
+    job_id: jobId,
+    status,
+    message: 'Job submitted successfully',
+    ...additionalData,
+  });
+}
+
+/**
+ * Create job status response
+ */
+export function jobStatusResponse(
+  jobId: string,
+  status: string,
+  additionalData?: Record<string, unknown>
+): NextResponse {
+  return NextResponse.json({
+    job_id: jobId,
+    status,
+    ...additionalData,
+  });
+}
+
+/**
+ * Create review completed response
+ */
+export function reviewCompletedResponse(
+  reviewId: string,
+  result: unknown,
+  additionalData?: Record<string, unknown>
+): NextResponse<AISuccessResponse> {
+  return NextResponse.json({
+    success: true,
+    reviewId,
+    result,
+    ...additionalData,
+  });
+}
+
+// ============================================================================
+// PAYLOAD BUILDERS
+// ============================================================================
+
+/**
+ * Build evidence payload for AI queries
+ */
+export function buildEvidencePayload(
+  evidence: {
+    id: string;
+    evidenceCode: string;
+    attachments?: Array<{ fileName: string }>;
+  },
+  userId: string
+): {
+  user_id: string;
+  evidence_id: string;
+  doc_type: string;
+  evidences: Array<{ evidence_code: string; evidence_artifact: string }>;
+} {
+  const artifactNames = evidence.attachments?.map(att => att.fileName).join(', ') || evidence.evidenceCode;
+
+  return {
+    user_id: userId,
+    evidence_id: evidence.id,
+    doc_type: 'evidence',
+    evidences: [
+      {
+        evidence_code: evidence.evidenceCode,
+        evidence_artifact: artifactNames,
+      },
+    ],
+  };
+}
+
+/**
+ * Build ingest FormData payload
+ */
+export function buildIngestFormData(params: {
+  baseId: string;
+  docType: 'policy' | 'evidence';
+  fileCode: string;
+  documentId: string;
+  file: File | Blob;
+}): FormData {
+  const formData = new FormData();
+  formData.append('base_id', params.baseId);
+  formData.append('doc_type', params.docType);
+  formData.append('file_code', params.fileCode);
+  formData.append('document_id', params.documentId);
+  formData.append('files', params.file);
+  return formData;
+}
+
+/**
+ * Build policy query payload
+ */
+export function buildPolicyQueryPayload(
+  policy: {
+    id: string;
+    code: string | null;
+    name: string;
+    policyControls: Array<{
+      control: {
+        controlCode: string;
+        controlQuestion?: string | null;
+        description?: string | null;
+        name: string;
+      };
+    }>;
+  },
+  evidences: Array<{ evidence_code: string; evidence_artifact: string }>,
+  userId: string
+): {
+  user_id: string;
+  doc_type: string;
+  policies: Array<{
+    policy_name: string;
+    policy_code: string;
+    controls: Array<{ control_code: string; control_quetion: string }>;
+    evidences: Array<{ evidence_code: string; evidence_artifact: string }>;
+  }>;
+} {
+  const controls = policy.policyControls.map(pc => ({
+    control_code: pc.control.controlCode,
+    control_quetion: pc.control.controlQuestion || pc.control.description || pc.control.name,
+  }));
+
+  return {
+    user_id: userId,
+    doc_type: 'policy',
+    policies: [
+      {
+        policy_name: policy.name,
+        policy_code: policy.code || policy.id,
+        controls,
+        evidences,
+      },
+    ],
+  };
+}
+
+// ============================================================================
+// AI OPERATION LOGGING
+// ============================================================================
+
+/**
+ * Create AI operation record for request tracking
+ */
+export async function createAIOperation(params: {
+  endpoint: string;
+  method: string;
+  requestBody: unknown;
+  userId: string;
+}): Promise<{ id: string }> {
+  return prisma.aIOperation.create({
+    data: {
+      endpoint: params.endpoint,
+      method: params.method,
+      requestBody: JSON.stringify(params.requestBody),
+      userId: params.userId,
+    },
+  });
+}
+
+/**
+ * Update AI operation with response
+ */
+export async function updateAIOperation(
+  operationId: string,
+  response: {
+    data: unknown;
+    status: number;
+    latencyMs: number;
+  }
+): Promise<void> {
+  await prisma.aIOperation.update({
+    where: { id: operationId },
+    data: {
+      responseBody: JSON.stringify(response.data),
+      statusCode: response.status,
+      latencyMs: response.latencyMs,
+    },
+  });
+}
+
+/**
+ * Log AI operation error
+ */
+export async function logAIOperationError(params: {
+  endpoint: string;
+  method: string;
+  error: string;
+  statusCode: number;
+  latencyMs: number;
+  userId?: string;
+}): Promise<void> {
+  await prisma.aIOperation.create({
+    data: {
+      endpoint: params.endpoint,
+      method: params.method,
+      requestBody: null,
+      responseBody: null,
+      statusCode: params.statusCode,
+      latencyMs: params.latencyMs,
+      userId: params.userId,
+      error: params.error,
+    },
+  });
+}
+
+// ============================================================================
+// STATUS NORMALIZATION
+// ============================================================================
+
+/**
+ * Normalize job status string for consistent comparison
+ */
+export function normalizeStatus(status: string | null | undefined): string {
+  if (!status) return 'UNKNOWN';
+  return status.toUpperCase().trim();
+}
+
+/**
+ * Check if job is in terminal state (completed or failed)
+ */
+export function isTerminalStatus(status: string): boolean {
+  const normalized = normalizeStatus(status);
+  return normalized === 'COMPLETED' || normalized === 'FAILED';
+}
+
+/**
+ * Check if ingest is complete (handles various status formats)
+ */
+export function isIngestComplete(status: string | null | undefined): boolean {
+  const normalized = normalizeStatus(status);
+  return normalized === 'INGESTED' || normalized === 'COMPLETED';
+}
+
+// ============================================================================
+// DATABASE QUERY HELPERS
+// ============================================================================
+
+/**
+ * Get evidence with attachments for AI processing
+ */
+export async function getEvidenceForAI(evidenceId: string) {
+  return prisma.evidence.findUnique({
+    where: { id: evidenceId },
+    include: {
+      attachments: {
+        select: {
+          id: true,
+          fileName: true,
+        },
+        orderBy: { uploadedAt: 'desc' },
+      },
+      evidenceControls: {
+        include: {
+          control: true,
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Get policy with controls for AI processing
+ */
+export async function getPolicyForAI(policyId: string) {
+  return prisma.policy.findUnique({
+    where: { id: policyId },
+    include: {
+      policyControls: {
+        include: {
+          control: {
+            include: {
+              evidenceControls: {
+                include: {
+                  evidence: {
+                    include: {
+                      linkedArtifacts: { include: { artifact: true } },
+                      attachments: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Update evidence AI status
+ */
+export async function updateEvidenceAIStatus(
+  evidenceId: string,
+  status: {
+    ingestStatus?: string;
+    reviewStatus?: string;
+    reviewedAt?: Date;
+  }
+): Promise<void> {
+  const data: Record<string, unknown> = {};
+  if (status.ingestStatus) data.aiIngestStatus = status.ingestStatus;
+  if (status.reviewStatus) data.aiReviewStatus = status.reviewStatus;
+  if (status.reviewedAt) data.aiReviewedAt = status.reviewedAt;
+
+  await prisma.evidence.update({
+    where: { id: evidenceId },
+    data,
+  });
+}
+
+/**
+ * Update policy AI status
+ */
+export async function updatePolicyAIStatus(
+  policyId: string,
+  status: {
+    aiReviewStatus?: string;
+    aiReviewScore?: number;
+    aiReviewJustification?: string;
+    status?: string;
+  }
+): Promise<void> {
+  await prisma.policy.update({
+    where: { id: policyId },
+    data: status,
+  });
+}
+
+// ============================================================================
+// RESPONSE PARSING HELPERS
+// ============================================================================
+
+/**
+ * Parse compliance data from AI response
+ */
+export function parseComplianceData(aiData: {
+  policy_compliant_data?: {
+    total_controls?: number;
+    total_compliant_controls?: number;
+    compliant_percent?: number;
+  };
+  controls_response?: Array<{
+    control_code: string;
+    status: string;
+    answer: string;
+    score?: number;
+  }>;
+}): {
+  totalControls: number;
+  compliantControls: number;
+  compliancePercent: number;
+  controlsResponse: Array<{
+    control_code: string;
+    status: string;
+    answer: string;
+    score?: number;
+  }>;
+} {
+  const policyData = aiData.policy_compliant_data || {};
+  return {
+    totalControls: policyData.total_controls ?? 0,
+    compliantControls: policyData.total_compliant_controls ?? 0,
+    compliancePercent: policyData.compliant_percent ?? 0,
+    controlsResponse: aiData.controls_response || [],
+  };
+}
+
+/**
+ * Build compliance summary from parsed data
+ */
+export function buildComplianceSummary(
+  complianceData: ReturnType<typeof parseComplianceData>
+): string {
+  const { totalControls, compliantControls, compliancePercent, controlsResponse } = complianceData;
+
+  const nonCompliantItems = controlsResponse.filter(
+    c => c.status?.toLowerCase() !== 'compliant'
+  );
+
+  let summary = `Policy review completed. ${compliantControls}/${totalControls} controls compliant (${compliancePercent}%). `;
+
+  if (nonCompliantItems.length > 0) {
+    summary += `Non-compliant: ${nonCompliantItems.map(c => c.control_code).join(', ')}`;
+  } else {
+    summary += 'All controls are compliant.';
+  }
+
+  return summary;
+}
+
+/**
+ * Extract gaps from AI response
+ */
+export function extractGaps(
+  controlsResponse: Array<{
+    control_code: string;
+    status: string;
+    answer: string;
+    score?: number;
+  }>
+): Array<{
+  control_code: string;
+  status: string;
+  answer: string;
+  score?: number;
+}> {
+  return controlsResponse.filter(c => c.status?.toLowerCase() !== 'compliant');
+}
+
+/**
+ * Extract recommendations from AI response
+ */
+export function extractRecommendations(
+  controlsResponse: Array<{
+    control_code: string;
+    answer: string;
+  }>
+): Array<{
+  control_code: string;
+  recommendation: string;
+}> {
+  return controlsResponse
+    .filter(c => c.answer && c.answer !== 'No relevant results found.')
+    .map(c => ({
+      control_code: c.control_code,
+      recommendation: c.answer,
+    }));
+}

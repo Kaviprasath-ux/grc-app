@@ -22,10 +22,21 @@ export const GET = withAuth(
       const where: Record<string, unknown> = {
         ...tenantFilter,
       };
+
+      // Department-based filtering for DepartmentContributor and DepartmentReviewer roles
+      // These roles should only see controls belonging to their department
+      const isDepartmentRole = session.roles?.some((role: string) =>
+        ['DepartmentContributor', 'DepartmentReviewer'].includes(role)
+      );
+      if (isDepartmentRole && session.departmentId) {
+        where.departmentId = session.departmentId;
+      } else if (departmentId) {
+        where.departmentId = departmentId;
+      }
+
       if (status) where.status = status;
       if (frameworkId) where.frameworkId = frameworkId;
       if (domainId) where.domainId = domainId;
-      if (departmentId) where.departmentId = departmentId;
       if (assigneeId) where.assigneeId = assigneeId;
       if (functionalGrouping) where.functionalGrouping = functionalGrouping;
       if (search) {
