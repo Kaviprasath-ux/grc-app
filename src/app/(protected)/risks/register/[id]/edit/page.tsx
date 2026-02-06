@@ -138,6 +138,10 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   const [riskId, setRiskId] = useState("");
   const [linkControlDialogOpen, setLinkControlDialogOpen] = useState(false);
   const [controlSearch, setControlSearch] = useState("");
+  const [createCauseDialogOpen, setCreateCauseDialogOpen] = useState(false);
+  const [newCauseName, setNewCauseName] = useState("");
+  const [newCauseDescription, setNewCauseDescription] = useState("");
+  const [creatingCause, setCreatingCause] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -445,6 +449,43 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
     return formData.selectedCauses
       .map((id) => causes.find((c) => c.id === id)?.name)
       .filter(Boolean);
+  };
+
+  const handleCreateCause = async () => {
+    if (!newCauseName.trim()) {
+      toast.error(t("causeNameRequired") || "Cause name is required");
+      return;
+    }
+
+    setCreatingCause(true);
+    try {
+      const response = await fetch("/api/risk-causes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCauseName.trim(),
+          description: newCauseDescription.trim() || null,
+        }),
+      });
+
+      if (response.ok) {
+        const newCause = await response.json();
+        setCauses((prev) => [...prev, newCause]);
+        addToSelection("selectedCauses", newCause.id);
+        setCreateCauseDialogOpen(false);
+        setNewCauseName("");
+        setNewCauseDescription("");
+        toast.success(t("causeCreatedSuccessfully") || "Cause created successfully");
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to create cause");
+      }
+    } catch (error) {
+      console.error("Failed to create cause:", error);
+      toast.error("Failed to create cause");
+    } finally {
+      setCreatingCause(false);
+    }
   };
 
   if (permissionsLoading || loadingRisk) {
@@ -819,7 +860,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" onClick={() => setCreateCauseDialogOpen(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -969,6 +1010,44 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
               </div>
             )}
           </div>
+
+          {/* Create Cause Dialog */}
+          <Dialog open={createCauseDialogOpen} onOpenChange={setCreateCauseDialogOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{t("createNewCause") || "Create New Cause"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="causeName">{t("name")} *</Label>
+                  <Input
+                    id="causeName"
+                    value={newCauseName}
+                    onChange={(e) => setNewCauseName(e.target.value)}
+                    placeholder={t("enterCauseName") || "Enter cause name"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="causeDescription">{t("description")}</Label>
+                  <Textarea
+                    id="causeDescription"
+                    value={newCauseDescription}
+                    onChange={(e) => setNewCauseDescription(e.target.value)}
+                    placeholder={t("enterCauseDescription") || "Enter cause description (optional)"}
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setCreateCauseDialogOpen(false)}>
+                  {t("cancel")}
+                </Button>
+                <Button onClick={handleCreateCause} disabled={creatingCause || !newCauseName.trim()}>
+                  {creatingCause ? t("creating") || "Creating..." : t("create")}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 pt-6 border-t">
