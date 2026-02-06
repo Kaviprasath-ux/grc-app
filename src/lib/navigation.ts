@@ -100,6 +100,7 @@ export const navigation: NavItem[] = [
       { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
       { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },
       { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList, permission: "compliance.evidence:view" },
+      { name: "Domain", href: "/compliance/domain", icon: Layers, permission: "compliance.domain:view" },
       // Below items are for CustomerAdministrator and other roles, not GRCAdministrator
       { name: "Exception Management", href: "/compliance/exceptions", icon: AlertTriangle, permission: "compliance.exceptions:view" },
       { name: "KPI", href: "/compliance/kpis", icon: BarChart3, permission: "compliance.kpi:view" },
@@ -108,8 +109,6 @@ export const navigation: NavItem[] = [
     ],
   },
   // ==================== End Compliance Section ====================
-
-  // Configuration Section removed from GRCAdministrator navigation per user request
 
   // ==================== Asset Management Section ====================
   {

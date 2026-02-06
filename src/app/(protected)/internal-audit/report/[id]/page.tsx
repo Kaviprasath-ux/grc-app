@@ -78,6 +78,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
   const router = useRouter();
   const { t } = useLanguage();
   const isAuditHead = useHasRole("AuditHead");
+  const isAuditManager = useHasRole("AuditManager");
   const isAuditee = useHasRole("Auditee");
 
   const [loading, setLoading] = useState(true);
@@ -91,7 +92,6 @@ export default function AuditReportViewPage({ params }: PageProps) {
   // Edit form state (for AuditHead)
   const [editForm, setEditForm] = useState({
     executiveSummary: "",
-    summary: "",
     overallResultText: "",
     background: "",
     objective: "",
@@ -118,17 +118,17 @@ export default function AuditReportViewPage({ params }: PageProps) {
         setReport(data);
         // Static template defaults (Objective and Scope default from engagement)
         const defaultExecutiveSummary = `This report presents the results of the internal audit conducted for ${data.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`;
-        const defaultSummary = "This section summarizes the key findings and conclusions from the internal audit conducted for the period indicated above. The audit was performed to evaluate the adequacy and effectiveness of the organization's internal controls, governance processes, and risk management practices.";
         const defaultOverallResultText = "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.";
         const defaultBackground = "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter.";
         const defaultObjective = "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements.";
         const defaultScope = "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report.";
         const defaultRecommendations = "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency.";
-        const defaultConclusion = "In conclusion, this audit has provided valuable insights into the current state of internal controls and compliance within the audited area. We appreciate the cooperation of all personnel involved in this audit and look forward to working with management to address the identified findings.";
+        const targetDate = new Date(data.engagement.actualEndDate || data.engagement.plannedEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const processName = data.engagement.process?.name || data.title;
+        const defaultConclusion = `Based on the audit procedures performed and the evidence obtained, Internal Audit concludes that the system of internal control over ${processName} as of the audit period.\n\nThe control environment supports the integrity, accuracy, and reliability of the organization's financial data within the audited areas.\n\nAccordingly, this audit engagement is formally closed as of ${targetDate}.`;
 
         setEditForm({
           executiveSummary: data.executiveSummary || defaultExecutiveSummary,
-          summary: data.managementResponse || defaultSummary,
           overallResultText: data.observations || defaultOverallResultText,
           background: data.methodology || defaultBackground,
           objective: data.objectives || data.engagement.engagementObjective || defaultObjective,
@@ -176,7 +176,6 @@ export default function AuditReportViewPage({ params }: PageProps) {
       // Map form fields to API fields
       const payload = {
         executiveSummary: editForm.executiveSummary,
-        managementResponse: editForm.summary,
         observations: editForm.overallResultText,
         methodology: editForm.background,
         objectives: editForm.objective,
@@ -311,7 +310,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
             <Download className="h-4 w-4 mr-2" />
             {t("Download Report")}
           </Button>
-          {isAuditHead && (
+          {(isAuditHead || isAuditManager) && (
             <>
               {!isEditing ? (
                 <Button
@@ -329,17 +328,17 @@ export default function AuditReportViewPage({ params }: PageProps) {
                       setIsEditing(false);
                       // Static template defaults
                       const defaultExecutiveSummary = `This report presents the results of the internal audit conducted for ${report.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`;
-                      const defaultSummary = "This section summarizes the key findings and conclusions from the internal audit conducted for the period indicated above. The audit was performed to evaluate the adequacy and effectiveness of the organization's internal controls, governance processes, and risk management practices.";
                       const defaultOverallResultText = "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.";
                       const defaultBackground = "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter.";
                       const defaultObjective = "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements.";
                       const defaultScope = "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report.";
                       const defaultRecommendations = "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency.";
-                      const defaultConclusion = "In conclusion, this audit has provided valuable insights into the current state of internal controls and compliance within the audited area. We appreciate the cooperation of all personnel involved in this audit and look forward to working with management to address the identified findings.";
+                      const targetDate = new Date(report.engagement.actualEndDate || report.engagement.plannedEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                      const processName = report.engagement.process?.name || report.title;
+                      const defaultConclusion = `Based on the audit procedures performed and the evidence obtained, Internal Audit concludes that the system of internal control over ${processName} as of the audit period.\n\nThe control environment supports the integrity, accuracy, and reliability of the organization's financial data within the audited areas.\n\nAccordingly, this audit engagement is formally closed as of ${targetDate}.`;
 
                       setEditForm({
                         executiveSummary: report.executiveSummary || defaultExecutiveSummary,
-                        summary: report.managementResponse || defaultSummary,
                         overallResultText: report.observations || defaultOverallResultText,
                         background: report.methodology || defaultBackground,
                         objective: report.objectives || report.engagement.engagementObjective || defaultObjective,
@@ -454,25 +453,6 @@ export default function AuditReportViewPage({ params }: PageProps) {
           ) : (
             <p className="text-sm whitespace-pre-wrap">
               {report.executiveSummary || `This report presents the results of the internal audit conducted for ${report.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`}
-            </p>
-          )}
-        </div>
-
-        <hr className="border-gray-300" />
-
-        {/* Summary */}
-        <div>
-          <h2 className="font-bold text-base mb-2">{t("Summary")}</h2>
-          {isEditing ? (
-            <Textarea
-              value={editForm.summary}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, summary: e.target.value }))}
-              rows={4}
-              className="w-full"
-            />
-          ) : (
-            <p className="text-sm whitespace-pre-wrap">
-              {report.managementResponse || "This section summarizes the key findings and conclusions from the internal audit conducted for the period indicated above. The audit was performed to evaluate the adequacy and effectiveness of the organization's internal controls, governance processes, and risk management practices."}
             </p>
           )}
         </div>
@@ -677,7 +657,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-bold text-base">{t("Auditee Comment")}</h2>
-            {isAuditee && !isAuditHead && !isEditingAuditeeComment && (
+            {isAuditee && !isAuditHead && !isAuditManager && !isEditingAuditeeComment && (
               <Button
                 size="sm"
                 variant="outline"

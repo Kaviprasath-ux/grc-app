@@ -111,7 +111,7 @@ export default function BIASettingsPage() {
   // New item forms
   const [newCategory, setNewCategory] = useState({ name: "", description: "" });
   const [newRating, setNewRating] = useState({ label: "", score: 0, description: "" });
-  const [newRange, setNewRange] = useState({ label: "", lowValue: 0, highValue: 0 });
+  const [newRange, setNewRange] = useState<{ label: string; lowValue: number; highValue: number | null }>({ label: "", lowValue: 0, highValue: null });
   const [newBcp, setNewBcp] = useState({ name: "", type: "RTO", hours: 0, description: "" });
 
   useEffect(() => {
@@ -225,7 +225,7 @@ export default function BIASettingsPage() {
         fetchAllData();
         setIsRangeDialogOpen(false);
         setEditingRange(null);
-        setNewRange({ label: "", lowValue: 0, highValue: 0 });
+        setNewRange({ label: "", lowValue: 0, highValue: null });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to save scoring range"), variant: "destructive" });
@@ -652,7 +652,7 @@ export default function BIASettingsPage() {
                     size="sm"
                     onClick={() => {
                       setEditingRange(null);
-                      setNewRange({ label: "", lowValue: 0, highValue: 0 });
+                      setNewRange({ label: "", lowValue: 0, highValue: null });
                       setIsRangeDialogOpen(true);
                     }}
                   >
@@ -857,12 +857,13 @@ export default function BIASettingsPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("High Range")}</Label>
                 <Input
                   type="number"
-                  value={editingRange?.highValue ?? newRange.highValue}
-                  onChange={(e) =>
+                  value={editingRange?.highValue ?? newRange.highValue ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? null : parseInt(e.target.value);
                     editingRange
-                      ? setEditingRange({ ...editingRange, highValue: parseInt(e.target.value) || 0 })
-                      : setNewRange({ ...newRange, highValue: parseInt(e.target.value) || 0 })
-                  }
+                      ? setEditingRange({ ...editingRange, highValue: val })
+                      : setNewRange({ ...newRange, highValue: val as number });
+                  }}
                   placeholder={t("e.g., 500")}
                   className="mt-1.5 bg-white"
                 />
@@ -873,12 +874,13 @@ export default function BIASettingsPage() {
                 </Label>
                 <Input
                   type="number"
-                  value={editingRange?.lowValue ?? newRange.lowValue}
-                  onChange={(e) =>
+                  value={editingRange?.lowValue ?? newRange.lowValue ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? 0 : parseInt(e.target.value);
                     editingRange
-                      ? setEditingRange({ ...editingRange, lowValue: parseInt(e.target.value) || 0 })
-                      : setNewRange({ ...newRange, lowValue: parseInt(e.target.value) || 0 })
-                  }
+                      ? setEditingRange({ ...editingRange, lowValue: isNaN(val) ? 0 : val })
+                      : setNewRange({ ...newRange, lowValue: isNaN(val) ? 0 : val });
+                  }}
                   placeholder={t("e.g., 250")}
                   className="mt-1.5 bg-white"
                 />

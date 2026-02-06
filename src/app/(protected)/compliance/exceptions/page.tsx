@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { Badge } from "@/components/ui/badge";
@@ -167,6 +167,7 @@ export default function ExceptionsPage() {
   const fromDashboard = searchParams.get("from") === "dashboard";
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.exceptions');
+  const isGRCAdmin = useHasRole("GRCAdministrator");
   const { t } = useLanguage();
   const { toast } = useToast();
   const [exceptions, setExceptions] = useState<Exception[]>([]);
@@ -577,14 +578,21 @@ export default function ExceptionsPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
-        </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <Link href="/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Integrated Frameworks")}
-        </Link>
+        {isGRCAdmin ? (
+          <>
+            <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+              <Home className="h-4 w-4" />
+              <span>{t("GRC")}</span>
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <span className="text-slate-500">{t("Compliance")}</span>
+          </>
+        ) : (
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{t("Exceptions")}</span>
       </nav>

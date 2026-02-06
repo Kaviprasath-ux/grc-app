@@ -16,6 +16,7 @@ import {
 import { Check, Sparkles, Upload, X, Home, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
@@ -52,6 +53,7 @@ export default function RiskIdentificationPage() {
   const { data: session } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
+  const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [auditFocus, setAuditFocus] = useState<string>("");
@@ -294,11 +296,19 @@ export default function RiskIdentificationPage() {
       <div className="space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
-          </Link>
+          </div>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          {canViewDashboard && (
+            <>
+              <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+                {t("Dashboard")}
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            </>
+          )}
           <span className="text-primary-700 font-medium">{t("Risk Identification")}</span>
         </nav>
 
@@ -323,11 +333,19 @@ export default function RiskIdentificationPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
-        </Link>
+        </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        {canViewDashboard && (
+          <>
+            <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Dashboard")}
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          </>
+        )}
         <span className="text-primary-700 font-medium">{t("Risk Identification")}</span>
       </nav>
 

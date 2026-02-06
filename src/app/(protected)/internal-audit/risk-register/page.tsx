@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
 import Link from "next/link";
+import { usePermissions } from "@/hooks/usePermissions";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
 import {
@@ -191,6 +192,7 @@ export default function RiskRegisterPage() {
   const { data: session } = useSession();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [risks, setRisks] = useState<InternalAuditRisk[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -931,11 +933,19 @@ export default function RiskRegisterPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
-        </Link>
+        </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        {canViewDashboard && (
+          <>
+            <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Dashboard")}
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          </>
+        )}
         <span className="text-primary-700 font-medium">{t("Risk Register")}</span>
       </nav>
 

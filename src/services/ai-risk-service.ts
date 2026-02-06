@@ -20,6 +20,31 @@ import {
     GeneratedRiskData,
 } from '@/types/ai-types';
 
+/**
+ * Extract error message from API error, handling FastAPI validation format
+ */
+function extractErrorMessage(
+    err: { message?: string; data?: { detail?: unknown } },
+    fallback: string
+): string {
+    // Prefer the pre-extracted message (ai-api-client already handles this)
+    if (err.message && typeof err.message === 'string') {
+        return err.message;
+    }
+    // Fallback to detail handling in case of direct fetch errors
+    if (err.data?.detail) {
+        if (typeof err.data.detail === 'string') {
+            return err.data.detail;
+        }
+        // FastAPI validation error format: [{ loc, msg, type }]
+        if (Array.isArray(err.data.detail) && err.data.detail.length > 0) {
+            const first = err.data.detail[0] as { msg?: string };
+            if (first.msg) return first.msg;
+        }
+    }
+    return fallback;
+}
+
 // ==================== RISK GENERATION ====================
 
 /**
@@ -42,7 +67,7 @@ export async function generateProcessRisks(
         console.log('[AI Service] Risk generation response:', response.data);
         return response.data as RiskGenerationResponse;
     } catch (error: unknown) {
-        const err = error as { message?: string; status?: number; statusText?: string; data?: { detail?: string }; url?: string };
+        const err = error as { message?: string; status?: number; statusText?: string; data?: { detail?: unknown }; url?: string };
         console.error('[AI Service] Error generating process risks:', {
             message: err.message,
             status: err.status,
@@ -51,11 +76,7 @@ export async function generateProcessRisks(
             url: err.url
         });
 
-        throw new Error(
-            err.data?.detail ||
-            err.message ||
-            'Failed to generate process risks'
-        );
+        throw new Error(extractErrorMessage(err, 'Failed to generate process risks'));
     }
 }
 
@@ -91,13 +112,9 @@ export async function submitSemanticMatching(
 
         return response.data as SemanticMatchingJobResponse;
     } catch (error: unknown) {
-        const err = error as { data?: { detail?: string }; message?: string };
+        const err = error as { data?: { detail?: unknown }; message?: string };
         console.error('Error submitting semantic matching job:', err);
-        throw new Error(
-            err.data?.detail ||
-            err.message ||
-            'Failed to submit semantic matching job'
-        );
+        throw new Error(extractErrorMessage(err, 'Failed to submit semantic matching job'));
     }
 }
 
@@ -117,13 +134,9 @@ export async function checkSemanticMatchingStatus(
 
         return response.data as SemanticMatchingStatusResponse;
     } catch (error: unknown) {
-        const err = error as { data?: { detail?: string }; message?: string };
+        const err = error as { data?: { detail?: unknown }; message?: string };
         console.error('Error checking semantic matching status:', err);
-        throw new Error(
-            err.data?.detail ||
-            err.message ||
-            'Failed to check semantic matching status'
-        );
+        throw new Error(extractErrorMessage(err, 'Failed to check semantic matching status'));
     }
 }
 
@@ -143,13 +156,9 @@ export async function getSemanticMatchingResult(
 
         return response.data as SemanticMatchingResultResponse;
     } catch (error: unknown) {
-        const err = error as { data?: { detail?: string }; message?: string };
+        const err = error as { data?: { detail?: unknown }; message?: string };
         console.error('Error getting semantic matching result:', err);
-        throw new Error(
-            err.data?.detail ||
-            err.message ||
-            'Failed to get semantic matching result'
-        );
+        throw new Error(extractErrorMessage(err, 'Failed to get semantic matching result'));
     }
 }
 

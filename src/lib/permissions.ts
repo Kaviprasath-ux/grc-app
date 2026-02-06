@@ -154,18 +154,13 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'grc', actions: ['*'], scope: 'all' },
     { resource: 'grc.customer-accounts', actions: ['*'], scope: 'all' },
     { resource: 'grc.customers', actions: ['*'], scope: 'all' },
-    // Compliance module - specific resources only
+    // Compliance module - specific resources only (Frameworks, Controls, Governance, Evidence, Domain)
     { resource: 'compliance.framework', actions: ['*'], scope: 'all' },
     { resource: 'compliance.controls', actions: ['*'], scope: 'all' },
     { resource: 'compliance.governance', actions: ['*'], scope: 'all' },
     { resource: 'compliance.evidence', actions: ['*'], scope: 'all' },
     { resource: 'compliance.domain', actions: ['*'], scope: 'all' },
-    { resource: 'compliance.settings', actions: ['*'], scope: 'all' },
-    // Expanded Access for GRC Admin (Stabilization)
-    { resource: 'organization.*', actions: ['*'], scope: 'all' },
-    { resource: 'asset.*', actions: ['*'], scope: 'all' },
-    { resource: 'risk.*', actions: ['*'], scope: 'all' },
-    { resource: 'audit.*', actions: ['*'], scope: 'all' },
+    // NOTE: GRCAdministrator does NOT have access to: Configuration, Master Data, Organization, Asset Management, Risk Management, Internal Audit
   ],
 
   // Customer Administrator - Full access to organization and all other modules (except audit)
