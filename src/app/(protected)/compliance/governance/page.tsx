@@ -740,12 +740,14 @@ export default function GovernancePage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
-          <span>{t("Home")}</span>
-        </Link>
+          <span>{t("Compliance")}</span>
+        </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-slate-500">{t("Compliance")}</span>
+        <Link href="/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Integrated Frameworks")}
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{t("Governance")}</span>
       </nav>

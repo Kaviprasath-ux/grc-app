@@ -195,16 +195,16 @@ export default function FieldworkDetailsPage() {
   const getAIReviewStatusIcon = (status: string | null | undefined) => {
     const s = (status || "").toLowerCase();
     if (s === "irrelevant") {
-      return <XCircle className="h-4 w-4 flex-shrink-0 text-red-500" title="Irrelevant" />;
+      return <span title="Irrelevant"><XCircle className="h-4 w-4 flex-shrink-0 text-red-500" /></span>;
     }
     if (s === "relevant") {
-      return <Check className="h-4 w-4 flex-shrink-0 text-emerald-500" title="Relevant" />;
+      return <span title="Relevant"><Check className="h-4 w-4 flex-shrink-0 text-emerald-500" /></span>;
     }
     if (s === "partial" || s === "needs_attention" || s === "needs attention") {
-      return <AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-500" title="Needs Attention" />;
+      return <span title="Needs Attention"><AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-500" /></span>;
     }
     if (s) {
-      return <HelpCircle className="h-4 w-4 flex-shrink-0 text-slate-500" title={status || ""} />;
+      return <span title={status || ""}><HelpCircle className="h-4 w-4 flex-shrink-0 text-slate-500" /></span>;
     }
     return null;
   };

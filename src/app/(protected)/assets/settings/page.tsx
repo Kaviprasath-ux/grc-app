@@ -1126,6 +1126,7 @@ export default function AssetSettingsPage() {
                 name: row.original.name,
                 description: row.original.description || "",
                 status: (row.original as any).status || "Active",
+                subCategoryId: (row.original as any).subCategoryId || "",
               });
               setIsEditOpen(true);
             }}
@@ -1370,9 +1371,13 @@ export default function AssetSettingsPage() {
       <div className="space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/assets/inventory" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Inventory")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <button onClick={() => setEntitySubTab(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
@@ -1424,7 +1429,7 @@ export default function AssetSettingsPage() {
               } else if (entitySubTab === "subcategories") {
                 setSubCategoryForm({ name: "", description: "", categoryId: "", status: "Active" });
               } else if (entitySubTab === "groups") {
-                setGroupForm({ name: "", description: "", status: "Active" });
+                setGroupForm({ name: "", description: "", status: "Active", subCategoryId: "" });
               } else if (entitySubTab === "sensitivity") {
                 setSensitivityForm({ name: "", description: "" });
               } else if (entitySubTab === "asset-list") {
@@ -2010,9 +2015,13 @@ export default function AssetSettingsPage() {
       <div className="space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/assets/inventory" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Inventory")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
@@ -2081,9 +2090,13 @@ export default function AssetSettingsPage() {
       <div className="space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/assets/inventory" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Inventory")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
@@ -2270,9 +2283,13 @@ export default function AssetSettingsPage() {
       <div className="space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/assets/inventory" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Inventory")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
@@ -2879,9 +2896,13 @@ export default function AssetSettingsPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/assets/inventory" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Inventory")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{t("Settings")}</span>

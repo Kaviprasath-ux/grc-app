@@ -586,7 +586,13 @@ export default function ProcessPage() {
   const openEditProcess = (process: Process) => {
     let locationArr: string[] = [];
     try {
-      if (process.location) locationArr = JSON.parse(process.location);
+      if (process.location) {
+        if (Array.isArray(process.location)) {
+          locationArr = process.location;
+        } else if (typeof process.location === 'string') {
+          locationArr = JSON.parse(process.location);
+        }
+      }
     } catch { /* not JSON, treat as empty */ }
     setEditingProcess({
       ...process,
@@ -860,12 +866,16 @@ export default function ProcessPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
-          <span>Organization</span>
+          <span>{t("Organization")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Dashboard")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Process</span>
+        <span className="text-primary-700 font-medium">{t("Process")}</span>
       </nav>
 
       {/* Page Header */}
