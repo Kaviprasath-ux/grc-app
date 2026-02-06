@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -16,7 +16,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Link2, RefreshCw, Home } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronDown, ChevronRight, Link2, Home, Box, GitBranch } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -30,8 +31,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
-import { Unauthorized } from "@/components/ui/unauthorized";
 import { useToast } from "@/hooks/use-toast";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LinkedControl {
@@ -44,6 +45,20 @@ interface LinkedControl {
   };
 }
 
+interface ImpactedAsset {
+  id: string;
+  assetId: string;
+  name: string;
+  classification: string | null;
+}
+
+interface ImpactedProcess {
+  id: string;
+  processCode: string;
+  name: string;
+  description: string | null;
+}
+
 interface MatrixEntry {
   id: string;
   matrixEntryId: string;
@@ -54,12 +69,14 @@ interface MatrixEntry {
   residualRiskRating: string | null;
   status: string;
   ownerName: string | null;
-  riskId: string | null; // Reference to original risk (may be null if risk was deleted)
+  riskId: string | null;
   risk: {
     id: string;
     riskId: string;
     name: string;
     status: string;
+    impactedAsset: ImpactedAsset | null;
+    impactedProcess: ImpactedProcess | null;
   } | null;
   linkedControls: LinkedControl[];
 }
@@ -92,19 +109,17 @@ const riskStatusColors: Record<string, string> = {
 };
 
 export default function RiskControlMatrixPage() {
-  const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
+  const { canView, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
   const isCustomerAdmin = useHasRole('CustomerAdministrator');
   const { t } = useLanguage();
   const [entries, setEntries] = useState<MatrixEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
-  const [expandedControls, setExpandedControls] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [importing, setImporting] = useState(false);
+  const [unlinking, setUnlinking] = useState<string | null>(null);
   const { toast } = useToast();
-  const pageSize = 10;
+  const pageSize = 30;
 
   const fetchEntries = useCallback(async (pageNum: number, append: boolean = false) => {
     try {
@@ -117,11 +132,12 @@ export default function RiskControlMatrixPage() {
           setEntries(prev => [...prev, ...data]);
         } else {
           setEntries(data);
-          // Expand all entries by default
-          setExpandedEntries(new Set(data.map((e: MatrixEntry) => e.id)));
+          // Expand first entry by default if any
+          if (data.length > 0) {
+            setExpandedEntries(new Set([data[0].id]));
+          }
         }
 
-        // Check if there are more items
         if (result.pagination) {
           setHasMore(pageNum < result.pagination.totalPages);
         } else {
@@ -157,27 +173,13 @@ export default function RiskControlMatrixPage() {
     });
   };
 
-  const toggleControls = (entryId: string) => {
-    setExpandedControls(prev => {
-      const next = new Set(prev);
-      if (next.has(entryId)) {
-        next.delete(entryId);
-      } else {
-        next.add(entryId);
-      }
-      return next;
-    });
-  };
-
-  // Unlink control from matrix entry (does NOT delete the control)
   const handleUnlinkControl = async (entryId: string, controlId: string) => {
-    setDeleting(`${entryId}-${controlId}`);
+    setUnlinking(`${entryId}-${controlId}`);
     try {
       const response = await fetch(`/api/risk-control-matrix/${entryId}/controls/${controlId}`, {
         method: "DELETE",
       });
       if (response.ok) {
-        // Update local state to remove the unlinked control
         setEntries(prev => prev.map(entry => {
           if (entry.id === entryId) {
             return {
@@ -200,105 +202,10 @@ export default function RiskControlMatrixPage() {
         variant: "destructive",
       });
     } finally {
-      setDeleting(null);
+      setUnlinking(null);
     }
   };
 
-  // Delete matrix entry (does NOT delete the underlying risk)
-  const handleDeleteEntry = async (entryId: string) => {
-    setDeleting(`entry-${entryId}`);
-    try {
-      const response = await fetch(`/api/risk-control-matrix/${entryId}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        // Remove the entry from local state
-        setEntries(prev => prev.filter(entry => entry.id !== entryId));
-        toast({
-          title: t("Entry deleted"),
-          description: t("The matrix entry has been removed. The underlying risk is NOT affected."),
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting matrix entry:", error);
-      toast({
-        title: t("Error"),
-        description: t("Failed to delete matrix entry."),
-        variant: "destructive",
-      });
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  // Delete all matrix entries (does NOT delete the underlying risks)
-  const handleDeleteAllEntries = async () => {
-    setDeleting("all-entries");
-    try {
-      const response = await fetch(`/api/risk-control-matrix`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        setEntries([]);
-        toast({
-          title: t("All entries deleted"),
-          description: t("All matrix entries have been removed. The underlying risks are NOT affected."),
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting all matrix entries:", error);
-      toast({
-        title: t("Error"),
-        description: t("Failed to delete matrix entries."),
-        variant: "destructive",
-      });
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  // Import risks to the matrix (creates matrix entries from existing risks)
-  const handleImportRisks = async () => {
-    setImporting(true);
-    try {
-      const response = await fetch(`/api/risk-control-matrix/import`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ includeControls: true }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: t("Import completed"),
-          description: `${t("Imported")} ${result.imported} ${t("risks to the matrix.")} ${result.skipped} ${t("already existed.")}`,
-        });
-        // Refresh the list
-        setPage(1);
-        fetchEntries(1);
-      } else {
-        const error = await response.json();
-        toast({
-          title: t("Import failed"),
-          description: error.error || t("Failed to import risks."),
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error importing risks:", error);
-      toast({
-        title: t("Error"),
-        description: t("Failed to import risks to matrix."),
-        variant: "destructive",
-      });
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -310,7 +217,6 @@ export default function RiskControlMatrixPage() {
     );
   }
 
-  // Show unauthorized if user doesn't have view permission
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access Risk Control Matrix.")} />;
   }
@@ -334,150 +240,67 @@ export default function RiskControlMatrixPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Risk Control Matrix")}</h1>
-        <div className="flex gap-2">
-          {/* Import from Risks button */}
-          {canCreate && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleImportRisks}
-              disabled={importing}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${importing ? 'animate-spin' : ''}`} />
-              {importing ? t("Importing...") : t("Sync from Risks")}
-            </Button>
-          )}
-
-          {/* Delete All button (CustomerAdmin only) */}
-          {isCustomerAdmin && canDelete && entries.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-500 border-red-300 hover:bg-red-50 hover:text-red-700"
-                  disabled={deleting === "all-entries"}
-                >
-                  {deleting === "all-entries" ? t("Deleting...") : t("Delete All")}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="p-0 gap-0">
-                <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-                  <AlertDialogTitle>{t("Delete All Matrix Entries?")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {`${t("This will remove all")} ${entries.length} ${t("entry(ies) from the Risk Control Matrix.")}`}
-                    <strong className="block mt-2 text-green-600">{t("The underlying Risk records will NOT be deleted.")}</strong>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-                  <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={handleDeleteAllEntries}
-                  >
-                    {t("Delete All")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
       </div>
 
       {/* Matrix Entry Accordion List */}
       <div className="space-y-3">
         {entries.length === 0 ? (
           <div className="bg-white rounded-lg border border-slate-200 py-12 text-center">
-            <p className="text-slate-500 mb-4">{t("No entries in the Risk Control Matrix")}</p>
-            {canCreate && (
-              <Button
-                variant="outline"
-                onClick={handleImportRisks}
-                disabled={importing}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${importing ? 'animate-spin' : ''}`} />
-                {importing ? t("Importing...") : t("Import Risks")}
-              </Button>
-            )}
+            <p className="text-slate-500">{t("No entries in the Risk Control Matrix")}</p>
+            <p className="text-slate-400 text-sm mt-2">{t("Entries are automatically created from the Risk Register")}</p>
           </div>
         ) : (
-          entries.map((entry) => (
-            <div key={entry.id} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-              {/* Entry Header - Collapsible Trigger */}
-              <Collapsible
-                open={expandedEntries.has(entry.id)}
-                onOpenChange={() => toggleEntry(entry.id)}
-              >
-                <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                  <CollapsibleTrigger asChild>
-                    <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 flex-1">
-                      {expandedEntries.has(entry.id) ? (
-                        <ChevronDown className="h-5 w-5 text-slate-500" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-slate-500" />
-                      )}
-                      <span className="font-medium text-primary-600">{entry.riskCode}</span>
-                      <span className="font-medium">{entry.name}</span>
-                      {/* Show if original risk still exists */}
-                      {!entry.riskId && (
-                        <Badge variant="outline" className="text-slate-500 text-xs">
-                          {t("Original risk deleted")}
-                        </Badge>
-                      )}
-                    </div>
-                  </CollapsibleTrigger>
-                  {isCustomerAdmin && canDelete && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="text-red-500 hover:text-red-700 p-0 h-auto"
-                          disabled={deleting === `entry-${entry.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {deleting === `entry-${entry.id}` ? t("Deleting...") : t("Delete")}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="p-0 gap-0">
-                        <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-                          <AlertDialogTitle>{t("Delete Matrix Entry?")}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {`${t("This will remove entry")} ${entry.riskCode} (${entry.name}) ${t("from the Risk Control Matrix.")}`}
-                            <strong className="block mt-2 text-green-600">{t("The underlying Risk record will NOT be deleted.")}</strong>
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-                          <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-red-600 hover:bg-red-700"
-                            onClick={() => handleDeleteEntry(entry.id)}
-                          >
-                            {t("Delete")}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
+          entries.map((entry) => {
+            const assetCount = entry.risk?.impactedAsset ? 1 : 0;
+            const processCount = entry.risk?.impactedProcess ? 1 : 0;
+            const controlCount = entry.linkedControls?.length || 0;
 
-                <CollapsibleContent>
-                  <div className="p-4">
-                    {/* Entry Details Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      {/* Description */}
-                      <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-slate-500 mb-1">{t("Description")}</p>
-                        <p className="text-sm">{entry.description || "-"}</p>
-                      </div>
+            return (
+              <div key={entry.id} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                <Collapsible
+                  open={expandedEntries.has(entry.id)}
+                  onOpenChange={() => toggleEntry(entry.id)}
+                >
+                  {/* Accordion Header with Counts */}
+                  <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 flex-1">
+                        {expandedEntries.has(entry.id) ? (
+                          <ChevronDown className="h-5 w-5 text-slate-500" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-slate-500" />
+                        )}
+                        <span className="font-medium text-primary-600">{entry.riskCode}</span>
+                        <span className="font-medium text-slate-800">-</span>
+                        <span className="font-medium text-slate-800">{entry.name}</span>
 
-                      {/* Risk Ratings and Status Row */}
-                      <div className="md:col-span-2 grid grid-cols-3 gap-4">
-                        {/* Inherent Risk Rating */}
-                        <div>
-                          <p className="text-sm font-medium text-slate-500 mb-1">{t("Inherent Risk Rating")}</p>
+                        {/* Separator */}
+                        <span className="text-slate-300 mx-2">|</span>
+
+                        {/* Counts */}
+                        <div className="flex items-center gap-4 text-sm text-slate-600">
+                          <span className="flex items-center gap-1">
+                            <Box className="h-3.5 w-3.5" />
+                            {t("Mapped Asset")}: <strong>{assetCount}</strong>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <GitBranch className="h-3.5 w-3.5" />
+                            {t("Mapped Process")}: <strong>{processCount}</strong>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Link2 className="h-3.5 w-3.5" />
+                            {t("Mapped Controls")}: <strong>{controlCount}</strong>
+                          </span>
+                        </div>
+
+                        {/* Separator */}
+                        <span className="text-slate-300 mx-2">|</span>
+
+                        {/* Risk Rating */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-slate-600">{t("Risk Rating")}:</span>
                           {entry.riskRating ? (
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskRatingColors[entry.riskRating] || "bg-slate-100 text-slate-800"}`}>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${riskRatingColors[entry.riskRating] || "bg-slate-100 text-slate-800"}`}>
                               {entry.riskRating}
                             </span>
                           ) : (
@@ -485,132 +308,220 @@ export default function RiskControlMatrixPage() {
                           )}
                         </div>
 
-                        {/* Residual Risk Rating */}
-                        <div>
-                          <p className="text-sm font-medium text-slate-500 mb-1">{t("Residual Risk Rating")}</p>
-                          {entry.residualRiskRating ? (
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskRatingColors[entry.residualRiskRating] || "bg-slate-100 text-slate-800"}`}>
-                              {entry.residualRiskRating}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-slate-400">-</span>
-                          )}
-                        </div>
-
-                        {/* Status */}
-                        <div>
-                          <p className="text-sm font-medium text-slate-500 mb-1">{t("Status")}</p>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskStatusColors[entry.status] || "bg-slate-100 text-slate-800"}`}>
-                            {entry.status}
-                          </span>
-                        </div>
+                        {!entry.riskId && (
+                          <Badge variant="outline" className="text-slate-500 text-xs ml-2">
+                            {t("Original risk deleted")}
+                          </Badge>
+                        )}
                       </div>
-
-                      {/* Risk Owner */}
-                      <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-slate-500 mb-1">{t("Risk Owner")}</p>
-                        <p className="text-sm">{entry.ownerName || t("No items found")}</p>
-                      </div>
-                    </div>
-
-                    {/* Linked Controls Section */}
-                    <div className="border-t border-slate-100 pt-4">
-                      <Collapsible
-                        open={expandedControls.has(entry.id)}
-                        onOpenChange={() => toggleControls(entry.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <CollapsibleTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="flex items-center gap-2 p-0 h-auto font-medium text-primary-600 hover:text-primary-700"
-                            >
-                              <Link2 className="h-4 w-4" />
-                              {t("Linked Controls")} ({entry.linkedControls?.length || 0})
-                              {expandedControls.has(entry.id) ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </CollapsibleTrigger>
-
-                        </div>
-
-                        <CollapsibleContent className="mt-3">
-                          {entry.linkedControls && entry.linkedControls.length > 0 ? (
-                            <div className="border border-slate-200 rounded-lg overflow-hidden">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
-                                    <TableHead className="text-slate-700 font-medium">{t("Control Code")}</TableHead>
-                                    <TableHead className="text-slate-700 font-medium">{t("Control Name")}</TableHead>
-                                    <TableHead className="text-slate-700 font-medium">{t("Status")}</TableHead>
-                                    <TableHead className="text-slate-700 font-medium w-[100px]">{t("Action")}</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {entry.linkedControls.map((lc) => (
-                                    <TableRow key={lc.id} className="hover:bg-slate-50">
-                                      <TableCell className="py-3 font-medium text-primary-600">
-                                        {lc.control.controlCode}
-                                      </TableCell>
-                                      <TableCell className="py-3 text-slate-800">{lc.control.name}</TableCell>
-                                      <TableCell className="py-3">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${controlStatusColors[lc.control.status] || "bg-slate-100 text-slate-800"}`}>
-                                          {lc.control.status}
-                                        </span>
-                                      </TableCell>
-                                      <TableCell className="py-3">
-                                      {isCustomerAdmin && (
-                                        <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                            <Button
-                                              variant="link"
-                                              size="sm"
-                                              className="text-red-500 hover:text-red-700 p-0 h-auto"
-                                              disabled={deleting === `${entry.id}-${lc.control.id}`}
-                                            >
-                                              {deleting === `${entry.id}-${lc.control.id}` ? t("Unlinking...") : t("Unlink")}
-                                            </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent className="p-0 gap-0">
-                                            <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-                                              <AlertDialogTitle>{t("Unlink Control?")}</AlertDialogTitle>
-                                              <AlertDialogDescription>
-                                                {`${t("This will remove the link between control")} ${lc.control.controlCode} ${t("and this matrix entry.")}`}
-                                                <strong className="block mt-2 text-green-600">{t("The control itself will NOT be deleted.")}</strong>
-                                              </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-                                              <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                                              <AlertDialogAction
-                                                className="bg-red-600 hover:bg-red-700"
-                                                onClick={() => handleUnlinkControl(entry.id, lc.control.id)}
-                                              >
-                                                {t("Unlink")}
-                                              </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                        </AlertDialog>
-                                      )}
-                                    </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-slate-500 py-2">{t("No linked controls")}</p>
-                          )}
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </div>
+                    </CollapsibleTrigger>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-          ))
+
+                  <CollapsibleContent>
+                    <div className="p-4">
+                      {/* Entry Details Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="md:col-span-2">
+                          <p className="text-sm font-medium text-slate-500 mb-1">{t("Description")}</p>
+                          <p className="text-sm">{entry.description || "-"}</p>
+                        </div>
+
+                        <div className="md:col-span-2 grid grid-cols-4 gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-slate-500 mb-1">{t("Inherent Risk Rating")}</p>
+                            {entry.riskRating ? (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskRatingColors[entry.riskRating] || "bg-slate-100 text-slate-800"}`}>
+                                {entry.riskRating}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-slate-400">-</span>
+                            )}
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-medium text-slate-500 mb-1">{t("Residual Risk Rating")}</p>
+                            {entry.residualRiskRating ? (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskRatingColors[entry.residualRiskRating] || "bg-slate-100 text-slate-800"}`}>
+                                {entry.residualRiskRating}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-slate-400">-</span>
+                            )}
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-medium text-slate-500 mb-1">{t("Status")}</p>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskStatusColors[entry.status] || "bg-slate-100 text-slate-800"}`}>
+                              {entry.status}
+                            </span>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-medium text-slate-500 mb-1">{t("Risk Owner")}</p>
+                            <p className="text-sm">{entry.ownerName || t("Not assigned")}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sub-tabs for Linked Controls, Asset Class, Linked Process */}
+                      <div className="border-t border-slate-100 pt-4">
+                        <Tabs defaultValue="controls" className="w-full">
+                          <TabsList className="grid w-full grid-cols-3 mb-4">
+                            <TabsTrigger value="controls" className="flex items-center gap-2">
+                              <Link2 className="h-4 w-4" />
+                              {t("Linked Controls")} ({controlCount})
+                            </TabsTrigger>
+                            <TabsTrigger value="asset" className="flex items-center gap-2">
+                              <Box className="h-4 w-4" />
+                              {t("Asset Class")} ({assetCount})
+                            </TabsTrigger>
+                            <TabsTrigger value="process" className="flex items-center gap-2">
+                              <GitBranch className="h-4 w-4" />
+                              {t("Linked Process")} ({processCount})
+                            </TabsTrigger>
+                          </TabsList>
+
+                          {/* Linked Controls Tab */}
+                          <TabsContent value="controls">
+                            {entry.linkedControls && entry.linkedControls.length > 0 ? (
+                              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
+                                      <TableHead className="text-slate-700 font-medium">{t("Control Code")}</TableHead>
+                                      <TableHead className="text-slate-700 font-medium">{t("Control Name")}</TableHead>
+                                      <TableHead className="text-slate-700 font-medium">{t("Status")}</TableHead>
+                                      {isCustomerAdmin && (
+                                        <TableHead className="text-slate-700 font-medium w-[100px]">{t("Action")}</TableHead>
+                                      )}
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {entry.linkedControls.map((lc) => (
+                                      <TableRow key={lc.id} className="hover:bg-slate-50">
+                                        <TableCell className="py-3 font-medium text-primary-600">
+                                          {lc.control.controlCode}
+                                        </TableCell>
+                                        <TableCell className="py-3 text-slate-800">{lc.control.name}</TableCell>
+                                        <TableCell className="py-3">
+                                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${controlStatusColors[lc.control.status] || "bg-slate-100 text-slate-800"}`}>
+                                            {lc.control.status}
+                                          </span>
+                                        </TableCell>
+                                        {isCustomerAdmin && (
+                                          <TableCell className="py-3">
+                                            <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                <Button
+                                                  variant="link"
+                                                  size="sm"
+                                                  className="text-red-500 hover:text-red-700 p-0 h-auto"
+                                                  disabled={unlinking === `${entry.id}-${lc.control.id}`}
+                                                >
+                                                  {unlinking === `${entry.id}-${lc.control.id}` ? t("Unlinking...") : t("Unlink")}
+                                                </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent className="p-0 gap-0">
+                                                <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+                                                  <AlertDialogTitle>{t("Unlink Control?")}</AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                    {`${t("This will remove the link between control")} ${lc.control.controlCode} ${t("and this matrix entry.")}`}
+                                                  </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+                                                  <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                                                  <AlertDialogAction
+                                                    className="bg-red-600 hover:bg-red-700"
+                                                    onClick={() => handleUnlinkControl(entry.id, lc.control.id)}
+                                                  >
+                                                    {t("Unlink")}
+                                                  </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
+                                          </TableCell>
+                                        )}
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500 py-4 text-center">{t("No linked controls")}</p>
+                            )}
+                          </TabsContent>
+
+                          {/* Asset Class Tab */}
+                          <TabsContent value="asset">
+                            {entry.risk?.impactedAsset ? (
+                              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
+                                      <TableHead className="text-slate-700 font-medium">{t("Asset ID")}</TableHead>
+                                      <TableHead className="text-slate-700 font-medium">{t("Asset Name")}</TableHead>
+                                      <TableHead className="text-slate-700 font-medium">{t("Classification")}</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    <TableRow className="hover:bg-slate-50">
+                                      <TableCell className="py-3 font-medium text-primary-600">
+                                        {entry.risk.impactedAsset.assetId}
+                                      </TableCell>
+                                      <TableCell className="py-3 text-slate-800">
+                                        {entry.risk.impactedAsset.name}
+                                      </TableCell>
+                                      <TableCell className="py-3 text-slate-600">
+                                        {entry.risk.impactedAsset.classification || "-"}
+                                      </TableCell>
+                                    </TableRow>
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500 py-4 text-center">{t("No impacted asset")}</p>
+                            )}
+                          </TabsContent>
+
+                          {/* Linked Process Tab */}
+                          <TabsContent value="process">
+                            {entry.risk?.impactedProcess ? (
+                              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
+                                      <TableHead className="text-slate-700 font-medium">{t("Process Code")}</TableHead>
+                                      <TableHead className="text-slate-700 font-medium">{t("Process Name")}</TableHead>
+                                      <TableHead className="text-slate-700 font-medium">{t("Description")}</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    <TableRow className="hover:bg-slate-50">
+                                      <TableCell className="py-3 font-medium text-primary-600">
+                                        {entry.risk.impactedProcess.processCode}
+                                      </TableCell>
+                                      <TableCell className="py-3 text-slate-800">
+                                        {entry.risk.impactedProcess.name}
+                                      </TableCell>
+                                      <TableCell className="py-3 text-slate-600">
+                                        {entry.risk.impactedProcess.description || "-"}
+                                      </TableCell>
+                                    </TableRow>
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500 py-4 text-center">{t("No linked process")}</p>
+                            )}
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -618,11 +529,11 @@ export default function RiskControlMatrixPage() {
       {hasMore && entries.length > 0 && (
         <div className="flex justify-center pt-4">
           <Button
-            variant="outline"
+            variant="link"
             onClick={handleLoadMore}
-            className="text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+            className="text-primary-600 hover:text-primary-700"
           >
-            {t("Load More")}
+            {t("Load more...")}
           </Button>
         </div>
       )}

@@ -92,6 +92,9 @@ interface EditRiskData {
   threats?: { threat: { id: string; name: string } }[];
   vulnerabilities?: { vulnerability: { id: string; name: string } }[];
   causes?: { cause: { id: string; name: string } }[];
+  impactedAsset?: { id: string; assetId: string; name: string } | null;
+  impactedProcess?: { id: string; processCode: string; name: string } | null;
+  controlRisks?: { control: { id: string; controlCode: string; name: string; status: string } }[];
 }
 
 interface NewRiskWizardProps {
@@ -185,11 +188,6 @@ export function NewRiskWizard({
       if (isEditMode && editData) {
         // Pre-fill form with edit data
         setGeneratedRiskId(editData.riskId);
-        const extendedEditData = editData as EditRiskData & {
-          impactedAsset?: { id: string };
-          impactedProcess?: { id: string };
-          controlRisks?: { control: { id: string } }[];
-        };
         setFormData({
           name: editData.name || "",
           description: editData.description || "",
@@ -198,12 +196,12 @@ export function NewRiskWizard({
           typeId: editData.type?.id || "",
           departmentId: editData.department?.id || "",
           ownerId: editData.owner?.id || "",
-          impactedAssetId: extendedEditData?.impactedAsset?.id || "",
-          impactedProcessId: extendedEditData?.impactedProcess?.id || "",
+          impactedAssetId: editData.impactedAsset?.id || "",
+          impactedProcessId: editData.impactedProcess?.id || "",
           selectedThreats: editData.threats?.map(t => t.threat.id) || [],
           selectedVulnerabilities: editData.vulnerabilities?.map(v => v.vulnerability.id) || [],
           selectedCauses: editData.causes?.map(c => c.cause.id) || [],
-          selectedControls: extendedEditData?.controlRisks?.map(cr => cr.control.id) || [],
+          selectedControls: editData.controlRisks?.map(cr => cr.control.id) || [],
         });
         // Fetch DepartmentReviewers for the existing department (if editing)
         if (editData.department?.id) {

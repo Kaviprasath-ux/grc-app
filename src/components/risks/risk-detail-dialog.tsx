@@ -48,6 +48,8 @@ interface Risk {
   type: { id: string; name: string } | null;
   department: { id: string; name: string } | null;
   owner: { id: string; fullName: string; email: string } | null;
+  impactedAsset?: { id: string; assetId: string; name: string } | null;
+  impactedProcess?: { id: string; processCode: string; name: string } | null;
   likelihood: number;
   impact: number;
   riskScore: number;
@@ -62,6 +64,7 @@ interface Risk {
   threats?: Array<{ threat: { id: string; name: string } }>;
   vulnerabilities?: Array<{ vulnerability: { id: string; name: string } }>;
   causes?: Array<{ cause: { id: string; name: string } }>;
+  controlRisks?: Array<{ control: { id: string; controlCode: string; name: string } }>;
   activityLogs?: Array<{
     id: string;
     activity: string;
@@ -106,6 +109,24 @@ interface Department {
 interface User {
   id: string;
   fullName: string;
+}
+
+interface Asset {
+  id: string;
+  assetId: string;
+  name: string;
+}
+
+interface Process {
+  id: string;
+  processCode: string;
+  name: string;
+}
+
+interface Control {
+  id: string;
+  controlCode: string;
+  name: string;
 }
 
 interface RiskDetailDialogProps {
@@ -153,6 +174,9 @@ export function RiskDetailDialog({
   const { canEdit } = usePermissions('risk.register');
   const [users, setUsers] = useState<User[]>([]);
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [processes, setProcesses] = useState<Process[]>([]);
+  const [controls, setControls] = useState<Control[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
   const [activityLogs, setActivityLogs] = useState<Risk["activityLogs"]>([]);
@@ -164,6 +188,9 @@ export function RiskDetailDialog({
     typeId: "",
     departmentId: "",
     ownerId: "",
+    impactedAssetId: "",
+    impactedProcessId: "",
+    selectedControls: [] as string[],
     likelihood: 1,
     impact: 1,
     status: "Open",
@@ -176,6 +203,9 @@ export function RiskDetailDialog({
     if (open && risk) {
       fetchUsers();
       fetchRiskTypes();
+      fetchAssets();
+      fetchProcesses();
+      fetchControls();
       fetchActivityLogs(risk.riskId);
       setActiveSection(0);
       setFormData({
@@ -186,6 +216,9 @@ export function RiskDetailDialog({
         typeId: risk.type?.id || "",
         departmentId: risk.department?.id || "",
         ownerId: risk.owner?.id || "",
+        impactedAssetId: risk.impactedAsset?.id || "",
+        impactedProcessId: risk.impactedProcess?.id || "",
+        selectedControls: risk.controlRisks?.map(cr => cr.control.id) || [],
         likelihood: risk.likelihood || 1,
         impact: risk.impact || 1,
         status: risk.status || "Open",
@@ -222,6 +255,42 @@ export function RiskDetailDialog({
     }
   };
 
+  const fetchAssets = async () => {
+    try {
+      const response = await fetch("/api/assets");
+      if (response.ok) {
+        const data = await response.json();
+        setAssets(data.data || data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch assets:", error);
+    }
+  };
+
+  const fetchProcesses = async () => {
+    try {
+      const response = await fetch("/api/processes");
+      if (response.ok) {
+        const data = await response.json();
+        setProcesses(data.data || data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch processes:", error);
+    }
+  };
+
+  const fetchControls = async () => {
+    try {
+      const response = await fetch("/api/controls");
+      if (response.ok) {
+        const data = await response.json();
+        setControls(data.data || data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch controls:", error);
+    }
+  };
+
   const fetchActivityLogs = async (riskId: string) => {
     try {
       const response = await fetch(`/api/risks/activity-log?riskId=${riskId}&limit=50`);
@@ -234,7 +303,7 @@ export function RiskDetailDialog({
     }
   };
 
-  const handleInputChange = (field: string, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -257,6 +326,9 @@ export function RiskDetailDialog({
           typeId: formData.typeId || null,
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
+          impactedAssetId: formData.impactedAssetId || null,
+          impactedProcessId: formData.impactedProcessId || null,
+          controls: formData.selectedControls,
           likelihood: formData.likelihood,
           impact: formData.impact,
           status: formData.status,
@@ -533,7 +605,16 @@ export function RiskDetailDialog({
                       <Label>Risk Type</Label>
                       <Select
                         value={formData.typeId}
-                        onValueChange={(value) => handleInputChange("typeId", value)}
+                        onValueChange={(value) => {
+                          handleInputChange("typeId", value);
+                          // Clear the opposite field when type changes
+                          const selectedType = riskTypes.find(t => t.id === value);
+                          if (selectedType?.name === "Asset Risk") {
+                            handleInputChange("impactedProcessId", "");
+                          } else if (selectedType?.name === "Process Risk") {
+                            handleInputChange("impactedAssetId", "");
+                          }
+                        }}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select type" />
@@ -548,6 +629,47 @@ export function RiskDetailDialog({
                       </Select>
                     </div>
                   </div>
+                  {/* Impacted Asset or Process based on Risk Type */}
+                  {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
+                    <div className="space-y-1.5">
+                      <Label>Impacted Asset</Label>
+                      <Select
+                        value={formData.impactedAssetId}
+                        onValueChange={(value) => handleInputChange("impactedAssetId", value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select impacted asset" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assets.map((asset) => (
+                            <SelectItem key={asset.id} value={asset.id}>
+                              {asset.assetId} - {asset.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
+                    <div className="space-y-1.5">
+                      <Label>Impacted Process</Label>
+                      <Select
+                        value={formData.impactedProcessId}
+                        onValueChange={(value) => handleInputChange("impactedProcessId", value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select impacted process" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {processes.map((process) => (
+                            <SelectItem key={process.id} value={process.id}>
+                              {process.processCode} - {process.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="space-y-4">
@@ -569,6 +691,20 @@ export function RiskDetailDialog({
                       <p className="font-medium">{risk.type?.name || "-"}</p>
                     </div>
                   </div>
+
+                  {/* Impacted Asset or Process */}
+                  {risk.impactedAsset && (
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <p className="text-xs text-muted-foreground uppercase">Impacted Asset</p>
+                      <p className="font-medium">{risk.impactedAsset.assetId} - {risk.impactedAsset.name}</p>
+                    </div>
+                  )}
+                  {risk.impactedProcess && (
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <p className="text-xs text-muted-foreground uppercase">Impacted Process</p>
+                      <p className="font-medium">{risk.impactedProcess.processCode} - {risk.impactedProcess.name}</p>
+                    </div>
+                  )}
 
                   {/* Threats */}
                   {risk.threats && risk.threats.length > 0 && (
@@ -771,19 +907,76 @@ export function RiskDetailDialog({
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <p className="text-sm text-muted-foreground">
-                  Controls linked to this risk
+                  Controls linked to this risk ({editMode ? formData.selectedControls.length : (risk.controlRisks?.length || 0)})
                 </p>
-                <Button variant="outline" size="sm">
-                  <Link2 className="h-4 w-4 mr-1" />
-                  Link Control
-                </Button>
               </div>
 
-              <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                <Shield className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>No controls linked to this risk yet</p>
-                <p className="text-sm">Click &quot;Link Control&quot; to associate controls with this risk</p>
-              </div>
+              {editMode ? (
+                <>
+                  {/* Control selection in edit mode */}
+                  <div className="space-y-3">
+                    <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+                      {controls.length > 0 ? (
+                        <div className="divide-y">
+                          {controls.map((control) => (
+                            <label
+                              key={control.id}
+                              className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedControls.includes(control.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    handleInputChange("selectedControls", [...formData.selectedControls, control.id]);
+                                  } else {
+                                    handleInputChange("selectedControls", formData.selectedControls.filter(id => id !== control.id));
+                                  }
+                                }}
+                                className="h-4 w-4 rounded border-gray-300"
+                              />
+                              <div className="flex-1">
+                                <span className="font-medium text-primary-600">{control.controlCode}</span>
+                                <span className="text-sm text-slate-600 ml-2">{control.name}</span>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-muted-foreground">
+                          No controls available
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* View mode - show linked controls */}
+                  {risk.controlRisks && risk.controlRisks.length > 0 ? (
+                    <div className="space-y-2">
+                      {risk.controlRisks.map((cr) => (
+                        <div
+                          key={cr.control.id}
+                          className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
+                        >
+                          <Shield className="h-4 w-4 text-primary-500" />
+                          <div>
+                            <span className="font-medium text-primary-600">{cr.control.controlCode}</span>
+                            <span className="text-sm text-slate-600 ml-2">{cr.control.name}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                      <Shield className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <p>No controls linked to this risk yet</p>
+                      <p className="text-sm">Click Edit to associate controls with this risk</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

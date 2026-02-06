@@ -81,6 +81,9 @@ interface Risk {
   threats: { threat: { id: string; name: string } }[];
   vulnerabilities: { vulnerability: { id: string; name: string } }[];
   causes?: { cause: { id: string; name: string } }[];
+  impactedAsset?: { id: string; assetId: string; name: string } | null;
+  impactedProcess?: { id: string; processCode: string; name: string } | null;
+  controlRisks?: { control: { id: string; controlCode: string; name: string; status: string } }[];
 }
 
 interface Category {
