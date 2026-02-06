@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useHasRole } from "@/hooks/usePermissions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ export default function KPIsPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const { data: session } = useSession();
+  const isGRCAdmin = useHasRole("GRCAdministrator");
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -147,10 +149,21 @@ export default function KPIsPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
-        </Link>
+        {isGRCAdmin ? (
+          <>
+            <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+              <Home className="h-4 w-4" />
+              <span>{t("GRC")}</span>
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <span className="text-slate-500">{t("Compliance")}</span>
+          </>
+        ) : (
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{t("KPIs")}</span>
       </nav>

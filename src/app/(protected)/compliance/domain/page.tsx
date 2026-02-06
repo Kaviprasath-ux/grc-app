@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -32,12 +32,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Plus,
   Pencil,
   Trash2,
@@ -45,8 +39,8 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Menu,
   Home,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -60,19 +54,13 @@ interface Domain {
 export default function DomainPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isGRCAdmin = useHasRole("GRCAdministrator");
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
   const [nextCode, setNextCode] = useState<string>("");
-
-  // Column visibility
-  const [visibleColumns, setVisibleColumns] = useState({
-    code: true,
-    name: true,
-  });
 
   // Create/Edit dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -90,22 +78,13 @@ export default function DomainPage() {
   const fetchDomains = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      params.append("page", currentPage.toString());
-      params.append("limit", itemsPerPage.toString());
-
-      const response = await fetch(`/api/control-domains?${params.toString()}`);
+      const response = await fetch("/api/control-domains");
       if (response.ok) {
         const data = await response.json();
-        // Handle both array and paginated response formats
         if (Array.isArray(data)) {
           setDomains(data);
-          setTotal(data.length);
-          setTotalPages(Math.ceil(data.length / itemsPerPage));
         } else {
           setDomains(data.data || []);
-          setTotal(data.pagination?.total || 0);
-          setTotalPages(data.pagination?.totalPages || 1);
         }
       }
     } catch (error) {
@@ -113,16 +92,20 @@ export default function DomainPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, []);
 
   useEffect(() => {
     fetchDomains();
   }, [fetchDomains]);
 
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   const handleOpenCreate = async () => {
     setEditingDomain(null);
     setFormData({ code: "", name: "", description: "" });
-    // Fetch next code preview
     try {
       const response = await fetch("/api/control-domains/next-code");
       if (response.ok) {
@@ -130,7 +113,6 @@ export default function DomainPage() {
         setNextCode(data.nextCode);
       }
     } catch {
-      // Use fallback if API doesn't exist yet
       const maxCode = domains.reduce((max, d) => {
         if (d.code) {
           const match = d.code.match(/^DOM-(\d+)$/);
@@ -157,7 +139,6 @@ export default function DomainPage() {
   };
 
   const handleSave = async () => {
-    // Validate name is not empty
     if (!formData.name.trim()) {
       toast({
         title: t("Validation Error"),
@@ -169,57 +150,37 @@ export default function DomainPage() {
 
     try {
       if (editingDomain) {
-        // Update - only send name and description (code is read-only)
         const response = await fetch("/api/control-domains/" + editingDomain.id, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: formData.name.trim(), description: formData.description }),
         });
         if (response.ok) {
-          toast({
-            title: t("Success"),
-            description: t("Domain updated successfully"),
-          });
+          toast({ title: t("Success"), description: t("Domain updated successfully") });
           fetchDomains();
           setIsDialogOpen(false);
         } else {
           const errorData = await response.json();
-          toast({
-            title: t("Error"),
-            description: errorData.error || t("Failed to update domain"),
-            variant: "destructive",
-          });
+          toast({ title: t("Error"), description: errorData.error || t("Failed to update domain"), variant: "destructive" });
         }
       } else {
-        // Create - code is auto-generated by API
         const response = await fetch("/api/control-domains", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: formData.name.trim(), description: formData.description }),
         });
         if (response.ok) {
-          toast({
-            title: t("Success"),
-            description: t("Domain created successfully"),
-          });
+          toast({ title: t("Success"), description: t("Domain created successfully") });
           fetchDomains();
           setIsDialogOpen(false);
         } else {
           const errorData = await response.json();
-          toast({
-            title: t("Error"),
-            description: errorData.error || t("Failed to create domain"),
-            variant: "destructive",
-          });
+          toast({ title: t("Error"), description: errorData.error || t("Failed to create domain"), variant: "destructive" });
         }
       }
     } catch (error) {
       console.error("Error saving domain:", error);
-      toast({
-        title: t("Error"),
-        description: t("An unexpected error occurred"),
-        variant: "destructive",
-      });
+      toast({ title: t("Error"), description: t("An unexpected error occurred"), variant: "destructive" });
     }
   };
 
@@ -230,238 +191,258 @@ export default function DomainPage() {
         method: "DELETE",
       });
       if (response.ok) {
-        toast({
-          title: t("Success"),
-          description: t("Domain deleted successfully"),
-        });
+        toast({ title: t("Success"), description: t("Domain deleted successfully") });
         fetchDomains();
       } else {
         const errorData = await response.json();
-        toast({
-          title: t("Error"),
-          description: errorData.error || t("Failed to delete domain"),
-          variant: "destructive",
-        });
+        toast({ title: t("Error"), description: errorData.error || t("Failed to delete domain"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting domain:", error);
-      toast({
-        title: t("Error"),
-        description: t("An unexpected error occurred"),
-        variant: "destructive",
-      });
+      toast({ title: t("Error"), description: t("An unexpected error occurred"), variant: "destructive" });
     } finally {
       setIsDeleteDialogOpen(false);
       setDomainToDelete(null);
     }
   };
 
-  // Pagination helpers
-  const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
-  const endItem = Math.min(currentPage * itemsPerPage, total);
+  // Filter and paginate
+  const filteredDomains = domains.filter(
+    (d) =>
+      d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.code && d.code.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+  const totalPages = Math.ceil(filteredDomains.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedDomains = filteredDomains.slice(startIndex, startIndex + itemsPerPage);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
-        </Link>
+        {isGRCAdmin ? (
+          <>
+            <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+              <Home className="h-4 w-4" />
+              <span>{t("GRC")}</span>
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <span className="text-slate-500">{t("Compliance")}</span>
+          </>
+        ) : (
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{t("Domain")}</span>
       </nav>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("Domain")}</h1>
-        <Button onClick={handleOpenCreate}>
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Domain")}</h1>
+      </div>
+
+      {/* Search and Actions */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder={t("Search domains...")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-[300px] bg-white border-slate-200"
+          />
+        </div>
+        <Button size="sm" onClick={handleOpenCreate}>
           <Plus className="h-4 w-4 mr-2" />
           {t("New Domain")}
         </Button>
       </div>
 
       {/* Table */}
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        </div>
-      ) : (
-        <>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {visibleColumns.code && <TableHead>{t("Domain Code")}</TableHead>}
-                  {visibleColumns.name && <TableHead>{t("Domain Name")}</TableHead>}
-                  <TableHead>{t("Action")}</TableHead>
-                  <TableHead className="w-[50px]">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Menu className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuCheckboxItem
-                          checked={visibleColumns.code}
-                          onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, code: checked })}
-                        >
-                          {t("Domain Code")}
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={visibleColumns.name}
-                          onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, name: checked })}
-                        >
-                          {t("Domain Name")}
-                        </DropdownMenuCheckboxItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableHead>
+      <div className="bg-white rounded-xl border border-slate-200">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Domain Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Domain Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Description")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedDomains.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-12">
+                  <p className="text-slate-500">{t("No domains found")}</p>
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedDomains.map((domain) => (
+                <TableRow key={domain.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm text-slate-600 pl-4">{domain.code || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800">{domain.name}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-500 max-w-[300px] truncate">{domain.description || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={() => handleOpenEdit(domain)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-red-600"
+                        onClick={() => {
+                          setDomainToDelete(domain);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {domains.map((domain) => (
-                  <TableRow key={domain.id}>
-                    {visibleColumns.code && <TableCell>{domain.code || ""}</TableCell>}
-                    {visibleColumns.name && <TableCell>{domain.name}</TableCell>}
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEdit(domain)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setDomainToDelete(domain);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                ))}
-                {domains.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      {t("No domains found")}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-center gap-2">
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <p className="text-sm text-slate-500">
+            {t("Showing")} {filteredDomains.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
+            {Math.min(startIndex + itemsPerPage, filteredDomains.length)} {t("of")}{" "}
+            {filteredDomains.length}
+          </p>
+          <div className="flex items-center gap-1">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              disabled={currentPage === 1}
+              className="h-8 w-8"
               onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-muted-foreground px-4">
-              {t("Currently showing")} {startItem} {t("to")} {endItem} {t("of")} {total}
+            <span className="text-sm text-slate-600 px-2">
+              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
             </span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              disabled={currentPage >= totalPages}
+              className="h-8 w-8"
               onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage >= totalPages}
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
-        </>
-      )}
+        </div>
+      </div>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingDomain ? t("Edit Domain") : t("New Domain")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">
+              {editingDomain ? t("Edit Domain") : t("Create New Domain")}
+            </DialogTitle>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
-              <Label htmlFor="code">{t("Domain Code")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Domain Code")}</Label>
               <Input
-                id="code"
                 value={editingDomain ? formData.code : nextCode}
                 disabled
-                className="bg-gray-100 cursor-not-allowed"
+                className="mt-1.5 w-full bg-slate-50 cursor-not-allowed"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {editingDomain ? t("Auto-generated code cannot be changed") : t("Will be auto-generated on save")}
               </p>
             </div>
             <div>
-              <Label htmlFor="name">{t("Domain Name")} *</Label>
+              <Label className="text-sm font-medium text-slate-700">
+                {t("Domain Name")} <span className="text-red-500">*</span>
+              </Label>
               <Input
-                id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={t("Enter domain name")}
+                className="mt-1.5 w-full bg-white"
               />
             </div>
             <div>
-              <Label htmlFor="description">{t("Description")}</Label>
-              <Input
-                id="description"
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
+              <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder={t("Enter description")}
+                className="mt-1.5 w-full bg-white min-h-[100px]"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={!formData.name}>
+            <Button size="sm" onClick={handleSave} disabled={!formData.name}>
               {editingDomain ? t("Update") : t("Create")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("Delete Domain")}</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Domain")}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete")} &quot;{domainToDelete?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDomainToDelete(null)}>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+            <AlertDialogCancel className="h-9" onClick={() => setDomainToDelete(null)}>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 h-9">
               {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>

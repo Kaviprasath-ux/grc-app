@@ -35,6 +35,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Framework {
@@ -145,6 +146,7 @@ export default function ReportsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isGRCAdmin = useHasRole("GRCAdministrator");
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [isManagementReportOpen, setIsManagementReportOpen] = useState(false);
@@ -281,10 +283,21 @@ export default function ReportsPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
-        </Link>
+        {isGRCAdmin ? (
+          <>
+            <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+              <Home className="h-4 w-4" />
+              <span>{t("GRC")}</span>
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <span className="text-slate-500">{t("Compliance")}</span>
+          </>
+        ) : (
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
