@@ -2461,6 +2461,7 @@ model AuditEngagement {
   findings            InternalAuditFinding[]
   evidenceRequests    FieldworkEvidenceRequest[]
   linkedRisks         InternalAuditRisk[]
+  aiWorkpapers        AiWorkpaper[]
 
   @@unique([customerAccountId, auditId])
   @@index([customerAccountId])
@@ -2506,6 +2507,24 @@ model AuditWorkpaper {
   uploadedAt   DateTime       @default(now())
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+}
+
+// AI-Generated Workpapers (structured audit tasks from AI)
+model AiWorkpaper {
+  id                String          @id @default(cuid())
+  engagementId      String
+  engagement        AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  task              String          // Task name from AI
+  steps             String          // Audit steps (JSON array as string)
+  evidences         String          // Evidence to collect (JSON array as string)
+  questionChecklist String          // Checklist questions (JSON array as string)
+  comments          String?         // Comments/notes
+  executed          Boolean         @default(false) // Whether task has been executed
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([engagementId])
+  @@map("AIWorkpaper")
 }
 
 // Fieldwork Evidence Request (requests for evidence during audit fieldwork)

@@ -1798,6 +1798,22 @@ CREATE TABLE "AuditWorkpaper" (
 );
 
 -- CreateTable
+CREATE TABLE "AIWorkpaper" (
+    "id" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
+    "task" TEXT NOT NULL,
+    "steps" TEXT NOT NULL,
+    "evidences" TEXT NOT NULL,
+    "questionChecklist" TEXT NOT NULL,
+    "comments" TEXT,
+    "executed" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AIWorkpaper_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "FieldworkEvidenceRequest" (
     "id" TEXT NOT NULL,
     "engagementId" TEXT NOT NULL,
@@ -2658,6 +2674,9 @@ CREATE UNIQUE INDEX "AuditEngagement_customerAccountId_auditId_key" ON "AuditEng
 CREATE UNIQUE INDEX "AuditFieldwork_engagementId_key" ON "AuditFieldwork"("engagementId");
 
 -- CreateIndex
+CREATE INDEX "AIWorkpaper_engagementId_idx" ON "AIWorkpaper"("engagementId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "AuditReport_engagementId_key" ON "AuditReport"("engagementId");
 
 -- CreateIndex
@@ -3391,6 +3410,9 @@ ALTER TABLE "AuditFieldwork" ADD CONSTRAINT "AuditFieldwork_engagementId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "AuditWorkpaper" ADD CONSTRAINT "AuditWorkpaper_fieldworkId_fkey" FOREIGN KEY ("fieldworkId") REFERENCES "AuditFieldwork"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIWorkpaper" ADD CONSTRAINT "AIWorkpaper_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "FieldworkEvidenceRequest" ADD CONSTRAINT "FieldworkEvidenceRequest_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
