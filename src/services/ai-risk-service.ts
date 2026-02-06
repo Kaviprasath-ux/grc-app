@@ -8,6 +8,8 @@
  */
 
 import aiApiClient from '@/lib/ai-api-client';
+import { AI_POLLING, AI_ERRORS } from '@/lib/ai-config';
+import { AI_ENDPOINTS } from '@/lib/ai-endpoints';
 import {
     RiskGenerationRequest,
     RiskGenerationResponse,
@@ -33,7 +35,7 @@ export async function generateProcessRisks(
         console.log('[AI Service] Calling risk generation API with:', request);
 
         const response = await aiApiClient.post(
-            '/api/generate_process_asset_risk_v2',
+            AI_ENDPOINTS.GENERATE_RISK,
             request
         );
 
@@ -78,7 +80,7 @@ export async function submitSemanticMatching(
         params.append('generated_risk', JSON.stringify(generatedRisk));
 
         const response = await aiApiClient.post(
-            '/api/semanticMatch_process_asset_riskV2',
+            AI_ENDPOINTS.SEMANTIC_MATCH,
             params.toString(),
             {
                 headers: {
@@ -110,7 +112,7 @@ export async function checkSemanticMatchingStatus(
 ): Promise<SemanticMatchingStatusResponse> {
     try {
         const response = await aiApiClient.get(
-            `/api/semanticMatch_process_asset_riskV2_status/${jobId}`
+            `${AI_ENDPOINTS.SEMANTIC_MATCH_STATUS}/${jobId}`
         );
 
         return response.data as SemanticMatchingStatusResponse;
@@ -136,7 +138,7 @@ export async function getSemanticMatchingResult(
 ): Promise<SemanticMatchingResultResponse> {
     try {
         const response = await aiApiClient.get(
-            `/api/semanticMatch_process_asset_riskV2_result/${jobId}`
+            `${AI_ENDPOINTS.SEMANTIC_MATCH_RESULT}/${jobId}`
         );
 
         return response.data as SemanticMatchingResultResponse;
@@ -154,9 +156,9 @@ export async function getSemanticMatchingResult(
 // ==================== POLLING HELPER ====================
 
 export interface PollOptions {
-    /** Maximum time to poll in milliseconds (default: 60000 = 1 minute) */
+    /** Maximum time to poll in milliseconds (default from AI_POLLING config) */
     maxWaitTime?: number;
-    /** Interval between status checks in milliseconds (default: 2000 = 2 seconds) */
+    /** Interval between status checks in milliseconds (default from AI_POLLING config) */
     pollInterval?: number;
     /** Callback for status updates */
     onStatusUpdate?: (status: SemanticMatchingStatusResponse) => void;
@@ -178,8 +180,8 @@ export async function pollSemanticMatching(
     options: PollOptions = {}
 ): Promise<SemanticMatchingResultResponse> {
     const {
-        maxWaitTime = 60000, // 1 minute default
-        pollInterval = 2000,  // 2 seconds default
+        maxWaitTime = AI_POLLING.DEFAULT_MAX_WAIT_MS,
+        pollInterval = AI_POLLING.DEFAULT_INTERVAL_MS,
         onStatusUpdate,
     } = options;
 
@@ -188,7 +190,7 @@ export async function pollSemanticMatching(
     while (true) {
         // Check if we've exceeded max wait time
         if (Date.now() - startTime > maxWaitTime) {
-            throw new Error('Semantic matching job timed out');
+            throw new Error(AI_ERRORS.POLLING_TIMEOUT);
         }
 
         // Check job status
@@ -206,7 +208,7 @@ export async function pollSemanticMatching(
         } else if (status.status === 'error') {
             throw new Error(status.error || 'Semantic matching job failed');
         } else if (status.status === 'not_found') {
-            throw new Error('Semantic matching job not found');
+            throw new Error(AI_ERRORS.JOB_NOT_FOUND);
         }
 
         // Job still processing, wait before next check

@@ -3,11 +3,13 @@
  *
  * Reusable utilities for AI API routes to eliminate DRY violations.
  * Contains common patterns for error handling, response formatting,
- * payload construction, and database operations.
+ * payload construction, database operations, and polling.
  */
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { AI_POLLING, AI_ERRORS, calculateBackoff } from '@/lib/ai-config';
+import { aiAuditService } from '@/services/ai-audit-service';
 
 // ============================================================================
 // TYPES
@@ -686,4 +688,264 @@ export function handleAIRouteError(
       requestId: err.requestId,
     }
   );
+}
+
+/**
+ * Standardized error handler WITH audit logging
+ * Use this in catch blocks to ensure consistent logging and response
+ */
+export async function handleAIRouteErrorWithAudit(
+  error: unknown,
+  context: AIRouteErrorContext & { endpoint: string; requestBody?: unknown }
+): Promise<NextResponse<AIErrorResponse>> {
+  const latencyMs = Date.now() - context.startTime;
+  const err = error as {
+    message?: string;
+    status?: number;
+    rawResponse?: string;
+    data?: unknown;
+    requestId?: string;
+  };
+
+  console.error(`[${context.route}] Error after ${latencyMs}ms:`, err.message);
+
+  // Log to audit service
+  await aiAuditService.logOperation({
+    endpoint: context.endpoint,
+    method: 'POST',
+    requestBody: context.requestBody,
+    error: err.message || 'Unknown error',
+    statusCode: err.status || 500,
+    latencyMs,
+    userId: context.userId,
+  });
+
+  // Build details string
+  let details: string | undefined;
+  if (err.rawResponse) {
+    details = err.rawResponse.substring(0, 200);
+  } else if (err.data) {
+    details = typeof err.data === 'string' ? err.data.substring(0, 200) : JSON.stringify(err.data).substring(0, 200);
+  }
+
+  return errorResponse(
+    err.message || `Failed to process ${context.route}`,
+    err.status || 500,
+    {
+      details,
+      requestId: err.requestId,
+    }
+  );
+}
+
+// ============================================================================
+// POLLING UTILITIES
+// ============================================================================
+
+export interface PollingConfig {
+  /** Function to check job status - should return status string */
+  checkStatus: (jobId: string) => Promise<{ status: string; error?: string; progress?: number }>;
+  /** Function to get final result when completed */
+  getResult?: (jobId: string) => Promise<unknown>;
+  /** Callback for status updates */
+  onStatusUpdate?: (status: { status: string; progress?: number }) => void;
+  /** Polling interval in ms (default: AI_POLLING.DEFAULT_INTERVAL_MS) */
+  intervalMs?: number;
+  /** Maximum wait time in ms (default: AI_POLLING.DEFAULT_MAX_WAIT_MS) */
+  maxWaitMs?: number;
+  /** Use exponential backoff on errors (default: false) */
+  useBackoff?: boolean;
+  /** Terminal statuses that stop polling (default: ['completed', 'error', 'failed']) */
+  terminalStatuses?: string[];
+}
+
+export interface PollingResult<T = unknown> {
+  status: 'completed' | 'error' | 'timeout';
+  result?: T;
+  error?: string;
+  attempts: number;
+  totalTimeMs: number;
+}
+
+/**
+ * Unified polling function for AI jobs
+ * Handles status checking, backoff, timeout, and result fetching
+ */
+export async function pollJobStatus<T = unknown>(
+  jobId: string,
+  config: PollingConfig
+): Promise<PollingResult<T>> {
+  const {
+    checkStatus,
+    getResult,
+    onStatusUpdate,
+    intervalMs = AI_POLLING.DEFAULT_INTERVAL_MS,
+    maxWaitMs = AI_POLLING.DEFAULT_MAX_WAIT_MS,
+    useBackoff = false,
+    terminalStatuses = ['completed', 'error', 'failed'],
+  } = config;
+
+  const startTime = Date.now();
+  let attempts = 0;
+  let currentInterval = intervalMs;
+  let consecutive404s = 0;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    attempts++;
+
+    try {
+      const statusResult = await checkStatus(jobId);
+      consecutive404s = 0; // Reset on successful request
+
+      // Notify callback
+      if (onStatusUpdate) {
+        onStatusUpdate(statusResult);
+      }
+
+      const normalizedStatus = statusResult.status?.toLowerCase();
+
+      // Check for terminal status
+      if (terminalStatuses.includes(normalizedStatus)) {
+        if (normalizedStatus === 'completed') {
+          // Fetch result if getResult provided
+          const result = getResult ? await getResult(jobId) : undefined;
+          return {
+            status: 'completed',
+            result: result as T,
+            attempts,
+            totalTimeMs: Date.now() - startTime,
+          };
+        } else {
+          // Error or failed
+          return {
+            status: 'error',
+            error: statusResult.error || `Job ${normalizedStatus}`,
+            attempts,
+            totalTimeMs: Date.now() - startTime,
+          };
+        }
+      }
+
+      // Reset interval on success if using backoff
+      if (useBackoff) {
+        currentInterval = intervalMs;
+      }
+    } catch (error: unknown) {
+      const err = error as { status?: number; message?: string };
+
+      if (err.status === 404) {
+        consecutive404s++;
+        if (consecutive404s >= AI_POLLING.MAX_CONSECUTIVE_404S) {
+          return {
+            status: 'error',
+            error: AI_ERRORS.JOB_NOT_FOUND,
+            attempts,
+            totalTimeMs: Date.now() - startTime,
+          };
+        }
+        // Increase interval on 404
+        if (useBackoff) {
+          currentInterval = calculateBackoff(currentInterval);
+        }
+      } else if (err.status === 500 || err.status === 502 || err.status === 503) {
+        // Transient error - increase interval and retry
+        if (useBackoff) {
+          currentInterval = calculateBackoff(currentInterval);
+        }
+      } else {
+        // Non-retryable error
+        return {
+          status: 'error',
+          error: err.message || 'Unknown error during polling',
+          attempts,
+          totalTimeMs: Date.now() - startTime,
+        };
+      }
+    }
+
+    // Wait before next poll
+    await new Promise(resolve => setTimeout(resolve, currentInterval));
+  }
+
+  // Timeout
+  return {
+    status: 'timeout',
+    error: AI_ERRORS.POLLING_TIMEOUT,
+    attempts,
+    totalTimeMs: Date.now() - startTime,
+  };
+}
+
+/**
+ * Simple linear polling (no backoff) - for most common use cases
+ */
+export async function pollUntilComplete<T = unknown>(
+  jobId: string,
+  checkStatus: (jobId: string) => Promise<{ status: string; error?: string }>,
+  getResult?: (jobId: string) => Promise<T>,
+  options?: {
+    intervalMs?: number;
+    maxWaitMs?: number;
+    onStatusUpdate?: (status: { status: string }) => void;
+  }
+): Promise<PollingResult<T>> {
+  return pollJobStatus<T>(jobId, {
+    checkStatus,
+    getResult,
+    onStatusUpdate: options?.onStatusUpdate,
+    intervalMs: options?.intervalMs,
+    maxWaitMs: options?.maxWaitMs,
+    useBackoff: false,
+  });
+}
+
+// ============================================================================
+// PRE/POST FLIGHT LOGGING HELPERS
+// ============================================================================
+
+/**
+ * Log pre-flight operation and return operation ID for post-flight update
+ */
+export async function logPreFlight(params: {
+  endpoint: string;
+  method?: string;
+  requestBody?: unknown;
+  userId?: string;
+}): Promise<{ id: string } | null> {
+  try {
+    return await aiAuditService.logOperation({
+      endpoint: params.endpoint,
+      method: params.method || 'POST',
+      requestBody: params.requestBody,
+      userId: params.userId,
+    });
+  } catch (err) {
+    console.error('[AI Audit] Failed to log pre-flight:', err);
+    return null;
+  }
+}
+
+/**
+ * Update operation with post-flight response data
+ */
+export async function logPostFlight(
+  operationId: string,
+  response: {
+    data: unknown;
+    status: number;
+  },
+  startTime: number
+): Promise<void> {
+  try {
+    await prisma.aIOperation.update({
+      where: { id: operationId },
+      data: {
+        responseBody: JSON.stringify(response.data),
+        statusCode: response.status,
+        latencyMs: Date.now() - startTime,
+      },
+    });
+  } catch (err) {
+    console.error('[AI Audit] Failed to log post-flight:', err);
+  }
 }
