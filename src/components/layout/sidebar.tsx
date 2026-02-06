@@ -169,11 +169,7 @@ export function Sidebar() {
           href={session?.user?.roles?.includes("GRCAdministrator") ? "/grc" : "/dashboard"}
           className="flex items-center gap-3 group"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-500/20">
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white">
-              <path fill="currentColor" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
+          <img src="/logo 3.png" alt="GRC Platform" className="h-9 w-9 object-contain" />
           <span className="text-base font-semibold text-slate-800 tracking-tight">{t("GRC Platform")}</span>
         </Link>
       </div>

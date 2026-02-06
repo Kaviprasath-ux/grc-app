@@ -64,9 +64,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2 pb-6">
           <div className="flex justify-center mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-              <span className="text-2xl font-bold text-white">G</span>
-            </div>
+            <img src="/logo 3.png" alt="GRC Platform" className="h-12 w-12 object-contain" />
           </div>
           <h1 className="text-2xl font-semibold text-foreground">{t("Welcome Back !")}</h1>
           <p className="text-sm text-muted-foreground">{t("Log into your account")}</p>
