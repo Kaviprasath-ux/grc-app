@@ -9,29 +9,9 @@ import {
   badRequestResponse,
   errorResponse,
 } from "@/lib/ai-route-helpers";
+import type { MatchedRisk, SemanticMatchingResults } from "@/types/ai-types";
 
 export const dynamic = 'force-dynamic';
-
-interface SemanticMatchResult {
-    generated_risk: {
-        name: string;
-        description?: string;
-        risk_sources?: string;
-        category?: string;
-        type?: string;
-        likelihood?: number;
-        impact?: number;
-        risk_rating?: string;
-    };
-    matched_existing?: {
-        id: string;
-        risk_id: string;
-        name: string;
-        similarity_score: number;
-    };
-    action: 'create' | 'update' | 'skip';
-    similarity_score?: number;
-}
 
 /**
  * GET /api/ai/risk-semantic-match/result/{jobId}
@@ -58,24 +38,29 @@ async function handler(
 
         // Fetch result from RunPod
         const response = await aiApiClient.get(`${AI_ENDPOINTS.SEMANTIC_MATCH_RESULT}/${jobId}`);
-        const result = response.data as { matches?: SemanticMatchResult[]; results?: SemanticMatchResult[] };
-        const latency = Date.now() - startTime;
+        // API returns { results: { risks: MatchedRisk[] }, status: "success" }
+        const rawResult = response.data as { results?: SemanticMatchingResults; risks?: MatchedRisk[] };
 
         console.log(`[Risk Semantic Match Result] Job ${jobId} completed`);
-
-        // Get job metadata for customerAccountId
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const job = await (prisma.aIJob as any).findFirst({
-            where: { providerJobId: jobId }
-        });
+        console.log(`[Risk Semantic Match Result] Raw result structure:`, Object.keys(rawResult));
 
         const customerAccountId = session.customerAccountId;
         if (!customerAccountId) {
             return badRequestResponse("Customer account required");
         }
 
-        // Process semantic matching results
-        const matches: SemanticMatchResult[] = result.matches || result.results || [];
+        // Extract risks from the response - handle different possible formats
+        let matchedRisks: MatchedRisk[] = [];
+        if (rawResult.results?.risks) {
+            matchedRisks = rawResult.results.risks;
+        } else if (rawResult.risks) {
+            matchedRisks = rawResult.risks;
+        } else if (Array.isArray(rawResult)) {
+            matchedRisks = rawResult as MatchedRisk[];
+        }
+
+        console.log(`[Risk Semantic Match Result] Processing ${matchedRisks.length} risks`);
+
         const stats = {
             created: 0,
             updated: 0,
@@ -83,112 +68,157 @@ async function handler(
             errors: 0,
         };
 
-        const processedRisks: any[] = [];
+        interface ProcessedRisk {
+            id?: string;
+            riskId?: string;
+            name: string;
+            matchedCode?: string;
+            similarity?: number;
+            action: string;
+        }
+        const processedRisks: ProcessedRisk[] = [];
 
-        for (const match of matches) {
+        for (const matchedRisk of matchedRisks) {
             try {
-                const generatedRisk = match.generated_risk;
-                const matchedExisting = match.matched_existing;
-                const action = match.action || (matchedExisting ? 'update' : 'create');
-
-                if (action === 'skip') {
+                // If Is_Matched is true, the risk already exists in the library - skip it
+                if (matchedRisk.Is_Matched && matchedRisk.Matched_Risk_Code) {
                     stats.skipped++;
+                    processedRisks.push({
+                        name: matchedRisk.Risk_name,
+                        matchedCode: matchedRisk.Matched_Risk_Code,
+                        similarity: matchedRisk.Similarity_Score,
+                        action: 'skipped (matched existing)',
+                    });
                     continue;
                 }
 
-                // Look up category and type by name
+                // Look up category by name
                 let categoryId: string | null = null;
-                let typeId: string | null = null;
-
-                if (generatedRisk.category) {
+                if (matchedRisk.Risk_category) {
                     const category = await prisma.riskCategory.findFirst({
                         where: {
                             customerAccountId,
-                            name: { contains: generatedRisk.category, mode: 'insensitive' }
+                            name: { contains: matchedRisk.Risk_category, mode: 'insensitive' }
                         }
                     });
                     categoryId = category?.id || null;
                 }
 
-                if (generatedRisk.type) {
-                    const riskType = await prisma.riskType.findFirst({
-                        where: {
-                            customerAccountId,
-                            name: { contains: generatedRisk.type, mode: 'insensitive' }
-                        }
-                    });
-                    typeId = riskType?.id || null;
-                }
-
-                if (action === 'update' && matchedExisting?.id) {
-                    // Update existing risk
-                    const updated = await prisma.risk.update({
-                        where: { id: matchedExisting.id },
-                        data: {
-                            description: generatedRisk.description || undefined,
-                            riskSources: generatedRisk.risk_sources || undefined,
-                            likelihood: generatedRisk.likelihood || undefined,
-                            impact: generatedRisk.impact || undefined,
-                            riskRating: generatedRisk.risk_rating || undefined,
-                            updatedAt: new Date(),
-                        },
-                        select: { id: true, riskId: true, name: true }
-                    });
-                    processedRisks.push({ ...updated, action: 'updated', similarity: match.similarity_score });
-                    stats.updated++;
-                } else {
-                    // Check for duplicate before creating
-                    const existingByName = await prisma.risk.findFirst({
-                        where: {
-                            customerAccountId,
-                            name: { equals: generatedRisk.name, mode: 'insensitive' }
-                        }
-                    });
-
-                    if (existingByName) {
-                        stats.skipped++;
-                        processedRisks.push({
-                            id: existingByName.id,
-                            riskId: existingByName.riskId,
-                            name: existingByName.name,
-                            action: 'skipped (duplicate)'
-                        });
-                        continue;
+                // Check for duplicate by name before creating
+                const existingByName = await prisma.risk.findFirst({
+                    where: {
+                        customerAccountId,
+                        name: { equals: matchedRisk.Risk_name, mode: 'insensitive' }
                     }
+                });
 
-                    // Generate new risk ID
-                    const lastRisk = await prisma.risk.findFirst({
-                        where: { customerAccountId },
-                        orderBy: { riskId: 'desc' },
-                        select: { riskId: true }
+                if (existingByName) {
+                    stats.skipped++;
+                    processedRisks.push({
+                        id: existingByName.id,
+                        riskId: existingByName.riskId,
+                        name: existingByName.name,
+                        action: 'skipped (duplicate by name)',
                     });
-                    const lastNum = lastRisk?.riskId
-                        ? parseInt(lastRisk.riskId.replace(/\D/g, '')) || 0
-                        : 0;
-                    const newRiskId = `RISK-${String(lastNum + 1).padStart(4, '0')}`;
-
-                    // Create new risk
-                    const created = await prisma.risk.create({
-                        data: {
-                            customerAccountId,
-                            riskId: newRiskId,
-                            name: generatedRisk.name,
-                            description: generatedRisk.description || null,
-                            riskSources: generatedRisk.risk_sources || null,
-                            categoryId,
-                            typeId,
-                            likelihood: generatedRisk.likelihood || undefined,
-                            impact: generatedRisk.impact || undefined,
-                            riskRating: generatedRisk.risk_rating || 'Medium',
-                            status: 'Open',
-                            assessmentStatus: 'Not Started',
-                            responseStatus: 'Not Started',
-                        },
-                        select: { id: true, riskId: true, name: true }
-                    });
-                    processedRisks.push({ ...created, action: 'created' });
-                    stats.created++;
+                    continue;
                 }
+
+                // Generate new risk ID
+                const lastRisk = await prisma.risk.findFirst({
+                    where: { customerAccountId },
+                    orderBy: { riskId: 'desc' },
+                    select: { riskId: true }
+                });
+                const lastNum = lastRisk?.riskId
+                    ? parseInt(lastRisk.riskId.replace(/\D/g, '')) || 0
+                    : 0;
+                const newRiskId = `RISK-${String(lastNum + 1).padStart(4, '0')}`;
+
+                // Create new risk (Is_Matched = false means this is a new unique risk)
+                const created = await prisma.risk.create({
+                    data: {
+                        customerAccountId,
+                        riskId: newRiskId,
+                        name: matchedRisk.Risk_name,
+                        description: matchedRisk.Risk_description || null,
+                        riskSources: "AI-Generated (Semantic Match)",
+                        categoryId,
+                        riskRating: matchedRisk.Inherent_risk_rating || 'Medium',
+                        status: 'Open',
+                        assessmentStatus: 'Not Started',
+                        responseStatus: 'Not Started',
+                    },
+                    select: { id: true, riskId: true, name: true }
+                });
+
+                // Also create associated threats if present
+                if (matchedRisk.Threats && matchedRisk.Threats.length > 0) {
+                    for (const threat of matchedRisk.Threats) {
+                        // Create or find threat
+                        const existingThreat = await prisma.riskThreat.findFirst({
+                            where: {
+                                customerAccountId,
+                                name: threat.threat_name,
+                            }
+                        });
+
+                        const threatRecord = existingThreat || await prisma.riskThreat.create({
+                            data: {
+                                customerAccountId,
+                                name: threat.threat_name,
+                                description: "AI-identified threat",
+                            }
+                        });
+
+                        // Link threat to risk
+                        await prisma.riskThreatMapping.create({
+                            data: {
+                                riskId: created.id,
+                                threatId: threatRecord.id,
+                            }
+                        }).catch(() => {
+                            // Ignore duplicate mapping errors
+                        });
+
+                        // Create associated controls
+                        if (threat.controls) {
+                            for (const control of threat.controls) {
+                                const existingControl = await prisma.control.findFirst({
+                                    where: {
+                                        customerAccountId,
+                                        name: control.ControlName,
+                                    }
+                                });
+
+                                if (!existingControl) {
+                                    const newControl = await prisma.control.create({
+                                        data: {
+                                            customerAccountId,
+                                            controlCode: `CTL-AI-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+                                            name: control.ControlName,
+                                            functionalGrouping: control.control_functionalGrouping || "protect",
+                                            status: "Non Compliant",
+                                            description: "AI suggested control",
+                                        }
+                                    });
+
+                                    // Link control to risk
+                                    await prisma.controlRisk.create({
+                                        data: {
+                                            controlId: newControl.id,
+                                            riskId: created.id,
+                                        }
+                                    }).catch(() => {
+                                        // Ignore duplicate mapping errors
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                processedRisks.push({ ...created, action: 'created' });
+                stats.created++;
             } catch (err: unknown) {
                 const processErr = err as { message?: string };
                 console.error(`[Risk Semantic Match Result] Error processing risk:`, processErr.message);

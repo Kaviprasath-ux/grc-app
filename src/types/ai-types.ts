@@ -201,11 +201,19 @@ export interface RiskSemanticMatchStatus {
 }
 
 export interface RiskSemanticMatchResult {
+    success?: boolean;
     results?: SemanticMatchingResults;
-    status: 'success' | 'processing' | 'not_found' | 'error';
+    status?: 'success' | 'processing' | 'not_found' | 'error';
     job_id?: string;
     error?: string | null;
     message?: string;
+    stats?: {
+        created: number;
+        updated: number;
+        skipped: number;
+        errors?: number;
+    };
+    risks?: any[];
 }
 
 // ==================== FRAMEWORK GENERATION API ====================

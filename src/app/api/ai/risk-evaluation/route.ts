@@ -13,7 +13,12 @@ import {
 /**
  * POST /api/ai/risk-evaluation
  *
- * Generates and PERSISTS AI-powered risks for a Process.
+ * Generates AI-powered risks for a Process.
+ *
+ * Options:
+ * - persist: true (default) - Generate and store risks immediately
+ * - persist: false - Generate risks only, return raw AI response for semantic matching
+ *
  * Follows Synchronous v2 contract.
  */
 async function handler(
@@ -26,7 +31,7 @@ async function handler(
 
     try {
         const body = await req.json();
-        const { processId, regenerate = false } = body;
+        const { processId, regenerate = false, persist = true } = body;
 
         if (!processId) {
             return missingFieldResponse("processId");
@@ -38,6 +43,7 @@ async function handler(
         console.log("[Risk Evaluation] Session customerAccountId:", session.customerAccountId);
         console.log("[Risk Evaluation] Tenant filter:", tenantFilter);
         console.log("[Risk Evaluation] Looking for processId:", processId);
+        console.log("[Risk Evaluation] Persist mode:", persist);
 
         const process = await prisma.process.findFirst({
             where: { id: processId, ...tenantFilter },
@@ -56,9 +62,9 @@ async function handler(
         // Use the process's customerAccountId for data isolation
         const customerAccountId = process.customerAccountId;
 
-        // 2. Duplicate Prevention / Persistence Recovery
+        // 2. Duplicate Prevention / Persistence Recovery (only when persisting)
         // Skip AI call if risks already exist and regenerate is false
-        if (!regenerate && process.impactedByRisks.length > 0) {
+        if (persist && !regenerate && process.impactedByRisks.length > 0) {
             const existingRisks = await prisma.risk.findMany({
                 where: { impactedProcessId: processId, customerAccountId },
                 include: {
@@ -118,7 +124,35 @@ async function handler(
             });
         }
 
-        // 5. Hierarchical Persistence (Transactional)
+        // 5. If persist=false, return raw AI response for semantic matching
+        if (!persist) {
+            // Transform AI response to format expected by semantic matching
+            const generatedRisks = (result.risks || []).map(aiRisk => ({
+                name: aiRisk.Risk_name,
+                description: aiRisk.Risk_description,
+                risk_rating: aiRisk.Inherent_risk_rating || "Medium",
+                risk_sources: "AI-Generated (v2)",
+                category: process.department?.name || "General",
+                threats: aiRisk.Threats?.map(t => t.threat_name) || [],
+                controls: aiRisk.Threats?.flatMap(t =>
+                    t.controls?.map(c => c.ControlName) || []
+                ) || [],
+            }));
+
+            console.log("[Risk Evaluation] Returning raw risks for semantic matching:", generatedRisks.length);
+
+            return NextResponse.json({
+                risks: generatedRisks,
+                rawRisks: result.risks, // Include original format too
+                processId,
+                customerAccountId,
+                status: "success",
+                source: "AI",
+                persist: false,
+            });
+        }
+
+        // 6. Hierarchical Persistence (Transactional)
         const createdRisks = await prisma.$transaction(async (tx) => {
             // If regenerating, cleanup old AI risks
             if (regenerate) {
