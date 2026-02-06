@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,6 +59,7 @@ interface User {
 export default function DepartmentsPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [items, setItems] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,11 +201,19 @@ export default function DepartmentsPage() {
       <div className="space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
-          </Link>
+          </div>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          {canViewDashboard && (
+            <>
+              <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+                {t("Dashboard")}
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            </>
+          )}
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </Link>
@@ -229,11 +239,19 @@ export default function DepartmentsPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
-        </Link>
+        </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        {canViewDashboard && (
+          <>
+            <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Dashboard")}
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          </>
+        )}
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Settings")}
         </Link>

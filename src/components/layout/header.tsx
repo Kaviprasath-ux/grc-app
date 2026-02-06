@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Search, Check } from "lucide-react";
+import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check } from "lucide-react";
+import { GlobalSearch } from "@/components/layout/global-search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -95,14 +96,8 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       {/* Right side */}
       <div className="flex items-center gap-2">
-        {/* Search button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hidden md:flex text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-        >
-          <Search className="h-5 w-5" />
-        </Button>
+        {/* Global Search */}
+        <GlobalSearch />
 
         {/* Language Selector */}
         <DropdownMenu>

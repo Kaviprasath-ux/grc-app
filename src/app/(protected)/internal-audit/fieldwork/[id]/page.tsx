@@ -59,7 +59,7 @@ import {
   Home,
   HelpCircle,
 } from "lucide-react";
-import { useHasRole } from "@/hooks/usePermissions";
+import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -181,6 +181,7 @@ export default function FieldworkDetailsPage() {
   const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
   const isAuditee = useHasRole("Auditee");
+  const { canView: canViewDashboard } = usePermissions('audit.dashboard');
 
   // Check URL mode parameter (view = read-only, edit = editable)
   const urlMode = searchParams.get("mode");
@@ -1585,10 +1586,18 @@ export default function FieldworkDetailsPage() {
     return (
       <div className="space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
-          </Link>
+          </div>
+          {canViewDashboard && (
+            <>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+                {t("Dashboard")}
+              </Link>
+            </>
+          )}
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Fieldwork")}
@@ -1605,10 +1614,18 @@ export default function FieldworkDetailsPage() {
     return (
       <div className="space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
-          </Link>
+          </div>
+          {canViewDashboard && (
+            <>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+                {t("Dashboard")}
+              </Link>
+            </>
+          )}
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Fieldwork")}
@@ -1628,10 +1645,18 @@ export default function FieldworkDetailsPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
-        </Link>
+        </div>
+        {canViewDashboard && (
+          <>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Dashboard")}
+            </Link>
+          </>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Fieldwork")}
