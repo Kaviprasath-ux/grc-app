@@ -233,6 +233,8 @@ export default function RiskRegisterPage() {
   const [generatingFieldworkDeptId, setGeneratingFieldworkDeptId] = useState<string | null>(null);
   const [fieldworkPlanResult, setFieldworkPlanResult] = useState<FieldworkAuditPlanResponse | null>(null);
   const [fieldworkPlanDialogOpen, setFieldworkPlanDialogOpen] = useState(false);
+  const [addingToPlanning, setAddingToPlanning] = useState<number | null>(null);
+  const [currentDepartmentId, setCurrentDepartmentId] = useState<string | null>(null);
 
   // Check if user is Audit Head
   const isAuditHead = session?.user?.roles?.some(
@@ -900,6 +902,7 @@ export default function RiskRegisterPage() {
         return;
       }
       setFieldworkPlanResult(data as FieldworkAuditPlanResponse);
+      setCurrentDepartmentId(deptId); // Store department ID for adding to planning
       setFieldworkPlanDialogOpen(true);
       toast({ title: t("Success"), description: t("Audit plan generated") });
     } catch (e) {
@@ -907,6 +910,58 @@ export default function RiskRegisterPage() {
       toast({ title: t("Error"), description: t("Failed to generate audit plan"), variant: "destructive" });
     } finally {
       setGeneratingFieldworkDeptId(null);
+    }
+  };
+
+  // Add audit plan to Audit Planning module
+  const handleAddToAuditPlan = async (plan: AuditPlanItem, planIndex: number) => {
+    if (!currentDepartmentId) {
+      toast({ title: t("Error"), description: t("Department information missing"), variant: "destructive" });
+      return;
+    }
+
+    setAddingToPlanning(planIndex);
+    try {
+      const res = await fetch("/api/internal-audit/audit-planning/from-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          audit_code: plan.audit_code,
+          audit_title: plan.audit_title,
+          audit_objective: plan.audit_objective,
+          audit_scope: plan.audit_scope,
+          associated_risks: plan.associated_risks,
+          audit_tasks: plan.audit_tasks,
+          department_name: fieldworkPlanResult?.department_name,
+          departmentId: currentDepartmentId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Handle duplicate (409 Conflict) with warning message
+        if (res.status === 409) {
+          toast({
+            title: t("Warning"),
+            description: data?.error || t("This audit plan has already been added to Audit Planning."),
+            variant: "default"
+          });
+        } else {
+          toast({ title: t("Error"), description: data?.error || t("Failed to add to audit plan"), variant: "destructive" });
+        }
+        return;
+      }
+
+      toast({ title: t("Success"), description: t("Successfully added to Audit Planning!") });
+
+      // Optionally navigate to audit planning
+      // router.push("/internal-audit/audit-planning");
+    } catch (e) {
+      console.error("Add to audit plan error:", e);
+      toast({ title: t("Error"), description: t("Failed to add to audit plan"), variant: "destructive" });
+    } finally {
+      setAddingToPlanning(null);
     }
   };
 
@@ -1503,20 +1558,38 @@ export default function RiskRegisterPage() {
               fieldworkPlanResult.audit_plan.map((plan, idx) => (
                 <Card key={idx}>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">
-                      {plan.audit_code} – {plan.audit_title}
-                    </CardTitle>
-                    {plan.audit_objective && (
-                      <CardDescription>{t("Objective")}: {plan.audit_objective}</CardDescription>
-                    )}
-                    {plan.audit_scope && (
-                      <p className="text-sm text-muted-foreground">{t("Scope")}: {plan.audit_scope}</p>
-                    )}
-                    {plan.associated_risks?.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        {t("Associated risks")}: {plan.associated_risks.join("; ")}
-                      </p>
-                    )}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <CardTitle className="text-base">
+                          {plan.audit_code} – {plan.audit_title}
+                        </CardTitle>
+                        {plan.audit_objective && (
+                          <CardDescription className="mt-1">{t("Objective")}: {plan.audit_objective}</CardDescription>
+                        )}
+                        {plan.audit_scope && (
+                          <p className="text-sm text-muted-foreground mt-1">{t("Scope")}: {plan.audit_scope}</p>
+                        )}
+                        {plan.associated_risks?.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t("Associated risks")}: {plan.associated_risks.join("; ")}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                        onClick={() => handleAddToAuditPlan(plan, idx)}
+                        disabled={addingToPlanning !== null}
+                      >
+                        {addingToPlanning === idx ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            {t("Adding...")}
+                          </>
+                        ) : (
+                          t("Add to Audit Plan")
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {plan.audit_tasks?.map((task, ti) => (
