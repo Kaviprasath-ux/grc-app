@@ -2740,6 +2740,8 @@ model InternalAuditDocument {
   uploadedAt   DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  // AI Ingest jobs for this document
+  ingestJobs   DocumentLibraryIngestJob[]
 }
 
 // Document Library Search History
@@ -2750,6 +2752,24 @@ model DocumentSearch {
   status    String   @default("Satisfactory") // Satisfactory, Unsatisfactory
   userId    String?
   createdAt DateTime @default(now())
+}
+
+// Document Library AI Ingest Job - tracks async ingestion jobs for documents
+model DocumentLibraryIngestJob {
+  id              String    @id @default(cuid())
+  documentId      String
+  document        InternalAuditDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  runpodJobId     String    @unique // RunPod job ID
+  customerId      String?   // customer_id sent to RunPod
+  status          String    @default("queued") // queued, processing, completed, failed
+  error           String?   @db.Text
+  result          String?   @db.Text // JSON result
+  completedAt     DateTime? // When the job completed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([documentId])
+  @@index([runpodJobId])
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================
@@ -2833,7 +2853,7 @@ model EvidenceAIReview {
   artifact          Artifact?        @relation(fields: [artifactId], references: [id], onDelete: SetNull)
 
   // Document ID tracking fields
-  ingestJobId          String?       // RunPod job ID from artifact ingestion
+  ingestJobId       String?          // RunPod job ID from artifact ingestion
   evidenceDocumentId   String?       // evidence.id sent as document_id during evidence ingest
   artifactDocumentId   String?       // artifact.id sent as document_id during vault-query ingest
   runpodDocumentRef    String?       // document_id returned by RunPod (if different from what we sent)
