@@ -5,7 +5,10 @@ import { auth } from "@/lib/auth";
 
 export const maxDuration = 60;
 
-// POST: Trigger AI Risk Evaluation (Semantic Match) for Asset Classification
+/** Set to true to use semantic match API (async job + polling). Currently inactive - use Generate Risks V2. */
+const USE_SEMANTIC_MATCH = false;
+
+// POST: Trigger AI Risk Evaluation — uses Generate Risks V2 (sync) or Semantic Match (async, inactive)
 export async function POST(req: NextRequest) {
     try {
         const session = await auth();
@@ -14,42 +17,76 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized - No Local Session" }, { status: 401 });
         }
 
-        let body;
+        console.log("[AI Risk] API called: POST /api/assets/classification/aiRisk");
+
+        let body: { classificationId?: string };
         try {
             body = await req.json();
-            console.log("DEBUG: Incoming POST body:", JSON.stringify(body, null, 2));
+            console.log("[AI Risk] Payload (incoming):", JSON.stringify(body, null, 2));
         } catch (e) {
-            console.error("DEBUG: Failed to parse JSON body", e);
+            console.error("[AI Risk] Failed to parse JSON body", e);
             return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
         }
 
         const { classificationId } = body;
 
-        if (!classificationId || typeof classificationId !== 'string') {
-            console.error("DEBUG: Invalid or missing classificationId:", classificationId);
+        if (!classificationId || typeof classificationId !== "string") {
+            console.error("[AI Risk] Invalid or missing classificationId:", classificationId);
             return NextResponse.json({ error: "Classification ID is required and must be a string" }, { status: 400 });
         }
 
-        // 1. Fetch Asset Classification Details from DB
         const classificationData = await prisma.assetCIAClassification.findUnique({
             where: { id: classificationId },
             include: {
-                subCategory: {
-                    include: {
-                        category: true,
-                    },
-                },
+                subCategory: { include: { category: true } },
                 group: true,
             },
         });
-
-        console.log(`DEBUG: Fetched classification ${classificationId}:`, classificationData ? "Found" : "Not Found");
 
         if (!classificationData) {
             return NextResponse.json({ error: "Asset classification not found" }, { status: 404 });
         }
 
-        // 2. Fetch Library Data for Semantic Matching
+        const assetGroupName = classificationData.group?.name ?? "";
+
+        // --- Generate Risks V2: synchronous, payload only Assets_Details ---
+        if (!USE_SEMANTIC_MATCH) {
+            const payload = {
+                Assets_Details: {
+                    Asset_group_name: assetGroupName,
+                },
+            };
+
+            console.log("[AI Risk] API called: POST /api/generate_process_asset_risk_v2");
+            console.log("[AI Risk] Payload:", JSON.stringify(payload, null, 2));
+
+            const response = await proxyToExternalApi({
+                service: "PYTHON_BACKEND",
+                path: "/api/generate_process_asset_risk_v2",
+                method: "POST",
+                body: payload,
+                contentType: "application/json",
+            });
+
+        if (!response.ok) {
+            const errorBody = await response.clone().text();
+            console.error("[AI Risk] External API result (error):", response.status, errorBody);
+            return response;
+        }
+
+            const data = await response.json();
+            console.log("[AI Risk] Result:", JSON.stringify(data, null, 2));
+
+            // Normalize for frontend: expect results.risks or top-level risks
+            const risks = data.results?.risks ?? data.risks ?? (Array.isArray(data) ? data : []);
+            return NextResponse.json({
+                status: "completed",
+                results: { risks },
+                ...data,
+            });
+        }
+
+        // --- Semantic Match (inactive): async job + polling; re-enable by setting USE_SEMANTIC_MATCH = true ---
         const [controls, risks, threats, vulnerabilities] = await Promise.all([
             prisma.control.findMany({ select: { name: true, description: true, controlCode: true } }),
             prisma.risk.findMany({ select: { name: true, description: true, riskId: true } }),
@@ -57,8 +94,6 @@ export async function POST(req: NextRequest) {
             prisma.riskVulnerability.findMany({ select: { name: true, description: true } }),
         ]);
 
-        // 3. Construct Payload ("Super Shotgun" / Verified Protocol)
-        // Create the object structures first
         const existingLibraryObj = {
             Control_Library: controls.map((c, i) => ({
                 Control_Name: c.name,
@@ -70,7 +105,7 @@ export async function POST(req: NextRequest) {
                 Control_Description: c.description || "",
                 Control_description: c.description || "",
                 control_description: c.description || "",
-                description: c.description || ""
+                description: c.description || "",
             })),
             Threats_library: threats.map((t, i) => ({
                 Threats_name: t.name,
@@ -82,7 +117,7 @@ export async function POST(req: NextRequest) {
                 Threats_Description: t.description || "",
                 Threats_description: t.description || "",
                 threats_description: t.description || "",
-                description: t.description || ""
+                description: t.description || "",
             })),
             Vulnerabilities_library: vulnerabilities.map((v, i) => ({
                 Vulnerabilities_name: v.name,
@@ -94,10 +129,10 @@ export async function POST(req: NextRequest) {
                 Vulnerabilities_Description: v.description || "",
                 Vulnerabilities_description: v.description || "",
                 vulnerabilities_description: v.description || "",
-                description: v.description || ""
+                description: v.description || "",
             })),
             Risk_Library: risks
-                .filter(r => r.description && r.description.trim() !== '')
+                .filter((r) => r.description && r.description.trim() !== "")
                 .map((r, i) => ({
                     Risk_name: r.name,
                     Risk_Name: r.name,
@@ -108,12 +143,12 @@ export async function POST(req: NextRequest) {
                     Risk_Description: r.description || "",
                     Risk_description: r.description || "",
                     risk_description: r.description || "",
-                    description: r.description || ""
-                }))
+                    description: r.description || "",
+                })),
         };
 
-        // Build generated risk data from asset classification
-        const assetDescription = `Asset Classification: ${classificationData.subCategory.name} - ${classificationData.group.name}. ` +
+        const assetDescription =
+            `Asset Classification: ${classificationData.subCategory.name} - ${classificationData.group.name}. ` +
             `Confidentiality: ${classificationData.confidentiality} (${classificationData.confidentialityScore}), ` +
             `Integrity: ${classificationData.integrity} (${classificationData.integrityScore}), ` +
             `Availability: ${classificationData.availability} (${classificationData.availabilityScore}), ` +
@@ -149,24 +184,19 @@ export async function POST(req: NextRequest) {
                 asset_criticality: classificationData.assetCriticality,
                 Asset_Criticality_Score: classificationData.assetCriticalityScore,
                 asset_criticality_score: classificationData.assetCriticalityScore,
-                Asset_Sensitivity: "", // Sensitivity not stored in AssetCIAClassification
+                Asset_Sensitivity: "",
                 asset_sensitivity: "",
                 Asset_Description: assetDescription,
                 asset_description: assetDescription,
             },
-            risks: []
+            risks: [],
         };
 
-        // Construct the payload for Runpod - Explicitly Stringified strings for urlencoded form
         const runpodPayload = {
             existing_library: JSON.stringify(existingLibraryObj),
-            generated_risk: JSON.stringify(generatedRiskObj)
+            generated_risk: JSON.stringify(generatedRiskObj),
         };
 
-        console.log("DEBUG: Sending payload to Runpod:", JSON.stringify(runpodPayload, null, 2));
-
-        // 4. Proxy to Runpod (Start Job)
-        // Target: /api/semanticMatch_process_asset_riskV2
         const response = await proxyToExternalApi({
             service: "PYTHON_BACKEND",
             path: "/api/semanticMatch_process_asset_riskV2",
@@ -175,15 +205,7 @@ export async function POST(req: NextRequest) {
             contentType: "application/x-www-form-urlencoded",
         });
 
-        if (!response.ok) {
-            const errorBody = await response.clone().text();
-            console.error(`DEBUG: Runpod/Proxy failed with status ${response.status}:`, errorBody);
-        } else {
-            console.log(`DEBUG: Runpod Success: ${response.status}`);
-        }
-
         return response;
-
     } catch (error) {
         console.error("Error starting AI Risk Evaluation:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -205,6 +227,8 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
         }
 
+        console.log("[AI Risk] API called: GET /api/assets/classification/aiRisk (poll)", { jobId });
+
         // 1. Check Status
         // Target: /api/semanticMatch_process_asset_riskV2_status/{job_id}
         const statusResponse = await proxyToExternalApi({
@@ -220,6 +244,7 @@ export async function GET(req: NextRequest) {
         }
 
         const statusData = await statusResponse.json();
+        console.log("[AI Risk] Status result:", JSON.stringify(statusData, null, 2));
 
         // If not completed, return status
         if (statusData.status !== "completed") {
@@ -239,7 +264,7 @@ export async function GET(req: NextRequest) {
         }
 
         const resultData = await resultResponse.json();
-        console.log("DEBUG: Result Payload:", JSON.stringify(resultData, null, 2));
+        console.log("[AI Risk] Result payload:", JSON.stringify(resultData, null, 2));
 
         // Return combined status + result
         return NextResponse.json({ ...resultData, status: "completed" });
