@@ -2809,7 +2809,7 @@ model EvidenceAIReview {
   artifact          Artifact?        @relation(fields: [artifactId], references: [id], onDelete: SetNull)
 
   // Document ID tracking fields
-  ingestJobId          String?       // RunPod job ID from artifact ingestion
+  ingestJobId       String?          // RunPod job ID from artifact ingestion
   evidenceDocumentId   String?       // evidence.id sent as document_id during evidence ingest
   artifactDocumentId   String?       // artifact.id sent as document_id during vault-query ingest
   runpodDocumentRef    String?       // document_id returned by RunPod (if different from what we sent)

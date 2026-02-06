@@ -150,12 +150,15 @@ export const POST = withAuth(
       });
 
       let ingestJobId: string | null = null;
+      let runpodDocumentRef: string | null = null;
 
       try {
         const ingestResponse = await aiApiClient.post(AI_ENDPOINTS.INGEST, ingestFormData);
         const ingestData = ingestResponse.data as { job_id?: string; document_id?: string; status?: string };
 
         ingestJobId = ingestData.job_id || ingestData.document_id || artifactId;
+        // Capture RunPod's returned document_id (may differ from what we sent)
+        runpodDocumentRef = ingestData.document_id || null;
 
         // Update ingest operation
         await updateAIOperation(ingestOperation.id, {
@@ -258,11 +261,27 @@ export const POST = withAuth(
 
       const reviewData = {
         status: 'completed',
+
+        // Explicit artifact reference
+        artifactId: artifact.id,
+
+        // Document ID tracking
+        ingestJobId: ingestJobId,
+        evidenceDocumentId: evidence.id,
+        artifactDocumentId: artifactId,
+        runpodDocumentRef: runpodDocumentRef,
+
+        // DEPRECATED: keep for backward compatibility
         documentId: ingestJobId,
+
         complianceSummary: vaultResponse.answer || 'No answer returned from AI vault query',
         complianceScore: vaultResponse.confidence ? vaultResponse.confidence * 100 : null,
         gaps: null,
-        suggestions: vaultResponse.sources ? JSON.stringify(vaultResponse.sources) : null,
+
+        // Sources stored in dedicated field (was previously in suggestions)
+        sources: vaultResponse.sources ? JSON.stringify(vaultResponse.sources) : null,
+        suggestions: null,
+
         rawResponse: JSON.stringify({
           artifactId: artifact.id,
           artifactFileName: artifact.fileName,
@@ -270,6 +289,12 @@ export const POST = withAuth(
           evidenceCode: evidence.evidenceCode,
           question: evidence.description,
           response: vaultResponse,
+          documentTracking: {
+            sentArtifactDocId: artifactId,
+            sentEvidenceDocId: evidence.id,
+            returnedDocId: runpodDocumentRef,
+            ingestJobId: ingestJobId,
+          },
           processedAt: new Date().toISOString(),
         }),
         aiOperationId: vaultOperation.id,
