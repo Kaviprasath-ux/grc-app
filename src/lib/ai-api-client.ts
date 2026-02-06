@@ -188,9 +188,27 @@ class AIApiClient {
         console.log(safeJsonStringify(data, 2));
         console.log(`${'═'.repeat(80)}\n`);
         const errorData = data as Record<string, unknown>;
+
+        // Extract error message, handling FastAPI validation error format
+        // FastAPI returns: { "detail": [{ "loc": [...], "msg": "...", "type": "..." }] }
+        let errorMessage = 'AI Service Error';
+        if (errorData.error && typeof errorData.error === 'string') {
+          errorMessage = errorData.error;
+        } else if (errorData.message && typeof errorData.message === 'string') {
+          errorMessage = errorData.message;
+        } else if (errorData.detail) {
+          if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else if (Array.isArray(errorData.detail) && errorData.detail.length > 0) {
+            // FastAPI validation error format: extract msg from first error
+            const firstError = errorData.detail[0] as { msg?: string; message?: string };
+            errorMessage = firstError.msg || firstError.message || 'Validation error';
+          }
+        }
+
         throw {
           status: response.status,
-          message: errorData.error || errorData.message || errorData.detail || 'AI Service Error',
+          message: errorMessage,
           data: data,
           requestId,
         };

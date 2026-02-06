@@ -65,6 +65,8 @@ export default function AIRecommendedRisksPage() {
   const [generating, setGenerating] = useState<string | null>(null);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [planResult, setPlanResult] = useState<FieldworkAuditPlanResponse | null>(null);
+  const [addingToPlanning, setAddingToPlanning] = useState<number | null>(null);
+  const [currentDepartmentId, setCurrentDepartmentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDepartments();
@@ -121,6 +123,7 @@ export default function AIRecommendedRisksPage() {
       }
 
       setPlanResult(data as FieldworkAuditPlanResponse);
+      setCurrentDepartmentId(dept.id); // Store department ID for adding to planning
       setPlanDialogOpen(true);
       toast.success("Audit plan generated");
     } catch (e) {
@@ -128,6 +131,49 @@ export default function AIRecommendedRisksPage() {
       toast.error("Failed to generate audit plan");
     } finally {
       setGenerating(null);
+    }
+  };
+
+  const handleAddToAuditPlan = async (plan: AuditPlanItem, planIndex: number) => {
+    if (!currentDepartmentId) {
+      toast.error("Department information missing");
+      return;
+    }
+
+    setAddingToPlanning(planIndex);
+    try {
+      const res = await fetch("/api/internal-audit/audit-planning/from-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          audit_code: plan.audit_code,
+          audit_title: plan.audit_title,
+          audit_objective: plan.audit_objective,
+          audit_scope: plan.audit_scope,
+          associated_risks: plan.associated_risks,
+          audit_tasks: plan.audit_tasks,
+          department_name: planResult?.department_name,
+          departmentId: currentDepartmentId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data?.error || "Failed to add to audit plan");
+        return;
+      }
+
+      toast.success("Successfully added to Audit Planning!");
+      setPlanDialogOpen(false);
+
+      // Optionally navigate to audit planning
+      // router.push("/internal-audit/audit-planning");
+    } catch (e) {
+      console.error("Add to audit plan error:", e);
+      toast.error("Failed to add to audit plan");
+    } finally {
+      setAddingToPlanning(null);
     }
   };
 
@@ -215,20 +261,38 @@ export default function AIRecommendedRisksPage() {
               planResult.audit_plan.map((plan, idx) => (
                 <Card key={idx}>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">
-                      {plan.audit_code} – {plan.audit_title}
-                    </CardTitle>
-                    {plan.audit_objective && (
-                      <CardDescription>Objective: {plan.audit_objective}</CardDescription>
-                    )}
-                    {plan.audit_scope && (
-                      <p className="text-sm text-muted-foreground">Scope: {plan.audit_scope}</p>
-                    )}
-                    {plan.associated_risks?.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Associated risks: {plan.associated_risks.join("; ")}
-                      </p>
-                    )}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <CardTitle className="text-base">
+                          {plan.audit_code} – {plan.audit_title}
+                        </CardTitle>
+                        {plan.audit_objective && (
+                          <CardDescription className="mt-1">Objective: {plan.audit_objective}</CardDescription>
+                        )}
+                        {plan.audit_scope && (
+                          <p className="text-sm text-muted-foreground mt-1">Scope: {plan.audit_scope}</p>
+                        )}
+                        {plan.associated_risks?.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Associated risks: {plan.associated_risks.join("; ")}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                        onClick={() => handleAddToAuditPlan(plan, idx)}
+                        disabled={addingToPlanning !== null}
+                      >
+                        {addingToPlanning === idx ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          "Add to Audit Plan"
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {plan.audit_tasks?.map((task, ti) => (

@@ -133,6 +133,46 @@ const form = useForm<FormValues>({
 ### File Uploads
 Files are stored in `uploads/` directory. API routes handle multipart form data with `formData.getAll('files')`.
 
+## Git Workflow Rules (ALL CONTRIBUTORS)
+
+### MANDATORY: Pull Before Commit
+**This rule applies to ALL users working on this repository, on ANY branch.**
+
+Before every commit or commit-and-push task:
+
+1. **Fetch and check if your branch is up-to-date with remote:**
+```bash
+git fetch origin
+git status
+```
+
+2. **If behind remote, pull the latest changes first:**
+```bash
+git pull
+```
+
+3. **Only then proceed with staging and committing your changes.**
+
+This prevents merge conflicts and ensures everyone is always working with the latest codebase. **Never skip this step.**
+
+### Commit Workflow Summary
+```bash
+# Step 1: Always fetch and check status first
+git fetch origin && git status
+
+# Step 2: If behind, pull latest changes
+git pull
+
+# Step 3: Stage your changes
+git add <files>
+
+# Step 4: Commit with descriptive message
+git commit -m "message"
+
+# Step 5: Push (if requested)
+git push
+```
+
 ## Internationalization (i18n) - REQUIRED FOR ALL PAGES
 
 This app supports **3 languages**: English (default), Arabic (RTL), and Latvian (LTR).
