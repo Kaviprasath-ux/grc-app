@@ -190,7 +190,7 @@ export default function ProcessPage() {
   const [aiRisks, setAiRisks] = useState<any[]>([]);
   const [semanticMatchStats, setSemanticMatchStats] = useState<{ created: number; updated: number; skipped: number } | null>(null);
 
-  // Semantic matching hook for background deduplication
+  // Semantic matching hook for background deduplication (runs silently)
   const {
     submitJob: submitSemanticMatch,
     status: semanticStatus,
@@ -202,12 +202,15 @@ export default function ProcessPage() {
   } = useRiskSemanticMatch({
     onComplete: (result) => {
       console.log("[Process] Semantic matching completed:", result);
+      console.log("[Process] Stats:", JSON.stringify(result.stats, null, 2));
+      console.log("[Process] Processed risks:", JSON.stringify(result.risks, null, 2));
       setSemanticMatchStats(result.stats);
       // Refresh data after semantic matching completes
       fetchData();
+      // Show toast notification with results
       toast({
         title: t("Risk Library Updated"),
-        description: `${t("Created")}: ${result.stats.created}, ${t("Updated")}: ${result.stats.updated}, ${t("Skipped")}: ${result.stats.skipped}`,
+        description: `${t("Created")}: ${result.stats?.created || 0}, ${t("Linked")}: ${result.stats?.skipped || 0}`,
       });
     },
     onError: (error) => {
@@ -247,7 +250,7 @@ export default function ProcessPage() {
     setIsAIEvaluationOpen(true);
 
     try {
-      // Step 1: Generate risks without persisting (for semantic matching)
+      // Step 1: Generate risks without persisting (user will review first)
       const response = await fetch("/api/ai/risk-evaluation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -262,13 +265,9 @@ export default function ProcessPage() {
         if (generatedRisks.length > 0) {
           toast({
             title: t("AI Risks Generated"),
-            description: `${t("Generated")} ${generatedRisks.length} ${t("risks")}. ${t("Running semantic matching...")}`,
+            description: `${t("Generated")} ${generatedRisks.length} ${t("risks")}. ${t("Review and remove unwanted risks before proceeding.")}`,
           });
-
-          // Step 2: Trigger semantic matching in background
-          // This will compare with existing library and persist only new/unique risks
-          console.log("[Process] Submitting semantic matching for", generatedRisks.length, "risks");
-          await submitSemanticMatch(generatedRisks, process.id);
+          // Note: Semantic matching will be triggered when user clicks "Go to Risk Register"
         } else {
           toast({
             title: t("No Risks Found"),
@@ -291,6 +290,30 @@ export default function ProcessPage() {
       });
     } finally {
       setIsAiGenerating(false);
+    }
+  };
+
+  // Delete an AI-generated risk from the review list
+  const handleDeleteAiRisk = (indexToDelete: number) => {
+    setAiRisks(prev => prev.filter((_, idx) => idx !== indexToDelete));
+    toast({
+      title: t("Risk Removed"),
+      description: t("The risk has been removed from the review list."),
+    });
+  };
+
+  // Navigate to risk register immediately, run semantic matching silently in background
+  const handleGoToRiskRegister = () => {
+    // Close the dialog and navigate immediately
+    setIsAIEvaluationOpen(false);
+    router.push("/risks/register");
+
+    // Run semantic matching silently in background (don't await)
+    if (aiRisks.length > 0) {
+      console.log("[Process] Starting background semantic matching for", aiRisks.length, "risks");
+      submitSemanticMatch(aiRisks, evaluatingProcess?.id || "").catch((error) => {
+        console.error("[Process] Background semantic matching error:", error);
+      });
     }
   };
   const [saving, setSaving] = useState(false);
@@ -1662,7 +1685,9 @@ export default function ProcessPage() {
                   <p className="text-sm text-primary-700">
                     {semanticMatchStats
                       ? t("These risks have been compared with your existing library. Only new risks were added to the Risk Register.")
-                      : t("The AI has identified the following risks. They are being compared with your existing library...")}
+                      : (isSemanticLoading || isSemanticPolling)
+                        ? t("Comparing with existing risk library...")
+                        : t("Review the AI-identified risks below. Remove any unwanted risks, then click 'Go to Risk Register' to process them.")}
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -1670,13 +1695,27 @@ export default function ProcessPage() {
                     <div key={idx} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-white shadow-sm">
                       <div className="flex justify-between items-start">
                         <h5 className="font-semibold text-slate-900">{risk.name}</h5>
-                        <Badge className={
-                          (risk.riskRating || risk.risk_rating) === "High" ? "bg-error-light text-error-dark" :
-                            (risk.riskRating || risk.risk_rating) === "Medium" ? "bg-warning-light text-warning-dark" :
-                              "bg-success-light text-success-dark"
-                        }>
-                          {risk.riskRating || risk.risk_rating || "Medium"}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className={
+                            (risk.riskRating || risk.risk_rating) === "High" ? "bg-error-light text-error-dark" :
+                              (risk.riskRating || risk.risk_rating) === "Medium" ? "bg-warning-light text-warning-dark" :
+                                "bg-success-light text-success-dark"
+                          }>
+                            {risk.riskRating || risk.risk_rating || "Medium"}
+                          </Badge>
+                          {/* Delete button - only show before semantic matching starts */}
+                          {!isSemanticLoading && !isSemanticPolling && !semanticMatchStats && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteAiRisk(idx)}
+                              title={t("Remove this risk")}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-slate-600">{risk.description}</p>
 
@@ -1737,8 +1776,8 @@ export default function ProcessPage() {
               {t("Close")}
             </Button>
             <Button
-              onClick={() => router.push("/risks/register")}
-              disabled={isSemanticLoading || isSemanticPolling}
+              onClick={handleGoToRiskRegister}
+              disabled={isSemanticLoading || isSemanticPolling || isAiGenerating || aiRisks.length === 0}
             >
               {(isSemanticLoading || isSemanticPolling) ? (
                 <>
