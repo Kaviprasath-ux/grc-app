@@ -1018,7 +1018,11 @@ export default function UsersPage() {
                   <Input
                     id="firstName"
                     value={userForm.firstName}
-                    onChange={(e) => setUserForm({ ...userForm, firstName: e.target.value })}
+                    onChange={(e) => {
+                      const newFirstName = e.target.value;
+                      const autoFullName = `${newFirstName} ${userForm.lastName}`.trim();
+                      setUserForm({ ...userForm, firstName: newFirstName, fullName: autoFullName });
+                    }}
                     placeholder={t("Enter first name")}
                     className="mt-1.5 bg-white"
                   />
@@ -1028,7 +1032,11 @@ export default function UsersPage() {
                   <Input
                     id="lastName"
                     value={userForm.lastName}
-                    onChange={(e) => setUserForm({ ...userForm, lastName: e.target.value })}
+                    onChange={(e) => {
+                      const newLastName = e.target.value;
+                      const autoFullName = `${userForm.firstName} ${newLastName}`.trim();
+                      setUserForm({ ...userForm, lastName: newLastName, fullName: autoFullName });
+                    }}
                     placeholder={t("Enter last name")}
                     className="mt-1.5 bg-white"
                   />
@@ -1334,9 +1342,11 @@ export default function UsersPage() {
                 <Input
                   id="editFirstName"
                   value={editingUser.firstName}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, firstName: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const newFirstName = e.target.value;
+                    const autoFullName = `${newFirstName} ${editingUser.lastName}`.trim();
+                    setEditingUser({ ...editingUser, firstName: newFirstName, fullName: autoFullName });
+                  }}
                   className="bg-white"
                 />
               </div>
@@ -1347,9 +1357,11 @@ export default function UsersPage() {
                 <Input
                   id="editLastName"
                   value={editingUser.lastName}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, lastName: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const newLastName = e.target.value;
+                    const autoFullName = `${editingUser.firstName} ${newLastName}`.trim();
+                    setEditingUser({ ...editingUser, lastName: newLastName, fullName: autoFullName });
+                  }}
                   className="bg-white"
                 />
               </div>
