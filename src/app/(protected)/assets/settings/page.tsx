@@ -247,7 +247,7 @@ export default function AssetSettingsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [catRes, subCatRes, groupRes, lifecycleRes, sensRes, assetRes, ciaRes] = await Promise.all([
+      const [catRes, subCatRes, groupRes, lifecycleRes, sensRes, assetRes, ciaRes, scoringConfigRes, scoringRangesRes] = await Promise.all([
         fetch("/api/asset-categories"),
         fetch("/api/asset-sub-categories"),
         fetch("/api/asset-groups"),
@@ -255,6 +255,8 @@ export default function AssetSettingsPage() {
         fetch("/api/asset-sensitivities"),
         fetch("/api/assets"),
         fetch("/api/cia-ratings"),
+        fetch("/api/asset-scoring-config"),
+        fetch("/api/asset-scoring-ranges"),
       ]);
 
       if (catRes.ok) setCategories(await catRes.json());
@@ -264,6 +266,28 @@ export default function AssetSettingsPage() {
       if (sensRes.ok) setSensitivities(await sensRes.json());
       if (assetRes.ok) setAssets(await assetRes.json());
       if (ciaRes.ok) setCiaRatings(await ciaRes.json());
+
+      // Load scoring configuration
+      if (scoringConfigRes.ok) {
+        const config = await scoringConfigRes.json();
+        setScoringCalculationType(config.calculationType || "high_of_all");
+      }
+
+      // Load scoring ranges
+      if (scoringRangesRes.ok) {
+        const ranges = await scoringRangesRes.json();
+        // Separate ranges by calculation type
+        const highOfAll = ranges.filter((r: ScoringConfig & { calculationType: string }) => r.calculationType === "high_of_all")
+          .map((r: ScoringConfig) => ({ id: r.id, level: r.level, minScore: r.minScore, maxScore: r.maxScore, color: r.color || "#000000" }));
+        const additionOfAll = ranges.filter((r: ScoringConfig & { calculationType: string }) => r.calculationType === "addition_of_all")
+          .map((r: ScoringConfig) => ({ id: r.id, level: r.level, minScore: r.minScore, maxScore: r.maxScore, color: r.color || "#000000" }));
+        const productOfAll = ranges.filter((r: ScoringConfig & { calculationType: string }) => r.calculationType === "product_of_all")
+          .map((r: ScoringConfig) => ({ id: r.id, level: r.level, minScore: r.minScore, maxScore: r.maxScore, color: r.color || "#000000" }));
+
+        setHighOfAllConfigs(highOfAll);
+        setAdditionOfAllConfigs(additionOfAll);
+        setProductOfAllConfigs(productOfAll);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -717,7 +741,7 @@ export default function AssetSettingsPage() {
     }
   };
 
-  const handleAddScoringConfig = () => {
+  const handleAddScoringConfig = async () => {
     if (!scoringConfigForm.level.trim()) return;
 
     const currentConfigs = getCurrentConfigs();
@@ -761,19 +785,42 @@ export default function AssetSettingsPage() {
       }
     }
 
-    const newConfig: ScoringConfig = {
-      id: Date.now().toString(),
-      level: scoringConfigForm.level,
-      minScore: scoringConfigForm.minScore,
-      maxScore: scoringConfigForm.maxScore,
-      color: scoringConfigForm.color,
-    };
-    setCurrentConfigs([...currentConfigs, newConfig]);
-    setScoringConfigForm({ level: "", minScore: 0, maxScore: 0, color: "#000000" });
-    setIsScoringAddOpen(false);
+    try {
+      const res = await fetch("/api/asset-scoring-ranges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          calculationType: scoringCalculationType,
+          level: scoringConfigForm.level,
+          minScore: scoringConfigForm.minScore,
+          maxScore: scoringConfigForm.maxScore,
+          color: scoringConfigForm.color,
+        }),
+      });
+
+      if (res.ok) {
+        const created = await res.json();
+        const newConfig: ScoringConfig = {
+          id: created.id,
+          level: created.level,
+          minScore: created.minScore,
+          maxScore: created.maxScore,
+          color: created.color || "#000000",
+        };
+        setCurrentConfigs([...currentConfigs, newConfig]);
+        setScoringConfigForm({ level: "", minScore: 0, maxScore: 0, color: "#000000" });
+        setIsScoringAddOpen(false);
+      } else {
+        const error = await res.json();
+        toast({ title: t("Error"), description: error.error || t("Failed to create scoring configuration"), variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error adding scoring config:", error);
+      toast({ title: t("Error"), description: t("Failed to create scoring configuration"), variant: "destructive" });
+    }
   };
 
-  const handleUpdateScoringConfig = () => {
+  const handleUpdateScoringConfig = async () => {
     if (!selectedScoringConfig) return;
 
     // Check that low range and high range are not the same (for addition/product types)
@@ -808,21 +855,78 @@ export default function AssetSettingsPage() {
       }
     }
 
-    setCurrentConfigs(currentConfigs.map(c =>
-      c.id === selectedScoringConfig.id
-        ? { ...c, level: scoringConfigForm.level, minScore: scoringConfigForm.minScore, maxScore: scoringConfigForm.maxScore, color: scoringConfigForm.color }
-        : c
-    ));
-    setIsScoringEditOpen(false);
-    setSelectedScoringConfig(null);
+    try {
+      const res = await fetch(`/api/asset-scoring-ranges/${selectedScoringConfig.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          level: scoringConfigForm.level,
+          minScore: scoringConfigForm.minScore,
+          maxScore: scoringConfigForm.maxScore,
+          color: scoringConfigForm.color,
+        }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setCurrentConfigs(currentConfigs.map(c =>
+          c.id === selectedScoringConfig.id
+            ? { ...c, level: updated.level, minScore: updated.minScore, maxScore: updated.maxScore, color: updated.color }
+            : c
+        ));
+        setIsScoringEditOpen(false);
+        setSelectedScoringConfig(null);
+      } else {
+        const data = await res.json();
+        toast({ title: t("Error"), description: data.error || t("Failed to update scoring configuration"), variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error updating scoring config:", error);
+      toast({ title: t("Error"), description: t("Failed to update scoring configuration"), variant: "destructive" });
+    }
   };
 
-  const handleDeleteScoringConfig = () => {
+  const handleDeleteScoringConfig = async () => {
     if (!selectedScoringConfig) return;
-    const currentConfigs = getCurrentConfigs();
-    setCurrentConfigs(currentConfigs.filter(c => c.id !== selectedScoringConfig.id));
-    setIsScoringDeleteOpen(false);
-    setSelectedScoringConfig(null);
+
+    try {
+      const res = await fetch(`/api/asset-scoring-ranges/${selectedScoringConfig.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        const currentConfigs = getCurrentConfigs();
+        setCurrentConfigs(currentConfigs.filter(c => c.id !== selectedScoringConfig.id));
+        setIsScoringDeleteOpen(false);
+        setSelectedScoringConfig(null);
+      } else {
+        const data = await res.json();
+        toast({ title: t("Error"), description: data.error || t("Failed to delete scoring configuration"), variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error deleting scoring config:", error);
+      toast({ title: t("Error"), description: t("Failed to delete scoring configuration"), variant: "destructive" });
+    }
+  };
+
+  const handleCalculationTypeChange = async (newType: string) => {
+    setScoringCalculationType(newType);
+
+    try {
+      const res = await fetch("/api/asset-scoring-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calculationType: newType }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast({ title: t("Error"), description: data.error || t("Failed to update calculation type"), variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error updating calculation type:", error);
+      toast({ title: t("Error"), description: t("Failed to update calculation type"), variant: "destructive" });
+    }
   };
 
   // Export handlers for each entity type
@@ -924,6 +1028,194 @@ export default function AssetSettingsPage() {
     event.target.value = "";
   };
 
+  // Import handler for sub-categories
+  const handleImportSubCategories = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split("\n").filter(line => line.trim());
+      if (lines.length < 2) {
+        toast({ title: t("Error"), description: t("Invalid CSV file"), variant: "destructive" });
+        return;
+      }
+
+      const dataRows = lines.slice(1);
+      let imported = 0;
+      let failed = 0;
+
+      for (const line of dataRows) {
+        const cells = parseCSVLine(line);
+        const [name, description, categoryName, status] = cells;
+        if (!name) continue;
+
+        // Find matching category by name
+        const category = categories.find(c => c.name.toLowerCase() === (categoryName || "").toLowerCase());
+        if (!category) {
+          failed++;
+          continue;
+        }
+
+        try {
+          const res = await fetch("/api/asset-sub-categories", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description: description || "", categoryId: category.id, status: status || "Active" }),
+          });
+          if (res.ok) imported++;
+          else failed++;
+        } catch { failed++; }
+      }
+
+      fetchData();
+      toast({
+        title: t("Success"),
+        description: failed > 0
+          ? `${t("Imported")} ${imported} ${t("sub-categories")}. ${failed} ${t("failed")} (${t("category not found")})`
+          : `${t("Imported")} ${imported} ${t("sub-categories")}`
+      });
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  };
+
+  // Import handler for groups
+  const handleImportGroups = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split("\n").filter(line => line.trim());
+      if (lines.length < 2) {
+        toast({ title: t("Error"), description: t("Invalid CSV file"), variant: "destructive" });
+        return;
+      }
+
+      const dataRows = lines.slice(1);
+      let imported = 0;
+
+      for (const line of dataRows) {
+        const cells = parseCSVLine(line);
+        const [name, description] = cells;
+        if (!name) continue;
+
+        try {
+          const res = await fetch("/api/asset-groups", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description: description || "" }),
+          });
+          if (res.ok) imported++;
+        } catch { /* skip errors */ }
+      }
+
+      fetchData();
+      toast({ title: t("Success"), description: `${t("Imported")} ${imported} ${t("groups")}` });
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  };
+
+  // Import handler for sensitivities
+  const handleImportSensitivities = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split("\n").filter(line => line.trim());
+      if (lines.length < 2) {
+        toast({ title: t("Error"), description: t("Invalid CSV file"), variant: "destructive" });
+        return;
+      }
+
+      const dataRows = lines.slice(1);
+      let imported = 0;
+
+      for (const line of dataRows) {
+        const cells = parseCSVLine(line);
+        const [name, description] = cells;
+        if (!name) continue;
+
+        try {
+          const res = await fetch("/api/asset-sensitivities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description: description || "" }),
+          });
+          if (res.ok) imported++;
+        } catch { /* skip errors */ }
+      }
+
+      fetchData();
+      toast({ title: t("Success"), description: `${t("Imported")} ${imported} ${t("sensitivities")}` });
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  };
+
+  // Import handler for assets
+  const handleImportAssets = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split("\n").filter(line => line.trim());
+      if (lines.length < 2) {
+        toast({ title: t("Error"), description: t("Invalid CSV file"), variant: "destructive" });
+        return;
+      }
+
+      const dataRows = lines.slice(1);
+      let imported = 0;
+      let failed = 0;
+
+      for (const line of dataRows) {
+        const cells = parseCSVLine(line);
+        const [assetId, name, location, lifecycleStatusName, sensitivityName] = cells;
+        if (!name || !assetId) continue;
+
+        // Resolve lifecycle status by name
+        const lifecycleStatus = lifecycleStatuses.find(l => l.name.toLowerCase() === (lifecycleStatusName || "").toLowerCase());
+        // Resolve sensitivity by name
+        const sensitivity = sensitivities.find(s => s.name.toLowerCase() === (sensitivityName || "").toLowerCase());
+
+        try {
+          const res = await fetch("/api/assets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              assetId,
+              name,
+              location: location || null,
+              lifecycleStatusId: lifecycleStatus?.id || null,
+              sensitivityId: sensitivity?.id || null,
+            }),
+          });
+          if (res.ok) imported++;
+          else failed++;
+        } catch { failed++; }
+      }
+
+      fetchData();
+      toast({
+        title: t("Success"),
+        description: failed > 0
+          ? `${t("Imported")} ${imported} ${t("assets")}. ${failed} ${t("failed")}.`
+          : `${t("Imported")} ${imported} ${t("assets")}`
+      });
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  };
+
   // Import handler for lifecycle statuses
   const handleImportLifecycleStatuses = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -998,6 +1290,18 @@ export default function AssetSettingsPage() {
       case "sensitivity": return handleExportSensitivities;
       case "asset-list": return handleExportAssets;
       default: return () => {};
+    }
+  };
+
+  // Get import handler based on entity type
+  const getImportHandler = () => {
+    switch (entitySubTab) {
+      case "categories": return handleImportCategories;
+      case "subcategories": return handleImportSubCategories;
+      case "groups": return handleImportGroups;
+      case "sensitivity": return handleImportSensitivities;
+      case "asset-list": return handleImportAssets;
+      default: return undefined;
     }
   };
 
@@ -1399,22 +1703,20 @@ export default function AssetSettingsPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            {entitySubTab === "categories" && (
-              <label>
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleImportCategories}
-                  className="hidden"
-                />
-                <Button variant="outline" size="sm" asChild>
-                  <span>
-                    <Download className="h-4 w-4 mr-2" />
-                    {t("Import")}
-                  </span>
-                </Button>
-              </label>
-            )}
+            <label>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={getImportHandler()}
+                className="hidden"
+              />
+              <Button variant="outline" size="sm" asChild>
+                <span>
+                  <Download className="h-4 w-4 mr-2" />
+                  {t("Import")}
+                </span>
+              </Button>
+            </label>
             <Button variant="outline" size="sm" onClick={getExportHandler()}>
               <Upload className="h-4 w-4 mr-2" />
               {t("Export")}
@@ -2487,7 +2789,7 @@ export default function AssetSettingsPage() {
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <Select value={scoringCalculationType} onValueChange={setScoringCalculationType}>
+                <Select value={scoringCalculationType} onValueChange={handleCalculationTypeChange}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>

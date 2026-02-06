@@ -727,6 +727,7 @@ const translations: [string, string, string][] = [
   ['Issue Owner', 'مالك القضية', 'Problēmas īpašnieks'],
   ['Select owner', 'اختر المالك', 'Izvēlieties īpašnieku'],
   ['Select department first', 'اختر القسم أولاً', 'Vispirms izvēlieties nodaļu'],
+  ['Select Sub Category first', 'اختر الفئة الفرعية أولاً', 'Vispirms izvēlieties apakškategoriju'],
   ['Select type', 'اختر النوع', 'Izvēlieties tipu'],
   ['Enter issue description', 'أدخل وصف القضية', 'Ievadiet problēmas aprakstu'],
   ['New Stakeholder', 'صاحب مصلحة جديد', 'Jauna ieinteresētā puse'],
@@ -903,6 +904,15 @@ const translations: [string, string, string][] = [
   ['Select frequency', 'اختر التكرار', 'Izvēlieties biežumu'],
   ['Bi-annually', 'نصف سنوي', 'Divreiz gadā'],
   ['As needed', 'حسب الحاجة', 'Pēc vajadzības'],
+  ['Imported', 'تم استيراد', 'Importēts'],
+  ['categories', 'فئات', 'kategorijas'],
+  ['sub-categories', 'فئات فرعية', 'apakškategorijas'],
+  ['groups', 'مجموعات', 'grupas'],
+  ['sensitivities', 'حساسيات', 'jutīgumi'],
+  ['assets', 'أصول', 'aktīvi'],
+  ['lifecycle statuses', 'حالات دورة الحياة', 'dzīves cikla statusi'],
+  ['failed', 'فشل', 'neizdevās'],
+  ['category not found', 'الفئة غير موجودة', 'kategorija nav atrasta'],
 ];
 
 function createExcelFile(): void {
