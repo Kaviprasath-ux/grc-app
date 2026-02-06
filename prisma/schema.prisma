@@ -886,6 +886,11 @@ model ProcessBIA {
   rpoHours           Int                 @default(0) // Recovery Point Objective in hours
   rtoLabel           String?             // Label for RTO
   rpoLabel           String?             // Label for RPO
+  // Scoring range values
+  lowValue           Int?
+  criticalValue      Int?
+  highValue          Int?
+  mediumValue        Int?
   // Approver
   approverId         String?
   approverName       String?

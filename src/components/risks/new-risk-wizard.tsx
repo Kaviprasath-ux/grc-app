@@ -130,6 +130,29 @@ export function NewRiskWizard({
   const [generatedRiskId, setGeneratedRiskId] = useState("");
   const [linkControlDialogOpen, setLinkControlDialogOpen] = useState(false);
   const [controlSearch, setControlSearch] = useState("");
+  const [createCauseDialogOpen, setCreateCauseDialogOpen] = useState(false);
+  const [newCauseName, setNewCauseName] = useState("");
+  const [newCauseDescription, setNewCauseDescription] = useState("");
+  const [creatingCause, setCreatingCause] = useState(false);
+
+  // Create Category dialog state
+  const [createCategoryDialogOpen, setCreateCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDescription, setNewCategoryDescription] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [localCategories, setLocalCategories] = useState<Category[]>([]);
+
+  // Create Threat dialog state
+  const [createThreatDialogOpen, setCreateThreatDialogOpen] = useState(false);
+  const [newThreatName, setNewThreatName] = useState("");
+  const [newThreatDescription, setNewThreatDescription] = useState("");
+  const [creatingThreat, setCreatingThreat] = useState(false);
+
+  // Create Vulnerability dialog state
+  const [createVulnerabilityDialogOpen, setCreateVulnerabilityDialogOpen] = useState(false);
+  const [newVulnerabilityName, setNewVulnerabilityName] = useState("");
+  const [newVulnerabilityDescription, setNewVulnerabilityDescription] = useState("");
+  const [creatingVulnerability, setCreatingVulnerability] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -157,6 +180,7 @@ export function NewRiskWizard({
       fetchAssets();
       fetchProcesses();
       fetchControls();
+      setLocalCategories(categories);
 
       if (isEditMode && editData) {
         // Pre-fill form with edit data
@@ -462,6 +486,150 @@ export function NewRiskWizard({
       .filter(Boolean);
   };
 
+  const handleCreateCause = async () => {
+    if (!newCauseName.trim()) {
+      toast.error("Cause name is required");
+      return;
+    }
+    setCreatingCause(true);
+    try {
+      const res = await fetch("/api/risk-causes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCauseName.trim(),
+          description: newCauseDescription.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to create cause");
+      }
+      const newCause = await res.json();
+      setCauses((prev) => [...prev, newCause]);
+      setFormData((prev) => ({
+        ...prev,
+        selectedCauses: [...prev.selectedCauses, newCause.id],
+      }));
+      setNewCauseName("");
+      setNewCauseDescription("");
+      setCreateCauseDialogOpen(false);
+      toast.success("Cause created successfully");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create cause");
+    } finally {
+      setCreatingCause(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+    setCreatingCategory(true);
+    try {
+      const res = await fetch("/api/risk-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          description: newCategoryDescription.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to create category");
+      }
+      const newCategory = await res.json();
+      setLocalCategories((prev) => [...prev, newCategory]);
+      setFormData((prev) => ({
+        ...prev,
+        categoryId: newCategory.id,
+      }));
+      setNewCategoryName("");
+      setNewCategoryDescription("");
+      setCreateCategoryDialogOpen(false);
+      toast.success("Category created successfully");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create category");
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const handleCreateThreat = async () => {
+    if (!newThreatName.trim()) {
+      toast.error("Threat name is required");
+      return;
+    }
+    setCreatingThreat(true);
+    try {
+      const res = await fetch("/api/risk-threats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newThreatName.trim(),
+          description: newThreatDescription.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to create threat");
+      }
+      const newThreat = await res.json();
+      setThreats((prev) => [...prev, newThreat]);
+      setFormData((prev) => ({
+        ...prev,
+        selectedThreats: [...prev.selectedThreats, newThreat.id],
+      }));
+      setNewThreatName("");
+      setNewThreatDescription("");
+      setCreateThreatDialogOpen(false);
+      toast.success("Threat created successfully");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create threat");
+    } finally {
+      setCreatingThreat(false);
+    }
+  };
+
+  const handleCreateVulnerability = async () => {
+    if (!newVulnerabilityName.trim()) {
+      toast.error("Vulnerability name is required");
+      return;
+    }
+    setCreatingVulnerability(true);
+    try {
+      const res = await fetch("/api/risk-vulnerabilities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newVulnerabilityName.trim(),
+          description: newVulnerabilityDescription.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to create vulnerability");
+      }
+      const newVulnerability = await res.json();
+      setVulnerabilities((prev) => [...prev, newVulnerability]);
+      setFormData((prev) => ({
+        ...prev,
+        selectedVulnerabilities: [...prev.selectedVulnerabilities, newVulnerability.id],
+      }));
+      setNewVulnerabilityName("");
+      setNewVulnerabilityDescription("");
+      setCreateVulnerabilityDialogOpen(false);
+      toast.success("Vulnerability created successfully");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create vulnerability");
+    } finally {
+      setCreatingVulnerability(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
@@ -626,14 +794,19 @@ export function NewRiskWizard({
                           <SelectValue placeholder="Select Category" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((cat) => (
+                          {localCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button variant="outline" size="icon">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCreateCategoryDialogOpen(true)}
+                      >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
@@ -733,7 +906,12 @@ export function NewRiskWizard({
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button variant="outline" size="icon">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCreateThreatDialogOpen(true)}
+                      >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
@@ -774,7 +952,12 @@ export function NewRiskWizard({
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button variant="outline" size="icon">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCreateVulnerabilityDialogOpen(true)}
+                      >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
@@ -815,7 +998,12 @@ export function NewRiskWizard({
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" size="icon">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setCreateCauseDialogOpen(true)}
+                    >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -966,6 +1154,186 @@ export function NewRiskWizard({
             )}
           </div>
         </div>
+
+        {/* Create Cause Dialog */}
+        <Dialog open={createCauseDialogOpen} onOpenChange={setCreateCauseDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Create New Cause</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="newCauseName">Name *</Label>
+                <Input
+                  id="newCauseName"
+                  value={newCauseName}
+                  onChange={(e) => setNewCauseName(e.target.value)}
+                  placeholder="Enter cause name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newCauseDescription">Description</Label>
+                <Textarea
+                  id="newCauseDescription"
+                  value={newCauseDescription}
+                  onChange={(e) => setNewCauseDescription(e.target.value)}
+                  placeholder="Enter cause description (optional)"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCreateCauseDialogOpen(false);
+                  setNewCauseName("");
+                  setNewCauseDescription("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateCause} disabled={creatingCause}>
+                {creatingCause ? "Creating..." : "Create"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Category Dialog */}
+        <Dialog open={createCategoryDialogOpen} onOpenChange={setCreateCategoryDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Create New Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="newCategoryName">Name *</Label>
+                <Input
+                  id="newCategoryName"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Enter category name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newCategoryDescription">Description</Label>
+                <Textarea
+                  id="newCategoryDescription"
+                  value={newCategoryDescription}
+                  onChange={(e) => setNewCategoryDescription(e.target.value)}
+                  placeholder="Enter category description (optional)"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCreateCategoryDialogOpen(false);
+                  setNewCategoryName("");
+                  setNewCategoryDescription("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateCategory} disabled={creatingCategory}>
+                {creatingCategory ? "Creating..." : "Create"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Threat Dialog */}
+        <Dialog open={createThreatDialogOpen} onOpenChange={setCreateThreatDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Create New Threat</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="newThreatName">Name *</Label>
+                <Input
+                  id="newThreatName"
+                  value={newThreatName}
+                  onChange={(e) => setNewThreatName(e.target.value)}
+                  placeholder="Enter threat name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newThreatDescription">Description</Label>
+                <Textarea
+                  id="newThreatDescription"
+                  value={newThreatDescription}
+                  onChange={(e) => setNewThreatDescription(e.target.value)}
+                  placeholder="Enter threat description (optional)"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCreateThreatDialogOpen(false);
+                  setNewThreatName("");
+                  setNewThreatDescription("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateThreat} disabled={creatingThreat}>
+                {creatingThreat ? "Creating..." : "Create"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Vulnerability Dialog */}
+        <Dialog open={createVulnerabilityDialogOpen} onOpenChange={setCreateVulnerabilityDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Create New Vulnerability</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="newVulnerabilityName">Name *</Label>
+                <Input
+                  id="newVulnerabilityName"
+                  value={newVulnerabilityName}
+                  onChange={(e) => setNewVulnerabilityName(e.target.value)}
+                  placeholder="Enter vulnerability name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newVulnerabilityDescription">Description</Label>
+                <Textarea
+                  id="newVulnerabilityDescription"
+                  value={newVulnerabilityDescription}
+                  onChange={(e) => setNewVulnerabilityDescription(e.target.value)}
+                  placeholder="Enter vulnerability description (optional)"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCreateVulnerabilityDialogOpen(false);
+                  setNewVulnerabilityName("");
+                  setNewVulnerabilityDescription("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateVulnerability} disabled={creatingVulnerability}>
+                {creatingVulnerability ? "Creating..." : "Create"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Navigation Buttons */}
         <div className="flex-shrink-0 flex justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">

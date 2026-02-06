@@ -28,6 +28,22 @@ export const POST = withAuth(
         );
       }
 
+      // Check for duplicate audit plan (same title and department)
+      const existingPlan = await prisma.auditEngagement.findFirst({
+        where: {
+          customerAccountId,
+          departmentId,
+          engagementTitle: audit_title,
+        },
+      });
+
+      if (existingPlan) {
+        return NextResponse.json(
+          { error: 'This audit plan has already been added to Audit Planning.' },
+          { status: 409 } // 409 Conflict
+        );
+      }
+
       // Generate unique audit ID
       const existingEngagements = await prisma.auditEngagement.count({
         where: { customerAccountId },
@@ -54,7 +70,7 @@ export const POST = withAuth(
           description: fullDescription.substring(0, 1000), // Limit description length
           departmentId,
           auditType: 'Internal',
-          status: 'Planning', // Start in Planning status
+          status: 'Planned', // Set status to Planned
           assignedAuditorId: session.id, // Assign to current user
           customerAccountId,
           auditHeadId,

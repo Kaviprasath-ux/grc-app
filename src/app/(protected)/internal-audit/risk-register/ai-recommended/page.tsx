@@ -160,12 +160,16 @@ export default function AIRecommendedRisksPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data?.error || "Failed to add to audit plan");
+        // Handle duplicate (409 Conflict) with warning message
+        if (res.status === 409) {
+          toast.warning(data?.error || "This audit plan has already been added to Audit Planning.");
+        } else {
+          toast.error(data?.error || "Failed to add to audit plan");
+        }
         return;
       }
 
       toast.success("Successfully added to Audit Planning!");
-      setPlanDialogOpen(false);
 
       // Optionally navigate to audit planning
       // router.push("/internal-audit/audit-planning");

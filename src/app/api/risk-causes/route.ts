@@ -1,65 +1,87 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// GET all risk causes
-export async function GET() {
-  try {
-    const causes = await prisma.riskCause.findMany({
-      include: {
-        _count: {
-          select: { risks: true },
+// GET all risk causes - with tenant filtering
+export const GET = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const tenantFilter = getTenantFilter(session);
+
+      const causes = await prisma.riskCause.findMany({
+        where: tenantFilter,
+        include: {
+          _count: {
+            select: { risks: true },
+          },
         },
-      },
-      orderBy: { name: "asc" },
-    });
+        orderBy: { name: "asc" },
+      });
 
-    return NextResponse.json(causes);
-  } catch (error) {
-    console.error("Error fetching risk causes:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch risk causes" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST create a new risk cause
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { name, description } = body;
-
-    if (!name) {
+      return NextResponse.json(causes);
+    } catch (error) {
+      console.error("Error fetching risk causes:", error);
       return NextResponse.json(
-        { error: "Cause name is required" },
-        { status: 400 }
+        { error: "Failed to fetch risk causes" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "risk.settings", action: "view" }
+);
 
-    const existing = await prisma.riskCause.findFirst({
-      where: { name },
-    });
+// POST create a new risk cause - with tenant assignment
+export const POST = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const body = await req.json();
+      const { name, description } = body;
 
-    if (existing) {
+      if (!name?.trim()) {
+        return NextResponse.json(
+          { error: "Cause name is required" },
+          { status: 400 }
+        );
+      }
+
+      // Check for duplicate within tenant
+      const existing = await prisma.riskCause.findFirst({
+        where: {
+          customerAccountId,
+          name: name.trim(),
+        },
+      });
+
+      if (existing) {
+        return NextResponse.json(
+          { error: "Cause with this name already exists" },
+          { status: 409 }
+        );
+      }
+
+      const cause = await prisma.riskCause.create({
+        data: {
+          customerAccountId,
+          name: name.trim(),
+          description: description?.trim() || null,
+        },
+      });
+
+      return NextResponse.json(cause, { status: 201 });
+    } catch (error: unknown) {
+      console.error("Error creating risk cause:", error);
+      if ((error as { code?: string }).code === "P2002") {
+        return NextResponse.json(
+          { error: "Cause with this name already exists" },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
-        { error: "Cause with this name already exists" },
-        { status: 400 }
+        { error: "Failed to create risk cause" },
+        { status: 500 }
       );
     }
-
-    const cause = await prisma.riskCause.create({
-      data: {
-        name,
-        description,
-      },
-    });
-
-    return NextResponse.json(cause, { status: 201 });
-  } catch (error) {
-    console.error("Error creating risk cause:", error);
-    return NextResponse.json(
-      { error: "Failed to create risk cause" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "risk.settings", action: "create" }
+);
