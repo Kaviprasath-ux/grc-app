@@ -832,7 +832,7 @@ export default function NewRiskPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" size="icon" onClick={() => setCreateCauseDialogOpen(true)}>
+                    <Button type="button" variant="outline" size="icon" onClick={() => setCreateCauseDialogOpen(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
