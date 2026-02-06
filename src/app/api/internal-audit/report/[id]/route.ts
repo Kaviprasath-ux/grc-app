@@ -39,6 +39,9 @@ export const GET = withAuth(
               auditee: {
                 select: { id: true, firstName: true, lastName: true },
               },
+              process: {
+                select: { id: true, name: true },
+              },
               findings: {
                 select: {
                   id: true,
@@ -147,6 +150,9 @@ export const PATCH = withAuth(
               },
               auditee: {
                 select: { id: true, firstName: true, lastName: true },
+              },
+              process: {
+                select: { id: true, name: true },
               },
               findings: {
                 select: {

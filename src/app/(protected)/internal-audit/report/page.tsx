@@ -288,7 +288,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Generate Report Dialog - Pass/Fail Selection */}
-      {isAuditHead && (
+      {(isAuditHead || isAuditManager) && (
         <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
           <DialogContent className="sm:max-w-[450px] p-0 gap-0">
             {/* Fixed Header */}

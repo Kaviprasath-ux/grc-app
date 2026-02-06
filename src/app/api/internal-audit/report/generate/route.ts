@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
 
 // Helper function to generate report code (format: RPT-NNN - unique serial)
 async function generateReportCode(): Promise<string> {
@@ -37,6 +37,7 @@ export const POST = withAuth(
       const { engagementId, overallResult } = body;
       const tenantFilter = getTenantFilter(session);
       const customerAccountId = getCustomerAccountId(session);
+      const auditHeadId = getAuditHeadId(session);
 
       if (!engagementId) {
         return NextResponse.json(
@@ -59,6 +60,12 @@ export const POST = withAuth(
           department: true,
           assignedAuditor: true,
           report: true,
+          process: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           findings: {
             select: {
               id: true,
@@ -133,8 +140,16 @@ This audit was part of the Annual Internal Audit Plan for FY. Designed to provid
       // Generate scope
       const scope = `This audit will cover the organizational structure, roles and responsibilities, decision-making processes, and compliance with relevant policies and regulations.`;
 
-      // Create the report with tenant assignment
-      // Note: AuditReport model doesn't have auditHeadId field - using customerAccountId only
+      // Generate conclusion with placeholders for Audit process and target date
+      const targetDate = formatDate(engagement.actualEndDate || engagement.plannedEndDate);
+      const processName = engagement.process?.name || engagement.engagementTitle;
+      const conclusion = `Based on the audit procedures performed and the evidence obtained, Internal Audit concludes that the system of internal control over ${processName} as of the audit period.
+
+The control environment supports the integrity, accuracy, and reliability of the organization's financial data within the audited areas.
+
+Accordingly, this audit engagement is formally closed as of ${targetDate}.`;
+
+      // Create the report with tenant and audit head assignment
       const report = await prisma.auditReport.create({
         data: {
           reportCode,
@@ -145,10 +160,12 @@ This audit was part of the Annual Internal Audit Plan for FY. Designed to provid
           scope,
           objectives,
           methodology: background,
+          conclusion,
           overallResult,
           status: 'Draft',
           draftGeneratedAt: new Date(),
           customerAccountId,
+          auditHeadId,
         },
       });
 
