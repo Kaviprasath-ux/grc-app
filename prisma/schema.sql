@@ -2041,6 +2041,11 @@ CREATE TABLE "AIJob" (
 CREATE TABLE "EvidenceAIReview" (
     "id" TEXT NOT NULL,
     "evidenceId" TEXT NOT NULL,
+    "artifactId" TEXT,
+    "ingestJobId" TEXT,
+    "evidenceDocumentId" TEXT,
+    "artifactDocumentId" TEXT,
+    "runpodDocumentRef" TEXT,
     "documentId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
     "critique" TEXT,
@@ -2050,6 +2055,7 @@ CREATE TABLE "EvidenceAIReview" (
     "suggestions" TEXT,
     "similarityScore" DOUBLE PRECISION,
     "recommendations" TEXT,
+    "sources" TEXT,
     "rawResponse" TEXT,
     "aiOperationId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2064,6 +2070,8 @@ CREATE TABLE "EvidenceAIIngestJob" (
     "evidenceId" TEXT NOT NULL,
     "attachmentId" TEXT,
     "runpodJobId" TEXT NOT NULL,
+    "sentDocumentId" TEXT,
+    "returnedDocumentId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'queued',
     "error" TEXT,
     "result" TEXT,
@@ -2685,6 +2693,12 @@ CREATE INDEX "AIJob_userId_idx" ON "AIJob"("userId");
 CREATE INDEX "EvidenceAIReview_evidenceId_idx" ON "EvidenceAIReview"("evidenceId");
 
 -- CreateIndex
+CREATE INDEX "EvidenceAIReview_artifactId_idx" ON "EvidenceAIReview"("artifactId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIReview_ingestJobId_idx" ON "EvidenceAIReview"("ingestJobId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EvidenceAIIngestJob_runpodJobId_key" ON "EvidenceAIIngestJob"("runpodJobId");
 
 -- CreateIndex
@@ -2692,6 +2706,9 @@ CREATE INDEX "EvidenceAIIngestJob_evidenceId_idx" ON "EvidenceAIIngestJob"("evid
 
 -- CreateIndex
 CREATE INDEX "EvidenceAIIngestJob_runpodJobId_idx" ON "EvidenceAIIngestJob"("runpodJobId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIIngestJob_sentDocumentId_idx" ON "EvidenceAIIngestJob"("sentDocumentId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EvidenceAIIngestResult_jobId_key" ON "EvidenceAIIngestResult"("jobId");
@@ -3430,6 +3447,9 @@ ALTER TABLE "AIJob" ADD CONSTRAINT "AIJob_userId_fkey" FOREIGN KEY ("userId") RE
 
 -- AddForeignKey
 ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_artifactId_fkey" FOREIGN KEY ("artifactId") REFERENCES "Artifact"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_aiOperationId_fkey" FOREIGN KEY ("aiOperationId") REFERENCES "AIOperation"("id") ON DELETE SET NULL ON UPDATE CASCADE;

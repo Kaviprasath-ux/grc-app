@@ -1049,6 +1049,9 @@ model Artifact {
   updatedAt         DateTime           @updatedAt
   linkedEvidences   EvidenceArtifact[]
 
+  // Relation to AI reviews where this artifact was used
+  evidenceAIReviews EvidenceAIReview[]
+
   @@unique([customerAccountId, artifactCode])
   @@index([customerAccountId])
 }
@@ -2800,7 +2803,20 @@ model EvidenceAIReview {
   id                String           @id @default(cuid())
   evidenceId        String
   evidence          Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  // Explicit artifact reference for vault-query reviews
+  artifactId        String?
+  artifact          Artifact?        @relation(fields: [artifactId], references: [id], onDelete: SetNull)
+
+  // Document ID tracking fields
+  ingestJobId          String?       // RunPod job ID from artifact ingestion
+  evidenceDocumentId   String?       // evidence.id sent as document_id during evidence ingest
+  artifactDocumentId   String?       // artifact.id sent as document_id during vault-query ingest
+  runpodDocumentRef    String?       // document_id returned by RunPod (if different from what we sent)
+
+  // DEPRECATED: keep for backward compatibility, use ingestJobId instead
   documentId        String?          // External AI document ID (RunPod)
+
   status            String           @default("pending") // pending, completed, failed
   critique          String?          @db.Text
   complianceSummary String?          @db.Text
@@ -2809,6 +2825,7 @@ model EvidenceAIReview {
   suggestions       String?          @db.Text // JSON string
   similarityScore   Float?
   recommendations   String?          @db.Text // JSON string
+  sources           String?          @db.Text // JSON array of sources from vault query
   rawResponse       String?          @db.Text // Full AI response JSON
   aiOperationId     String?
   aiOperation       AIOperation?     @relation(fields: [aiOperationId], references: [id])
@@ -2816,6 +2833,8 @@ model EvidenceAIReview {
   updatedAt         DateTime         @updatedAt
 
   @@index([evidenceId])
+  @@index([artifactId])
+  @@index([ingestJobId])
 }
 
 // Evidence AI Ingest Job - tracks RunPod ingest jobs
@@ -2825,6 +2844,11 @@ model EvidenceAIIngestJob {
   evidence      Evidence  @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
   attachmentId  String?   // Optional specific attachment
   runpodJobId   String    @unique // RunPod job ID
+
+  // Document ID tracking: what we sent vs what RunPod returned
+  sentDocumentId     String?   // The document_id we sent (evidence.id or artifact.id)
+  returnedDocumentId String?   // The document_id RunPod returned (if any)
+
   status        String    @default("queued") // queued, processing, completed, failed
   error         String?   @db.Text
   result        String?   @db.Text // JSON result
@@ -2834,6 +2858,7 @@ model EvidenceAIIngestJob {
 
   @@index([evidenceId])
   @@index([runpodJobId])
+  @@index([sentDocumentId])
 }
 
 // Evidence AI Ingest Result - stores extracted content from AI ingest

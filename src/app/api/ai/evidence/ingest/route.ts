@@ -88,21 +88,24 @@ export const POST = withAuth(
       const response = await aiApiClient.post(AI_ENDPOINTS.INGEST, formData);
       console.log("[Evidence Ingest] RunPod Response:", response);
 
-      // Response: { "job_id": "...", "status": "queued" }
-      const runpodData = response.data as { job_id?: string; status?: string };
+      // Response: { "job_id": "...", "status": "queued", "document_id"?: "..." }
+      const runpodData = response.data as { job_id?: string; status?: string; document_id?: string };
       const jobId = runpodData.job_id;
       const status = runpodData.status?.toLowerCase() || "queued";
+      const returnedDocumentId = runpodData.document_id || null;
 
       if (!jobId) {
         return errorResponse("No job_id returned from AI service", 502);
       }
 
-      // Create ingest job record
+      // Create ingest job record with document ID tracking
       const ingestJob = await prisma.evidenceAIIngestJob.create({
         data: {
           evidenceId: evidence.id,
           attachmentId: attachmentId || null,
           runpodJobId: jobId,
+          sentDocumentId: evidence.id,        // Track what we sent as document_id
+          returnedDocumentId: returnedDocumentId,  // Track what RunPod returned
           status: status,
         },
       });
