@@ -17,11 +17,25 @@ export const aiAuditService = {
         responseBody?: any;
         statusCode?: number;
         latencyMs?: number;
-        error?: string;
+        error?: string | object | unknown;
         userId?: string;
         jobId?: string;
     }) {
         try {
+            // Convert error to string if it's an object
+            let errorString: string | null = null;
+            if (data.error) {
+                if (typeof data.error === 'string') {
+                    errorString = data.error;
+                } else {
+                    try {
+                        errorString = JSON.stringify(data.error);
+                    } catch {
+                        errorString = String(data.error);
+                    }
+                }
+            }
+
             return await prisma.aIOperation.create({
                 data: {
                     endpoint: data.endpoint,
@@ -30,7 +44,7 @@ export const aiAuditService = {
                     responseBody: data.responseBody ? JSON.stringify(data.responseBody) : null,
                     statusCode: data.statusCode,
                     latencyMs: data.latencyMs,
-                    error: data.error,
+                    error: errorString,
                     userId: data.userId,
                     jobId: data.jobId,
                 },

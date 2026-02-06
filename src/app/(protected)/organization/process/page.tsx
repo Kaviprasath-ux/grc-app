@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { DataGrid } from "@/components/shared";
@@ -34,6 +34,7 @@ import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
+import { useRiskSemanticMatch } from "@/hooks/useRiskSemanticMatch";
 
 interface Department {
   id: string;
@@ -154,6 +155,37 @@ export default function ProcessPage() {
   const [evaluatingProcess, setEvaluatingProcess] = useState<Process | null>(null);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiRisks, setAiRisks] = useState<any[]>([]);
+  const [semanticMatchStats, setSemanticMatchStats] = useState<{ created: number; updated: number; skipped: number } | null>(null);
+
+  // Semantic matching hook for background deduplication
+  const {
+    submitJob: submitSemanticMatch,
+    status: semanticStatus,
+    result: semanticResult,
+    isLoading: isSemanticLoading,
+    isPolling: isSemanticPolling,
+    error: semanticError,
+    reset: resetSemanticMatch,
+  } = useRiskSemanticMatch({
+    onComplete: (result) => {
+      console.log("[Process] Semantic matching completed:", result);
+      setSemanticMatchStats(result.stats);
+      // Refresh data after semantic matching completes
+      fetchData();
+      toast({
+        title: t("Risk Library Updated"),
+        description: `${t("Created")}: ${result.stats.created}, ${t("Updated")}: ${result.stats.updated}, ${t("Skipped")}: ${result.stats.skipped}`,
+      });
+    },
+    onError: (error) => {
+      console.error("[Process] Semantic matching error:", error);
+      toast({
+        title: t("Semantic Matching Failed"),
+        description: error,
+        variant: "destructive",
+      });
+    },
+  });
   const [isBIAFormOpen, setIsBIAFormOpen] = useState(false);
   const [biaProcess, setBiaProcess] = useState<Process | null>(null);
   const [biaRatings, setBiaRatings] = useState<BIARating[]>([
@@ -176,24 +208,39 @@ export default function ProcessPage() {
     setEvaluatingProcess(process);
     setIsAiGenerating(true);
     setAiRisks([]);
+    setSemanticMatchStats(null);
+    resetSemanticMatch();
     setIsAIEvaluationOpen(true);
 
     try {
+      // Step 1: Generate risks without persisting (for semantic matching)
       const response = await fetch("/api/ai/risk-evaluation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ processId: process.id }),
+        body: JSON.stringify({ processId: process.id, persist: false }),
       });
 
       const result = await response.json();
       if (response.ok) {
-        setAiRisks(result.risks || []);
-        toast({
-          title: t("AI Risks Generated"),
-          description: `${t("Successfully")} ${result.source === "AI" ? t("generated") : t("retrieved")} ${result.risks.length} ${t("risks")}.`,
-        });
-        // Refresh process list to reflect new risks if needed
-        fetchData();
+        const generatedRisks = result.risks || [];
+        setAiRisks(generatedRisks);
+
+        if (generatedRisks.length > 0) {
+          toast({
+            title: t("AI Risks Generated"),
+            description: `${t("Generated")} ${generatedRisks.length} ${t("risks")}. ${t("Running semantic matching...")}`,
+          });
+
+          // Step 2: Trigger semantic matching in background
+          // This will compare with existing library and persist only new/unique risks
+          console.log("[Process] Submitting semantic matching for", generatedRisks.length, "risks");
+          await submitSemanticMatch(generatedRisks, process.id);
+        } else {
+          toast({
+            title: t("No Risks Found"),
+            description: t("AI did not identify any risks for this process."),
+          });
+        }
       } else {
         toast({
           title: t("AI Generation Failed"),
@@ -202,6 +249,7 @@ export default function ProcessPage() {
         });
       }
     } catch (error) {
+      console.error("[Process] AI evaluation error:", error);
       toast({
         title: t("Error"),
         description: t("Communication with AI service failed."),
@@ -1246,10 +1294,49 @@ export default function ProcessPage() {
               </div>
             ) : aiRisks.length > 0 ? (
               <div className="space-y-6">
+                {/* Semantic Matching Status Banner */}
+                {(isSemanticLoading || isSemanticPolling) && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 text-blue-600 animate-spin flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-blue-900">{t("Semantic Matching in Progress")}</h4>
+                      <p className="text-sm text-blue-700">
+                        {semanticStatus?.status === "processing"
+                          ? t("Comparing with existing risk library...")
+                          : t("Queued for processing...")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {semanticError && (
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200 flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-red-900">{t("Semantic Matching Failed")}</h4>
+                      <p className="text-sm text-red-700">{semanticError}</p>
+                    </div>
+                  </div>
+                )}
+
+                {semanticMatchStats && (
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200 flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-green-900">{t("Risk Library Updated")}</h4>
+                      <p className="text-sm text-green-700">
+                        {t("Created")}: {semanticMatchStats.created} | {t("Updated")}: {semanticMatchStats.updated} | {t("Skipped (duplicates)")}: {semanticMatchStats.skipped}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
                   <h4 className="font-medium text-primary-900 mb-2">{t("Detected Risks")} ({aiRisks.length})</h4>
                   <p className="text-sm text-primary-700">
-                    {t("The AI has identified the following risks, threats, and suggested controls. These are now persisted in your Risk Register.")}
+                    {semanticMatchStats
+                      ? t("These risks have been compared with your existing library. Only new risks were added to the Risk Register.")
+                      : t("The AI has identified the following risks. They are being compared with your existing library...")}
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -1258,36 +1345,44 @@ export default function ProcessPage() {
                       <div className="flex justify-between items-start">
                         <h5 className="font-semibold text-slate-900">{risk.name}</h5>
                         <Badge className={
-                          risk.riskRating === "High" ? "bg-error-light text-error-dark" :
-                            risk.riskRating === "Medium" ? "bg-warning-light text-warning-dark" :
+                          (risk.riskRating || risk.risk_rating) === "High" ? "bg-error-light text-error-dark" :
+                            (risk.riskRating || risk.risk_rating) === "Medium" ? "bg-warning-light text-warning-dark" :
                               "bg-success-light text-success-dark"
                         }>
-                          {risk.riskRating}
+                          {risk.riskRating || risk.risk_rating || "Medium"}
                         </Badge>
                       </div>
                       <p className="text-sm text-slate-600">{risk.description}</p>
 
-                      {risk.threats?.length > 0 && (
+                      {/* Handle both formats: from DB (threats array) and from AI (threats string array) */}
+                      {(risk.threats?.length > 0) && (
                         <div className="space-y-1">
                           <p className="text-xs font-bold text-slate-400 uppercase">{t("Threats")}</p>
                           <div className="flex flex-wrap gap-2">
                             {risk.threats.map((tm: any, tIdx: number) => (
                               <Badge key={tIdx} variant="outline" className="text-[10px] py-0">
-                                {tm.threat?.name || tm.threatId}
+                                {typeof tm === "string" ? tm : (tm.threat?.name || tm.threatId)}
                               </Badge>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      {risk.controlRisks?.length > 0 && (
+                      {/* Handle both formats: from DB (controlRisks) and from AI (controls string array) */}
+                      {(risk.controlRisks?.length > 0 || risk.controls?.length > 0) && (
                         <div className="space-y-1">
                           <p className="text-xs font-bold text-slate-400 uppercase">{t("Suggested Controls")}</p>
                           <div className="space-y-1">
-                            {risk.controlRisks.map((cr: any, cIdx: number) => (
+                            {(risk.controlRisks || []).map((cr: any, cIdx: number) => (
                               <div key={cIdx} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-1.5 rounded">
-                                <span className="font-mono text-[10px] bg-slate-200 px-1 rounded">{cr.control.functionalGrouping}</span>
-                                <span className="flex-1">{cr.control.name}</span>
+                                <span className="font-mono text-[10px] bg-slate-200 px-1 rounded">{cr.control?.functionalGrouping || "protect"}</span>
+                                <span className="flex-1">{cr.control?.name}</span>
+                              </div>
+                            ))}
+                            {(risk.controls || []).map((ctrl: string, cIdx: number) => (
+                              <div key={`ctrl-${cIdx}`} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-1.5 rounded">
+                                <span className="font-mono text-[10px] bg-slate-200 px-1 rounded">protect</span>
+                                <span className="flex-1">{ctrl}</span>
                               </div>
                             ))}
                           </div>
@@ -1305,11 +1400,28 @@ export default function ProcessPage() {
             )}
           </div>
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAIEvaluationOpen(false);
+                resetSemanticMatch();
+              }}
+              disabled={isSemanticLoading || isSemanticPolling}
+            >
               {t("Close")}
             </Button>
-            <Button onClick={() => router.push("/risks/register")}>
-              {t("Go to Risk Register")}
+            <Button
+              onClick={() => router.push("/risks/register")}
+              disabled={isSemanticLoading || isSemanticPolling}
+            >
+              {(isSemanticLoading || isSemanticPolling) ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t("Processing...")}
+                </>
+              ) : (
+                t("Go to Risk Register")
+              )}
             </Button>
           </div>
         </DialogContent>

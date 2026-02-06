@@ -104,21 +104,25 @@ class AIApiClient {
       console.warn(`[${requestId}] ⚠️ WARNING: PYTHON_API_SECRET is not set`);
     }
 
-    // Build headers - DO NOT set Content-Type for FormData
+    // Build headers - DO NOT set Content-Type for FormData (let browser set boundary)
     const headers: Record<string, string> = {
       'auth': API_SECRET || '',
       'accept': 'application/json',
     };
 
-    // Only set Content-Type for non-FormData requests
-    if (!isFormData) {
+    // Check if custom Content-Type is provided in options
+    const customHeaders = options.headers as Record<string, string> | undefined;
+    const hasCustomContentType = customHeaders &&
+      Object.keys(customHeaders).some(k => k.toLowerCase() === 'content-type');
+
+    // Only set default Content-Type for non-FormData requests without custom Content-Type
+    if (!isFormData && !hasCustomContentType) {
       headers['Content-Type'] = 'application/json';
     }
 
     // Merge any additional headers (but filter out Content-Type for FormData)
-    if (options.headers) {
-      const extraHeaders = options.headers as Record<string, string>;
-      for (const [key, value] of Object.entries(extraHeaders)) {
+    if (customHeaders) {
+      for (const [key, value] of Object.entries(customHeaders)) {
         // Skip Content-Type for FormData to let browser set boundary
         if (isFormData && key.toLowerCase() === 'content-type') {
           continue;
@@ -241,15 +245,29 @@ class AIApiClient {
   }
 
   /**
-   * POST request with JSON or FormData body
+   * POST request with JSON, FormData, or string body
    */
   async post(endpoint: string, body: unknown, options: RequestInit = {}) {
     const isFormData = body instanceof FormData;
+    const isString = typeof body === 'string';
+
+    // Determine how to serialize the body
+    let serializedBody: BodyInit;
+    if (isFormData) {
+      serializedBody = body as FormData;
+    } else if (isString) {
+      // Already serialized (e.g., URL-encoded form data)
+      serializedBody = body;
+    } else {
+      // JSON object - stringify it
+      serializedBody = JSON.stringify(body);
+    }
+
     return this.request(
       endpoint,
       {
         method: 'POST',
-        body: isFormData ? (body as FormData) : JSON.stringify(body),
+        body: serializedBody,
         ...options,
       },
       body // Pass original body for logging
