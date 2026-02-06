@@ -219,7 +219,7 @@ export default function BIAPage() {
 
       // Existing BIA assessment
       if (biaRes.ok) {
-        const biaData: ProcessBIA | null = await biaRes.json();
+        const biaData = await biaRes.json();
         if (biaData) {
           setStatus(biaData.status);
           setSelectedApprover(biaData.approverId || "");
@@ -227,10 +227,16 @@ export default function BIAPage() {
           setRpoHours(biaData.rpoHours);
           setBiaComments(biaData.biaComments || []);
 
+          // Load the scoring range values
+          setLowValue(biaData.lowValue ?? 0);
+          setCriticalValue(biaData.criticalValue ?? 0);
+          setHighValue(biaData.highValue ?? 0);
+          setMediumValue(biaData.mediumValue ?? 0);
+
           // Set category ratings from existing data
           if (biaData.categoryRatings && biaData.categoryRatings.length > 0) {
             setCategoryRatings(
-              biaData.categoryRatings.map((cr) => ({
+              biaData.categoryRatings.map((cr: { categoryName: string; rating?: string; ratingScore?: number; description?: string }) => ({
                 categoryName: cr.categoryName,
                 rating: cr.rating || "",
                 ratingScore: cr.ratingScore || 0,
@@ -365,6 +371,10 @@ export default function BIAPage() {
           categoryRatings,
           rtoHours,
           rpoHours,
+          lowValue,
+          criticalValue,
+          highValue,
+          mediumValue,
           approverId: selectedApprover || null,
           approverName: approver?.fullName || null,
           status,
@@ -427,6 +437,10 @@ export default function BIAPage() {
           categoryRatings,
           rtoHours,
           rpoHours,
+          lowValue,
+          criticalValue,
+          highValue,
+          mediumValue,
           approverId: selectedApprover,
           approverName: approver?.fullName || null,
           status: "Pending Approval",

@@ -857,12 +857,15 @@ export default function BIASettingsPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("High Range")}</Label>
                 <Input
                   type="number"
-                  value={editingRange?.highValue ?? newRange.highValue ?? ""}
+                  value={(editingRange ? editingRange.highValue : newRange.highValue) ?? ""}
                   onChange={(e) => {
-                    const val = e.target.value === "" ? null : parseInt(e.target.value);
-                    editingRange
-                      ? setEditingRange({ ...editingRange, highValue: val })
-                      : setNewRange({ ...newRange, highValue: val as number });
+                    const rawValue = e.target.value;
+                    const numValue = rawValue === "" ? null : Number(rawValue);
+                    if (editingRange) {
+                      setEditingRange({ ...editingRange, highValue: numValue });
+                    } else {
+                      setNewRange({ ...newRange, highValue: numValue });
+                    }
                   }}
                   placeholder={t("e.g., 500")}
                   className="mt-1.5 bg-white"
@@ -874,12 +877,15 @@ export default function BIASettingsPage() {
                 </Label>
                 <Input
                   type="number"
-                  value={editingRange?.lowValue ?? newRange.lowValue ?? ""}
+                  value={(editingRange ? editingRange.lowValue : newRange.lowValue) ?? ""}
                   onChange={(e) => {
-                    const val = e.target.value === "" ? 0 : parseInt(e.target.value);
-                    editingRange
-                      ? setEditingRange({ ...editingRange, lowValue: isNaN(val) ? 0 : val })
-                      : setNewRange({ ...newRange, lowValue: isNaN(val) ? 0 : val });
+                    const rawValue = e.target.value;
+                    const numValue = rawValue === "" ? null : Number(rawValue);
+                    if (editingRange) {
+                      setEditingRange({ ...editingRange, lowValue: numValue ?? 0 });
+                    } else {
+                      setNewRange({ ...newRange, lowValue: numValue ?? 0 });
+                    }
                   }}
                   placeholder={t("e.g., 250")}
                   className="mt-1.5 bg-white"

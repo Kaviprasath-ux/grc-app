@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       data: {
         label,
         lowValue: lowValue ?? 0,
-        highValue,
+        highValue: highValue ?? null, // Explicitly handle null
         color,
         calculationType: calculationType || "High of all",
         sortOrder: order,
