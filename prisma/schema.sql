@@ -596,6 +596,10 @@ CREATE TABLE "ProcessBIA" (
     "rpoHours" INTEGER NOT NULL DEFAULT 0,
     "rtoLabel" TEXT,
     "rpoLabel" TEXT,
+    "lowValue" INTEGER,
+    "criticalValue" INTEGER,
+    "highValue" INTEGER,
+    "mediumValue" INTEGER,
     "approverId" TEXT,
     "approverName" TEXT,
     "approvedAt" TIMESTAMP(3),
@@ -1794,6 +1798,22 @@ CREATE TABLE "AuditWorkpaper" (
 );
 
 -- CreateTable
+CREATE TABLE "AIWorkpaper" (
+    "id" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
+    "task" TEXT NOT NULL,
+    "steps" TEXT NOT NULL,
+    "evidences" TEXT NOT NULL,
+    "questionChecklist" TEXT NOT NULL,
+    "comments" TEXT,
+    "executed" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AIWorkpaper_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "FieldworkEvidenceRequest" (
     "id" TEXT NOT NULL,
     "engagementId" TEXT NOT NULL,
@@ -1974,6 +1994,22 @@ CREATE TABLE "DocumentSearch" (
 );
 
 -- CreateTable
+CREATE TABLE "DocumentLibraryIngestJob" (
+    "id" TEXT NOT NULL,
+    "documentId" TEXT NOT NULL,
+    "runpodJobId" TEXT NOT NULL,
+    "customerId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'queued',
+    "error" TEXT,
+    "result" TEXT,
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocumentLibraryIngestJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "GovernanceTemplate" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -2041,6 +2077,11 @@ CREATE TABLE "AIJob" (
 CREATE TABLE "EvidenceAIReview" (
     "id" TEXT NOT NULL,
     "evidenceId" TEXT NOT NULL,
+    "artifactId" TEXT,
+    "ingestJobId" TEXT,
+    "evidenceDocumentId" TEXT,
+    "artifactDocumentId" TEXT,
+    "runpodDocumentRef" TEXT,
     "documentId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
     "critique" TEXT,
@@ -2050,6 +2091,7 @@ CREATE TABLE "EvidenceAIReview" (
     "suggestions" TEXT,
     "similarityScore" DOUBLE PRECISION,
     "recommendations" TEXT,
+    "sources" TEXT,
     "rawResponse" TEXT,
     "aiOperationId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2064,6 +2106,8 @@ CREATE TABLE "EvidenceAIIngestJob" (
     "evidenceId" TEXT NOT NULL,
     "attachmentId" TEXT,
     "runpodJobId" TEXT NOT NULL,
+    "sentDocumentId" TEXT,
+    "returnedDocumentId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'queued',
     "error" TEXT,
     "result" TEXT,
@@ -2646,6 +2690,9 @@ CREATE UNIQUE INDEX "AuditEngagement_customerAccountId_auditId_key" ON "AuditEng
 CREATE UNIQUE INDEX "AuditFieldwork_engagementId_key" ON "AuditFieldwork"("engagementId");
 
 -- CreateIndex
+CREATE INDEX "AIWorkpaper_engagementId_idx" ON "AIWorkpaper"("engagementId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "AuditReport_engagementId_key" ON "AuditReport"("engagementId");
 
 -- CreateIndex
@@ -2670,6 +2717,15 @@ CREATE UNIQUE INDEX "InternalAuditCAPA_customerAccountId_capaId_key" ON "Interna
 CREATE UNIQUE INDEX "InternalAuditDocument_documentCode_key" ON "InternalAuditDocument"("documentCode");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "DocumentLibraryIngestJob_runpodJobId_key" ON "DocumentLibraryIngestJob"("runpodJobId");
+
+-- CreateIndex
+CREATE INDEX "DocumentLibraryIngestJob_documentId_idx" ON "DocumentLibraryIngestJob"("documentId");
+
+-- CreateIndex
+CREATE INDEX "DocumentLibraryIngestJob_runpodJobId_idx" ON "DocumentLibraryIngestJob"("runpodJobId");
+
+-- CreateIndex
 CREATE INDEX "AIOperation_userId_idx" ON "AIOperation"("userId");
 
 -- CreateIndex
@@ -2685,6 +2741,12 @@ CREATE INDEX "AIJob_userId_idx" ON "AIJob"("userId");
 CREATE INDEX "EvidenceAIReview_evidenceId_idx" ON "EvidenceAIReview"("evidenceId");
 
 -- CreateIndex
+CREATE INDEX "EvidenceAIReview_artifactId_idx" ON "EvidenceAIReview"("artifactId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIReview_ingestJobId_idx" ON "EvidenceAIReview"("ingestJobId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EvidenceAIIngestJob_runpodJobId_key" ON "EvidenceAIIngestJob"("runpodJobId");
 
 -- CreateIndex
@@ -2692,6 +2754,9 @@ CREATE INDEX "EvidenceAIIngestJob_evidenceId_idx" ON "EvidenceAIIngestJob"("evid
 
 -- CreateIndex
 CREATE INDEX "EvidenceAIIngestJob_runpodJobId_idx" ON "EvidenceAIIngestJob"("runpodJobId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIIngestJob_sentDocumentId_idx" ON "EvidenceAIIngestJob"("sentDocumentId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EvidenceAIIngestResult_jobId_key" ON "EvidenceAIIngestResult"("jobId");
@@ -3372,6 +3437,9 @@ ALTER TABLE "AuditFieldwork" ADD CONSTRAINT "AuditFieldwork_engagementId_fkey" F
 ALTER TABLE "AuditWorkpaper" ADD CONSTRAINT "AuditWorkpaper_fieldworkId_fkey" FOREIGN KEY ("fieldworkId") REFERENCES "AuditFieldwork"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AIWorkpaper" ADD CONSTRAINT "AIWorkpaper_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "FieldworkEvidenceRequest" ADD CONSTRAINT "FieldworkEvidenceRequest_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -3417,6 +3485,9 @@ ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_custom
 ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "DocumentLibraryIngestJob" ADD CONSTRAINT "DocumentLibraryIngestJob_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "InternalAuditDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "GovernanceTemplate" ADD CONSTRAINT "GovernanceTemplate_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -3430,6 +3501,9 @@ ALTER TABLE "AIJob" ADD CONSTRAINT "AIJob_userId_fkey" FOREIGN KEY ("userId") RE
 
 -- AddForeignKey
 ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_artifactId_fkey" FOREIGN KEY ("artifactId") REFERENCES "Artifact"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_aiOperationId_fkey" FOREIGN KEY ("aiOperationId") REFERENCES "AIOperation"("id") ON DELETE SET NULL ON UPDATE CASCADE;

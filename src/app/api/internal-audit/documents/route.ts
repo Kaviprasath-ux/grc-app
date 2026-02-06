@@ -36,14 +36,53 @@ export const GET = withAuth(
         const policies = await prisma.internalAuditDocument.findMany({
           where: { ...baseWhere, category: "Policy" },
           orderBy: { uploadedAt: "desc" },
+          include: {
+            ingestJobs: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: {
+                id: true,
+                runpodJobId: true,
+                status: true,
+                error: true,
+                completedAt: true,
+              },
+            },
+          },
         });
         const regulations = await prisma.internalAuditDocument.findMany({
           where: { ...baseWhere, category: "Regulation" },
           orderBy: { uploadedAt: "desc" },
+          include: {
+            ingestJobs: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: {
+                id: true,
+                runpodJobId: true,
+                status: true,
+                error: true,
+                completedAt: true,
+              },
+            },
+          },
         });
         const auditReports = await prisma.internalAuditDocument.findMany({
           where: { ...baseWhere, category: "PreviousReport" },
           orderBy: { uploadedAt: "desc" },
+          include: {
+            ingestJobs: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: {
+                id: true,
+                runpodJobId: true,
+                status: true,
+                error: true,
+                completedAt: true,
+              },
+            },
+          },
         });
 
         return NextResponse.json({

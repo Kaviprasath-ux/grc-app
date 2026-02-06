@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,9 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Home,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -32,6 +35,15 @@ interface RecentSearch {
   result: string | null;
   status: string;
   createdAt: string;
+}
+
+interface IngestJob {
+  id: string;
+  documentId: string;
+  runpodJobId: string;
+  status: string;
+  error: string | null;
+  completedAt: string | null;
 }
 
 interface Document {
@@ -45,6 +57,7 @@ interface Document {
   fileSize: number | null;
   filePath: string;
   uploadedAt: string;
+  ingestJobs?: IngestJob[];
 }
 
 interface DocumentsResponse {
@@ -55,6 +68,9 @@ interface DocumentsResponse {
   regulationsCount: number;
   auditReportsCount: number;
 }
+
+// Polling interval in milliseconds
+const POLLING_INTERVAL = 3000;
 
 export default function DocumentLibraryPage() {
   const { t } = useLanguage();
@@ -73,6 +89,10 @@ export default function DocumentLibraryPage() {
   });
   const [uploading, setUploading] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState<string | null>(null);
+
+  // Ingestion state
+  const [ingestingDocs, setIngestingDocs] = useState<Set<string>>(new Set());
+  const pollingRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Pagination states for each tab
   const [policyPage, setPolicyPage] = useState(1);
@@ -107,7 +127,118 @@ export default function DocumentLibraryPage() {
   useEffect(() => {
     fetchDocuments();
     fetchRecentSearches();
+
+    // Cleanup polling on unmount
+    return () => {
+      pollingRef.current.forEach((timer) => clearTimeout(timer));
+      pollingRef.current.clear();
+    };
   }, [fetchDocuments, fetchRecentSearches]);
+
+  // Poll for ingestion status
+  const pollIngestStatus = useCallback(async (jobId: string, documentId: string) => {
+    try {
+      const response = await fetch(`/api/internal-audit/documents/ingest-status/${jobId}`);
+      if (!response.ok) {
+        console.error("Failed to poll ingest status:", await response.text());
+        return;
+      }
+
+      const data = await response.json();
+      const status = data.status?.toLowerCase();
+
+      if (status === 'completed') {
+        // Ingestion completed
+        setIngestingDocs(prev => {
+          const next = new Set(prev);
+          next.delete(documentId);
+          return next;
+        });
+
+        // Clear polling timer
+        const timer = pollingRef.current.get(jobId);
+        if (timer) {
+          clearTimeout(timer);
+          pollingRef.current.delete(jobId);
+        }
+
+        toast.success(t("Document ingested successfully"));
+        fetchDocuments(); // Refresh to get updated status
+      } else if (status === 'failed') {
+        // Ingestion failed
+        setIngestingDocs(prev => {
+          const next = new Set(prev);
+          next.delete(documentId);
+          return next;
+        });
+
+        // Clear polling timer
+        const timer = pollingRef.current.get(jobId);
+        if (timer) {
+          clearTimeout(timer);
+          pollingRef.current.delete(jobId);
+        }
+
+        toast.error(data.error || t("Document ingestion failed"));
+        fetchDocuments();
+      } else {
+        // Still processing - continue polling
+        const timer = setTimeout(() => pollIngestStatus(jobId, documentId), POLLING_INTERVAL);
+        pollingRef.current.set(jobId, timer);
+      }
+    } catch (error) {
+      console.error("Error polling ingest status:", error);
+      // Retry polling on error
+      const timer = setTimeout(() => pollIngestStatus(jobId, documentId), POLLING_INTERVAL);
+      pollingRef.current.set(jobId, timer);
+    }
+  }, [t, fetchDocuments]);
+
+  // Trigger document ingestion
+  const triggerIngest = useCallback(async (documentIds: string[]) => {
+    if (documentIds.length === 0) return;
+
+    // Mark documents as ingesting
+    setIngestingDocs(prev => {
+      const next = new Set(prev);
+      documentIds.forEach(id => next.add(id));
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/internal-audit/documents/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentIds }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Ingestion failed");
+      }
+
+      const data = await response.json();
+      const jobId = data.job_id;
+
+      if (jobId) {
+        // Start polling for status
+        const timer = setTimeout(() => {
+          documentIds.forEach(docId => pollIngestStatus(jobId, docId));
+        }, POLLING_INTERVAL);
+        pollingRef.current.set(jobId, timer);
+
+        toast.success(t("Document ingestion started"));
+      }
+    } catch (error) {
+      // Remove from ingesting state on error
+      setIngestingDocs(prev => {
+        const next = new Set(prev);
+        documentIds.forEach(id => next.delete(id));
+        return next;
+      });
+      toast.error(error instanceof Error ? error.message : t("Failed to start ingestion"));
+    }
+  }, [t, pollIngestStatus]);
 
   const handleSmartSearch = async () => {
     if (!query.trim()) {
@@ -148,6 +279,8 @@ export default function DocumentLibraryPage() {
     if (!files || files.length === 0) return;
 
     setUploading(category);
+    const uploadedDocIds: string[] = [];
+
     try {
       for (const file of Array.from(files)) {
         const formData = new FormData();
@@ -163,9 +296,18 @@ export default function DocumentLibraryPage() {
         if (!response.ok) {
           throw new Error("Upload failed");
         }
+
+        const doc = await response.json();
+        uploadedDocIds.push(doc.id);
       }
+
       toast.success(files.length > 1 ? t("Files uploaded successfully") : t("File uploaded successfully"));
-      fetchDocuments();
+      await fetchDocuments();
+
+      // Trigger ingestion for uploaded documents
+      if (uploadedDocIds.length > 0) {
+        triggerIngest(uploadedDocIds);
+      }
     } catch (error) {
       toast.error(t("Failed to upload file"));
     } finally {
@@ -231,6 +373,41 @@ export default function DocumentLibraryPage() {
       return <FileText className="h-5 w-5 text-red-500" />;
     }
     return <File className="h-5 w-5 text-gray-500" />;
+  };
+
+  const getIngestStatusIcon = (doc: Document) => {
+    const isIngesting = ingestingDocs.has(doc.id);
+
+    if (isIngesting) {
+      return (
+        <div className="flex items-center gap-1 text-blue-500" title={t("Ingesting...")}>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-xs">{t("Ingesting")}</span>
+        </div>
+      );
+    }
+
+    // Check if document has been ingested (has completed job)
+    if (doc.ingestJobs && doc.ingestJobs.length > 0) {
+      const latestJob = doc.ingestJobs[0];
+      if (latestJob.status === 'completed') {
+        return (
+          <div className="flex items-center gap-1 text-green-500" title={t("Ingested")}>
+            <CheckCircle2 className="h-4 w-4" />
+            <span className="text-xs">{t("Ingested")}</span>
+          </div>
+        );
+      } else if (latestJob.status === 'failed') {
+        return (
+          <div className="flex items-center gap-1 text-red-500" title={latestJob.error || t("Ingestion failed")}>
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-xs">{t("Failed")}</span>
+          </div>
+        );
+      }
+    }
+
+    return null;
   };
 
   const renderUploadArea = (category: string) => {
@@ -367,8 +544,21 @@ export default function DocumentLibraryPage() {
               <div className="flex items-center gap-3">
                 {getFileIcon(doc.fileType)}
                 <span className="text-gray-700">{doc.fileName}</span>
+                {getIngestStatusIcon(doc)}
               </div>
               <div className="flex items-center gap-2">
+                {/* Re-ingest button for failed or not ingested documents */}
+                {!ingestingDocs.has(doc.id) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => triggerIngest([doc.id])}
+                    className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                    title={t("Ingest Document")}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"

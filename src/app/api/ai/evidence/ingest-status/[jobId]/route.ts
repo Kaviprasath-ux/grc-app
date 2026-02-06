@@ -122,8 +122,13 @@ export const GET = withAuth(
 
             try {
               const resultResponse = await aiApiClient.get(`${AI_ENDPOINTS.INGEST_RESULT}/${jobId}`);
-              const resultJson = resultResponse.data as { result?: { messages?: unknown[]; status?: boolean } };
+              const resultJson = resultResponse.data as {
+                job_id?: string;
+                document_id?: string;  // Capture if RunPod returns a document_id
+                result?: { messages?: unknown[]; status?: boolean };
+              };
               const messages = resultJson.result?.messages || [];
+              const returnedDocId = resultJson.document_id || null;
 
               // Store the result
               await prisma.evidenceAIIngestResult.create({
@@ -137,11 +142,12 @@ export const GET = withAuth(
                 },
               });
 
-              // Update job with result
+              // Update job with result and returned document_id
               await prisma.evidenceAIIngestJob.update({
                 where: { id: ingestJob.id },
                 data: {
                   result: JSON.stringify(resultJson),
+                  returnedDocumentId: returnedDocId,  // Track RunPod's returned document_id
                 },
               });
 

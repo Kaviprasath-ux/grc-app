@@ -35,6 +35,20 @@ export const GET = withAuth(
               email: true,
             },
           },
+          impactedAsset: {
+            select: {
+              id: true,
+              assetId: true,
+              name: true,
+            },
+          },
+          impactedProcess: {
+            select: {
+              id: true,
+              processCode: true,
+              name: true,
+            },
+          },
           threats: {
             include: { threat: true },
           },
@@ -43,6 +57,9 @@ export const GET = withAuth(
           },
           causes: {
             include: { cause: true },
+          },
+          controlRisks: {
+            include: { control: true },
           },
           assessments: {
             orderBy: { assessmentDate: "desc" },
@@ -91,10 +108,13 @@ export const PUT = withAuth(
     const {
       name,
       description,
+      riskSources,
       categoryId,
       typeId,
       departmentId,
       ownerId,
+      impactedAssetId,
+      impactedProcessId,
       likelihood,
       impact,
       inherentLikelihood,
@@ -150,10 +170,13 @@ export const PUT = withAuth(
     const updateData: Record<string, unknown> = {
       name,
       description,
+      riskSources,
       categoryId,
       typeId,
       departmentId,
       ownerId,
+      impactedAssetId,
+      impactedProcessId,
       likelihood: newLikelihood,
       impact: newImpact,
       riskScore,
@@ -290,6 +313,20 @@ export const PUT = withAuth(
               email: true,
             },
           },
+          impactedAsset: {
+            select: {
+              id: true,
+              assetId: true,
+              name: true,
+            },
+          },
+          impactedProcess: {
+            select: {
+              id: true,
+              processCode: true,
+              name: true,
+            },
+          },
           threats: {
             include: { threat: true },
           },
@@ -298,6 +335,9 @@ export const PUT = withAuth(
           },
           causes: {
             include: { cause: true },
+          },
+          controlRisks: {
+            include: { control: true },
           },
         },
       });

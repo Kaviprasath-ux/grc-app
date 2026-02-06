@@ -47,9 +47,24 @@ export const GET = withAuth(
         );
       }
 
-      // Return mock AI workpapers for now
-      // In production, this would fetch from a dedicated AI workpapers table
-      return NextResponse.json(mockAIWorkpapers);
+      // Fetch AI workpapers from database
+      const aiWorkpapers = await prisma.aiWorkpaper.findMany({
+        where: { engagementId },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      // Transform to expected format
+      const workpapers = aiWorkpapers.map((wp) => ({
+        id: wp.id,
+        task: wp.task,
+        steps: wp.steps,
+        evidences: wp.evidences,
+        questionChecklist: wp.questionChecklist,
+        comments: wp.comments || '',
+        executed: wp.executed,
+      }));
+
+      return NextResponse.json(workpapers);
     } catch (error) {
       console.error('Error fetching AI workpapers:', error);
       return NextResponse.json(

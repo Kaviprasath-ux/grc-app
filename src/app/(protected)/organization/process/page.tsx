@@ -52,6 +52,10 @@ interface BIAData {
   ratings: BIARating[];
   rto: string;
   rpo: string;
+  lowValue: string;
+  criticalValue: string;
+  highValue: string;
+  mediumValue: string;
   approver: string;
 }
 
@@ -93,6 +97,7 @@ interface BIARating {
   category: string;
   rating: "High" | "Medium" | "Low" | "";
   description: string;
+  ratingScore?: number;
 }
 
 interface ProcessBIAStatus {
@@ -100,16 +105,43 @@ interface ProcessBIAStatus {
   status: string;
   impactRating?: number;
   processCriticality?: string;
+  rtoHours?: number;
+  rpoHours?: number;
+  lowValue?: number | null;
+  criticalValue?: number | null;
+  highValue?: number | null;
+  mediumValue?: number | null;
+  approverId?: string | null;
+  approverName?: string | null;
+  categoryRatings?: Array<{
+    categoryName: string;
+    rating: string | null;
+    ratingScore: number | null;
+    description: string | null;
+  }>;
+}
+
+interface BIACategory {
+  id: string;
+  name: string;
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+interface BIARatingOption {
+  id: string;
+  label: string;
+  score: number;
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
 }
 
 const processTypes = ["Primary", "Management", "Supporting"];
 // natureOfImplementations fetched from API
 const operationalComplexities = ["Low", "Medium", "High"];
-const impactDescriptions = {
-  High: "Major fines/legal action, Complete service outage, > $100K of loss",
-  Medium: "Local media/social concern, Reportable incident, Partial service disruption, $10K – $100K",
-  Low: "Limited visibility, Minor compliance delay, Workaround available",
-};
+// BIA rating descriptions are now fetched from /api/bia-ratings
 
 export default function ProcessPage() {
   const { toast } = useToast();
@@ -158,7 +190,7 @@ export default function ProcessPage() {
   const [aiRisks, setAiRisks] = useState<any[]>([]);
   const [semanticMatchStats, setSemanticMatchStats] = useState<{ created: number; updated: number; skipped: number } | null>(null);
 
-  // Semantic matching hook for background deduplication
+  // Semantic matching hook for background deduplication (runs silently)
   const {
     submitJob: submitSemanticMatch,
     status: semanticStatus,
@@ -170,12 +202,15 @@ export default function ProcessPage() {
   } = useRiskSemanticMatch({
     onComplete: (result) => {
       console.log("[Process] Semantic matching completed:", result);
+      console.log("[Process] Stats:", JSON.stringify(result.stats, null, 2));
+      console.log("[Process] Processed risks:", JSON.stringify(result.risks, null, 2));
       setSemanticMatchStats(result.stats);
       // Refresh data after semantic matching completes
       fetchData();
+      // Show toast notification with results
       toast({
         title: t("Risk Library Updated"),
-        description: `${t("Created")}: ${result.stats.created}, ${t("Updated")}: ${result.stats.updated}, ${t("Skipped")}: ${result.stats.skipped}`,
+        description: `${t("Created")}: ${result.stats?.created || 0}, ${t("Linked")}: ${result.stats?.skipped || 0}`,
       });
     },
     onError: (error) => {
@@ -189,16 +224,17 @@ export default function ProcessPage() {
   });
   const [isBIAFormOpen, setIsBIAFormOpen] = useState(false);
   const [biaProcess, setBiaProcess] = useState<Process | null>(null);
-  const [biaRatings, setBiaRatings] = useState<BIARating[]>([
-    { category: "Financial", rating: "", description: "" },
-    { category: "Reputational Impact", rating: "", description: "" },
-    { category: "Regulatory", rating: "", description: "" },
-    { category: "Safety", rating: "", description: "" },
-    { category: "Operational", rating: "", description: "" },
-  ]);
+  const [biaCategories, setBiaCategories] = useState<BIACategory[]>([]);
+  const [biaRatingOptions, setBiaRatingOptions] = useState<BIARatingOption[]>([]);
+  const [biaRatings, setBiaRatings] = useState<BIARating[]>([]);
   const [biaApprover, setBiaApprover] = useState("");
+  const [biaDepartment, setBiaDepartment] = useState("");
   const [rto, setRto] = useState("0");
   const [rpo, setRpo] = useState("0");
+  const [lowValue, setLowValue] = useState("");
+  const [criticalValue, setCriticalValue] = useState("");
+  const [highValue, setHighValue] = useState("");
+  const [mediumValue, setMediumValue] = useState("");
 
   // Add/Edit Process Dialog states
   const [isAddProcessOpen, setIsAddProcessOpen] = useState(false);
@@ -214,7 +250,7 @@ export default function ProcessPage() {
     setIsAIEvaluationOpen(true);
 
     try {
-      // Step 1: Generate risks without persisting (for semantic matching)
+      // Step 1: Generate risks without persisting (user will review first)
       const response = await fetch("/api/ai/risk-evaluation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -229,13 +265,9 @@ export default function ProcessPage() {
         if (generatedRisks.length > 0) {
           toast({
             title: t("AI Risks Generated"),
-            description: `${t("Generated")} ${generatedRisks.length} ${t("risks")}. ${t("Running semantic matching...")}`,
+            description: `${t("Generated")} ${generatedRisks.length} ${t("risks")}. ${t("Review and remove unwanted risks before proceeding.")}`,
           });
-
-          // Step 2: Trigger semantic matching in background
-          // This will compare with existing library and persist only new/unique risks
-          console.log("[Process] Submitting semantic matching for", generatedRisks.length, "risks");
-          await submitSemanticMatch(generatedRisks, process.id);
+          // Note: Semantic matching will be triggered when user clicks "Go to Risk Register"
         } else {
           toast({
             title: t("No Risks Found"),
@@ -258,6 +290,30 @@ export default function ProcessPage() {
       });
     } finally {
       setIsAiGenerating(false);
+    }
+  };
+
+  // Delete an AI-generated risk from the review list
+  const handleDeleteAiRisk = (indexToDelete: number) => {
+    setAiRisks(prev => prev.filter((_, idx) => idx !== indexToDelete));
+    toast({
+      title: t("Risk Removed"),
+      description: t("The risk has been removed from the review list."),
+    });
+  };
+
+  // Navigate to risk register immediately, run semantic matching silently in background
+  const handleGoToRiskRegister = () => {
+    // Close the dialog and navigate immediately
+    setIsAIEvaluationOpen(false);
+    router.push("/risks/register");
+
+    // Run semantic matching silently in background (don't await)
+    if (aiRisks.length > 0) {
+      console.log("[Process] Starting background semantic matching for", aiRisks.length, "risks");
+      submitSemanticMatch(aiRisks, evaluatingProcess?.id || "").catch((error) => {
+        console.error("[Process] Background semantic matching error:", error);
+      });
     }
   };
   const [saving, setSaving] = useState(false);
@@ -342,10 +398,26 @@ export default function ProcessPage() {
     fetchData();
   }, []);
 
+  // Initialize BIA ratings when dialog opens with categories available
+  // This fixes the stale closure issue where handleOpenBIAForm may capture empty biaCategories
+  useEffect(() => {
+    if (isBIAFormOpen && biaProcess && biaCategories.length > 0) {
+      // Only initialize if we don't have existing BIA data and ratings are empty
+      if (!biaProcess.biaCompleted && biaRatings.length === 0) {
+        const initialRatings = biaCategories.map((cat) => ({
+          category: cat.name,
+          rating: "" as "High" | "Medium" | "Low" | "",
+          description: "",
+        }));
+        setBiaRatings(initialRatings);
+      }
+    }
+  }, [isBIAFormOpen, biaProcess, biaCategories, biaRatings.length]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [processRes, deptRes, userRes, biaRes, freqRes, locRes, implRes, assetsRes] = await Promise.all([
+      const [processRes, deptRes, userRes, biaRes, freqRes, locRes, implRes, assetsRes, biaCatRes, biaRatingsRes] = await Promise.all([
         fetch("/api/processes"),
         fetch("/api/departments"),
         fetch("/api/users"),
@@ -354,6 +426,8 @@ export default function ProcessPage() {
         fetch("/api/organization-settings/location"),
         fetch("/api/organization-settings/nature-of-implementation"),
         fetch("/api/assets"),
+        fetch("/api/bia-categories"),
+        fetch("/api/bia-ratings"),
       ]);
 
       if (processRes.ok) setProcesses(await processRes.json());
@@ -365,11 +439,27 @@ export default function ProcessPage() {
       }
       if (biaRes.ok) {
         const biaData = await biaRes.json();
-        setProcessBIAStatuses(biaData.map((bia: { processId: string; status: string; impactRating?: number; processCriticality?: string }) => ({
+        setProcessBIAStatuses(biaData.map((bia: ProcessBIAStatus & {
+          categoryRatings?: Array<{
+            categoryName: string;
+            rating: string | null;
+            ratingScore: number | null;
+            description: string | null;
+          }>;
+        }) => ({
           processId: bia.processId,
           status: bia.status,
           impactRating: bia.impactRating,
           processCriticality: bia.processCriticality,
+          rtoHours: bia.rtoHours,
+          rpoHours: bia.rpoHours,
+          lowValue: bia.lowValue,
+          criticalValue: bia.criticalValue,
+          highValue: bia.highValue,
+          mediumValue: bia.mediumValue,
+          approverId: bia.approverId,
+          approverName: bia.approverName,
+          categoryRatings: bia.categoryRatings,
         })));
       }
       if (freqRes.ok) {
@@ -384,6 +474,16 @@ export default function ProcessPage() {
         const implData = await implRes.json();
         setNatureOfImplementations(implData.map((i: { name: string }) => i.name));
       }
+      // BIA Categories from organization settings
+      if (biaCatRes.ok) {
+        const catData = await biaCatRes.json();
+        setBiaCategories(catData.filter((c: BIACategory) => c.isActive));
+      }
+      // BIA Rating options from organization settings
+      if (biaRatingsRes.ok) {
+        const ratingsData = await biaRatingsRes.json();
+        setBiaRatingOptions(ratingsData.filter((r: BIARatingOption) => r.isActive));
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -394,6 +494,11 @@ export default function ProcessPage() {
   const departmentFilteredProcesses = (isDepartmentReviewer || isDepartmentContributor) && userDepartmentId
     ? processes.filter((p) => p.departmentId === userDepartmentId)
     : processes;
+
+  // Get unique process owners - only users who own at least one process
+  const processOwners = users.filter((user) =>
+    processes.some((process) => process.ownerId === user.id)
+  );
 
   const filteredProcesses = departmentFilteredProcesses.filter((p) => {
     const matchesSearch =
@@ -420,20 +525,24 @@ export default function ProcessPage() {
   };
 
   // BIA functions
-  const handleBiaRatingChange = (index: number, rating: "High" | "Medium" | "Low" | "") => {
+  const handleBiaRatingChange = (index: number, ratingLabel: string) => {
+    const ratingOption = biaRatingOptions.find((r) => r.label === ratingLabel);
     const newRatings = [...biaRatings];
     newRatings[index] = {
       ...newRatings[index],
-      rating,
-      description: rating ? impactDescriptions[rating] : "",
+      rating: ratingLabel as "High" | "Medium" | "Low" | "",
+      description: ratingOption?.description || "",
     };
     setBiaRatings(newRatings);
   };
 
   const calculateImpactRating = () => {
-    const ratingValues = { High: 100, Medium: 50, Low: 25, "": 0 };
-    const maxRating = Math.max(...biaRatings.map((r) => ratingValues[r.rating]));
-    return maxRating;
+    // Use dynamic scores from rating options
+    const scores = biaRatings.map((r) => {
+      const option = biaRatingOptions.find((opt) => opt.label === r.rating);
+      return option?.score || 0;
+    });
+    return Math.max(...scores, 0);
   };
 
   const getProcessCriticality = () => {
@@ -446,48 +555,270 @@ export default function ProcessPage() {
 
   const handleOpenBIAForm = (process: Process) => {
     setBiaProcess(process);
+    // Initialize department from process
+    setBiaDepartment(process.departmentId || "");
 
-    // Load existing BIA data if available
-    if (process.biaCompleted && process.biaData) {
+    // Load existing BIA data from processBIAStatuses (fetched from database)
+    const existingBIA = processBIAStatuses.find((b) => b.processId === process.id);
+
+    if (existingBIA) {
+      // Load ratings from database
+      if (existingBIA.categoryRatings && existingBIA.categoryRatings.length > 0) {
+        const ratings = existingBIA.categoryRatings.map((cr) => ({
+          category: cr.categoryName,
+          rating: (cr.rating || "") as "High" | "Medium" | "Low" | "",
+          description: cr.description || "",
+          ratingScore: cr.ratingScore || 0,
+        }));
+        setBiaRatings(ratings);
+      } else {
+        // Initialize from BIA categories if no ratings exist
+        const initialRatings = biaCategories.map((cat) => ({
+          category: cat.name,
+          rating: "" as "High" | "Medium" | "Low" | "",
+          description: "",
+        }));
+        setBiaRatings(initialRatings);
+      }
+
+      setBiaApprover(existingBIA.approverId || "");
+      setRto(existingBIA.rtoHours?.toString() || "0");
+      setRpo(existingBIA.rpoHours?.toString() || "0");
+      setLowValue(existingBIA.lowValue != null ? existingBIA.lowValue.toString() : "");
+      setCriticalValue(existingBIA.criticalValue != null ? existingBIA.criticalValue.toString() : "");
+      setHighValue(existingBIA.highValue != null ? existingBIA.highValue.toString() : "");
+      setMediumValue(existingBIA.mediumValue != null ? existingBIA.mediumValue.toString() : "");
+    } else if (process.biaCompleted && process.biaData) {
+      // Fallback to local biaData (for unsaved changes in current session)
       setBiaRatings(process.biaData.ratings);
       setBiaApprover(process.biaData.approver);
       setRto(process.biaData.rto);
       setRpo(process.biaData.rpo);
+      setLowValue(process.biaData.lowValue ?? "");
+      setCriticalValue(process.biaData.criticalValue ?? "");
+      setHighValue(process.biaData.highValue ?? "");
+      setMediumValue(process.biaData.mediumValue ?? "");
     } else {
-      // Reset to empty for new BIA
-      setBiaRatings([
-        { category: "Financial", rating: "", description: "" },
-        { category: "Reputational Impact", rating: "", description: "" },
-        { category: "Regulatory", rating: "", description: "" },
-        { category: "Safety", rating: "", description: "" },
-        { category: "Operational", rating: "", description: "" },
-      ]);
+      // Initialize ratings from dynamic BIA categories from organization settings
+      const initialRatings = biaCategories.map((cat) => ({
+        category: cat.name,
+        rating: "" as "High" | "Medium" | "Low" | "",
+        description: "",
+      }));
+      setBiaRatings(initialRatings);
       setBiaApprover("");
       setRto("0");
       setRpo("0");
+      setLowValue("");
+      setCriticalValue("");
+      setHighValue("");
+      setMediumValue("");
     }
     setIsBIAFormOpen(true);
   };
 
-  const handleSaveBIA = () => {
+  const handleSaveBIA = async () => {
     if (!biaProcess) return;
     const criticality = getProcessCriticality();
 
-    // Store BIA data in the process
-    const biaData: BIAData = {
-      ratings: biaRatings,
-      rto,
-      rpo,
-      approver: biaApprover,
-    };
+    setSaving(true);
+    try {
+      // Update process department if changed
+      if (biaDepartment !== biaProcess.departmentId) {
+        await fetch(`/api/processes/${biaProcess.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            departmentId: biaDepartment || null,
+          }),
+        });
+      }
 
-    setProcesses(processes.map((p) =>
-      p.id === biaProcess.id
-        ? { ...p, biaCompleted: true, processCriticality: criticality, biaData }
-        : p
-    ));
-    setIsBIAFormOpen(false);
-    setBiaProcess(null);
+      // Save BIA data to the database
+      const res = await fetch(`/api/process-bia/${biaProcess.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryRatings: biaRatings.map((r) => ({
+            categoryId: biaCategories.find((c) => c.name === r.category)?.id || "",
+            categoryName: r.category,
+            rating: r.rating,
+            ratingScore: r.ratingScore || 0,
+            description: r.description || "",
+          })),
+          rtoHours: parseInt(rto) || 0,
+          rpoHours: parseInt(rpo) || 0,
+          lowValue: lowValue ? parseInt(lowValue) : null,
+          criticalValue: criticalValue ? parseInt(criticalValue) : null,
+          highValue: highValue ? parseInt(highValue) : null,
+          mediumValue: mediumValue ? parseInt(mediumValue) : null,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: t("Saved"),
+          description: t("BIA data has been saved successfully"),
+        });
+
+        // Store BIA data in the process
+        const biaData: BIAData = {
+          ratings: biaRatings,
+          rto,
+          rpo,
+          lowValue,
+          criticalValue,
+          highValue,
+          mediumValue,
+          approver: biaApprover,
+        };
+
+        setProcesses(processes.map((p) =>
+          p.id === biaProcess.id
+            ? { ...p, biaCompleted: true, processCriticality: criticality, biaData }
+            : p
+        ));
+
+        // Refresh BIA statuses
+        const statusRes = await fetch("/api/process-bia");
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          setProcessBIAStatuses(statusData);
+        }
+
+        setIsBIAFormOpen(false);
+        setBiaProcess(null);
+      } else {
+        const error = await res.json();
+        toast({
+          title: t("Error"),
+          description: error.error || t("Failed to save BIA data"),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving BIA:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to save BIA data"),
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle Submit For Approval
+  const handleSubmitForApproval = async () => {
+    if (!biaProcess) return;
+
+    if (!biaApprover) {
+      toast({
+        title: t("Error"),
+        description: t("Please select an approver"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const approver = users.find((u) => u.id === biaApprover);
+      const criticality = getProcessCriticality();
+
+      // Update process department if changed
+      if (biaDepartment !== biaProcess.departmentId) {
+        await fetch(`/api/processes/${biaProcess.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            departmentId: biaDepartment || null,
+          }),
+        });
+      }
+
+      // Save BIA data and submit for approval
+      const res = await fetch(`/api/process-bia/${biaProcess.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryRatings: biaRatings.map((r) => ({
+            categoryId: biaCategories.find((c) => c.name === r.category)?.id || "",
+            categoryName: r.category,
+            rating: r.rating,
+          })),
+          rtoHours: parseInt(rto) || 0,
+          rpoHours: parseInt(rpo) || 0,
+          lowValue: lowValue ? parseInt(lowValue) : null,
+          criticalValue: criticalValue ? parseInt(criticalValue) : null,
+          highValue: highValue ? parseInt(highValue) : null,
+          mediumValue: mediumValue ? parseInt(mediumValue) : null,
+          approverId: biaApprover,
+          approverName: approver?.fullName || null,
+          status: "Pending Approval",
+        }),
+      });
+
+      if (res.ok) {
+        // Add a comment for the submission
+        await fetch(`/api/process-bia/${biaProcess.id}/comments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            comment: "BIA submitted for approval",
+            createdBy: session?.user?.id,
+            createdByName: session?.user?.name,
+            action: "Submit",
+          }),
+        });
+
+        toast({
+          title: t("Submitted"),
+          description: t("BIA has been submitted for approval"),
+        });
+
+        // Update local state
+        setProcesses(processes.map((p) =>
+          p.id === biaProcess.id
+            ? { ...p, biaCompleted: true, processCriticality: criticality, biaData: {
+                ratings: biaRatings,
+                rto,
+                rpo,
+                lowValue,
+                criticalValue,
+                highValue,
+                mediumValue,
+                approver: biaApprover,
+              }}
+            : p
+        ));
+
+        // Refresh BIA statuses
+        const statusRes = await fetch("/api/process-bia");
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          setProcessBIAStatuses(statusData);
+        }
+
+        setIsBIAFormOpen(false);
+        setBiaProcess(null);
+      } else {
+        const error = await res.json();
+        toast({
+          title: t("Error"),
+          description: error.error || t("Failed to submit BIA for approval"),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting BIA for approval:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to submit BIA for approval"),
+        variant: "destructive",
+      });
+    }
+    setSaving(false);
   };
 
   // Helper function to get BIA status for a process
@@ -988,7 +1319,7 @@ export default function ProcessPage() {
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="all">{t("All Owners")}</SelectItem>
-                  {users.map((user) => (
+                  {processOwners.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
                     </SelectItem>
@@ -1068,7 +1399,7 @@ export default function ProcessPage() {
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="all">{t("All Owners")}</SelectItem>
-                  {users.map((user) => (
+                  {processOwners.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
                     </SelectItem>
@@ -1354,7 +1685,9 @@ export default function ProcessPage() {
                   <p className="text-sm text-primary-700">
                     {semanticMatchStats
                       ? t("These risks have been compared with your existing library. Only new risks were added to the Risk Register.")
-                      : t("The AI has identified the following risks. They are being compared with your existing library...")}
+                      : (isSemanticLoading || isSemanticPolling)
+                        ? t("Comparing with existing risk library...")
+                        : t("Review the AI-identified risks below. Remove any unwanted risks, then click 'Go to Risk Register' to process them.")}
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -1362,13 +1695,27 @@ export default function ProcessPage() {
                     <div key={idx} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-white shadow-sm">
                       <div className="flex justify-between items-start">
                         <h5 className="font-semibold text-slate-900">{risk.name}</h5>
-                        <Badge className={
-                          (risk.riskRating || risk.risk_rating) === "High" ? "bg-error-light text-error-dark" :
-                            (risk.riskRating || risk.risk_rating) === "Medium" ? "bg-warning-light text-warning-dark" :
-                              "bg-success-light text-success-dark"
-                        }>
-                          {risk.riskRating || risk.risk_rating || "Medium"}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className={
+                            (risk.riskRating || risk.risk_rating) === "High" ? "bg-error-light text-error-dark" :
+                              (risk.riskRating || risk.risk_rating) === "Medium" ? "bg-warning-light text-warning-dark" :
+                                "bg-success-light text-success-dark"
+                          }>
+                            {risk.riskRating || risk.risk_rating || "Medium"}
+                          </Badge>
+                          {/* Delete button - only show before semantic matching starts */}
+                          {!isSemanticLoading && !isSemanticPolling && !semanticMatchStats && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteAiRisk(idx)}
+                              title={t("Remove this risk")}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-slate-600">{risk.description}</p>
 
@@ -1429,8 +1776,8 @@ export default function ProcessPage() {
               {t("Close")}
             </Button>
             <Button
-              onClick={() => router.push("/risks/register")}
-              disabled={isSemanticLoading || isSemanticPolling}
+              onClick={handleGoToRiskRegister}
+              disabled={isSemanticLoading || isSemanticPolling || isAiGenerating || aiRisks.length === 0}
             >
               {(isSemanticLoading || isSemanticPolling) ? (
                 <>
@@ -1462,27 +1809,44 @@ export default function ProcessPage() {
                 <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Status & Approval")}</h4>
                 <Badge variant="outline" className="bg-info-light text-info-dark border-info">{t("Open")}</Badge>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <Label className="text-sm font-medium text-slate-700">{t("Approver")}</Label>
-                  <Select value={biaApprover} onValueChange={setBiaApprover}>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
+                  <Select value={biaDepartment} onValueChange={(value) => { setBiaDepartment(value); setBiaApprover(""); }}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder={t("Select Approver")} />
+                      <SelectValue placeholder={t("Select Department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.fullName}
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="pt-6">
-                  <Button variant="outline" size="sm" disabled={!biaApprover}>
-                    {t("Submit For Approval")}
-                  </Button>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Approver")}</Label>
+                  <Select value={biaApprover} onValueChange={setBiaApprover} disabled={!biaDepartment}>
+                    <SelectTrigger className="w-full mt-1.5 bg-white">
+                      <SelectValue placeholder={biaDepartment ? t("Select Approver") : t("Select Department First")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {users
+                        .filter((user) => user.departmentId === biaDepartment && user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer"))
+                        .map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.fullName}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" disabled={!biaApprover || saving} onClick={handleSubmitForApproval}>
+                  {saving ? t("Submitting...") : t("Submit For Approval")}
+                </Button>
               </div>
             </div>
 
@@ -1506,15 +1870,17 @@ export default function ProcessPage() {
                     <div className="px-4 py-3 flex justify-center">
                       <Select
                         value={item.rating}
-                        onValueChange={(value) => handleBiaRatingChange(index, value as "High" | "Medium" | "Low" | "")}
+                        onValueChange={(value) => handleBiaRatingChange(index, value)}
                       >
-                        <SelectTrigger className="w-[120px] bg-white">
+                        <SelectTrigger className="w-[140px] bg-white">
                           <SelectValue placeholder={t("Select")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
-                          <SelectItem value="High">{t("High")}</SelectItem>
-                          <SelectItem value="Medium">{t("Medium")}</SelectItem>
-                          <SelectItem value="Low">{t("Low")}</SelectItem>
+                          {biaRatingOptions.map((option) => (
+                            <SelectItem key={option.id} value={option.label}>
+                              {t(option.label)}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -1550,9 +1916,9 @@ export default function ProcessPage() {
             {/* Recovery Metrics Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Recovery Metrics")}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-6 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("RTO (Recovery Time Objective) - Hours")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("RTO")}</Label>
                   <Input
                     type="number"
                     value={rto}
@@ -1562,7 +1928,47 @@ export default function ProcessPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("RPO (Recovery Point Objective) - Hours")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Low")}</Label>
+                  <Input
+                    type="number"
+                    value={lowValue}
+                    onChange={(e) => setLowValue(e.target.value)}
+                    min="0"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Critical")}</Label>
+                  <Input
+                    type="number"
+                    value={criticalValue}
+                    onChange={(e) => setCriticalValue(e.target.value)}
+                    min="0"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("High")}</Label>
+                  <Input
+                    type="number"
+                    value={highValue}
+                    onChange={(e) => setHighValue(e.target.value)}
+                    min="0"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Medium")}</Label>
+                  <Input
+                    type="number"
+                    value={mediumValue}
+                    onChange={(e) => setMediumValue(e.target.value)}
+                    min="0"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("RPO")}</Label>
                   <Input
                     type="number"
                     value={rpo}
@@ -1579,8 +1985,8 @@ export default function ProcessPage() {
             <Button variant="outline" onClick={() => setIsBIAFormOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSaveBIA}>
-              {t("Save")}
+            <Button onClick={handleSaveBIA} disabled={saving}>
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>

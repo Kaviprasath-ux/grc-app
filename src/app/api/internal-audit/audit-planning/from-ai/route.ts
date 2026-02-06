@@ -28,6 +28,22 @@ export const POST = withAuth(
         );
       }
 
+      // Check for duplicate audit plan (same title and department)
+      const existingPlan = await prisma.auditEngagement.findFirst({
+        where: {
+          customerAccountId,
+          departmentId,
+          engagementTitle: audit_title,
+        },
+      });
+
+      if (existingPlan) {
+        return NextResponse.json(
+          { error: 'This audit plan has already been added to Audit Planning.' },
+          { status: 409 } // 409 Conflict
+        );
+      }
+
       // Generate unique audit ID
       const existingEngagements = await prisma.auditEngagement.count({
         where: { customerAccountId },
@@ -54,7 +70,7 @@ export const POST = withAuth(
           description: fullDescription.substring(0, 1000), // Limit description length
           departmentId,
           auditType: 'Internal',
-          status: 'Planning', // Start in Planning status
+          status: 'Planned', // Set status to Planned
           assignedAuditorId: session.id, // Assign to current user
           customerAccountId,
           auditHeadId,
@@ -71,9 +87,28 @@ export const POST = withAuth(
         },
       });
 
+      // Create AI workpapers from audit tasks
+      if (audit_tasks && Array.isArray(audit_tasks) && audit_tasks.length > 0) {
+        const workpapersData = audit_tasks.map((task: any) => ({
+          engagementId: engagement.id,
+          task: task.task_name || '',
+          steps: JSON.stringify(task.audit_steps || []),
+          evidences: JSON.stringify(task.evidence_to_collect || []),
+          questionChecklist: JSON.stringify(task.audit_checklist_questions || []),
+          comments: '',
+          executed: false,
+        }));
+
+        await prisma.aiWorkpaper.createMany({
+          data: workpapersData,
+        });
+
+        console.log(`Created ${workpapersData.length} AI workpapers for engagement ${engagement.id}`);
+      }
+
       return NextResponse.json({
         engagement,
-        message: 'Audit plan added successfully',
+        message: 'Audit plan added successfully with AI workpapers',
       }, { status: 201 });
     } catch (error) {
       console.error('Error creating audit engagement from AI plan:', error);

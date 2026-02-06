@@ -886,6 +886,11 @@ model ProcessBIA {
   rpoHours           Int                 @default(0) // Recovery Point Objective in hours
   rtoLabel           String?             // Label for RTO
   rpoLabel           String?             // Label for RPO
+  // Scoring range values
+  lowValue           Int?
+  criticalValue      Int?
+  highValue          Int?
+  mediumValue        Int?
   // Approver
   approverId         String?
   approverName       String?
@@ -1048,6 +1053,9 @@ model Artifact {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   linkedEvidences   EvidenceArtifact[]
+
+  // Relation to AI reviews where this artifact was used
+  evidenceAIReviews EvidenceAIReview[]
 
   @@unique([customerAccountId, artifactCode])
   @@index([customerAccountId])
@@ -2453,6 +2461,7 @@ model AuditEngagement {
   findings            InternalAuditFinding[]
   evidenceRequests    FieldworkEvidenceRequest[]
   linkedRisks         InternalAuditRisk[]
+  aiWorkpapers        AiWorkpaper[]
 
   @@unique([customerAccountId, auditId])
   @@index([customerAccountId])
@@ -2498,6 +2507,24 @@ model AuditWorkpaper {
   uploadedAt   DateTime       @default(now())
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+}
+
+// AI-Generated Workpapers (structured audit tasks from AI)
+model AiWorkpaper {
+  id                String          @id @default(cuid())
+  engagementId      String
+  engagement        AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  task              String          // Task name from AI
+  steps             String          // Audit steps (JSON array as string)
+  evidences         String          // Evidence to collect (JSON array as string)
+  questionChecklist String          // Checklist questions (JSON array as string)
+  comments          String?         // Comments/notes
+  executed          Boolean         @default(false) // Whether task has been executed
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([engagementId])
+  @@map("AIWorkpaper")
 }
 
 // Fieldwork Evidence Request (requests for evidence during audit fieldwork)
@@ -2713,6 +2740,8 @@ model InternalAuditDocument {
   uploadedAt   DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  // AI Ingest jobs for this document
+  ingestJobs   DocumentLibraryIngestJob[]
 }
 
 // Document Library Search History
@@ -2723,6 +2752,24 @@ model DocumentSearch {
   status    String   @default("Satisfactory") // Satisfactory, Unsatisfactory
   userId    String?
   createdAt DateTime @default(now())
+}
+
+// Document Library AI Ingest Job - tracks async ingestion jobs for documents
+model DocumentLibraryIngestJob {
+  id              String    @id @default(cuid())
+  documentId      String
+  document        InternalAuditDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  runpodJobId     String    @unique // RunPod job ID
+  customerId      String?   // customer_id sent to RunPod
+  status          String    @default("queued") // queued, processing, completed, failed
+  error           String?   @db.Text
+  result          String?   @db.Text // JSON result
+  completedAt     DateTime? // When the job completed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([documentId])
+  @@index([runpodJobId])
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================
@@ -2800,7 +2847,20 @@ model EvidenceAIReview {
   id                String           @id @default(cuid())
   evidenceId        String
   evidence          Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  // Explicit artifact reference for vault-query reviews
+  artifactId        String?
+  artifact          Artifact?        @relation(fields: [artifactId], references: [id], onDelete: SetNull)
+
+  // Document ID tracking fields
+  ingestJobId       String?          // RunPod job ID from artifact ingestion
+  evidenceDocumentId   String?       // evidence.id sent as document_id during evidence ingest
+  artifactDocumentId   String?       // artifact.id sent as document_id during vault-query ingest
+  runpodDocumentRef    String?       // document_id returned by RunPod (if different from what we sent)
+
+  // DEPRECATED: keep for backward compatibility, use ingestJobId instead
   documentId        String?          // External AI document ID (RunPod)
+
   status            String           @default("pending") // pending, completed, failed
   critique          String?          @db.Text
   complianceSummary String?          @db.Text
@@ -2809,6 +2869,7 @@ model EvidenceAIReview {
   suggestions       String?          @db.Text // JSON string
   similarityScore   Float?
   recommendations   String?          @db.Text // JSON string
+  sources           String?          @db.Text // JSON array of sources from vault query
   rawResponse       String?          @db.Text // Full AI response JSON
   aiOperationId     String?
   aiOperation       AIOperation?     @relation(fields: [aiOperationId], references: [id])
@@ -2816,6 +2877,8 @@ model EvidenceAIReview {
   updatedAt         DateTime         @updatedAt
 
   @@index([evidenceId])
+  @@index([artifactId])
+  @@index([ingestJobId])
 }
 
 // Evidence AI Ingest Job - tracks RunPod ingest jobs
@@ -2825,6 +2888,11 @@ model EvidenceAIIngestJob {
   evidence      Evidence  @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
   attachmentId  String?   // Optional specific attachment
   runpodJobId   String    @unique // RunPod job ID
+
+  // Document ID tracking: what we sent vs what RunPod returned
+  sentDocumentId     String?   // The document_id we sent (evidence.id or artifact.id)
+  returnedDocumentId String?   // The document_id RunPod returned (if any)
+
   status        String    @default("queued") // queued, processing, completed, failed
   error         String?   @db.Text
   result        String?   @db.Text // JSON result
@@ -2834,6 +2902,7 @@ model EvidenceAIIngestJob {
 
   @@index([evidenceId])
   @@index([runpodJobId])
+  @@index([sentDocumentId])
 }
 
 // Evidence AI Ingest Result - stores extracted content from AI ingest

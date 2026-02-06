@@ -62,6 +62,7 @@ export const POST = withAuth(
         customer_id: customerId,
         context_status: contextStatus,
       };
+      console.log(payload);
 
       const url = getExternalApiUrl('PYTHON_BACKEND', '/api/simple_query');
       console.log('[RunPod simple_query] POST /api/internal-audit/fieldwork/[id]/simple-query received');

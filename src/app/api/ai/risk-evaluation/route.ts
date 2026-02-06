@@ -79,7 +79,7 @@ async function handler(
         requestPayload = {
             Process_Details: {
                 Process_name: process.name,
-                Process_description: process.description ,
+                Process_description: process.description || "No description provided",
                 Department: process.department?.name || "General"
             }
         };

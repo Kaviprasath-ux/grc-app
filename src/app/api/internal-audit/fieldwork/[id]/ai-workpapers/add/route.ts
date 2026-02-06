@@ -43,21 +43,31 @@ export const POST = withAuth(
         );
       }
 
-      // In production, this would save to database
-      // For now, just assign new IDs and return
-      const addedWorkpapers = workpapers.map((wp, index) => ({
-        id: `${Date.now()}-${index}`,
+      // Save workpapers to database
+      const workpapersData = workpapers.map((wp) => ({
+        engagementId,
         task: wp.task,
         steps: wp.steps,
         evidences: wp.evidences,
         questionChecklist: wp.questionChecklist || '',
         comments: wp.comments || '',
-        executed: false,
+        executed: wp.executed || false,
       }));
 
+      const createdWorkpapers = await prisma.aiWorkpaper.createMany({
+        data: workpapersData,
+      });
+
+      // Fetch the created workpapers to return with IDs
+      const savedWorkpapers = await prisma.aiWorkpaper.findMany({
+        where: { engagementId },
+        orderBy: { createdAt: 'desc' },
+        take: workpapers.length,
+      });
+
       return NextResponse.json({
-        workpapers: addedWorkpapers,
-        message: `${addedWorkpapers.length} workpaper(s) added successfully`,
+        workpapers: savedWorkpapers,
+        message: `${createdWorkpapers.count} workpaper(s) added successfully`,
       });
     } catch (error) {
       console.error('Error adding AI workpapers:', error);
