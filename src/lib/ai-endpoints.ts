@@ -64,6 +64,13 @@ export const AI_ENDPOINTS = {
   AUDIT_QUERY: '/api/audit_query',
   SIMPLE_QUERY: '/api/simple_query',
   DOCUMENT_SEARCH: '/api/document_search',
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Document Library Ingestion (simple_ingest)
+  // ─────────────────────────────────────────────────────────────────────────
+  SIMPLE_INGEST: '/api/simple_ingest',
+  SIMPLE_INGEST_STATUS: '/api/simple_ingest_status',
+  SIMPLE_INGEST_RESULT: '/api/simple_ingest_result',
   RISK_SUGGEST: '/api/risk_suggest',
   GENERATE_WORKPAPERS: '/api/generate_workpapers',
   GENERATE_AUDIT_PLAN: '/api/generate_audit_plan',
@@ -108,6 +115,9 @@ export const ENDPOINT_NAMES: Record<string, string> = {
   [AI_ENDPOINTS.RISK_SUGGEST]: 'Risk Suggestion',
   [AI_ENDPOINTS.GENERATE_WORKPAPERS]: 'Workpapers Generation',
   [AI_ENDPOINTS.GENERATE_AUDIT_PLAN]: 'Audit Plan Generation',
+  [AI_ENDPOINTS.SIMPLE_INGEST]: 'Document Library Ingest',
+  [AI_ENDPOINTS.SIMPLE_INGEST_STATUS]: 'Document Library Ingest Status',
+  [AI_ENDPOINTS.SIMPLE_INGEST_RESULT]: 'Document Library Ingest Result',
 };
 
 /**

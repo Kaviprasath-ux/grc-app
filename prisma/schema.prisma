@@ -2721,6 +2721,8 @@ model InternalAuditDocument {
   uploadedAt   DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  // AI Ingest jobs for this document
+  ingestJobs   DocumentLibraryIngestJob[]
 }
 
 // Document Library Search History
@@ -2731,6 +2733,24 @@ model DocumentSearch {
   status    String   @default("Satisfactory") // Satisfactory, Unsatisfactory
   userId    String?
   createdAt DateTime @default(now())
+}
+
+// Document Library AI Ingest Job - tracks async ingestion jobs for documents
+model DocumentLibraryIngestJob {
+  id              String    @id @default(cuid())
+  documentId      String
+  document        InternalAuditDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  runpodJobId     String    @unique // RunPod job ID
+  customerId      String?   // customer_id sent to RunPod
+  status          String    @default("queued") // queued, processing, completed, failed
+  error           String?   @db.Text
+  result          String?   @db.Text // JSON result
+  completedAt     DateTime? // When the job completed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([documentId])
+  @@index([runpodJobId])
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================

@@ -1978,6 +1978,22 @@ CREATE TABLE "DocumentSearch" (
 );
 
 -- CreateTable
+CREATE TABLE "DocumentLibraryIngestJob" (
+    "id" TEXT NOT NULL,
+    "documentId" TEXT NOT NULL,
+    "runpodJobId" TEXT NOT NULL,
+    "customerId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'queued',
+    "error" TEXT,
+    "result" TEXT,
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocumentLibraryIngestJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "GovernanceTemplate" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -2680,6 +2696,15 @@ CREATE UNIQUE INDEX "InternalAuditCAPA_customerAccountId_capaId_key" ON "Interna
 
 -- CreateIndex
 CREATE UNIQUE INDEX "InternalAuditDocument_documentCode_key" ON "InternalAuditDocument"("documentCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DocumentLibraryIngestJob_runpodJobId_key" ON "DocumentLibraryIngestJob"("runpodJobId");
+
+-- CreateIndex
+CREATE INDEX "DocumentLibraryIngestJob_documentId_idx" ON "DocumentLibraryIngestJob"("documentId");
+
+-- CreateIndex
+CREATE INDEX "DocumentLibraryIngestJob_runpodJobId_idx" ON "DocumentLibraryIngestJob"("runpodJobId");
 
 -- CreateIndex
 CREATE INDEX "AIOperation_userId_idx" ON "AIOperation"("userId");
@@ -3436,6 +3461,9 @@ ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_custom
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocumentLibraryIngestJob" ADD CONSTRAINT "DocumentLibraryIngestJob_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "InternalAuditDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "GovernanceTemplate" ADD CONSTRAINT "GovernanceTemplate_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
