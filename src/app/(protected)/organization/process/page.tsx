@@ -135,6 +135,7 @@ export default function ProcessPage() {
   const [processes, setProcesses] = useState<Process[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [assets, setAssets] = useState<{ id: string; assetId: string; name: string }[]>([]);
   const [processBIAStatuses, setProcessBIAStatuses] = useState<ProcessBIAStatus[]>([]);
   const [processFrequencies, setProcessFrequencies] = useState<string[]>([]);
   const [locationOptions, setLocationOptions] = useState<MultiSelectOption[]>([]);
@@ -277,9 +278,12 @@ export default function ProcessPage() {
     frequency: "",
     natureOfImplementation: "",
     assetDependency: false,
+    assetId: "",
     externalDependency: false,
     location: [] as string[],
     kpiMeasurementRequired: false,
+    kpiRecurrence: "",
+    kpiReviewDate: "",
     piiCapture: false,
     operationalComplexity: "",
     responsible: "",
@@ -298,9 +302,12 @@ export default function ProcessPage() {
       frequency: "",
       natureOfImplementation: "",
       assetDependency: false,
+      assetId: "",
       externalDependency: false,
       location: [],
       kpiMeasurementRequired: false,
+      kpiRecurrence: "",
+      kpiReviewDate: "",
       piiCapture: false,
       operationalComplexity: "",
       responsible: "",
@@ -338,7 +345,7 @@ export default function ProcessPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [processRes, deptRes, userRes, biaRes, freqRes, locRes, implRes] = await Promise.all([
+      const [processRes, deptRes, userRes, biaRes, freqRes, locRes, implRes, assetsRes] = await Promise.all([
         fetch("/api/processes"),
         fetch("/api/departments"),
         fetch("/api/users"),
@@ -346,11 +353,16 @@ export default function ProcessPage() {
         fetch("/api/organization-settings/process-frequency"),
         fetch("/api/organization-settings/location"),
         fetch("/api/organization-settings/nature-of-implementation"),
+        fetch("/api/assets"),
       ]);
 
       if (processRes.ok) setProcesses(await processRes.json());
       if (deptRes.ok) setDepartments(await deptRes.json());
       if (userRes.ok) setUsers(await userRes.json());
+      if (assetsRes.ok) {
+        const assetsData = await assetsRes.json();
+        setAssets(assetsData.map((a: { id: string; assetId: string; name: string }) => ({ id: a.id, assetId: a.assetId, name: a.name })));
+      }
       if (biaRes.ok) {
         const biaData = await biaRes.json();
         setProcessBIAStatuses(biaData.map((bia: { processId: string; status: string; impactRating?: number; processCriticality?: string }) => ({
@@ -496,7 +508,7 @@ export default function ProcessPage() {
 
     setSaving(true);
     try {
-      const { responsible, accountable, consulted, informed, frequency, location, ...rest } = processForm;
+      const { responsible, accountable, consulted, informed, frequency, location, kpiRecurrence, kpiReviewDate, assetId, ...rest } = processForm;
       const res = await fetch("/api/processes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -508,6 +520,9 @@ export default function ProcessPage() {
           accountableId: accountable || null,
           consultedId: consulted || null,
           informedId: informed || null,
+          assetId: processForm.assetDependency && assetId ? assetId : null,
+          recurrence: processForm.kpiMeasurementRequired && kpiRecurrence ? kpiRecurrence : null,
+          reviewDate: processForm.kpiMeasurementRequired && kpiReviewDate ? new Date(kpiReviewDate).toISOString() : null,
         }),
       });
 
@@ -561,7 +576,7 @@ export default function ProcessPage() {
 
     setSaving(true);
     try {
-      const { responsible, accountable, consulted, informed, frequency, location, ...rest } = editingProcess;
+      const { responsible, accountable, consulted, informed, frequency, location, assetId, recurrence, reviewDate, ...rest } = editingProcess;
       const locationArr = Array.isArray(location) ? location : [];
       const res = await fetch(`/api/processes/${editingProcess.id}`, {
         method: "PUT",
@@ -574,6 +589,9 @@ export default function ProcessPage() {
           accountableId: accountable || null,
           consultedId: consulted || null,
           informedId: informed || null,
+          assetId: editingProcess.assetDependency && assetId ? assetId : null,
+          recurrence: editingProcess.kpiMeasurementRequired && recurrence ? recurrence : null,
+          reviewDate: editingProcess.kpiMeasurementRequired && reviewDate ? (typeof reviewDate === 'string' ? reviewDate : new Date(reviewDate).toISOString()) : null,
         }),
       });
 
@@ -1732,6 +1750,51 @@ export default function ProcessPage() {
                   <Label htmlFor="piiCapture" className="text-sm text-slate-700 font-normal">{t("PII Capture")}</Label>
                 </div>
               </div>
+
+              {/* Conditional fields based on checkbox selections */}
+              {processForm.assetDependency && (
+                <div className="mt-4">
+                  <Label className="text-sm font-medium text-slate-700">{t("Select Asset")}</Label>
+                  <Select value={processForm.assetId} onValueChange={(value) => setProcessForm({ ...processForm, assetId: value })}>
+                    <SelectTrigger className="w-full mt-1.5 bg-white">
+                      <SelectValue placeholder={t("Select an asset")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {assets.map((asset) => (
+                        <SelectItem key={asset.id} value={asset.id}>{asset.assetId} - {asset.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {processForm.kpiMeasurementRequired && (
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI Recurrence")}</Label>
+                    <Select value={processForm.kpiRecurrence} onValueChange={(value) => setProcessForm({ ...processForm, kpiRecurrence: value })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder={t("Select recurrence")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        <SelectItem value="Yearly">{t("Yearly")}</SelectItem>
+                        <SelectItem value="Half-Yearly">{t("Half-Yearly")}</SelectItem>
+                        <SelectItem value="Quarterly">{t("Quarterly")}</SelectItem>
+                        <SelectItem value="Monthly">{t("Monthly")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Review Date")}</Label>
+                    <Input
+                      type="date"
+                      value={processForm.kpiReviewDate}
+                      onChange={(e) => setProcessForm({ ...processForm, kpiReviewDate: e.target.value })}
+                      className="mt-1.5 bg-white"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* RACI Section */}
@@ -2057,6 +2120,51 @@ export default function ProcessPage() {
                     <Label htmlFor="editPiiCapture" className="text-sm text-slate-700 font-normal">{t("PII Capture")}</Label>
                   </div>
                 </div>
+
+                {/* Conditional fields based on checkbox selections */}
+                {editingProcess.assetDependency && (
+                  <div className="mt-4">
+                    <Label className="text-sm font-medium text-slate-700">{t("Select Asset")}</Label>
+                    <Select value={editingProcess.assetId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, assetId: value })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder={t("Select an asset")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {assets.map((asset) => (
+                          <SelectItem key={asset.id} value={asset.id}>{asset.assetId} - {asset.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {editingProcess.kpiMeasurementRequired && (
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("KPI Recurrence")}</Label>
+                      <Select value={editingProcess.recurrence || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, recurrence: value })}>
+                        <SelectTrigger className="w-full mt-1.5 bg-white">
+                          <SelectValue placeholder={t("Select recurrence")} />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          <SelectItem value="Yearly">{t("Yearly")}</SelectItem>
+                          <SelectItem value="Half-Yearly">{t("Half-Yearly")}</SelectItem>
+                          <SelectItem value="Quarterly">{t("Quarterly")}</SelectItem>
+                          <SelectItem value="Monthly">{t("Monthly")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Review Date")}</Label>
+                      <Input
+                        type="date"
+                        value={editingProcess.reviewDate ? new Date(editingProcess.reviewDate).toISOString().split('T')[0] : ""}
+                        onChange={(e) => setEditingProcess({ ...editingProcess, reviewDate: e.target.value ? new Date(e.target.value) : null })}
+                        className="mt-1.5 bg-white"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* RACI Section */}
