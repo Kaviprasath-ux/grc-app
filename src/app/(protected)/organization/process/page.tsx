@@ -472,6 +472,11 @@ export default function ProcessPage() {
     ? processes.filter((p) => p.departmentId === userDepartmentId)
     : processes;
 
+  // Get unique process owners - only users who own at least one process
+  const processOwners = users.filter((user) =>
+    processes.some((process) => process.ownerId === user.id)
+  );
+
   const filteredProcesses = departmentFilteredProcesses.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1291,7 +1296,7 @@ export default function ProcessPage() {
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="all">{t("All Owners")}</SelectItem>
-                  {users.map((user) => (
+                  {processOwners.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
                     </SelectItem>
@@ -1371,7 +1376,7 @@ export default function ProcessPage() {
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="all">{t("All Owners")}</SelectItem>
-                  {users.map((user) => (
+                  {processOwners.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
                     </SelectItem>
