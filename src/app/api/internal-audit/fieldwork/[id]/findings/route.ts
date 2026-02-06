@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getAuditHeadId, getTenantFilter } from '@/lib/api-auth';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -8,18 +8,23 @@ interface RouteContext {
 
 // Helper to generate finding ID - scoped to customer account
 async function generateFindingId(customerAccountId: string): Promise<string> {
-  const lastFinding = await prisma.internalAuditFinding.findFirst({
+  // Get all findings for this customer to find the highest number
+  const findings = await prisma.internalAuditFinding.findMany({
     where: { customerAccountId },
-    orderBy: { findingId: 'desc' },
     select: { findingId: true },
   });
 
-  if (!lastFinding) {
+  if (findings.length === 0) {
     return 'FND001';
   }
 
-  const lastNum = parseInt(lastFinding.findingId.replace('FND', ''), 10);
-  const nextNum = lastNum + 1;
+  // Extract numbers and find the maximum
+  const numbers = findings
+    .map(f => parseInt(f.findingId.replace('FND', ''), 10))
+    .filter(n => !isNaN(n));
+
+  const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+  const nextNum = maxNum + 1;
   return `FND${nextNum.toString().padStart(3, '0')}`;
 }
 
@@ -122,6 +127,9 @@ export const POST = withAuth(
       // Generate finding ID - scoped to customer account
       const findingId = await generateFindingId(customerAccountId);
 
+      // Get audit head ID
+      const auditHeadId = getAuditHeadId(session);
+
       // Get responsible person name if ID provided
       let responsiblePersonName = body.responsiblePerson || null;
       if (body.responsiblePersonId && !responsiblePersonName) {
@@ -155,6 +163,7 @@ export const POST = withAuth(
           effect: body.effect || null,
           recommendation: body.recommendation || null,
           customerAccountId,
+          auditHeadId,
         },
         include: {
           department: true,

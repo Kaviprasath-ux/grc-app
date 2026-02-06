@@ -87,9 +87,28 @@ export const POST = withAuth(
         },
       });
 
+      // Create AI workpapers from audit tasks
+      if (audit_tasks && Array.isArray(audit_tasks) && audit_tasks.length > 0) {
+        const workpapersData = audit_tasks.map((task: any) => ({
+          engagementId: engagement.id,
+          task: task.task_name || '',
+          steps: JSON.stringify(task.audit_steps || []),
+          evidences: JSON.stringify(task.evidence_to_collect || []),
+          questionChecklist: JSON.stringify(task.audit_checklist_questions || []),
+          comments: '',
+          executed: false,
+        }));
+
+        await prisma.aiWorkpaper.createMany({
+          data: workpapersData,
+        });
+
+        console.log(`Created ${workpapersData.length} AI workpapers for engagement ${engagement.id}`);
+      }
+
       return NextResponse.json({
         engagement,
-        message: 'Audit plan added successfully',
+        message: 'Audit plan added successfully with AI workpapers',
       }, { status: 201 });
     } catch (error) {
       console.error('Error creating audit engagement from AI plan:', error);

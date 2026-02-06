@@ -631,11 +631,20 @@ export default function FieldworkDetailsPage() {
 
   const handleOpenEditAIWorkpaper = (wp: AIWorkpaper) => {
     setSelectedAIWorkpaper(wp);
+    // Parse JSON arrays and convert to newline-separated text for editing
+    const parseField = (field: string) => {
+      try {
+        const parsed = JSON.parse(field);
+        return Array.isArray(parsed) ? parsed.join('\n') : field;
+      } catch {
+        return field;
+      }
+    };
     setEditAIWorkpaper({
       task: wp.task,
-      evidences: wp.evidences,
-      steps: wp.steps,
-      questionChecklist: wp.questionChecklist,
+      evidences: parseField(wp.evidences),
+      steps: parseField(wp.steps),
+      questionChecklist: parseField(wp.questionChecklist),
       comments: wp.comments,
     });
     setEditAIWorkpaperDialogOpen(true);
@@ -650,12 +659,24 @@ export default function FieldworkDetailsPage() {
 
     setSavingAIWorkpaper(true);
     try {
+      // Convert newline-separated text back to JSON arrays
+      const serializeField = (field: string) => {
+        const lines = field.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        return JSON.stringify(lines);
+      };
+      const dataToSave = {
+        task: editAIWorkpaper.task,
+        evidences: serializeField(editAIWorkpaper.evidences),
+        steps: serializeField(editAIWorkpaper.steps),
+        questionChecklist: serializeField(editAIWorkpaper.questionChecklist),
+        comments: editAIWorkpaper.comments,
+      };
       const response = await fetch(
         `/api/internal-audit/fieldwork/${engagementId}/ai-workpapers/${selectedAIWorkpaper.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editAIWorkpaper),
+          body: JSON.stringify(dataToSave),
         }
       );
 
@@ -663,7 +684,7 @@ export default function FieldworkDetailsPage() {
         setAiWorkpapers((prev) =>
           prev.map((wp) =>
             wp.id === selectedAIWorkpaper.id
-              ? { ...wp, ...editAIWorkpaper }
+              ? { ...wp, ...dataToSave }
               : wp
           )
         );
@@ -1899,13 +1920,46 @@ export default function FieldworkDetailsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="align-top py-4">
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{wp.evidences}</p>
+                      <div className="text-sm text-slate-700 space-y-1">
+                        {(() => {
+                          try {
+                            const items = JSON.parse(wp.evidences);
+                            return Array.isArray(items) && items.length > 0
+                              ? items.map((item, i) => <div key={i}>• {item}</div>)
+                              : wp.evidences || "-";
+                          } catch {
+                            return wp.evidences || "-";
+                          }
+                        })()}
+                      </div>
                     </TableCell>
                     <TableCell className="align-top py-4">
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{wp.steps}</p>
+                      <div className="text-sm text-slate-700 space-y-1">
+                        {(() => {
+                          try {
+                            const items = JSON.parse(wp.steps);
+                            return Array.isArray(items) && items.length > 0
+                              ? items.map((item, i) => <div key={i}>• {item}</div>)
+                              : wp.steps || "-";
+                          } catch {
+                            return wp.steps || "-";
+                          }
+                        })()}
+                      </div>
                     </TableCell>
-                    <TableCell className="align-top py-4 text-center">
-                      {wp.questionChecklist || "-"}
+                    <TableCell className="align-top py-4">
+                      <div className="text-sm text-slate-700 space-y-1">
+                        {(() => {
+                          try {
+                            const items = JSON.parse(wp.questionChecklist);
+                            return Array.isArray(items) && items.length > 0
+                              ? items.map((item, i) => <div key={i}>• {item}</div>)
+                              : wp.questionChecklist || "-";
+                          } catch {
+                            return wp.questionChecklist || "-";
+                          }
+                        })()}
+                      </div>
                     </TableCell>
                     <TableCell className="align-top py-4 text-center">
                       {wp.comments || "-"}
@@ -3523,16 +3577,34 @@ export default function FieldworkDetailsPage() {
 
                         <div>
                           <h5 className="font-medium text-slate-700 mb-2">{t("Steps")}</h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap ltr:pl-4 rtl:pr-4">
-                            {wp.steps}
-                          </p>
+                          <div className="text-sm text-slate-600 ltr:pl-4 rtl:pr-4 space-y-1">
+                            {(() => {
+                              try {
+                                const items = JSON.parse(wp.steps);
+                                return Array.isArray(items) && items.length > 0
+                                  ? items.map((item, i) => <div key={i}>• {item}</div>)
+                                  : wp.steps || "-";
+                              } catch {
+                                return wp.steps || "-";
+                              }
+                            })()}
+                          </div>
                         </div>
 
                         <div>
                           <h5 className="font-medium text-slate-700 mb-2">{t("Evidences")}</h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap ltr:pl-4 rtl:pr-4">
-                            {wp.evidences}
-                          </p>
+                          <div className="text-sm text-slate-600 ltr:pl-4 rtl:pr-4 space-y-1">
+                            {(() => {
+                              try {
+                                const items = JSON.parse(wp.evidences);
+                                return Array.isArray(items) && items.length > 0
+                                  ? items.map((item, i) => <div key={i}>• {item}</div>)
+                                  : wp.evidences || "-";
+                              } catch {
+                                return wp.evidences || "-";
+                              }
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
