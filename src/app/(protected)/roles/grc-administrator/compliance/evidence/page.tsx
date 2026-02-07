@@ -448,10 +448,22 @@ export default function GRCAdminEvidencePage() {
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("GRC")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-slate-500">{t("Compliance")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Evidence")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-sm text-slate-500">{t("Loading...")}</p>
+          </div>
         </div>
       </div>
     );
@@ -477,164 +489,171 @@ export default function GRCAdminEvidencePage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
-      </div>
-
-      {/* Search, Filter, and Action Buttons Row */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder={t("Search by name, domain or assignee...")}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="max-w-md bg-white"
-        />
-        <Select value={customerFilter} onValueChange={setCustomerFilter}>
-          <SelectTrigger className="w-[180px] bg-white">
-            <SelectValue placeholder={t("All Customers")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-            <SelectItem value="all">{t("All Customers")}</SelectItem>
-            {customerAccounts.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-          <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder={t("Integrated Framework")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-            <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-            {frameworks.map((f) => (
-              <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <PermissionGate resource="compliance.evidence" action="create">
-          <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-            <FileSpreadsheet className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Import")}
-          </Button>
-        </PermissionGate>
-        <PermissionGate resource="compliance.evidence" action="delete">
-          <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Delete All")}
-          </Button>
-        </PermissionGate>
-        <PermissionGate resource="compliance.evidence" action="create">
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("New Evidence")}
-          </Button>
-        </PermissionGate>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
+          {/* count badge */}
+          {/* {total > 0 && (
+            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              {total}
+            </span>
+          )} */}
+        </div>
+        <div className="flex items-center gap-2">
+          <PermissionGate resource="compliance.evidence" action="delete">
+            <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+              <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Delete All")}
+            </Button>
+          </PermissionGate>
+          <PermissionGate resource="compliance.evidence" action="create">
+            <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+              <FileSpreadsheet className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Import")}
+            </Button>
+          </PermissionGate>
+          <PermissionGate resource="compliance.evidence" action="create">
+            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("New Evidence")}
+            </Button>
+          </PermissionGate>
+        </div>
       </div>
 
       {/* Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="relative h-8 w-8">
-            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-          </div>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search & Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <Input
+            placeholder={t("Search by name, domain or assignee...")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="w-[300px] h-9 bg-white border-slate-200"
+          />
+          <Select value={customerFilter} onValueChange={setCustomerFilter}>
+            <SelectTrigger className="w-[180px] h-9 bg-white border-slate-200">
+              <SelectValue placeholder={t("All Customers")} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+              <SelectItem value="all">{t("All Customers")}</SelectItem>
+              {customerAccounts.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+            <SelectTrigger className="w-[200px] h-9 bg-white border-slate-200">
+              <SelectValue placeholder={t("Integrated Framework")} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+              <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
+              {frameworks.map((f) => (
+                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-200">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Evidence Code")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Evidence Name")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Customer")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department Name")}</TableHead>
+
+        <Table>
+          <TableHeader>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Evidence Code")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Evidence Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Customer")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Department Name")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
+                  {t("Loading...")}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {evidences.map((evidence) => (
+            ) : evidences.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
+                  {t("No evidence records found")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              evidences.map((evidence) => (
                 <TableRow
                   key={evidence.id}
-                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer"
                   onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
                 >
-                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.name}</TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{evidence.name}</TableCell>
+                  <TableCell className="py-3">
                     <Badge variant="outline" className="text-xs">
                       {evidence.customerAccount?.name || "-"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-3 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
+                  <TableCell className="py-3">
                     <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
                       {evidence.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3 pr-5 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
                 </TableRow>
-              ))}
-              {evidences.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                    {t("No evidence records found")}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              ))
+            )}
+          </TableBody>
+        </Table>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-sm text-slate-500">
-              {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No evidence")}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(1)}
-                className="h-8 w-8"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-                className="h-8 w-8"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-                className="h-8 w-8"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage(totalPages)}
-                className="h-8 w-8"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
+            {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No evidence")}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Create Evidence Dialog - 3 Step Wizard */}
       <Dialog open={createDialogOpen} onOpenChange={(open) => {
@@ -816,33 +835,33 @@ export default function GRCAdminEvidencePage() {
                 </div>
 
                 {/* Controls Table */}
-                <div className="bg-white rounded-xl border border-slate-200 max-h-[300px] overflow-y-auto">
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden max-h-[300px] overflow-y-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                        <TableHead className="w-[50px] py-4 pl-4"></TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Code")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Name")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
+                      <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="w-[50px] py-3 pl-5"></TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Control Code")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Control Name")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Domain")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredControls.map((control) => (
-                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer" onClick={() => toggleControlSelection(control.id)}>
-                          <TableCell className="py-4 pl-4">
+                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 cursor-pointer" onClick={() => toggleControlSelection(control.id)}>
+                          <TableCell className="py-3 pl-5">
                             <Checkbox
                               checked={selectedControlIds.includes(control.id)}
                               onCheckedChange={() => toggleControlSelection(control.id)}
                             />
                           </TableCell>
-                          <TableCell className="py-4 text-sm font-medium text-slate-900">{control.controlCode}</TableCell>
-                          <TableCell className="py-4 text-sm text-slate-700">{control.name}</TableCell>
-                          <TableCell className="py-4 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm font-medium text-slate-900">{control.controlCode}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{control.name}</TableCell>
+                          <TableCell className="py-3 pr-5 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
                         </TableRow>
                       ))}
                       {filteredControls.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                          <TableCell colSpan={4} className="h-24 text-center text-sm text-slate-500">
                             {t("No controls found")}
                           </TableCell>
                         </TableRow>
@@ -915,7 +934,7 @@ export default function GRCAdminEvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -949,7 +968,7 @@ export default function GRCAdminEvidencePage() {
                 : t("Are you sure you want to delete all evidence records? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
               {t("Delete All")}
@@ -1034,7 +1053,7 @@ export default function GRCAdminEvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);

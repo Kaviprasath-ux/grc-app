@@ -312,8 +312,23 @@ export default function CustomersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-slate-400">{t("Loading...")}</p>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("GRC")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Customers")}</span>
+        </nav>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-slate-400">{t("Loading...")}</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -331,27 +346,27 @@ export default function CustomersPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/80">
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Customer Code")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Customer Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Email")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("UserName")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Compliance Percentage")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">{t("Action")}</TableHead>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Customer Code")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Customer Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("UserName")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Compliance Percentage")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-slate-500">
+                <TableCell colSpan={6} className="h-24 text-center text-sm text-slate-500">
                   {t("No customers found")}
                 </TableCell>
               </TableRow>
@@ -359,14 +374,14 @@ export default function CustomersPage() {
               customers.map((customer) => (
                 <TableRow
                   key={customer.id}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer"
                   onDoubleClick={() => handleRowDoubleClick(customer)}
                 >
-                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.customerName}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.email}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.userName}</TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.customerName}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.email}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.userName}</TableCell>
+                  <TableCell className="py-3">
                     <div className="flex items-center gap-2">
                       <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
                         <div
@@ -377,8 +392,8 @@ export default function CustomersPage() {
                       <span className="text-sm text-slate-600">{customer.compliancePercentage.toFixed(2)}%</span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4 pr-4">
-                    <div className="flex items-center gap-1">
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -643,7 +658,7 @@ export default function CustomersPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex justify-between">
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-between">
             <Button
               variant="outline"
               size="sm"
@@ -678,7 +693,7 @@ export default function CustomersPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
             <Button
               onClick={handleDeleteCustomer}
               disabled={submitting}
@@ -720,7 +735,7 @@ export default function CustomersPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => { setShowLogoDialog(false); setSelectedCustomer(null); }}>
               {t("Close")}
             </Button>

@@ -171,7 +171,7 @@ export default function AuditUniversePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="p-6">
           <div className="relative">
             {/* Root Node */}
@@ -204,9 +204,9 @@ export default function AuditUniversePage() {
                     <div className="w-0.5 h-4 bg-slate-300"></div>
 
                     {/* Department box */}
-                    <div className={`border rounded-lg px-4 py-3 mb-4 min-w-[140px] text-center transition-colors ${
+                    <div className={`border rounded-lg px-4 py-3 mb-4 min-w-[140px] text-center ${
                       dept.audits.length > 0
-                        ? 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-slate-200 bg-white'
                         : 'border-dashed border-slate-200 bg-slate-50'
                     }`}>
                       <span className={`text-sm font-semibold ${dept.audits.length > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
@@ -229,7 +229,7 @@ export default function AuditUniversePage() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div
-                                  className={`${getStatusColor(audit.actualHours, audit.plannedHours, audit.status)} text-white rounded-lg px-4 py-3 min-w-[130px] text-center cursor-pointer hover:opacity-90 transition-all hover:scale-105`}
+                                  className={`${getStatusColor(audit.actualHours, audit.plannedHours, audit.status)} text-white rounded-lg px-4 py-3 min-w-[130px] text-center cursor-pointer transition-colors`}
                                   onClick={() => handleAuditClick(audit.id)}
                                 >
                                   <div className="flex items-center justify-center gap-1 font-semibold text-sm mb-2">
@@ -305,7 +305,7 @@ export default function AuditUniversePage() {
       </div>
 
       {/* Legend */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">{t("Legend")}</h3>
         </div>
@@ -337,20 +337,20 @@ export default function AuditUniversePage() {
 
       {/* Hours Summary */}
       {data?.departments && data.departments.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Hours Summary by Department")}</h3>
           </div>
           <div className="p-6">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-3 font-semibold text-slate-600">{t("Department")}</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">{t("Audits")}</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">{t("Total Planned Hours")}</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">{t("Total Actual Hours")}</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">{t("Variance")}</th>
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <th className="text-left py-3 text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Department")}</th>
+                    <th className="text-right py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Audits")}</th>
+                    <th className="text-right py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Total Planned Hours")}</th>
+                    <th className="text-right py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Total Actual Hours")}</th>
+                    <th className="text-right py-3 text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Variance")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -360,12 +360,12 @@ export default function AuditUniversePage() {
                     const variance = totalActual - totalPlanned;
                     const hasAudits = dept.audits.length > 0;
                     return (
-                      <tr key={dept.id} className={`border-b border-slate-100 hover:bg-slate-50 ${!hasAudits ? 'text-slate-400' : 'text-slate-700'}`}>
-                        <td className="py-2 px-3">{dept.name}</td>
-                        <td className="text-right py-2 px-3">{dept.audits.length}</td>
-                        <td className="text-right py-2 px-3">{hasAudits ? `${totalPlanned}h` : '-'}</td>
-                        <td className="text-right py-2 px-3">{hasAudits ? `${totalActual}h` : '-'}</td>
-                        <td className={`text-right py-2 px-3 font-medium ${hasAudits ? (variance > 0 ? 'text-red-600' : variance < 0 ? 'text-green-600' : '') : ''}`}>
+                      <tr key={dept.id} className={`border-b border-slate-100 last:border-0 ${!hasAudits ? 'text-slate-400' : ''}`}>
+                        <td className="py-3 text-sm font-medium text-slate-800 pl-5">{dept.name}</td>
+                        <td className="text-right py-3 text-sm text-slate-700">{dept.audits.length}</td>
+                        <td className="text-right py-3 text-sm text-slate-700">{hasAudits ? `${totalPlanned}h` : '-'}</td>
+                        <td className="text-right py-3 text-sm text-slate-700">{hasAudits ? `${totalActual}h` : '-'}</td>
+                        <td className={`text-right py-3 text-sm font-medium pr-5 ${hasAudits ? (variance > 0 ? 'text-red-600' : variance < 0 ? 'text-green-600' : 'text-slate-700') : 'text-slate-700'}`}>
                           {hasAudits ? `${variance > 0 ? '+' : ''}${variance}h` : '-'}
                         </td>
                       </tr>
@@ -373,16 +373,16 @@ export default function AuditUniversePage() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="font-semibold bg-slate-50 text-slate-800">
-                    <td className="py-2 px-3">{t("Total")}</td>
-                    <td className="text-right py-2 px-3">{data.totalAudits}</td>
-                    <td className="text-right py-2 px-3">
+                  <tr className="border-t border-slate-100 bg-slate-50/50 font-semibold text-slate-800">
+                    <td className="py-3 text-sm pl-5">{t("Total")}</td>
+                    <td className="text-right py-3 text-sm">{data.totalAudits}</td>
+                    <td className="text-right py-3 text-sm">
                       {data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0)}h
                     </td>
-                    <td className="text-right py-2 px-3">
+                    <td className="text-right py-3 text-sm">
                       {data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0)}h
                     </td>
-                    <td className="text-right py-2 px-3">
+                    <td className="text-right py-3 text-sm pr-5">
                       {(() => {
                         const totalP = data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0);
                         const totalA = data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0);

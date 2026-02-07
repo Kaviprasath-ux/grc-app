@@ -613,7 +613,9 @@ export default function ProcessPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Process")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Process")}</h1>
+      </div>
 
       {/* Content */}
       <div className="space-y-6">
@@ -677,104 +679,102 @@ export default function ProcessPage() {
           </div>
         </div>
 
-        {/* Filters and Actions */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder={t("Search By Process ID, Name")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-[250px] h-9 bg-white border-slate-200"
-            />
-          </div>
-
-          <Select value={filterDepartment || "all"} onValueChange={(v) => setFilterDepartment(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
-              <SelectValue placeholder={t("Department")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("All Departments")}</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterOwner || "all"} onValueChange={(v) => setFilterOwner(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
-              <SelectValue placeholder={t("Process Owner")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("All Owners")}</SelectItem>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.fullName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterFrequency || "all"} onValueChange={(v) => setFilterFrequency(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
-              <SelectValue placeholder={t("Process Frequency")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("All Frequencies")}</SelectItem>
-              {PROCESS_FREQUENCIES.map((freq) => (
-                <SelectItem key={freq} value={freq}>
-                  {freq}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="flex-1" />
-
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              {t("Export")}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => document.getElementById('import-file')?.click()}>
-              <Upload className="h-4 w-4 mr-2" />
-              {t("Import")}
-            </Button>
-            <input
-              id="import-file"
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={handleImport}
-            />
-            <Button size="sm" onClick={openAddDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("New Process")}
-            </Button>
-          </div>
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            {t("Export")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => document.getElementById('import-file')?.click()}>
+            <Upload className="h-4 w-4 mr-2" />
+            {t("Import")}
+          </Button>
+          <input
+            id="import-file"
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImport}
+          />
+          <Button size="sm" onClick={openAddDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("New Process")}
+          </Button>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          {/* Search & Filters */}
+          <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder={t("Search By Process ID, Name")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-[250px] h-9 bg-white border-slate-200"
+              />
+            </div>
+
+            <Select value={filterDepartment || "all"} onValueChange={(v) => setFilterDepartment(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
+                <SelectValue placeholder={t("Department")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Departments")}</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterOwner || "all"} onValueChange={(v) => setFilterOwner(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
+                <SelectValue placeholder={t("Process Owner")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Owners")}</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.fullName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterFrequency || "all"} onValueChange={(v) => setFilterFrequency(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
+                <SelectValue placeholder={t("Process Frequency")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Frequencies")}</SelectItem>
+                {PROCESS_FREQUENCIES.map((freq) => (
+                  <SelectItem key={freq} value={freq}>
+                    {freq}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Reference ID")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Name")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Process Owner")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Frequency")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Implementation")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Risk Rating")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
+              <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Reference ID")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Process Owner")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Frequency")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Implementation")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Rating")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProcesses.map((process) => (
-                <TableRow key={process.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 text-sm text-slate-600 pl-4">{process.processCode}</TableCell>
+                <TableRow key={process.id} className="border-b border-slate-100 last:border-0">
+                  <TableCell className="py-3 text-sm text-slate-600 pl-5">{process.processCode}</TableCell>
                   <TableCell className="py-3 text-sm font-medium text-slate-800">{process.name}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{process.department?.name || ""}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{process.owner?.fullName || ""}</TableCell>
@@ -795,8 +795,8 @@ export default function ProcessPage() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="py-3 pr-4">
-                    <div className="flex items-center gap-1">
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -821,7 +821,7 @@ export default function ProcessPage() {
               ))}
               {filteredProcesses.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={8} className="h-24 text-center text-sm text-slate-500">
                     {t("No processes found")}
                   </TableCell>
                 </TableRow>
@@ -830,8 +830,8 @@ export default function ProcessPage() {
           </Table>
 
           {/* Pagination info */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-sm text-slate-500">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">
               {t("Showing")} {filteredProcesses.length} {t("of")} {processes.length} {t("processes")}
             </span>
           </div>
@@ -1062,7 +1062,7 @@ export default function ProcessPage() {
                     setFormData({ ...formData, operationalComplexity: value })
                   }
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder={t("Select Complexity")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1082,7 +1082,7 @@ export default function ProcessPage() {
                   value={formData.lastAuditDate}
                   onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" })}
                   placeholder={t("Select date")}
-                  className="mt-2"
+                  className="mt-1.5"
                 />
               </div>
             </div>
@@ -1182,7 +1182,7 @@ export default function ProcessPage() {
                   value={formData.responsibleId}
                   onValueChange={(value) => setFormData({ ...formData, responsibleId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder={t("Select Responsible")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1202,7 +1202,7 @@ export default function ProcessPage() {
                   value={formData.accountableId}
                   onValueChange={(value) => setFormData({ ...formData, accountableId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder={t("Select Accountable")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1224,7 +1224,7 @@ export default function ProcessPage() {
                   value={formData.consultedId}
                   onValueChange={(value) => setFormData({ ...formData, consultedId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder={t("Select Consulted")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1244,7 +1244,7 @@ export default function ProcessPage() {
                   value={formData.informedId}
                   onValueChange={(value) => setFormData({ ...formData, informedId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder={t("Select Informed")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1303,7 +1303,7 @@ export default function ProcessPage() {
               {t("Are you sure you want to delete this process? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
+          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               {t("Delete")}

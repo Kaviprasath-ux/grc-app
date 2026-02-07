@@ -936,8 +936,23 @@ export default function CustomerAccountsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-slate-400">{t("Loading...")}</p>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("GRC")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Customer Accounts")}</span>
+        </nav>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-slate-400">{t("Loading...")}</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -955,12 +970,8 @@ export default function CustomerAccountsPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-end">
         <Button onClick={() => setShowOnboardDialog(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           {t("Onboard Customer")}
@@ -968,39 +979,39 @@ export default function CustomerAccountsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/80">
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Customer Code")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Customer Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Email")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Is Local User")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Last Login")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Blocked")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Active")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">{t("Action")}</TableHead>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Customer Code")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Customer Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Is Local User")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Last Login")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Blocked")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Active")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-slate-500">
+                <TableCell colSpan={9} className="h-24 text-center text-sm text-slate-500">
                   {t("No customer accounts found")}
                 </TableCell>
               </TableRow>
             ) : (
               customers.map((customer) => (
-                <TableRow key={customer.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.customerName}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.email}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.isLocalUser ? t("Yes") : t("No")}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.name}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.lastLogin || "-"}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{customer.blocked ? t("Yes") : t("No")}</TableCell>
-                  <TableCell className="py-4">
+                <TableRow key={customer.id} className="border-b border-slate-100 last:border-0">
+                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.customerName}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.email}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.isLocalUser ? t("Yes") : t("No")}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.name}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.lastLogin || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{customer.blocked ? t("Yes") : t("No")}</TableCell>
+                  <TableCell className="py-3">
                     <span className={customer.active
                       ? "px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700"
                       : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600"
@@ -1008,8 +1019,8 @@ export default function CustomerAccountsPage() {
                       {customer.active ? t("Yes") : t("No")}
                     </span>
                   </TableCell>
-                  <TableCell className="py-4 pr-4">
-                    <div className="flex items-center gap-1">
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1292,7 +1303,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex justify-between">
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-between">
             <Button
               variant="outline"
               size="sm"
@@ -1541,7 +1552,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex justify-between">
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-between">
             <Button
               variant="outline"
               size="sm"
@@ -1596,7 +1607,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
             <Button onClick={handleChangePassword} disabled={submitting} size="sm">
               {submitting ? t("Changing...") : t("Change")}
             </Button>
@@ -1619,39 +1630,39 @@ export default function CustomerAccountsPage() {
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-5">
-            <div className="bg-white rounded-xl border border-slate-200">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-slate-100 bg-slate-50/80">
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Frameworks Available")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Accounts Available")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Expiry date")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">{t("Action")}</TableHead>
+                  <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Frameworks Available")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Accounts Available")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Expiry date")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {subscriptionPlans.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                      <TableCell colSpan={5} className="h-24 text-center text-sm text-slate-500">
                         {t("No subscription plans found")}
                       </TableCell>
                     </TableRow>
                   ) : (
                     subscriptionPlans.map((plan) => (
-                      <TableRow key={plan.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                        <TableCell className="py-4 pl-4 text-sm text-slate-700">{plan.frameworksAvailable}</TableCell>
-                        <TableCell className="py-4 text-sm text-slate-700">{plan.accountsAvailable}</TableCell>
-                        <TableCell className="py-4 text-sm text-slate-700">{plan.expiryDate}</TableCell>
-                        <TableCell className="py-4">
+                      <TableRow key={plan.id} className="border-b border-slate-100 last:border-0">
+                        <TableCell className="py-3 pl-5 text-sm text-slate-700">{plan.frameworksAvailable}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{plan.accountsAvailable}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{plan.expiryDate}</TableCell>
+                        <TableCell className="py-3">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
                             plan.status === "Active" ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-600"
                           }`}>
                             {plan.status}
                           </span>
                         </TableCell>
-                        <TableCell className="py-4 pr-4">
-                          <div className="flex items-center gap-1">
+                        <TableCell className="py-3 pr-5">
+                          <div className="flex items-center gap-0.5">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1681,7 +1692,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex gap-2">
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
             <Button
               onClick={() => setShowNewSubscriptionDialog(true)}
               size="sm"
@@ -1775,7 +1786,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
             <Button onClick={handleAddSubscription} size="sm">
               {t("Save")}
             </Button>
@@ -1866,7 +1877,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
             <Button onClick={handleEditSubscription} disabled={submitting} size="sm">
               {submitting ? t("Saving...") : t("Save")}
             </Button>
@@ -1893,7 +1904,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
             <Button
               onClick={handleDeleteCustomer}
               disabled={submitting}
@@ -1935,7 +1946,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => { setShowLogoDialog(false); setSelectedCustomer(null); }}>
               {t("Close")}
             </Button>

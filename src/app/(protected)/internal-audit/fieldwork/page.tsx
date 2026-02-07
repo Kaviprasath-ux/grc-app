@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -27,23 +26,14 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Loader2,
   ArrowUpDown,
   Home,
   Eye,
   Pencil,
+  Search,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { DatePicker } from "@/components/ui/date-picker";
 import Link from "next/link";
+import { FieldworkDetailModal } from "./FieldworkDetailModal";
 
 interface Department {
   id: string;
@@ -70,7 +60,6 @@ interface Engagement {
 }
 
 export default function FieldworkPage() {
-  const router = useRouter();
   const { t } = useLanguage();
   const { canView, isLoading: permissionsLoading } = usePermissions('audit.fieldwork');
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
@@ -80,6 +69,7 @@ export default function FieldworkPage() {
   const [loading, setLoading] = useState(true);
 
   // Filters
+  const [searchFilter, setSearchFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [auditorFilter, setAuditorFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
@@ -92,22 +82,10 @@ export default function FieldworkPage() {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // View Dialog
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [viewingEngagement, setViewingEngagement] = useState<Engagement | null>(null);
-
-  // Edit Dialog
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingEngagement, setEditingEngagement] = useState<Engagement | null>(null);
-  const [editForm, setEditForm] = useState({
-    engagementTitle: "",
-    departmentId: "",
-    auditorId: "",
-    startDate: null as Date | null,
-    targetDate: null as Date | null,
-    status: "",
-  });
-  const [saving, setSaving] = useState(false);
+  // Detail Modal
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedEngagementId, setSelectedEngagementId] = useState<string | null>(null);
+  const [selectedMode, setSelectedMode] = useState<"view" | "edit">("view");
 
   useEffect(() => {
     fetchDepartments();
@@ -119,10 +97,10 @@ export default function FieldworkPage() {
     fetchEngagements();
   }, [statusFilter, departmentFilter]);
 
-  // Reset to first page when auditor filter changes (client-side filter)
+  // Reset to first page when client-side filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [auditorFilter]);
+  }, [auditorFilter, searchFilter]);
 
   const fetchDepartments = async () => {
     try {
@@ -197,85 +175,32 @@ export default function FieldworkPage() {
     }
   };
 
-  const openViewDialog = (engagement: Engagement) => {
-    setViewingEngagement(engagement);
-    setIsViewDialogOpen(true);
-  };
-
-  const openEditDialog = (engagement: Engagement) => {
-    setEditingEngagement(engagement);
-    setEditForm({
-      engagementTitle: engagement.engagementTitle || "",
-      departmentId: engagement.department?.id || "",
-      auditorId: engagement.assignedAuditor?.id || engagement.assignedAuditorId || "",
-      startDate: engagement.startDate ? new Date(engagement.startDate) : null,
-      targetDate: engagement.endDate ? new Date(engagement.endDate) : null,
-      status: engagement.status || "",
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingEngagement) return;
-
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/internal-audit/engagements/${editingEngagement.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          engagementTitle: editForm.engagementTitle,
-          departmentId: editForm.departmentId || null,
-          auditorId: editForm.auditorId || null,
-          startDate: editForm.startDate?.toISOString() || null,
-          targetDate: editForm.targetDate?.toISOString() || null,
-          status: editForm.status,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success(t("Engagement updated successfully"));
-        setIsEditDialogOpen(false);
-        setEditingEngagement(null);
-        fetchEngagements();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || t("Failed to update engagement"));
-      }
-    } catch (error) {
-      console.error("Error updating engagement:", error);
-      toast.error(t("Failed to update engagement"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case "Planned":
-        return "bg-blue-100 text-blue-700";
-      case "In Progress":
-        return "bg-yellow-100 text-yellow-700";
-      case "Completed":
-        return "bg-green-100 text-green-700";
-      default:
-        return "bg-slate-100 text-slate-700";
-    }
-  };
-
-  // Filter by auditor (client-side) then sort
+  // Filter by search and auditor (client-side) then sort
   const filteredEngagements = engagements.filter((engagement) => {
-    if (auditorFilter === "all") return true;
-    // Check if assignedAuditorId matches or if the auditor name is in assignedAuditors
-    if (engagement.assignedAuditorId === auditorFilter) return true;
-    if (engagement.assignedAuditor?.id === auditorFilter) return true;
-    // Also check by auditor name in assignedAuditors array
-    const selectedAuditor = auditors.find(a => a.id === auditorFilter);
-    if (selectedAuditor) {
-      const auditorName = `${selectedAuditor.firstName} ${selectedAuditor.lastName}`;
-      if (engagement.assignedAuditors?.includes(auditorName)) return true;
+    // Search filter
+    if (searchFilter) {
+      const search = searchFilter.toLowerCase();
+      const matchesSearch =
+        engagement.auditId?.toLowerCase().includes(search) ||
+        engagement.engagementTitle?.toLowerCase().includes(search) ||
+        getAuditorName(engagement).toLowerCase().includes(search) ||
+        engagement.department?.name?.toLowerCase().includes(search);
+      if (!matchesSearch) return false;
     }
-    return false;
+
+    // Auditor filter
+    if (auditorFilter !== "all") {
+      if (engagement.assignedAuditorId === auditorFilter) return true;
+      if (engagement.assignedAuditor?.id === auditorFilter) return true;
+      const selectedAuditor = auditors.find(a => a.id === auditorFilter);
+      if (selectedAuditor) {
+        const auditorName = `${selectedAuditor.firstName} ${selectedAuditor.lastName}`;
+        if (engagement.assignedAuditors?.includes(auditorName)) return true;
+      }
+      return false;
+    }
+
+    return true;
   });
 
   const sortedEngagements = [...filteredEngagements].sort((a, b) => {
@@ -324,9 +249,9 @@ export default function FieldworkPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = sortedEngagements.slice(startIndex, endIndex);
 
-  const SortableHeader = ({ field, children }: { field: string; children: React.ReactNode }) => (
+  const SortableHeader = ({ field, children, className: extraClass }: { field: string; children: React.ReactNode; className?: string }) => (
     <TableHead
-      className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none hover:bg-slate-100"
+      className={`text-xs font-medium text-slate-500 uppercase tracking-wider py-3 cursor-pointer select-none whitespace-nowrap ${extraClass || ""}`}
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-2">
@@ -380,92 +305,98 @@ export default function FieldworkPage() {
       </nav>
 
       {/* Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder={t("All Status")} />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="all">{t("All Status")}</SelectItem>
-              <SelectItem value="Planned">{t("Planned")}</SelectItem>
-              <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
-              <SelectItem value="Completed">{t("Completed")}</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={auditorFilter} onValueChange={setAuditorFilter}>
-            <SelectTrigger className="w-[160px] bg-white">
-              <SelectValue placeholder={t("All Auditors")} />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="all">{t("All Auditors")}</SelectItem>
-              {auditors.map((auditor) => (
-                <SelectItem key={auditor.id} value={auditor.id}>
-                  {auditor.firstName} {auditor.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-[180px] bg-white">
-              <SelectValue placeholder={t("All Departments")} />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="all">{t("All Departments")}</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Action buttons would go here if needed */}
-        </div>
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search & Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative w-[320px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search engagements...")}
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                <SelectValue placeholder={t("All Status")} />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="all">{t("All Status")}</SelectItem>
+                <SelectItem value="Planned">{t("Planned")}</SelectItem>
+                <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                <SelectItem value="Completed">{t("Completed")}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={auditorFilter} onValueChange={setAuditorFilter}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                <SelectValue placeholder={t("All Auditors")} />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="all">{t("All Auditors")}</SelectItem>
+                {auditors.map((auditor) => (
+                  <SelectItem key={auditor.id} value={auditor.id}>
+                    {auditor.firstName} {auditor.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[180px] h-9 text-sm bg-white border-slate-300">
+                <SelectValue placeholder={t("All Departments")} />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="all">{t("All Departments")}</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <SortableHeader field="auditId">{t("Audit ID")}</SortableHeader>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <SortableHeader field="auditId" className="pl-5">{t("Audit ID")}</SortableHeader>
               <SortableHeader field="name">{t("Name")}</SortableHeader>
               <SortableHeader field="auditor">{t("Auditor")}</SortableHeader>
               <SortableHeader field="startDate">{t("Start Date")}</SortableHeader>
               <SortableHeader field="targetDate">{t("Target Date")}</SortableHeader>
               <SortableHeader field="status">{t("Status")}</SortableHeader>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Action")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pr-5">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedData.length > 0 ? (
               paginatedData.map((engagement) => (
-                <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{engagement.auditId}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700 max-w-[200px] truncate">
+                <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5 whitespace-nowrap">{engagement.auditId}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">
                     {engagement.engagementTitle}
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{getAuditorName(engagement)}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{formatDate(engagement.startDate)}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{formatDate(engagement.endDate)}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{engagement.status}</TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-2">
+                  <TableCell className="py-3 text-sm text-slate-700">{getAuditorName(engagement)}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(engagement.startDate)}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(engagement.endDate)}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{engagement.status}</TableCell>
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-0.5">
                       {engagement.status === "Completed" ? (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-slate-600 hover:text-primary-600 hover:bg-primary-50"
-                          onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}?mode=view`)}
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => { setSelectedEngagementId(engagement.id); setSelectedMode("view"); setDetailModalOpen(true); }}
                           title={t("View Details")}
                         >
                           <Eye className="h-4 w-4" />
@@ -474,8 +405,8 @@ export default function FieldworkPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-slate-600 hover:text-primary-600 hover:bg-primary-50"
-                          onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}?mode=edit`)}
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => { setSelectedEngagementId(engagement.id); setSelectedMode("edit"); setDetailModalOpen(true); }}
                           title={t("Edit")}
                         >
                           <Pencil className="h-4 w-4" />
@@ -487,7 +418,7 @@ export default function FieldworkPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
                   {t("No fieldwork items found")}
                 </TableCell>
               </TableRow>
@@ -497,8 +428,8 @@ export default function FieldworkPage() {
 
         {/* Pagination */}
         {sortedEngagements.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-sm text-slate-500">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">
               {startIndex + 1} {t("to")} {Math.min(endIndex, sortedEngagements.length)} {t("of")} {sortedEngagements.length}
             </span>
             <div className="flex items-center gap-1">
@@ -507,7 +438,7 @@ export default function FieldworkPage() {
                 size="icon"
                 onClick={() => setCurrentPage(1)}
                 disabled={currentPage === 1}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
                 <ChevronsLeft className="h-4 w-4" />
               </Button>
@@ -516,7 +447,7 @@ export default function FieldworkPage() {
                 size="icon"
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -525,7 +456,7 @@ export default function FieldworkPage() {
                 size="icon"
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages || totalPages === 0}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -534,7 +465,7 @@ export default function FieldworkPage() {
                 size="icon"
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={currentPage === totalPages || totalPages === 0}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
                 <ChevronsRight className="h-4 w-4" />
               </Button>
@@ -543,206 +474,13 @@ export default function FieldworkPage() {
         )}
       </div>
 
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Engagement Details")}</DialogTitle>
-            </DialogHeader>
-          </div>
-          {/* Content */}
-          {viewingEngagement && (
-            <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-              {/* Audit ID */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Audit ID")}</Label>
-                <span className="text-sm text-slate-800">{viewingEngagement.auditId}</span>
-              </div>
-
-              {/* Engagement Title */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Engagement Title")}</Label>
-                <span className="text-sm text-slate-800">{viewingEngagement.engagementTitle}</span>
-              </div>
-
-              {/* Department */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Department")}</Label>
-                <span className="text-sm text-slate-800">{viewingEngagement.department?.name || "-"}</span>
-              </div>
-
-              {/* Auditor */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Auditor")}</Label>
-                <span className="text-sm text-slate-800">{getAuditorName(viewingEngagement)}</span>
-              </div>
-
-              {/* Start Date */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Start Date")}</Label>
-                <span className="text-sm text-slate-800">{formatDate(viewingEngagement.startDate)}</span>
-              </div>
-
-              {/* Target Date */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Target Date")}</Label>
-                <span className="text-sm text-slate-800">{formatDate(viewingEngagement.endDate)}</span>
-              </div>
-
-              {/* Status */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Status")}</Label>
-                <Badge className={`w-fit ${getStatusBadgeColor(viewingEngagement.status)}`}>
-                  {viewingEngagement.status}
-                </Badge>
-              </div>
-            </div>
-          )}
-          {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" onClick={() => setIsViewDialogOpen(false)}>
-              {t("Close")}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                setIsViewDialogOpen(false);
-                if (viewingEngagement) {
-                  openEditDialog(viewingEngagement);
-                }
-              }}
-            >
-              <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Edit")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Engagement")}</DialogTitle>
-            </DialogHeader>
-          </div>
-          {/* Scrollable Content */}
-          {editingEngagement && (
-            <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-              {/* Audit ID - Read Only */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end">{t("Audit ID")}</Label>
-                <span className="text-sm text-muted-foreground">{editingEngagement.auditId}</span>
-              </div>
-
-              {/* Engagement Title */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editEngagementTitle" className="text-end">{t("Engagement Title")}</Label>
-                <Input
-                  id="editEngagementTitle"
-                  value={editForm.engagementTitle}
-                  onChange={(e) => setEditForm({ ...editForm, engagementTitle: e.target.value })}
-                  className="bg-white"
-                />
-              </div>
-
-              {/* Department */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editDepartment" className="text-end">{t("Department")}</Label>
-                <Select
-                  value={editForm.departmentId}
-                  onValueChange={(value) => setEditForm({ ...editForm, departmentId: value })}
-                >
-                  <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder={t("Select Department")} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Auditor */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editAuditor" className="text-end">{t("Auditor")}</Label>
-                <Select
-                  value={editForm.auditorId}
-                  onValueChange={(value) => setEditForm({ ...editForm, auditorId: value })}
-                >
-                  <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder={t("Select Auditor")} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {auditors.map((auditor) => (
-                      <SelectItem key={auditor.id} value={auditor.id}>
-                        {auditor.firstName} {auditor.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Start Date */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end">{t("Start Date")}</Label>
-                <DatePicker
-                  value={editForm.startDate || undefined}
-                  onChange={(date: Date | undefined) => setEditForm({ ...editForm, startDate: date || null })}
-                />
-              </div>
-
-              {/* Target Date */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end">{t("Target Date")}</Label>
-                <DatePicker
-                  value={editForm.targetDate || undefined}
-                  onChange={(date: Date | undefined) => setEditForm({ ...editForm, targetDate: date || null })}
-                />
-              </div>
-
-              {/* Status */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editStatus" className="text-end">{t("Status")}</Label>
-                <Select
-                  value={editForm.status}
-                  onValueChange={(value) => setEditForm({ ...editForm, status: value })}
-                >
-                  <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder={t("Select Status")} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    <SelectItem value="Planned">{t("Planned")}</SelectItem>
-                    <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
-                    <SelectItem value="Completed">{t("Completed")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
-              {t("Cancel")}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSaveEdit}
-              disabled={saving}
-            >
-              {saving && <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />}
-              {t("Save")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Fieldwork Detail Modal */}
+      <FieldworkDetailModal
+        open={detailModalOpen}
+        onClose={() => { setDetailModalOpen(false); setSelectedEngagementId(null); fetchEngagements(); }}
+        engagementId={selectedEngagementId}
+        mode={selectedMode}
+      />
     </div>
   );
 }

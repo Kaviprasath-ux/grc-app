@@ -605,13 +605,33 @@ export default function FrameworkOverviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          {isGRCAdmin ? (
+            <>
+              <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+                <Home className="h-4 w-4" />
+                <span>{t("GRC")}</span>
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <span className="text-slate-500">{t("Compliance")}</span>
+            </>
+          ) : (
+            <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+              <Home className="h-4 w-4" />
+              <span>{t("Compliance")}</span>
+            </Link>
+          )}
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Integrated Frameworks")}</span>
+        </nav>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-slate-400">{t("Loading...")}</p>
           </div>
-          <p className="text-sm text-slate-500 font-medium">{t("Loading frameworks...")}</p>
         </div>
       </div>
     );
@@ -641,44 +661,43 @@ export default function FrameworkOverviewPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
+        {!isReviewerRole && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => openCreateDialog(true)}
+              variant="outline"
+              size="sm"
+              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              {t("New Framework (AI)")}
+            </Button>
+            <Button
+              onClick={() => openCreateDialog(false)}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t("New Framework")}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Data Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {/* Embedded Toolbar */}
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative flex-1 max-w-sm">
+        {/* Search */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
+            <Input
               placeholder={t("Search frameworks...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="pl-10 w-[300px] h-9 bg-white border-slate-200"
             />
           </div>
-          {!isReviewerRole && (
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => openCreateDialog(true)}
-                variant="outline"
-                size="sm"
-                className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                {t("New Framework (AI)")}
-              </Button>
-              <Button
-                onClick={() => openCreateDialog(false)}
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t("New Framework")}
-              </Button>
-            </div>
-          )}
         </div>
 
         <Table>
@@ -719,7 +738,7 @@ export default function FrameworkOverviewPage() {
           <TableBody>
             {currentFrameworks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isReviewerRole ? 3 : 4} className="h-24 text-center text-slate-500">
+                <TableCell colSpan={isReviewerRole ? 3 : 4} className="h-24 text-center text-sm text-slate-500">
                   {t("No frameworks found.")}
                 </TableCell>
               </TableRow>
@@ -727,7 +746,7 @@ export default function FrameworkOverviewPage() {
               currentFrameworks.map((framework) => (
                 <TableRow
                   key={framework.id}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors cursor-pointer"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer"
                   onDoubleClick={() => router.push(`/compliance/framework/${framework.id}`)}
                 >
                   <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{framework.code || "-"}</TableCell>
@@ -737,7 +756,7 @@ export default function FrameworkOverviewPage() {
                   </TableCell>
                   {!isReviewerRole && (
                     <TableCell className="py-3 pr-5">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -745,9 +764,9 @@ export default function FrameworkOverviewPage() {
                             e.stopPropagation();
                             openEditDialog(framework);
                           }}
-                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -756,9 +775,9 @@ export default function FrameworkOverviewPage() {
                             e.stopPropagation();
                             openDeleteDialog(framework);
                           }}
-                          className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>

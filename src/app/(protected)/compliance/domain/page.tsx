@@ -218,13 +218,31 @@ export default function DomainPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          {isGRCAdmin ? (
+            <>
+              <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+                <Home className="h-4 w-4" />
+                <span>{t("GRC")}</span>
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <span className="text-slate-500">{t("Compliance")}</span>
+            </>
+          ) : (
+            <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+              <Home className="h-4 w-4" />
+              <span>{t("Compliance")}</span>
+            </Link>
+          )}
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Domain")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Domain")}</h1>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-sm text-slate-500">{t("Loading...")}</p>
           </div>
-          <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
         </div>
       </div>
     );
@@ -254,53 +272,62 @@ export default function DomainPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Domain")}</h1>
-      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Domain")}</h1>
 
-      {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search domains...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[300px] bg-white border-slate-200"
-          />
+          {/* count badge */}
+          {/* {filteredDomains.length > 0 && (
+            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              {filteredDomains.length}
+            </span>
+          )} */}
         </div>
         <Button size="sm" onClick={handleOpenCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("New Domain")}
         </Button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder={t("Search domains...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-[300px] h-9 bg-white border-slate-200"
+            />
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Domain Code")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Domain Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Description")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Domain Code")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedDomains.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12">
-                  <p className="text-slate-500">{t("No domains found")}</p>
+                <TableCell colSpan={4} className="h-24 text-center text-sm text-slate-500">
+                  {t("No domains found")}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedDomains.map((domain) => (
-                <TableRow key={domain.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 text-sm text-slate-600 pl-4">{domain.code || "-"}</TableCell>
+                <TableRow key={domain.id} className="border-b border-slate-100 last:border-0">
+                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{domain.code || "-"}</TableCell>
                   <TableCell className="py-3 text-sm font-medium text-slate-800">{domain.name}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-500 max-w-[300px] truncate">{domain.description || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm pr-4">
-                    <div className="flex gap-1">
+                  <TableCell className="py-3 text-sm text-slate-700 max-w-[300px] truncate">{domain.description || "-"}</TableCell>
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -312,7 +339,7 @@ export default function DomainPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-red-600"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => {
                           setDomainToDelete(domain);
                           setIsDeleteDialogOpen(true);
@@ -329,17 +356,17 @@ export default function DomainPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <p className="text-sm text-slate-500">
-            {t("Showing")} {filteredDomains.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
-            {Math.min(startIndex + itemsPerPage, filteredDomains.length)} {t("of")}{" "}
-            {filteredDomains.length}
-          </p>
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
+            {filteredDomains.length > 0
+              ? `${startIndex + 1} ${t("to")} ${Math.min(startIndex + itemsPerPage, filteredDomains.length)} ${t("of")} ${filteredDomains.length}`
+              : t("No domains")}
+          </span>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
             >
@@ -348,19 +375,16 @@ export default function DomainPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-slate-600 px-2">
-              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
-            </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
             >
@@ -369,7 +393,7 @@ export default function DomainPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage >= totalPages}
             >
@@ -420,7 +444,7 @@ export default function DomainPage() {
               />
             </div>
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -440,7 +464,7 @@ export default function DomainPage() {
               {t("Are you sure you want to delete")} &quot;{domainToDelete?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+          <AlertDialogFooter className="px-6 py-4 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="h-9" onClick={() => setDomainToDelete(null)}>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 h-9">
               {t("Delete")}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -470,8 +469,8 @@ export default function DocumentLibraryPage() {
       items: paginatedItems,
       pagination: items.length > 0 && (
         <div className="flex items-center justify-between mt-4">
-          <span className="text-sm text-slate-500">
-            {startIndex + 1} to {endIndex} of {items.length}
+          <span className="text-xs text-slate-500">
+            {startIndex + 1} {t("to")} {endIndex} {t("of")} {items.length}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -479,7 +478,7 @@ export default function DocumentLibraryPage() {
               size="icon"
               onClick={() => setPage(1)}
               disabled={currentPage === 1}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
@@ -488,7 +487,7 @@ export default function DocumentLibraryPage() {
               size="icon"
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -497,7 +496,7 @@ export default function DocumentLibraryPage() {
               size="icon"
               onClick={() => setPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -506,7 +505,7 @@ export default function DocumentLibraryPage() {
               size="icon"
               onClick={() => setPage(totalPages)}
               disabled={currentPage === totalPages}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
@@ -525,9 +524,9 @@ export default function DocumentLibraryPage() {
 
     if (categoryDocs.length === 0) {
       return (
-        <div className="text-center py-8 text-gray-500">
-          <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p>{t("No documents uploaded yet")}</p>
+        <div className="text-center py-8 text-slate-500">
+          <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+          <p className="text-sm">{t("No documents uploaded yet")}</p>
         </div>
       );
     }
@@ -539,21 +538,21 @@ export default function DocumentLibraryPage() {
           {items.map((doc) => (
             <div
               key={doc.id}
-              className="flex items-center justify-between p-3 bg-white border rounded-lg hover:shadow-sm transition-shadow"
+              className="flex items-center justify-between p-3 border border-slate-200 rounded-lg"
             >
               <div className="flex items-center gap-3">
                 {getFileIcon(doc.fileType)}
-                <span className="text-gray-700">{doc.fileName}</span>
+                <span className="text-sm text-slate-700">{doc.fileName}</span>
                 {getIngestStatusIcon(doc)}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
                 {/* Re-ingest button for failed or not ingested documents */}
                 {!ingestingDocs.has(doc.id) && (
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => triggerIngest([doc.id])}
-                    className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                    className="h-8 w-8 text-slate-400 hover:text-slate-600"
                     title={t("Ingest Document")}
                   >
                     <RefreshCw className="h-4 w-4" />
@@ -561,17 +560,17 @@ export default function DocumentLibraryPage() {
                 )}
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={() => handleDelete(doc.id)}
-                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={() => handleDownload(doc)}
-                  className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
                 >
                   <Download className="h-4 w-4" />
                 </Button>
@@ -603,7 +602,10 @@ export default function DocumentLibraryPage() {
         <span className="text-primary-700 font-medium">{t("Document Library")}</span>
       </nav>
 
-      <h1 className="text-2xl font-bold text-slate-800">{t("Document Library")}</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Document Library")}</h1>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
@@ -616,58 +618,64 @@ export default function DocumentLibraryPage() {
         {/* Smart Search Tab */}
         <TabsContent value="smart-search" className="space-y-6">
           {/* Smart Document Query */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              {t("Smart Document Query")}
-            </h3>
-            <div className="relative">
-              <Textarea
-                placeholder={t("Enter your question here")}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="resize-none min-h-[120px] bg-white border-slate-200 pr-14 pb-12"
-                rows={4}
-              />
-              <Button
-                onClick={handleSmartSearch}
-                disabled={searching || !query.trim()}
-                className="absolute bottom-3 right-3 bg-primary-600 hover:bg-primary-700 h-9 w-9 p-0 rounded-lg"
-              >
-                {searching ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">
+                {t("Smart Document Query")}
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="relative">
+                <Textarea
+                  placeholder={t("Enter your question here")}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="resize-none min-h-[120px] bg-white border-slate-200 pr-14 pb-12"
+                  rows={4}
+                />
+                <Button
+                  onClick={handleSmartSearch}
+                  disabled={searching || !query.trim()}
+                  className="absolute bottom-3 right-3 bg-primary-600 hover:bg-primary-700 h-9 w-9 p-0 rounded-lg"
+                >
+                  {searching ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* Recent Searches */}
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">
                 {t("Recent Searches")}
               </h3>
+            </div>
+            <div className="p-6">
               {recentSearches.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>{t("No recent searches")}</p>
+                <div className="text-center py-8 text-slate-500">
+                  <Clock className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                  <p className="text-sm">{t("No recent searches")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {recentSearches.map((search) => (
                     <div
                       key={search.id}
-                      className="border rounded-lg p-4 hover:shadow-sm transition-shadow"
+                      className="border border-slate-200 rounded-lg p-4"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
-                          <Clock className="h-4 w-4 text-gray-400" />
+                        <div className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center flex-shrink-0">
+                          <Clock className="h-4 w-4 text-slate-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-4">
-                            <p className="font-medium text-gray-900 truncate">
+                            <p className="font-medium text-slate-900 truncate">
                               {search.query}
                             </p>
                             <span className="text-xs text-primary-600 whitespace-nowrap">
@@ -679,7 +687,7 @@ export default function DocumentLibraryPage() {
                               className={`text-sm mt-2 ${
                                 search.status === "Unsatisfactory"
                                   ? "text-amber-600"
-                                  : "text-gray-600"
+                                  : "text-slate-600"
                               }`}
                             >
                               {search.result}
@@ -691,55 +699,61 @@ export default function DocumentLibraryPage() {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Company Policies Tab */}
         <TabsContent value="policies">
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">
                 {t("Company's Policies and Procedures")}
               </h3>
+            </div>
+            <div className="p-6">
               {renderUploadArea("Policy")}
               {renderDocumentList(documents.policies, policyPage, setPolicyPage)}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Standard Regulations Tab */}
         <TabsContent value="regulations">
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">
                 {t("Standard Regulations")}
               </h3>
+            </div>
+            <div className="p-6">
               {renderUploadArea("Regulation")}
               {renderDocumentList(
                 documents.regulations,
                 regulationPage,
                 setRegulationPage
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Previous Audit Reports Tab */}
         <TabsContent value="reports">
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">
                 {t("Previous Audit Reports")}
               </h3>
+            </div>
+            <div className="p-6">
               {renderUploadArea("PreviousReport")}
               {renderDocumentList(
                 documents.auditReports,
                 reportPage,
                 setReportPage
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

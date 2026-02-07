@@ -404,10 +404,22 @@ export default function GRCAdminControlListPage() {
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("GRC")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-slate-500">{t("Compliance")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Controls")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-sm text-slate-500">{t("Loading...")}</p>
+          </div>
         </div>
       </div>
     );
@@ -433,31 +445,14 @@ export default function GRCAdminControlListPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder={t("Search by control code or name...")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="w-[300px] bg-white"
-          />
-          <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
-            <SelectTrigger className="w-[200px] bg-white">
-              <SelectValue placeholder={t("Integrated Framework")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-              <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-              {frameworks.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+          {total > 0 && (
+            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              {total}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <PermissionGate resource="compliance.controls" action="delete">
@@ -477,7 +472,6 @@ export default function GRCAdminControlListPage() {
               {t("Import")}
             </Button>
           </PermissionGate>
-          {/* GRC Admin always has create permission */}
           {isGRCAdmin ? (
             <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -495,13 +489,34 @@ export default function GRCAdminControlListPage() {
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search & Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <Input
+            placeholder={t("Search by control code or name...")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="w-[300px] h-9 bg-white border-slate-200"
+          />
+          <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
+            <SelectTrigger className="w-[200px] h-9 bg-white border-slate-200">
+              <SelectValue placeholder={t("Integrated Framework")} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+              <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+              {frameworks.map((f) => (
+                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               {visibleColumns.controlName && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 pl-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5 cursor-pointer select-none"
                   onClick={() => handleSort("name")}
                 >
                   <div className="flex items-center gap-2">
@@ -512,7 +527,7 @@ export default function GRCAdminControlListPage() {
               )}
               {visibleColumns.controlCode && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 cursor-pointer select-none"
                   onClick={() => handleSort("controlCode")}
                 >
                   <div className="flex items-center gap-2">
@@ -523,7 +538,7 @@ export default function GRCAdminControlListPage() {
               )}
               {visibleColumns.functionalGrouping && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 cursor-pointer select-none"
                   onClick={() => handleSort("functionalGrouping")}
                 >
                   <div className="flex items-center gap-2">
@@ -534,7 +549,7 @@ export default function GRCAdminControlListPage() {
               )}
               {visibleColumns.status && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 cursor-pointer select-none"
                   onClick={() => handleSort("status")}
                 >
                   <div className="flex items-center gap-2">
@@ -544,11 +559,11 @@ export default function GRCAdminControlListPage() {
                 </TableHead>
               )}
               {visibleColumns.assignee && (
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
               )}
               {visibleColumns.domain && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 cursor-pointer select-none"
                   onClick={() => handleSort("domain")}
                 >
                   <div className="flex items-center gap-2">
@@ -557,7 +572,7 @@ export default function GRCAdminControlListPage() {
                   </div>
                 </TableHead>
               )}
-              <TableHead className="w-[50px] py-4">
+              <TableHead className="w-[50px] py-3 pr-5">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -621,18 +636,13 @@ export default function GRCAdminControlListPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  <div className="flex items-center justify-center">
-                    <div className="relative h-6 w-6">
-                      <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-                      <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-                    </div>
-                  </div>
+                <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
+                  {t("Loading...")}
                 </TableCell>
               </TableRow>
             ) : sortedControls.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-slate-500">
+                <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
                   {t("No controls found.")}
                 </TableCell>
               </TableRow>
@@ -640,28 +650,28 @@ export default function GRCAdminControlListPage() {
               sortedControls.map((control) => (
                 <TableRow
                   key={control.id}
-                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer"
                   onDoubleClick={() => router.push(`/roles/grc-administrator/compliance/control/${control.id}`)}
                 >
                   {visibleColumns.controlName && (
-                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{control.name}</TableCell>
+                    <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{control.name}</TableCell>
                   )}
                   {visibleColumns.controlCode && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.controlCode}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{control.controlCode}</TableCell>
                   )}
                   {visibleColumns.functionalGrouping && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.functionalGrouping || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{control.functionalGrouping || "-"}</TableCell>
                   )}
                   {visibleColumns.status && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.status}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{control.status}</TableCell>
                   )}
                   {visibleColumns.assignee && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{control.assignee?.fullName || "-"}</TableCell>
                   )}
                   {visibleColumns.domain && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
                   )}
-                  <TableCell className="py-4"></TableCell>
+                  <TableCell className="py-3 pr-5"></TableCell>
                 </TableRow>
               ))
             )}
@@ -669,8 +679,8 @@ export default function GRCAdminControlListPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <span className="text-sm text-slate-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
             {total > 0
               ? `${startIndex + 1} ${t("to")} ${endIndex} ${t("of")} ${total}`
               : t("No controls")}
@@ -681,7 +691,7 @@ export default function GRCAdminControlListPage() {
               size="icon"
               onClick={() => setCurrentPage(0)}
               disabled={currentPage === 0}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
@@ -690,7 +700,7 @@ export default function GRCAdminControlListPage() {
               size="icon"
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 0}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -699,7 +709,7 @@ export default function GRCAdminControlListPage() {
               size="icon"
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage >= totalPages - 1}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -708,7 +718,7 @@ export default function GRCAdminControlListPage() {
               size="icon"
               onClick={() => setCurrentPage(totalPages - 1)}
               disabled={currentPage >= totalPages - 1}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
@@ -900,7 +910,7 @@ export default function GRCAdminControlListPage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else setIsCreateDialogOpen(false);
@@ -972,7 +982,7 @@ export default function GRCAdminControlListPage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}
@@ -1005,7 +1015,7 @@ export default function GRCAdminControlListPage() {
               {t("Are you sure you want to delete all controls? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAll}

@@ -169,7 +169,7 @@ export function Sidebar() {
           href={session?.user?.roles?.includes("GRCAdministrator") ? "/grc" : "/dashboard"}
           className="flex items-center gap-3 group"
         >
-          <img src="/logo 3.png" alt="GRC Platform" className="h-9 w-9 object-contain" />
+          <img src="/logo 3.png" alt="GRC Platform" className="h-6 w-6 object-contain" />
           <span className="text-base font-semibold text-slate-800 tracking-tight">{t("GRC Platform")}</span>
         </Link>
       </div>

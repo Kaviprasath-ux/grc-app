@@ -382,45 +382,49 @@ export default function InternalAuditDashboard() {
       case 'risks':
         return (
           <div className="max-h-[60vh] overflow-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Risk ID")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Department")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Category")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {drillDownData.data.map((risk: Record<string, unknown>) => (
-                  <TableRow key={risk.id as string} className="hover:bg-slate-50">
-                    <TableCell className="font-medium">{risk.riskId as string}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={risk.riskDescription as string}>
-                      {risk.riskDescription as string}
-                    </TableCell>
-                    <TableCell>{risk.department as string}</TableCell>
-                    <TableCell>{risk.category as string}</TableCell>
-                    <TableCell><SeverityBadge severity={risk.riskLevel as string} /></TableCell>
-                    <TableCell><StatusBadge status={risk.status as string} /></TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => navigateToDetail('risk', risk.id as string)}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Risk ID")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Severity")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="mt-4 text-sm text-slate-500 text-center">
-              {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
+                </TableHeader>
+                <TableBody>
+                  {drillDownData.data.map((risk: Record<string, unknown>) => (
+                    <TableRow key={risk.id as string} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{risk.riskId as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate" title={risk.riskDescription as string}>
+                        {risk.riskDescription as string}
+                      </TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{risk.department as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{risk.category as string}</TableCell>
+                      <TableCell className="py-3"><SeverityBadge severity={risk.riskLevel as string} /></TableCell>
+                      <TableCell className="py-3"><StatusBadge status={risk.status as string} /></TableCell>
+                      <TableCell className="py-3 pr-5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                          onClick={() => navigateToDetail('risk', risk.id as string)}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex items-center justify-center px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
+                </span>
+              </div>
             </div>
           </div>
         );
@@ -428,45 +432,49 @@ export default function InternalAuditDashboard() {
       case 'audits':
         return (
           <div className="max-h-[60vh] overflow-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Audit ID")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Department")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Type")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Auditor")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {drillDownData.data.map((audit: Record<string, unknown>) => (
-                  <TableRow key={audit.id as string} className="hover:bg-slate-50">
-                    <TableCell className="font-medium">{audit.auditId as string}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={audit.engagementTitle as string}>
-                      {audit.engagementTitle as string}
-                    </TableCell>
-                    <TableCell>{audit.department as string}</TableCell>
-                    <TableCell>{audit.auditType as string}</TableCell>
-                    <TableCell>{audit.auditor as string}</TableCell>
-                    <TableCell><StatusBadge status={audit.status as string} /></TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => navigateToDetail('audit', audit.id as string)}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Audit ID")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="mt-4 text-sm text-slate-500 text-center">
-              {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
+                </TableHeader>
+                <TableBody>
+                  {drillDownData.data.map((audit: Record<string, unknown>) => (
+                    <TableRow key={audit.id as string} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{audit.auditId as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate" title={audit.engagementTitle as string}>
+                        {audit.engagementTitle as string}
+                      </TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{audit.department as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{audit.auditType as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{audit.auditor as string}</TableCell>
+                      <TableCell className="py-3"><StatusBadge status={audit.status as string} /></TableCell>
+                      <TableCell className="py-3 pr-5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                          onClick={() => navigateToDetail('audit', audit.id as string)}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex items-center justify-center px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
+                </span>
+              </div>
             </div>
           </div>
         );
@@ -474,53 +482,57 @@ export default function InternalAuditDashboard() {
       case 'capa':
         return (
           <div className="max-h-[60vh] overflow-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("CAPA ID")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Finding")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Responsible")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Target Date")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {drillDownData.data.map((capa: Record<string, unknown>) => (
-                  <TableRow key={capa.id as string} className="hover:bg-slate-50">
-                    <TableCell className="font-medium">{capa.capaId as string}</TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={capa.title as string}>
-                      {capa.title as string}
-                    </TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={capa.finding as string}>
-                      {capa.finding as string}
-                    </TableCell>
-                    <TableCell><SeverityBadge severity={capa.severity as string} /></TableCell>
-                    <TableCell>{capa.responsiblePerson as string}</TableCell>
-                    <TableCell>
-                      {capa.targetDate
-                        ? new Date(capa.targetDate as string).toLocaleDateString()
-                        : 'N/A'}
-                    </TableCell>
-                    <TableCell><StatusBadge status={capa.status as string} /></TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => navigateToDetail('capa', capa.id as string)}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("CAPA ID")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Finding")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Severity")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Responsible")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Target Date")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="mt-4 text-sm text-slate-500 text-center">
-              {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
+                </TableHeader>
+                <TableBody>
+                  {drillDownData.data.map((capa: Record<string, unknown>) => (
+                    <TableRow key={capa.id as string} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{capa.capaId as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[150px] truncate" title={capa.title as string}>
+                        {capa.title as string}
+                      </TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[150px] truncate" title={capa.finding as string}>
+                        {capa.finding as string}
+                      </TableCell>
+                      <TableCell className="py-3"><SeverityBadge severity={capa.severity as string} /></TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{capa.responsiblePerson as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">
+                        {capa.targetDate
+                          ? new Date(capa.targetDate as string).toLocaleDateString()
+                          : 'N/A'}
+                      </TableCell>
+                      <TableCell className="py-3"><StatusBadge status={capa.status as string} /></TableCell>
+                      <TableCell className="py-3 pr-5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                          onClick={() => navigateToDetail('capa', capa.id as string)}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex items-center justify-center px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
+                </span>
+              </div>
             </div>
           </div>
         );
@@ -593,13 +605,13 @@ export default function InternalAuditDashboard() {
 
             {/* Summary Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <div className="bg-slate-50/50 rounded-xl border border-slate-200 p-5">
                 <div className="text-2xl font-bold text-slate-800">{auditDetail.findingsCount || 0}</div>
-                <div className="text-sm text-slate-500">{t("Findings")}</div>
+                <div className="text-sm font-medium text-slate-500 mt-1">{t("Findings")}</div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <div className="bg-slate-50/50 rounded-xl border border-slate-200 p-5">
                 <div className="text-2xl font-bold text-slate-800">{auditDetail.evidenceRequestsCount || 0}</div>
-                <div className="text-sm text-slate-500">{t("Evidence Requests")}</div>
+                <div className="text-sm font-medium text-slate-500 mt-1">{t("Evidence Requests")}</div>
               </div>
             </div>
 
@@ -725,28 +737,28 @@ export default function InternalAuditDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div onClick={() => handleRiskCardClick('all', t('All Risks'))} className={canDrillDown ? "cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors" : ""}>
+        <div onClick={() => handleRiskCardClick('all', t('All Risks'))} className={canDrillDown ? "cursor-pointer" : ""}>
           <StatsCard
             label={t("Total Risks")}
             value={data?.riskStats.total || 0}
             icon={Shield}
           />
         </div>
-        <div onClick={() => handleRiskCardClick('extreme', t('Extreme Severity Risks'))} className={canDrillDown ? "cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors" : ""}>
+        <div onClick={() => handleRiskCardClick('extreme', t('Extreme Severity Risks'))} className={canDrillDown ? "cursor-pointer" : ""}>
           <StatsCard
             label={t("Extreme Severity")}
             value={data?.riskStats.extreme || 0}
             icon={AlertTriangle}
           />
         </div>
-        <div onClick={() => handleAuditCardClick('ongoing', t('Ongoing Audits'))} className={canDrillDown ? "cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors" : ""}>
+        <div onClick={() => handleAuditCardClick('ongoing', t('Ongoing Audits'))} className={canDrillDown ? "cursor-pointer" : ""}>
           <StatsCard
             label={t("Ongoing Audits")}
             value={data?.auditStats.ongoing || 0}
             icon={Activity}
           />
         </div>
-        <div onClick={() => handleAuditCardClick('completed', t('Completed Audits'))} className={canDrillDown ? "cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors" : ""}>
+        <div onClick={() => handleAuditCardClick('completed', t('Completed Audits'))} className={canDrillDown ? "cursor-pointer" : ""}>
           <StatsCard
             label={t("Completed Audits")}
             value={data?.auditStats.completed || 0}
@@ -758,7 +770,7 @@ export default function InternalAuditDashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Risk by Rating Chart */}
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Risk by Rating")}</h3>
             {canDrillDown && <p className="text-xs text-slate-400 mt-1">{t("Click on a bar to view risks of that severity")}</p>}
@@ -785,7 +797,7 @@ export default function InternalAuditDashboard() {
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all duration-300 group-hover:opacity-80"
+                      className="h-full rounded-full transition-all duration-300"
                       style={{
                         width: `${percentage}%`,
                         backgroundColor: item.color,
@@ -804,7 +816,7 @@ export default function InternalAuditDashboard() {
         </div>
 
         {/* CAPA Status Overview */}
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <div>
               <h3 className="text-base font-semibold text-slate-800">{t("CAPA Status Overview")}</h3>
@@ -840,7 +852,7 @@ export default function InternalAuditDashboard() {
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 {paginatedCapaData.map((dept, index) => (
-                  <div key={index} className="bg-slate-50/50 border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors">
+                  <div key={index} className="bg-slate-50/50 border border-slate-200 rounded-lg p-4">
                     <h4 className="text-sm font-semibold text-slate-700 text-center mb-3">{dept.name}</h4>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -848,7 +860,7 @@ export default function InternalAuditDashboard() {
                         <div className="flex gap-1">
                           {dept.open.high > 0 && (
                             <Badge
-                              className={`bg-red-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-red-600" : ""}`}
+                              className={`bg-red-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               H: {dept.open.high}
@@ -856,7 +868,7 @@ export default function InternalAuditDashboard() {
                           )}
                           {dept.open.medium > 0 && (
                             <Badge
-                              className={`bg-blue-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-blue-600" : ""}`}
+                              className={`bg-blue-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               M: {dept.open.medium}
@@ -864,7 +876,7 @@ export default function InternalAuditDashboard() {
                           )}
                           {dept.open.low > 0 && (
                             <Badge
-                              className={`bg-green-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-green-600" : ""}`}
+                              className={`bg-green-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               L: {dept.open.low}
@@ -880,7 +892,7 @@ export default function InternalAuditDashboard() {
                         <div className="flex gap-1">
                           {dept.closed.high > 0 && (
                             <Badge
-                              className={`bg-red-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-red-600" : ""}`}
+                              className={`bg-red-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               H: {dept.closed.high}
@@ -888,7 +900,7 @@ export default function InternalAuditDashboard() {
                           )}
                           {dept.closed.medium > 0 && (
                             <Badge
-                              className={`bg-blue-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-blue-600" : ""}`}
+                              className={`bg-blue-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               M: {dept.closed.medium}
@@ -896,7 +908,7 @@ export default function InternalAuditDashboard() {
                           )}
                           {dept.closed.low > 0 && (
                             <Badge
-                              className={`bg-green-500 text-white text-xs ${canDrillDown ? "cursor-pointer hover:bg-green-600" : ""}`}
+                              className={`bg-green-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               L: {dept.closed.low}
@@ -917,7 +929,7 @@ export default function InternalAuditDashboard() {
       </div>
 
       {/* Annual Audit Plan Gantt Chart */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">
             {t("Annual Audit Plan")} - {data?.currentYear || new Date().getFullYear()}
@@ -927,12 +939,12 @@ export default function InternalAuditDashboard() {
         <div className="p-6">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead className="min-w-[200px] text-xs font-semibold text-slate-600">{t("Audit Name")}</TableHead>
-                  <TableHead className="min-w-[150px] text-xs font-semibold text-slate-600">{t("Auditor")}</TableHead>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="min-w-[200px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Audit Name")}</TableHead>
+                  <TableHead className="min-w-[150px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
                   {MONTHS.map((month) => (
-                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-semibold text-slate-600">{month}</TableHead>
+                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{month}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -941,20 +953,20 @@ export default function InternalAuditDashboard() {
                   data.annualAuditPlan.map((audit) => (
                     <TableRow
                       key={audit.id}
-                      className={canDrillDown ? "cursor-pointer hover:bg-slate-50" : ""}
+                      className={`border-b border-slate-100 last:border-0 ${canDrillDown ? "cursor-pointer" : ""}`}
                       onClick={() => handleAuditPlanClick(audit.id, audit.engagementTitle || audit.auditId)}
                     >
-                      <TableCell className="font-medium">
-                        <span className={canDrillDown ? "text-blue-600 hover:underline" : "text-slate-800"}>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">
+                        <span className={canDrillDown ? "text-primary-600" : ""}>
                           {audit.engagementTitle || audit.auditId}
                         </span>
                       </TableCell>
-                      <TableCell className="text-slate-700">{audit.auditorName || '-'}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{audit.auditorName || '-'}</TableCell>
                       {MONTHS.map((month, monthIndex) => {
                         const isInRange = monthIndex >= audit.startMonth && monthIndex <= audit.endMonth;
                         const isStart = monthIndex === audit.startMonth;
                         return (
-                          <TableCell key={month} className="p-1">
+                          <TableCell key={month} className="py-3 px-1">
                             {isStart ? (
                               <Badge className="bg-orange-500 text-white text-xs whitespace-nowrap">
                                 {audit.durationDays} {t("Days")}
@@ -969,7 +981,7 @@ export default function InternalAuditDashboard() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={14} className="text-center py-8 text-slate-500">
+                    <TableCell colSpan={14} className="h-24 text-center text-slate-500">
                       {t("No audit plans for this year")}
                     </TableCell>
                   </TableRow>
@@ -981,7 +993,7 @@ export default function InternalAuditDashboard() {
       </div>
 
       {/* Auditor Schedule Chart */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">
             {t("Auditor Schedule")} - {data?.currentYear || new Date().getFullYear()}
@@ -991,19 +1003,19 @@ export default function InternalAuditDashboard() {
         <div className="p-6">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead className="min-w-[200px] text-xs font-semibold text-slate-600">{t("Auditor Name")}</TableHead>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="min-w-[200px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Auditor Name")}</TableHead>
                   {MONTHS.map((month) => (
-                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-semibold text-slate-600">{month}</TableHead>
+                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{month}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data?.auditorSchedule && data.auditorSchedule.length > 0 ? (
                   data.auditorSchedule.map((auditor) => (
-                    <TableRow key={auditor.id}>
-                      <TableCell className="font-medium">{auditor.name}</TableCell>
+                    <TableRow key={auditor.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{auditor.name}</TableCell>
                       {MONTHS.map((month, monthIndex) => {
                         // Find if auditor has any assignment in this month
                         const assignment = auditor.assignments.find(
@@ -1011,10 +1023,10 @@ export default function InternalAuditDashboard() {
                         );
                         const isStart = assignment && monthIndex === assignment.startMonth;
                         return (
-                          <TableCell key={month} className="p-1">
+                          <TableCell key={month} className="py-3 px-1">
                             {isStart ? (
                               <Badge
-                                className={`bg-blue-500 text-white text-xs whitespace-nowrap ${canDrillDown ? "cursor-pointer hover:bg-blue-600" : ""}`}
+                                className={`bg-blue-500 text-white text-xs whitespace-nowrap ${canDrillDown ? "cursor-pointer" : ""}`}
                                 onClick={() => handleAuditPlanClick(assignment.auditId, assignment.engagementTitle)}
                                 title={assignment.engagementTitle}
                               >
@@ -1022,7 +1034,7 @@ export default function InternalAuditDashboard() {
                               </Badge>
                             ) : assignment ? (
                               <div
-                                className={`h-6 bg-blue-200 rounded-sm ${canDrillDown ? "cursor-pointer hover:bg-blue-300" : ""}`}
+                                className={`h-6 bg-blue-200 rounded-sm ${canDrillDown ? "cursor-pointer" : ""}`}
                                 onClick={() => handleAuditPlanClick(assignment.auditId, assignment.engagementTitle)}
                                 title={assignment.engagementTitle}
                               ></div>
@@ -1034,7 +1046,7 @@ export default function InternalAuditDashboard() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={13} className="text-center py-8 text-slate-500">
+                    <TableCell colSpan={13} className="h-24 text-center text-slate-500">
                       {t("No auditor schedules for this year")}
                     </TableCell>
                   </TableRow>

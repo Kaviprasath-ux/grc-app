@@ -45,6 +45,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Home,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
@@ -137,6 +138,7 @@ export default function CAPATrackingPage() {
 
   // Filters
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -182,7 +184,7 @@ export default function CAPATrackingPage() {
 
   useEffect(() => {
     fetchFindings();
-  }, [selectedDepartment, pagination.page]);
+  }, [selectedDepartment, searchQuery, pagination.page]);
 
   const fetchDepartments = async () => {
     try {
@@ -214,6 +216,9 @@ export default function CAPATrackingPage() {
       const params = new URLSearchParams();
       if (selectedDepartment) {
         params.append("departmentId", selectedDepartment);
+      }
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery.trim());
       }
       params.append("page", pagination.page.toString());
       params.append("limit", pagination.limit.toString());
@@ -492,57 +497,70 @@ export default function CAPATrackingPage() {
       </nav>
 
       {/* Header */}
-      <div>
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">
           {t("Corrective & Preventive Actions (CAPA)")}
         </h1>
       </div>
 
-      {/* Filters */}
-      <div className="flex justify-end">
-        <Select
-          value={selectedDepartment}
-          onValueChange={(value) => {
-            setSelectedDepartment(value === "all" ? "" : value);
-            setPagination((prev) => ({ ...prev, page: 1 }));
-          }}
-        >
-          <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder={t("All Departments")} />
-          </SelectTrigger>
-          <SelectContent className="bg-white">
-            <SelectItem value="all">{t("All Departments")}</SelectItem>
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>
-                {dept.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search & Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder={t("Search by Finding ID, Finding, Responsible...")}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
+              className="pl-10 w-[300px] h-9 bg-white border-slate-200"
+            />
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            <Select
+              value={selectedDepartment}
+              onValueChange={(value) => {
+                setSelectedDepartment(value === "all" ? "" : value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
+            >
+              <SelectTrigger className="w-[200px] h-9 text-sm bg-white border-slate-200">
+                <SelectValue placeholder={t("All Departments")} />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="all">{t("All Departments")}</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Findings ID")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Finding")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Severity")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Audit Plan")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Responsible Person")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Target Date")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Findings ID")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Finding")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Severity")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Plan")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Responsible Person")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Target Date")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
               {showActions && (
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Actions")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Actions")}</TableHead>
               )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={showActions ? 9 : 8} className="text-center py-8">
+                <TableCell colSpan={showActions ? 9 : 8} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <div className="relative h-6 w-6">
                       <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
@@ -553,64 +571,67 @@ export default function CAPATrackingPage() {
               </TableRow>
             ) : findings.length > 0 ? (
               findings.map((finding) => (
-                <TableRow key={finding.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{finding.findingId}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700 max-w-[250px]">
+                <TableRow key={finding.id} className="border-b border-slate-100 last:border-0">
+                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{finding.findingId}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 max-w-[250px]">
                     <span className="line-clamp-2">{finding.finding}</span>
                   </TableCell>
-                  <TableCell className="py-4 text-sm">
+                  <TableCell className="py-3 text-sm">
                     <span className={getSeverityColor(finding.severity)}>
                       {finding.severity}
                     </span>
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700 max-w-[200px]">
+                  <TableCell className="py-3 text-sm text-slate-700 max-w-[200px]">
                     <span className="line-clamp-2">{finding.auditPlan}</span>
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{finding.departmentName}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{finding.responsiblePerson}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{formatDate(finding.targetDate)}</TableCell>
-                  <TableCell className="py-4 text-sm">
+                  <TableCell className="py-3 text-sm text-slate-700">{finding.departmentName}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{finding.responsiblePerson}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{formatDate(finding.targetDate)}</TableCell>
+                  <TableCell className="py-3 text-sm">
                     <span className={getStatusColor(finding.status)}>
                       {finding.status}
                     </span>
                   </TableCell>
                   {showActions && (
-                    <TableCell className="py-4">
-                      <div className="flex items-center gap-1">
+                    <TableCell className="py-3 pr-5">
+                      <div className="flex items-center gap-0.5">
                         {finding.status.toLowerCase() === "closed" ? (
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="View"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            title={t("View")}
                             onClick={() => {
                               setFindingToView(finding);
                               setViewDialogOpen(true);
                             }}
                           >
-                            <Eye className="h-4 w-4 text-blue-500" />
+                            <Eye className="h-4 w-4" />
                           </Button>
                         ) : (
                           <>
                             <Button
                               variant="ghost"
                               size="icon"
-                              title="Edit"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                              title={t("Edit")}
                               onClick={() => handleOpenEdit(finding)}
                             >
-                              <Pencil className="h-4 w-4 text-blue-500" />
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             {/* Delete only for Audit Head, not Auditee */}
                             {isAuditHead && (
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                title="Delete"
+                                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                                title={t("Delete")}
                                 onClick={() => {
                                   setFindingToDelete(finding);
                                   setDeleteDialogOpen(true);
                                 }}
                               >
-                                <Trash2 className="h-4 w-4 text-red-500" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
                           </>
@@ -622,7 +643,7 @@ export default function CAPATrackingPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={showActions ? 9 : 8} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={showActions ? 9 : 8} className="h-24 text-center text-sm text-slate-500">
                   {t("No findings found")}
                 </TableCell>
               </TableRow>
@@ -632,8 +653,8 @@ export default function CAPATrackingPage() {
 
         {/* Pagination */}
         {pagination.total > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-sm text-slate-500">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">
               {startIndex} {t("to")} {endIndex} {t("of")} {pagination.total}
             </span>
             <div className="flex items-center gap-1">
@@ -642,7 +663,7 @@ export default function CAPATrackingPage() {
                 size="icon"
                 disabled={pagination.page === 1}
                 onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
                 <ChevronsLeft className="h-4 w-4" />
               </Button>
@@ -651,7 +672,7 @@ export default function CAPATrackingPage() {
                 size="icon"
                 disabled={pagination.page === 1}
                 onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -660,7 +681,7 @@ export default function CAPATrackingPage() {
                 size="icon"
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -669,7 +690,7 @@ export default function CAPATrackingPage() {
                 size="icon"
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => setPagination((prev) => ({ ...prev, page: pagination.totalPages }))}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
                 <ChevronsRight className="h-4 w-4" />
               </Button>
@@ -692,7 +713,7 @@ export default function CAPATrackingPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -870,7 +891,7 @@ export default function CAPATrackingPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               className="bg-primary-600 hover:bg-primary-700"
               onClick={() => {
@@ -1226,7 +1247,7 @@ export default function CAPATrackingPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {

@@ -358,7 +358,7 @@ export default function RiskIdentificationPage() {
       </div>
 
       {/* Main Form Card */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="p-6 space-y-6">
           {/* Department Selection */}
           <div>
@@ -407,7 +407,7 @@ export default function RiskIdentificationPage() {
               onChange={handleFileInputChange}
             />
             <div
-              className="border-2 border-dashed rounded-lg p-8 text-center transition-colors border-slate-200 hover:border-primary-300 hover:bg-primary-50/50 cursor-pointer"
+              className="border-2 border-dashed rounded-lg p-8 text-center border-slate-200 cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
@@ -475,7 +475,7 @@ export default function RiskIdentificationPage() {
       {recentSearches.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
-            <h3 className="text-sm font-medium text-slate-800">{t("Recent Searches")}</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Recent Searches")}</h3>
           </div>
           <div className="divide-y divide-slate-100">
             {recentSearches.map((search) => (

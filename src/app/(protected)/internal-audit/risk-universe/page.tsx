@@ -97,8 +97,10 @@ export default function RiskUniversePage() {
         </nav>
 
         <h1 className="text-2xl font-bold text-slate-800">{t("Risk Universe")}</h1>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">{t("Loading risk universe...")}</p>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-sm text-slate-500">{t("Loading risk universe...")}</p>
+          </div>
         </div>
       </div>
     );
@@ -128,8 +130,9 @@ export default function RiskUniversePage() {
       <h1 className="text-2xl font-bold text-slate-800">{t("Risk Universe")}</h1>
 
       {/* Tree Structure Container */}
-      <div className="overflow-x-auto">
-        <div className="min-w-max p-8">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <div className="min-w-max p-8">
           {/* Root Node - Risk Universe (matching org-chart node style) */}
           <div className="flex justify-center mb-6">
             <div
@@ -245,10 +248,10 @@ export default function RiskUniversePage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-64 border border-dashed border-slate-200 rounded-lg mt-8">
+            <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <p className="text-slate-500">{t("No risks in the risk register yet")}</p>
-                <p className="text-sm text-slate-400 mt-2">
+                <p className="text-sm text-slate-500">{t("No risks in the risk register yet")}</p>
+                <p className="text-xs text-slate-400 mt-1.5">
                   {t("Add risks to the Risk Register to see them here")}
                 </p>
                 <Button
@@ -261,6 +264,7 @@ export default function RiskUniversePage() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

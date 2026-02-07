@@ -1233,95 +1233,99 @@ export default function AuditPlanningPage() {
         <span className="text-primary-700 font-medium">{t("Audit Planning")}</span>
       </nav>
 
-      {/* Header */}
-      <div>
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
-      </div>
-
-      {/* Search, Filters, and Actions Row */}
-      <div className="flex items-center gap-3">
-        <div className="relative w-[280px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search By Audit ID, Name")}
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="pl-10 h-9 bg-white border-slate-200"
-          />
-        </div>
-        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-[160px] h-9 bg-white">
-            <SelectValue placeholder={t("Department")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("All Departments")}</SelectItem>
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>
-                {dept.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px] h-9 bg-white">
-            <SelectValue placeholder={t("Status")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("All Status")}</SelectItem>
-            <SelectItem value="Planned">{t("Planned")}</SelectItem>
-            <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
-            <SelectItem value="Completed">{t("Completed")}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-[110px] h-9 bg-white">
-            <SelectValue placeholder={t("Year")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("All Years")}</SelectItem>
-            {availableYears.map((year) => (
-              <SelectItem key={year} value={year.toString()}>
-                {year}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 mr-2" />
-          {t("Export")}
-        </Button>
-        <Button variant="outline" size="sm" className="border-primary-600 text-primary-600 hover:bg-primary-50" onClick={openReportDialog}>
-          <FileText className="h-4 w-4 mr-2" />
-          {t("Generate Annual Plan Report")}
-        </Button>
-        {isAuditHead && (
-          <Button size="sm" className="bg-primary-600 hover:bg-primary-700" onClick={openAddDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("Add Engagement")}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            {t("Export")}
           </Button>
-        )}
+          <Button variant="outline" size="sm" className="border-primary-600 text-primary-600 hover:bg-primary-50" onClick={openReportDialog}>
+            <FileText className="h-4 w-4 mr-2" />
+            {t("Generate Annual Plan Report")}
+          </Button>
+          {isAuditHead && (
+            <Button onClick={openAddDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t("Add Engagement")}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search & Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative w-[320px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search By Audit ID, Name")}
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                <SelectValue placeholder={t("Department")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Departments")}</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                <SelectValue placeholder={t("Status")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Status")}</SelectItem>
+                <SelectItem value="Planned">{t("Planned")}</SelectItem>
+                <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                <SelectItem value="Completed">{t("Completed")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={yearFilter} onValueChange={setYearFilter}>
+              <SelectTrigger className="w-[110px] h-9 text-sm bg-white border-slate-300">
+                <SelectValue placeholder={t("Year")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Years")}</SelectItem>
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Audit ID")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Engagement Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Audit Type")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assigned Auditors")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">{t("Action")}</TableHead>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Audit ID")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Engagement Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Type")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assigned Auditors")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {engagements.length > 0 ? (
               engagements.map((engagement) => (
-                <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 pl-4 text-sm font-medium text-slate-800">{engagement.auditId}</TableCell>
+                <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0">
+                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{engagement.auditId}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{engagement.engagementTitle}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{engagement.department?.name || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{engagement.auditType || "-"}</TableCell>
@@ -1331,8 +1335,8 @@ export default function AuditPlanningPage() {
                       : "-"}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{engagement.status}</TableCell>
-                  <TableCell className="py-3 pr-4">
-                    <div className="flex items-center gap-1">
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center justify-end gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1357,7 +1361,7 @@ export default function AuditPlanningPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
                   {t("No audit engagements found")}
                 </TableCell>
               </TableRow>
@@ -1375,7 +1379,7 @@ export default function AuditPlanningPage() {
               {t("Are you sure you want to delete this engagement?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="border-t border-slate-100 bg-slate-50/80 rounded-b-lg px-6 py-4">
             <AlertDialogAction onClick={handleDelete}>{t("OK")}</AlertDialogAction>
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
           </AlertDialogFooter>
@@ -1460,7 +1464,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1495,7 +1499,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1534,7 +1538,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setEditDialogOpen(false); setEditingEngagementId(null); }}>
               {t("Cancel")}
             </Button>

@@ -155,7 +155,9 @@ export default function EscalationConfigPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Escalation Configuration")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Escalation Configuration")}</h1>
+      </div>
 
       {/* Content Card */}
       <div className="bg-white rounded-xl border border-slate-200">
@@ -227,7 +229,7 @@ export default function EscalationConfigPage() {
         </div>
 
         {/* Card Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end gap-3">
           <Button variant="outline" onClick={() => router.push("/internal-audit/settings")}>
             {t("Cancel")}
           </Button>

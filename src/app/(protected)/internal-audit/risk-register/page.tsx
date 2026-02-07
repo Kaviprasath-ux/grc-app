@@ -1004,51 +1004,9 @@ export default function RiskRegisterPage() {
         <span className="text-primary-700 font-medium">{t("Risk Register")}</span>
       </nav>
 
-      {/* Header */}
-      <div className="flex flex-col gap-1">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
-      </div>
-
-      {/* Search, Filters and Actions - same row */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder={t("Search risks...")}
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className="pl-10 w-[250px] bg-white border-slate-200"
-              disabled={isReadOnlyRole}
-            />
-          </div>
-          <Select value={yearFilter} onValueChange={setYearFilter} disabled={isReadOnlyRole}>
-            <SelectTrigger className="w-[150px] bg-white border-slate-200" disabled={isReadOnlyRole}>
-              <SelectValue placeholder={t("Year")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Years")}</SelectItem>
-              {yearOptions.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter} disabled={isReadOnlyRole}>
-            <SelectTrigger className="w-[180px] bg-white border-slate-200" disabled={isReadOnlyRole}>
-              <SelectValue placeholder={t("Department")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Departments")}</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -1070,7 +1028,7 @@ export default function RiskRegisterPage() {
             {t("Export")}
           </Button>
           {!isReadOnlyRole && (
-            <Button size="sm" onClick={openAddRiskModal}>
+            <Button onClick={openAddRiskModal}>
               <Plus className="h-4 w-4 mr-2" />
               {t("Add Risk")}
             </Button>
@@ -1079,120 +1037,164 @@ export default function RiskRegisterPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Risk ID")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Risk Description")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Creation Date")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Category")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Inherent Score")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Residual Score")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Risk Level")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedRisks.map((risk) => (
-              <TableRow key={risk.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">{risk.riskId}</TableCell>
-                <TableCell className="py-3 text-sm text-slate-600 max-w-[200px] truncate">{risk.riskDescription || risk.riskName}</TableCell>
-                <TableCell className="py-3 text-sm text-slate-600">{risk.department?.name || "-"}</TableCell>
-                <TableCell className="py-3 text-sm text-slate-600">{formatDate(risk.creationDate)}</TableCell>
-                <TableCell className="py-3 text-sm text-slate-600">{risk.category?.name || "-"}</TableCell>
-                <TableCell className="py-3 text-sm text-slate-600">{risk.inherentScore ?? "-"}</TableCell>
-                <TableCell className="py-3 text-sm text-slate-600">{risk.residualScore ?? "-"}</TableCell>
-                <TableCell className="py-3">{getRiskLevelBadge(risk.riskLevel)}</TableCell>
-                <TableCell className="py-3">{getStatusBadge(risk.status)}</TableCell>
-                <TableCell className="py-3 pr-4">
-                  {!isReadOnlyRole && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditRiskModal(risk)}
-                        title="Edit"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(risk)}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {paginatedRisks.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-slate-500">
-                  {isReadOnlyRole ? t("No risks found.") : t("No risks found. Click \"Add Risk\" to create your first risk.")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      {totalItems > 0 && (
-        <div className="flex items-center justify-between px-2">
-          <span className="text-sm text-slate-500">
-            {startItem} {t("to")} {endItem} {t("of")} {totalItems}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-slate-600 px-2">
-              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages || totalPages === 0}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages || totalPages === 0}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search & Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative w-[320px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search risks...")}
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              disabled={isReadOnlyRole}
+            />
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            <Select value={yearFilter} onValueChange={setYearFilter} disabled={isReadOnlyRole}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300" disabled={isReadOnlyRole}>
+                <SelectValue placeholder={t("Year")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Years")}</SelectItem>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter} disabled={isReadOnlyRole}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300" disabled={isReadOnlyRole}>
+                <SelectValue placeholder={t("Department")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Departments")}</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      )}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pl-5 min-w-[100px]">{t("Risk ID")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[200px]">{t("Risk Description")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[130px]">{t("Department")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[120px]">{t("Creation Date")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Category")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Inherent Score")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Residual Score")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Risk Level")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[90px]">{t("Status")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pr-5 min-w-[90px]">{t("Action")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedRisks.map((risk) => (
+                <TableRow key={risk.id} className="border-b border-slate-100 last:border-0">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5 whitespace-nowrap">{risk.riskId}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 max-w-[250px] truncate">{risk.riskDescription || risk.riskName}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(risk.creationDate)}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.category?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.inherentScore ?? "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.residualScore ?? "-"}</TableCell>
+                  <TableCell className="py-3 whitespace-nowrap">{getRiskLevelBadge(risk.riskLevel)}</TableCell>
+                  <TableCell className="py-3 whitespace-nowrap">{getStatusBadge(risk.status)}</TableCell>
+                  <TableCell className="py-3 pr-5 whitespace-nowrap">
+                    {!isReadOnlyRole && (
+                      <div className="flex items-center justify-end gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => openEditRiskModal(risk)}
+                          title={t("Edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          onClick={() => openDeleteDialog(risk)}
+                          title={t("Delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {paginatedRisks.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="h-24 text-center text-sm text-slate-500">
+                    {isReadOnlyRole ? t("No risks found.") : t("No risks found. Click \"Add Risk\" to create your first risk.")}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Pagination */}
+        {totalItems > 0 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">
+              {startItem} {t("to")} {endItem} {t("of")} {totalItems}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-slate-500 px-2">
+                {t("Page")} {currentPage} {t("of")} {totalPages || 1}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -1203,7 +1205,7 @@ export default function RiskRegisterPage() {
               {t("Are you sure you want to delete this risk? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
+          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
@@ -1265,7 +1267,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1287,129 +1289,142 @@ export default function RiskRegisterPage() {
 
       {/* AI Recommended Audits Dialog */}
       <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
-        <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-800">
-              <Sparkles className="h-5 w-5 text-purple-500" />
-              {t("AI Recommended Audits")}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[900px] max-h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <Sparkles className="h-5 w-5 text-purple-500" />
+                {t("AI Recommended Audits")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
 
-          {loadingAI ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-purple-500 mb-4" />
-              <p className="text-muted-foreground">{t("Analyzing risks and generating recommendations...")}</p>
-            </div>
-          ) : aiRecommendations ? (
-            <div className="space-y-6 py-4">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-info-light rounded-lg p-4 text-center">
-                  <p className="text-2xl font-bold text-info">{aiRecommendations.summary.totalRisks}</p>
-                  <p className="text-xs text-info">{t("Total Risks")}</p>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {loadingAI ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-500 mb-4" />
+                <p className="text-sm text-slate-500">{t("Analyzing risks and generating recommendations...")}</p>
+              </div>
+            ) : aiRecommendations ? (
+              <div className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="bg-info-light rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-info">{aiRecommendations.summary.totalRisks}</p>
+                    <p className="text-xs text-info">{t("Total Risks")}</p>
+                  </div>
+                  <div className="bg-risk-critical-bg rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-risk-critical">{aiRecommendations.summary.extremeRisks}</p>
+                    <p className="text-xs text-risk-critical">{t("Extreme Risks")}</p>
+                  </div>
+                  <div className="bg-risk-high-bg rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-risk-high">{aiRecommendations.summary.highRisks}</p>
+                    <p className="text-xs text-risk-high">{t("High Risks")}</p>
+                  </div>
+                  <div className="bg-primary-50 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-primary-600">{aiRecommendations.summary.recommendationsGenerated}</p>
+                    <p className="text-xs text-primary-600">{t("Recommendations")}</p>
+                  </div>
                 </div>
-                <div className="bg-risk-critical-bg rounded-lg p-4 text-center">
-                  <p className="text-2xl font-bold text-risk-critical">{aiRecommendations.summary.extremeRisks}</p>
-                  <p className="text-xs text-risk-critical">{t("Extreme Risks")}</p>
-                </div>
-                <div className="bg-risk-high-bg rounded-lg p-4 text-center">
-                  <p className="text-2xl font-bold text-risk-high">{aiRecommendations.summary.highRisks}</p>
-                  <p className="text-xs text-risk-high">{t("High Risks")}</p>
-                </div>
-                <div className="bg-primary-50 rounded-lg p-4 text-center">
-                  <p className="text-2xl font-bold text-primary-600">{aiRecommendations.summary.recommendationsGenerated}</p>
-                  <p className="text-xs text-primary-600">{t("Recommendations")}</p>
+
+                {/* Recommendations List */}
+                {aiRecommendations.recommendations.length > 0 ? (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-slate-700">{t("Recommended Audits")}</h3>
+                    {aiRecommendations.recommendations.map((rec) => (
+                      <div
+                        key={rec.id}
+                        className="border border-slate-200 rounded-lg p-4 bg-white"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-medium px-2 py-1 rounded">
+                              {rec.id}
+                            </div>
+                            <h4 className="font-semibold text-slate-800">{rec.auditName}</h4>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getPriorityBadge(rec.priority)}
+                            {getRiskLevelBadge(rec.riskLevel)}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <Target className="h-4 w-4" />
+                            <span>{t("Department")}: <strong>{rec.department}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <Calendar className="h-4 w-4" />
+                            <span>{t("Duration")}: <strong>{rec.estimatedDuration}</strong></span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-50 rounded p-3 mb-3">
+                          <p className="text-sm text-slate-700">
+                            <strong className="text-slate-800">{t("Justification")}:</strong> {rec.justification}
+                          </p>
+                        </div>
+
+                        <div className="text-sm">
+                          <p className="text-slate-600 mb-2">
+                            <strong>{t("Suggested Scope")}:</strong> {rec.suggestedScope}
+                          </p>
+                          {rec.relatedRisks.length > 0 && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <AlertTriangle className="h-4 w-4 text-warning" />
+                              <span className="text-slate-500">{t("Related Risks")}:</span>
+                              {rec.relatedRisks.map((riskIdItem) => (
+                                <span key={riskIdItem} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                  {riskIdItem}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              router.push(`/internal-audit/audit-plan?suggested=${encodeURIComponent(rec.auditName)}&department=${encodeURIComponent(rec.department)}`);
+                              setAiDialogOpen(false);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            {t("Create Audit")}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-500">
+                    <Sparkles className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                    <p>{t("No audit recommendations at this time.")}</p>
+                    <p className="text-sm mt-2">{t("Add more risks to the register to generate AI recommendations.")}</p>
+                  </div>
+                )}
+
+                <div className="text-xs text-slate-400 text-right">
+                  {t("Generated at")}: {new Date(aiRecommendations.generatedAt).toLocaleString()}
                 </div>
               </div>
-
-              {/* Recommendations List */}
-              {aiRecommendations.recommendations.length > 0 ? (
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm text-slate-700">{t("Recommended Audits")}</h3>
-                  {aiRecommendations.recommendations.map((rec) => (
-                    <div
-                      key={rec.id}
-                      className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-medium px-2 py-1 rounded">
-                            {rec.id}
-                          </div>
-                          <h4 className="font-semibold text-slate-800">{rec.auditName}</h4>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getPriorityBadge(rec.priority)}
-                          {getRiskLevelBadge(rec.riskLevel)}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                        <div className="flex items-center gap-2 text-slate-600">
-                          <Target className="h-4 w-4" />
-                          <span>{t("Department")}: <strong>{rec.department}</strong></span>
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-600">
-                          <Calendar className="h-4 w-4" />
-                          <span>{t("Duration")}: <strong>{rec.estimatedDuration}</strong></span>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-50 rounded p-3 mb-3">
-                        <p className="text-sm text-slate-700">
-                          <strong className="text-slate-800">{t("Justification")}:</strong> {rec.justification}
-                        </p>
-                      </div>
-
-                      <div className="text-sm">
-                        <p className="text-slate-600 mb-2">
-                          <strong>{t("Suggested Scope")}:</strong> {rec.suggestedScope}
-                        </p>
-                        {rec.relatedRisks.length > 0 && (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <AlertTriangle className="h-4 w-4 text-warning" />
-                            <span className="text-slate-500">{t("Related Risks")}:</span>
-                            {rec.relatedRisks.map((riskIdItem) => (
-                              <span key={riskIdItem} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                {riskIdItem}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            router.push(`/internal-audit/audit-plan?suggested=${encodeURIComponent(rec.auditName)}&department=${encodeURIComponent(rec.department)}`);
-                            setAiDialogOpen(false);
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          {t("Create Audit")}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-500">
-                  <Sparkles className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                  <p>{t("No audit recommendations at this time.")}</p>
-                  <p className="text-sm mt-2">{t("Add more risks to the register to generate AI recommendations.")}</p>
-                </div>
-              )}
-
-              <div className="text-xs text-slate-400 text-right">
-                {t("Generated at")}: {new Date(aiRecommendations.generatedAt).toLocaleString()}
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <p>{t("Failed to load recommendations. Please try again.")}</p>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-500">
-              <p>{t("Failed to load recommendations. Please try again.")}</p>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" onClick={() => setAiDialogOpen(false)}>
+              {t("Close")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1502,7 +1517,7 @@ export default function RiskRegisterPage() {
                       {/* Risk List */}
                       <div className="divide-y divide-slate-100">
                         {group.risks.map((risk) => (
-                          <div key={risk.id} className="px-4 py-3 hover:bg-slate-50/50">
+                          <div key={risk.id} className="px-4 py-3">
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
@@ -1533,7 +1548,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex justify-end">
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
             <Button
               variant="outline"
               onClick={() => setAiAuditSelectionOpen(false)}
@@ -1546,82 +1561,93 @@ export default function RiskRegisterPage() {
 
       {/* Fieldwork Audit Plan Result Dialog */}
       <Dialog open={fieldworkPlanDialogOpen} onOpenChange={setFieldworkPlanDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("Generated Audit Plan")}</DialogTitle>
-            <DialogDescription>
-              {fieldworkPlanResult?.department_name && `${t("Department")}: ${fieldworkPlanResult.department_name}`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {fieldworkPlanResult?.audit_plan?.length ? (
-              fieldworkPlanResult.audit_plan.map((plan, idx) => (
-                <Card key={idx}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <CardTitle className="text-base">
-                          {plan.audit_code} – {plan.audit_title}
-                        </CardTitle>
-                        {plan.audit_objective && (
-                          <CardDescription className="mt-1">{t("Objective")}: {plan.audit_objective}</CardDescription>
-                        )}
-                        {plan.audit_scope && (
-                          <p className="text-sm text-muted-foreground mt-1">{t("Scope")}: {plan.audit_scope}</p>
-                        )}
-                        {plan.associated_risks?.length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {t("Associated risks")}: {plan.associated_risks.join("; ")}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        className="bg-blue-600 hover:bg-blue-700 shrink-0"
-                        onClick={() => handleAddToAuditPlan(plan, idx)}
-                        disabled={addingToPlanning !== null}
-                      >
-                        {addingToPlanning === idx ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            {t("Adding...")}
-                          </>
-                        ) : (
-                          t("Add to Audit Plan")
-                        )}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {plan.audit_tasks?.map((task, ti) => (
-                      <div key={ti} className="rounded border p-3 text-sm">
-                        <p className="font-medium">{task.task_name}</p>
-                        {task.audit_steps?.length > 0 && (
-                          <ul className="list-disc list-inside mt-1 text-muted-foreground">
-                            {task.audit_steps.slice(0, 3).map((s, si) => (
-                              <li key={si}>{s}</li>
-                            ))}
-                            {task.audit_steps.length > 3 && (
-                              <li>…and {task.audit_steps.length - 3} more</li>
-                            )}
-                          </ul>
-                        )}
-                        {task.evidence_to_collect?.length > 0 && (
-                          <p className="mt-1 text-xs">{t("Evidence")}: {task.evidence_to_collect.slice(0, 2).join(", ")}</p>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <p className="text-muted-foreground">{t("No audit plans in response.")}</p>
-            )}
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Generated Audit Plan")}</DialogTitle>
+              {fieldworkPlanResult?.department_name && (
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  {t("Department")}: {fieldworkPlanResult.department_name}
+                </DialogDescription>
+              )}
+            </DialogHeader>
           </div>
-          <DialogFooter>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              {fieldworkPlanResult?.audit_plan?.length ? (
+                fieldworkPlanResult.audit_plan.map((plan, idx) => (
+                  <Card key={idx}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <CardTitle className="text-base">
+                            {plan.audit_code} – {plan.audit_title}
+                          </CardTitle>
+                          {plan.audit_objective && (
+                            <CardDescription className="mt-1">{t("Objective")}: {plan.audit_objective}</CardDescription>
+                          )}
+                          {plan.audit_scope && (
+                            <p className="text-sm text-slate-500 mt-1">{t("Scope")}: {plan.audit_scope}</p>
+                          )}
+                          {plan.associated_risks?.length > 0 && (
+                            <p className="text-xs text-slate-400 mt-1">
+                              {t("Associated risks")}: {plan.associated_risks.join("; ")}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                          onClick={() => handleAddToAuditPlan(plan, idx)}
+                          disabled={addingToPlanning !== null}
+                        >
+                          {addingToPlanning === idx ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              {t("Adding...")}
+                            </>
+                          ) : (
+                            t("Add to Audit Plan")
+                          )}
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {plan.audit_tasks?.map((task, ti) => (
+                        <div key={ti} className="rounded border border-slate-200 p-3 text-sm">
+                          <p className="font-medium text-slate-800">{task.task_name}</p>
+                          {task.audit_steps?.length > 0 && (
+                            <ul className="list-disc list-inside mt-1 text-slate-500">
+                              {task.audit_steps.slice(0, 3).map((s, si) => (
+                                <li key={si}>{s}</li>
+                              ))}
+                              {task.audit_steps.length > 3 && (
+                                <li>…and {task.audit_steps.length - 3} more</li>
+                              )}
+                            </ul>
+                          )}
+                          {task.evidence_to_collect?.length > 0 && (
+                            <p className="mt-1 text-xs text-slate-400">{t("Evidence")}: {task.evidence_to_collect.slice(0, 2).join(", ")}</p>
+                          )}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">{t("No audit plans in response.")}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setFieldworkPlanDialogOpen(false)}>
               {t("Close")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1919,7 +1945,7 @@ export default function RiskRegisterPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Attachments")}</Label>
                   <div
                     className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                      isDragOver ? "border-primary bg-primary-50" : "border-slate-200 hover:border-slate-300"
+                      isDragOver ? "border-primary bg-primary-50" : "border-slate-200"
                     }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -1985,7 +2011,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeAddRiskModal}>
               {t("Cancel")}
             </Button>
@@ -2304,7 +2330,7 @@ export default function RiskRegisterPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Attachments")}</Label>
                   <div
                     className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                      isDragOver ? "border-primary bg-primary-50" : "border-slate-200 hover:border-slate-300"
+                      isDragOver ? "border-primary bg-primary-50" : "border-slate-200"
                     }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -2370,7 +2396,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeEditRiskModal}>
               {t("Cancel")}
             </Button>
@@ -2558,7 +2584,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeViewRiskModal}>
               {t("Close")}
             </Button>

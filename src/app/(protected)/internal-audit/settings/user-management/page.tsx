@@ -427,20 +427,8 @@ export default function UserManagementPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("User Management")}</h1>
-
-      {/* Search and Add Button Row */}
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search users...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[300px] h-9 bg-white border-slate-200"
-          />
-        </div>
-        <div className="flex-1" />
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">{t("User Management")}</h1>
         <Button size="sm" onClick={openAddDialog}>
           <Plus className="h-4 w-4 mr-2" />
           {t("New User")}
@@ -448,27 +436,39 @@ export default function UserManagementPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder={t("Search users...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-[300px] h-9 bg-white border-slate-200"
+            />
+          </div>
+        </div>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Full Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Email")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("User Role")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Full Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("User Role")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={4} className="h-24 text-center text-sm text-slate-500">
                   {t("No users found")}
                 </TableCell>
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <TableRow key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">{user.fullName}</TableCell>
+                <TableRow key={user.id} className="border-b border-slate-100 last:border-0">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{user.fullName}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{user.email}</TableCell>
                   <TableCell className="py-3">
                     <div className="flex flex-wrap gap-1">
@@ -479,8 +479,8 @@ export default function UserManagementPage() {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="py-3 pr-4">
-                    <div className="flex items-center gap-1">
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -508,8 +508,8 @@ export default function UserManagementPage() {
         </Table>
 
         {/* Pagination info */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <span className="text-sm text-slate-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
             {t("Showing")} {filteredUsers.length} {t("of")} {users.length} {t("users")}
           </span>
         </div>
@@ -684,7 +684,7 @@ export default function UserManagementPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <div>
               {editItem && (
                 <Button
@@ -744,7 +744,7 @@ export default function UserManagementPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setChangePasswordDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -767,7 +767,7 @@ export default function UserManagementPage() {
               {t("Are you sure you want to delete")} &quot;{itemToDelete?.fullName}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
+          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               {t("Delete")}

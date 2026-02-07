@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   ClipboardList,
   Network,
@@ -102,40 +101,31 @@ export default function InternalAuditSettingsPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Settings")}</h1>
       </div>
 
-      {/* Settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Settings Card Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {settingsCategories.map((category) => {
           const Icon = category.icon;
           return (
-            <div
+            <button
               key={category.name}
-              className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full min-h-[160px]"
+              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left cursor-pointer"
+              onClick={() => router.push(category.href)}
             >
-              <div className="flex items-start gap-4 flex-1">
-                <div className="p-3 bg-primary-50 rounded-lg flex-shrink-0">
-                  <Icon className="h-6 w-6 text-primary-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-base font-semibold text-slate-800">{category.name}</h4>
-                  <p className="text-sm text-slate-500 line-clamp-2">
-                    {category.description}
-                  </p>
-                </div>
+              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0">
+                <Icon className="h-5 w-5 text-primary-600" />
               </div>
-              <div className="flex items-center justify-end pt-3 mt-4 border-t border-slate-100">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push(category.href)}
-                >
-                  {t("Manage")}
-                </Button>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-slate-800">{category.name}</h4>
+                <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {category.description}
+                </p>
               </div>
-            </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+            </button>
           );
         })}
       </div>

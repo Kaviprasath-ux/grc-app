@@ -9,6 +9,7 @@ export const GET = withAuth(
       const { searchParams } = new URL(req.url);
       const departmentId = searchParams.get('departmentId');
       const status = searchParams.get('status');
+      const search = searchParams.get('search');
       const page = parseInt(searchParams.get('page') || '1');
       const limit = parseInt(searchParams.get('limit') || '20');
       const skip = (page - 1) * limit;
@@ -45,6 +46,13 @@ export const GET = withAuth(
       }
       if (status) {
         where.status = status;
+      }
+      if (search) {
+        where.OR = [
+          { findingId: { contains: search, mode: 'insensitive' } },
+          { finding: { contains: search, mode: 'insensitive' } },
+          { responsiblePerson: { contains: search, mode: 'insensitive' } },
+        ];
       }
 
       // Get total count
