@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DataGrid } from "@/components/shared";
@@ -23,16 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ColumnDef } from "@tanstack/react-table";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -83,10 +73,6 @@ export default function BIASettingsPage() {
   const [loading, setLoading] = useState(true);
 
   // Search states for each tab
-  const [categorySearch, setCategorySearch] = useState("");
-  const [ratingSearch, setRatingSearch] = useState("");
-  const [rangeSearch, setRangeSearch] = useState("");
-  const [bcpSearch, setBcpSearch] = useState("");
 
   // Data states
   const [categories, setCategories] = useState<BIACategory[]>([]);
@@ -325,21 +311,21 @@ export default function BIASettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingCategory(row.original);
               setIsCategoryDialogOpen(true);
             }}
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
             onClick={() => setDeleteTarget({ type: "category", id: row.original.id })}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),
@@ -372,21 +358,21 @@ export default function BIASettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingRating(row.original);
               setIsRatingDialogOpen(true);
             }}
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
             onClick={() => setDeleteTarget({ type: "rating", id: row.original.id })}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),
@@ -417,21 +403,21 @@ export default function BIASettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingRange(row.original);
               setIsRangeDialogOpen(true);
             }}
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
             onClick={() => setDeleteTarget({ type: "range", id: row.original.id })}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),
@@ -472,44 +458,29 @@ export default function BIASettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingBcp(row.original);
               setIsBcpDialogOpen(true);
             }}
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
             onClick={() => setDeleteTarget({ type: "bcp", id: row.original.id })}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),
     },
   ];
 
-  // Filter data based on search
-  const filteredCategories = categories.filter((c) =>
-    c.name.toLowerCase().includes(categorySearch.toLowerCase())
-  );
-  const filteredRatings = ratings.filter(
-    (r) =>
-      r.label.toLowerCase().includes(ratingSearch.toLowerCase()) ||
-      r.description?.toLowerCase().includes(ratingSearch.toLowerCase())
-  );
-  const filteredScoringRanges = scoringRanges
-    .filter((r) => r.calculationType === calculationType)
-    .filter((r) => r.label.toLowerCase().includes(rangeSearch.toLowerCase()));
-  const filteredBcpLabels = bcpLabels.filter(
-    (b) =>
-      b.name.toLowerCase().includes(bcpSearch.toLowerCase()) ||
-      b.type.toLowerCase().includes(bcpSearch.toLowerCase())
-  );
+  // Filter scoring ranges by calculation type (business logic, not search)
+  const filteredScoringRanges = scoringRanges.filter((r) => r.calculationType === calculationType);
 
   if (loading) {
     return (
@@ -559,17 +530,7 @@ export default function BIASettingsPage() {
 
         {/* Category Tab */}
         <TabsContent value="category" className="mt-6 space-y-4">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder={t("Search categories...")}
-                value={categorySearch}
-                onChange={(e) => setCategorySearch(e.target.value)}
-                className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
-              />
-            </div>
+          <div className="flex items-center justify-end">
             <Button
               size="sm"
               onClick={() => {
@@ -582,24 +543,17 @@ export default function BIASettingsPage() {
               {t("Add Category")}
             </Button>
           </div>
-          <DataGrid columns={categoryColumns} data={filteredCategories} hideSearch={true} />
+          <DataGrid columns={categoryColumns} data={categories} searchPlaceholder={t("Search categories...")} />
         </TabsContent>
 
         {/* BIA Methodology Tab */}
         <TabsContent value="methodology" className="mt-6 space-y-8">
           {/* BIA Rating Section */}
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-slate-800">{t("BIA Rating")}</h3>
-            {/* Toolbar */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder={t("Search ratings...")}
-                  value={ratingSearch}
-                  onChange={(e) => setRatingSearch(e.target.value)}
-                  className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
-                />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-semibold text-slate-800">{t("BIA Rating")}</h3>
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{ratings.length}</span>
               </div>
               <Button
                 size="sm"
@@ -613,7 +567,7 @@ export default function BIASettingsPage() {
                 {t("Add Rating")}
               </Button>
             </div>
-            <DataGrid columns={ratingColumns} data={filteredRatings} hideSearch={true} />
+            <DataGrid columns={ratingColumns} data={ratings} searchPlaceholder={t("Search ratings...")} />
           </div>
 
           {/* BIA Calculation Section */}
@@ -636,17 +590,10 @@ export default function BIASettingsPage() {
             {/* Scoring Calculation Grid - Only show for Addition/Product */}
             {calculationType !== "High of all" && (
               <div className="space-y-4 pt-4">
-                <h4 className="text-sm font-medium text-slate-700">{t("Scoring Calculation")}</h4>
-                {/* Toolbar */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      placeholder={t("Search ranges...")}
-                      value={rangeSearch}
-                      onChange={(e) => setRangeSearch(e.target.value)}
-                      className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
-                    />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <h4 className="text-sm font-semibold text-slate-800">{t("Scoring Calculation")}</h4>
+                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{filteredScoringRanges.length}</span>
                   </div>
                   <Button
                     size="sm"
@@ -660,7 +607,7 @@ export default function BIASettingsPage() {
                     {t("Add Range")}
                   </Button>
                 </div>
-                <DataGrid columns={scoringRangeColumns} data={filteredScoringRanges} hideSearch={true} />
+                <DataGrid columns={scoringRangeColumns} data={filteredScoringRanges} searchPlaceholder={t("Search ranges...")} />
               </div>
             )}
           </div>
@@ -668,17 +615,7 @@ export default function BIASettingsPage() {
 
         {/* BCP Labels Tab */}
         <TabsContent value="bcp" className="mt-6 space-y-4">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder={t("Search BCP labels...")}
-                value={bcpSearch}
-                onChange={(e) => setBcpSearch(e.target.value)}
-                className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
-              />
-            </div>
+          <div className="flex items-center justify-end">
             <Button
               size="sm"
               onClick={() => {
@@ -691,7 +628,7 @@ export default function BIASettingsPage() {
               {t("Add BCP Label")}
             </Button>
           </div>
-          <DataGrid columns={bcpColumns} data={filteredBcpLabels} hideSearch={true} />
+          <DataGrid columns={bcpColumns} data={bcpLabels} searchPlaceholder={t("Search BCP labels...")} />
         </TabsContent>
       </Tabs>
 
@@ -742,7 +679,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -814,7 +751,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsRatingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -895,7 +832,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsRangeDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -987,7 +924,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsBcpDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -997,20 +934,24 @@ export default function BIASettingsPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("Delete Item")}</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-[420px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Item")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete this item? This action cannot be undone.")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>{t("Delete")}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </p>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t("Cancel")}</Button>
+            <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

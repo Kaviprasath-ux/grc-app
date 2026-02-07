@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Plus, Trash2, Upload, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Plus, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -739,17 +739,28 @@ export function EditProfileWizard({
         </div>
 
         {/* Fixed Footer */}
-        <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Cancel
+        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <span className="text-xs font-medium text-slate-400 me-auto">
+            Step {currentStep} of 4
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (currentStep === 1) {
+                handleOpenChange(false);
+              } else {
+                handlePrevious();
+              }
+            }}
+          >
+            {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+            {currentStep === 1 ? "Cancel" : "Previous"}
           </Button>
-          {currentStep > 1 && (
-            <Button variant="outline" onClick={handlePrevious}>
-              Previous
-            </Button>
-          )}
           {currentStep < 4 ? (
-            <Button onClick={handleNext}>Next</Button>
+            <Button onClick={handleNext}>
+              Next
+              <ChevronRight className="h-4 w-4 ms-1" />
+            </Button>
           ) : (
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "Save"}

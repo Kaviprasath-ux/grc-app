@@ -1,0 +1,478 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Plus, Pencil, Trash2, Search, Clock, Database } from "lucide-react";
+import { PageHeader, DataGrid } from "@/components/shared";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
+
+interface BCPLabel {
+  id: string;
+  name: string;
+  type: string;
+  hours: number;
+  description: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export default function BCPLabelsPage() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("rto");
+  const [labels, setLabels] = useState<BCPLabel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Dialog states
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<BCPLabel | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "RTO",
+    hours: 0,
+    description: "",
+    sortOrder: 0,
+    isActive: true,
+  });
+
+  useEffect(() => {
+    fetchLabels();
+  }, [activeTab]);
+
+  const fetchLabels = async () => {
+    setLoading(true);
+    try {
+      const type = activeTab.toUpperCase();
+      const res = await fetch(`/api/bia/bcp-labels?type=${type}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLabels(data);
+      }
+    } catch (error) {
+      console.error("Error fetching BCP labels:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!formData.name.trim()) return;
+    try {
+      const res = await fetch("/api/bia/bcp-labels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          type: activeTab.toUpperCase(),
+        }),
+      });
+      if (res.ok) {
+        await fetchLabels();
+        setIsAddOpen(false);
+        resetForm();
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to create label");
+      }
+    } catch (error) {
+      console.error("Error creating label:", error);
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!editingItem || !formData.name.trim()) return;
+    try {
+      const res = await fetch(`/api/bia/bcp-labels/${editingItem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        await fetchLabels();
+        setIsEditOpen(false);
+        setEditingItem(null);
+        resetForm();
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to update label");
+      }
+    } catch (error) {
+      console.error("Error updating label:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingItemId) return;
+    try {
+      const res = await fetch(`/api/bia/bcp-labels/${deletingItemId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        await fetchLabels();
+        setIsDeleteOpen(false);
+        setDeletingItemId(null);
+      }
+    } catch (error) {
+      console.error("Error deleting label:", error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      type: activeTab.toUpperCase(),
+      hours: 0,
+      description: "",
+      sortOrder: 0,
+      isActive: true,
+    });
+  };
+
+  const openEditDialog = (item: BCPLabel) => {
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      type: item.type,
+      hours: item.hours,
+      description: item.description || "",
+      sortOrder: item.sortOrder,
+      isActive: item.isActive,
+    });
+    setIsEditOpen(true);
+  };
+
+  const filteredData = labels.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const formatHours = (hours: number) => {
+    if (hours < 1) return `${hours * 60} minutes`;
+    if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""}`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    if (remainingHours === 0) return `${days} day${days !== 1 ? "s" : ""}`;
+    return `${days} day${days !== 1 ? "s" : ""} ${remainingHours} hour${remainingHours !== 1 ? "s" : ""}`;
+  };
+
+  const columns: ColumnDef<BCPLabel>[] = [
+    {
+      accessorKey: "name",
+      header: "Label Name",
+      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+    },
+    {
+      accessorKey: "hours",
+      header: "Time Value",
+      cell: ({ row }) => formatHours(row.getValue("hours")),
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.getValue("description") || "-"}</span>
+      ),
+    },
+    {
+      accessorKey: "isActive",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant={row.getValue("isActive") ? "default" : "secondary"}>
+          {row.getValue("isActive") ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openEditDialog(row.original)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive"
+            onClick={() => {
+              setDeletingItemId(row.original.id);
+              setIsDeleteOpen(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <div>
+          <p className="text-sm text-muted-foreground">Organization Settings</p>
+          <h1 className="text-2xl font-semibold">BCP Labels</h1>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(""); }}>
+        <TabsList>
+          <TabsTrigger value="rto" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            RTO Labels
+          </TabsTrigger>
+          <TabsTrigger value="rpo" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            RPO Labels
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="rto" className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h3 className="font-medium text-blue-900">Recovery Time Objective (RTO)</h3>
+            <p className="text-sm text-blue-700">
+              RTO defines the maximum acceptable time to restore a process after a disruption.
+              Configure labels to standardize RTO options across your organization.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search labels..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-[250px]"
+              />
+            </div>
+            <Button onClick={() => { resetForm(); setIsAddOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add RTO Label
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
+          ) : (
+            <DataGrid columns={columns} data={filteredData} searchPlaceholder="Search..." />
+          )}
+        </TabsContent>
+
+        <TabsContent value="rpo" className="space-y-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <h3 className="font-medium text-green-900">Recovery Point Objective (RPO)</h3>
+            <p className="text-sm text-green-700">
+              RPO defines the maximum acceptable data loss measured in time.
+              Configure labels to standardize RPO options across your organization.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search labels..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-[250px]"
+              />
+            </div>
+            <Button onClick={() => { resetForm(); setIsAddOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add RPO Label
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
+          ) : (
+            <DataGrid columns={columns} data={filteredData} searchPlaceholder="Search..." />
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Add Dialog */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add {activeTab.toUpperCase()} Label</DialogTitle>
+            <DialogDescription>
+              Create a new {activeTab === "rto" ? "Recovery Time Objective" : "Recovery Point Objective"} label
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Label Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Immediate, 4 Hours, 24 Hours"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hours">Time Value (in hours) *</Label>
+              <Input
+                id="hours"
+                type="number"
+                min="0"
+                step="0.5"
+                value={formData.hours}
+                onChange={(e) => setFormData({ ...formData, hours: parseFloat(e.target.value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter value in hours. Use 0.5 for 30 minutes, 0.25 for 15 minutes, etc.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter description"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sortOrder">Sort Order</Label>
+              <Input
+                id="sortOrder"
+                type="number"
+                value={formData.sortOrder}
+                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isActive"
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+              />
+              <Label htmlFor="isActive">Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsAddOpen(false); resetForm(); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAdd}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {formData.type} Label</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Label Name *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Time Value (in hours) *</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.5"
+                value={formData.hours}
+                onChange={(e) => setFormData({ ...formData, hours: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Sort Order</Label>
+              <Input
+                type="number"
+                value={formData.sortOrder}
+                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+              />
+              <Label>Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingItem(null); resetForm(); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this label? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

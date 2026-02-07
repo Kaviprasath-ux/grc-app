@@ -1074,14 +1074,13 @@ export default function ProcessPage() {
         // Note: Reviewer role has Perform BIA access same as CustomerAdmin (not DepartmentReviewer behavior)
         if (isDepartmentReviewer && !isReviewer) {
           return (
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
               onClick={() => router.push(`/organization/process/bia/${row.original.id}`)}
             >
-              <Eye className="h-4 w-4 mr-1" />
+              <Eye className="h-3.5 w-3.5" />
               {t("View")}
-            </Button>
+            </button>
           );
         }
 
@@ -1089,44 +1088,39 @@ export default function ProcessPage() {
         // If approved or pending approval - show View button
         if (isApproved || isPendingApproval) {
           return (
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
               onClick={() => router.push(`/organization/process/bia/${row.original.id}`)}
             >
-              <Eye className="h-4 w-4 mr-1" />
+              <Eye className="h-3.5 w-3.5" />
               {t("View")}
-            </Button>
+            </button>
           );
         }
 
         // If sent back - show Respond button (to re-submit)
         if (isSentBack) {
           return (
-            <Button
-              variant="default"
-              size="sm"
+            <button
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
               onClick={() => router.push(`/organization/process/bia/${row.original.id}`)}
             >
               {t("Respond")}
-            </Button>
+            </button>
           );
         }
 
         // Open/New - show Perform BIA button
         return (
-          <div className="flex gap-2 items-center">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => {
-                setBiaProcess(row.original);
-                setIsBIAFormOpen(true);
-              }}
-            >
-              {t("Perform BIA")}
-            </Button>
-          </div>
+          <button
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+            onClick={() => {
+              setBiaProcess(row.original);
+              setIsBIAFormOpen(true);
+            }}
+          >
+            {t("Perform BIA")}
+          </button>
         );
       },
     },
@@ -1239,14 +1233,13 @@ export default function ProcessPage() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
           onClick={() => openKPIModal(row.original)}
-          title={t("View KPI Details")}
         >
-          <BarChart3 className="h-4 w-4" />
-        </Button>
+          <BarChart3 className="h-3.5 w-3.5" />
+          {t("View KPI")}
+        </button>
       ),
     },
   ];
@@ -1288,66 +1281,25 @@ export default function ProcessPage() {
         </TabsList>
 
         {/* Repository Tab */}
-        <TabsContent value="repository" className="mt-6 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder={t("Search processes...")}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-[250px] bg-white"
-                />
-              </div>
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder={t("Department")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">{t("All Departments")}</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder={t("Process Owner")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">{t("All Owners")}</SelectItem>
-                  {processOwners.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.fullName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
-                <SelectTrigger className="w-[150px] bg-white">
-                  <SelectValue placeholder={t("Frequency")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">{t("All Frequencies")}</SelectItem>
-                  {processFrequencies.map((freq) => (
-                    <SelectItem key={freq} value={freq}>
-                      {freq}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <TabsContent value="repository" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-semibold text-slate-800">{t("Processes")}</h3>
+              {filteredProcesses.length > 0 && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  {filteredProcesses.length}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-2" />
                 {t("Export")}
               </Button>
               {!isDepartmentContributor && (
                 <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
                   {t("Import")}
                 </Button>
               )}
@@ -1360,64 +1312,138 @@ export default function ProcessPage() {
             </div>
           </div>
 
-          <DataGrid
-            columns={processColumns}
-            data={filteredProcesses}
-            hideSearch={true}
-          />
+          {/* Table Card with Integrated Filters */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Search & Filters */}
+            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+              <div className="relative max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={t("Search processes...")}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                />
+              </div>
+              <div className="flex items-center gap-3 ml-auto">
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Department")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Departments")}</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Process Owner")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Owners")}</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Frequency")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Frequencies")}</SelectItem>
+                    {processFrequencies.map((freq) => (
+                      <SelectItem key={freq} value={freq}>
+                        {freq}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* DataGrid */}
+            <DataGrid
+              columns={processColumns}
+              data={filteredProcesses}
+              hideSearch={true}
+              className="border-0 rounded-none"
+            />
+          </div>
         </TabsContent>
 
         {/* Business Impact Analysis Tab */}
-        <TabsContent value="bia" className="mt-6 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="relative">
+        <TabsContent value="bia" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-semibold text-slate-800">{t("Business Impact Analysis")}</h3>
+              <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                {filteredProcesses.length}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm">
+                <Upload className="h-4 w-4 mr-2" />
+                {t("Export")}
+              </Button>
+            </div>
+          </div>
+
+          {/* Table Card with Integrated Filters */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+              <div className="relative max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
+                <input
                   placeholder={t("Search By Process ID, Name")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-[250px] bg-white"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                 />
               </div>
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder={t("Department")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">{t("All Departments")}</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder={t("Process Owner")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">{t("All Owners")}</SelectItem>
-                  {processOwners.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.fullName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-3 ml-auto">
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Department")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Departments")}</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Process Owner")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Owners")}</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              {t("Export")}
-            </Button>
+            <DataGrid
+              columns={biaColumns}
+              data={filteredProcesses}
+              hideSearch={true}
+              className="border-0 rounded-none"
+            />
           </div>
-
-          <DataGrid
-            columns={biaColumns}
-            data={filteredProcesses}
-            hideSearch={true}
-          />
         </TabsContent>
 
         {/* Performance Dashboard Tab - Matching UAT structure */}
@@ -1542,33 +1568,7 @@ export default function ProcessPage() {
             </div>
           </div>
 
-          {/* Search and Department Filter */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder={t("Search processes...")}
-                value={kpiSearchTerm}
-                onChange={(e) => setKpiSearchTerm(e.target.value)}
-                className="pl-10 w-full bg-white"
-              />
-            </div>
-            <Select value={kpiDepartmentFilter} onValueChange={setKpiDepartmentFilter}>
-              <SelectTrigger className="w-[200px] bg-white">
-                <SelectValue placeholder={t("Department")} />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4}>
-                <SelectItem value="all">{t("All Departments")}</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* KPI Processes Table */}
+          {/* KPI Processes Section */}
           {(() => {
             const kpiProcesses = departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired);
             const filteredKpiProcesses = kpiProcesses.filter((p) => {
@@ -1577,22 +1577,68 @@ export default function ProcessPage() {
               return matchesSearch && matchesDepartment;
             });
 
-            return filteredKpiProcesses.length > 0 ? (
-              <DataGrid
-                columns={performanceColumns}
-                data={filteredKpiProcesses}
-                hideSearch={true}
-              />
-            ) : (
-              <div className="bg-white rounded-xl border border-slate-200 p-12">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <FileText className="h-12 w-12 text-slate-400 mb-4" />
-                  <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No KPI Data")}</h3>
-                  <p className="text-sm text-slate-500">
-                    {t("No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.")}
-                  </p>
+            return (
+              <>
+                {/* Section Header */}
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-base font-semibold text-slate-800">{t("KPI Processes")}</h3>
+                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{kpiProcesses.length}</span>
+                  </div>
                 </div>
-              </div>
+
+                {/* Card with Search + Filter + Table */}
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  {/* Search and Filter Row */}
+                  <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+                    <div className="relative max-w-xs">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder={t("Search processes...")}
+                        value={kpiSearchTerm}
+                        onChange={(e) => setKpiSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3 ml-auto">
+                      <Select value={kpiDepartmentFilter} onValueChange={setKpiDepartmentFilter}>
+                        <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                          <SelectValue placeholder={t("Department")} />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          <SelectItem value="all">{t("All Departments")}</SelectItem>
+                          {departments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Table or Empty State */}
+                  {filteredKpiProcesses.length > 0 ? (
+                    <DataGrid
+                      columns={performanceColumns}
+                      data={filteredKpiProcesses}
+                      hideSearch={true}
+                      className="border-0 rounded-none"
+                    />
+                  ) : (
+                    <div className="p-12">
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <FileText className="h-12 w-12 text-slate-400 mb-4" />
+                        <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No KPI Data")}</h3>
+                        <p className="text-sm text-slate-500">
+                          {t("No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
             );
           })()}
         </TabsContent>
@@ -1600,21 +1646,25 @@ export default function ProcessPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("Confirm Delete")}</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[420px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete this process? This action cannot be undone.")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </p>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDeleteProcess}>
               {t("Delete")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1764,7 +1814,7 @@ export default function ProcessPage() {
               </div>
             )}
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1805,8 +1855,8 @@ export default function ProcessPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {/* Status and Controls Section */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Status & Approval")}</h4>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h4 className="text-sm font-semibold text-slate-900">{t("Status & Approval")}</h4>
                 <Badge variant="outline" className="bg-info-light text-info-dark border-info">{t("Open")}</Badge>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1852,15 +1902,15 @@ export default function ProcessPage() {
 
             {/* Impact Assessment Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Impact Assessment")}</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Impact Assessment")}</h4>
 
               {/* Category Table */}
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 {/* Table Header */}
-                <div className="grid grid-cols-3 bg-slate-800 text-white">
-                  <div className="px-4 py-3 text-sm font-medium">{t("Category")}</div>
-                  <div className="px-4 py-3 text-sm font-medium text-center">{t("BIA Rating")}</div>
-                  <div className="px-4 py-3 text-sm font-medium">{t("Description")}</div>
+                <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-100">
+                  <div className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Category")}</div>
+                  <div className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">{t("BIA Rating")}</div>
+                  <div className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</div>
                 </div>
 
                 {/* Table Rows */}
@@ -1915,8 +1965,8 @@ export default function ProcessPage() {
 
             {/* Recovery Metrics Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Recovery Metrics")}</h4>
-              <div className="grid grid-cols-6 gap-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Recovery Metrics")}</h4>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("RTO")}</Label>
                   <Input
@@ -1981,7 +2031,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsBIAFormOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2008,7 +2058,7 @@ export default function ProcessPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {/* Basic Information Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Basic Information")}</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Basic Information")}</h4>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="name" className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-error">*</span></Label>
@@ -2051,7 +2101,7 @@ export default function ProcessPage() {
 
             {/* Process Details Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Process Details")}</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Process Details")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
@@ -2121,7 +2171,7 @@ export default function ProcessPage() {
 
             {/* Dependencies & Options Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Dependencies & Options")}</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Dependencies & Options")}</h4>
               <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -2205,7 +2255,7 @@ export default function ProcessPage() {
 
             {/* RACI Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("RACI Matrix")}</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("RACI Matrix")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
@@ -2264,12 +2314,12 @@ export default function ProcessPage() {
 
             {/* Employee Onboarding Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Employee Onboarding")}</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Employee Onboarding")}</h4>
               <p className="text-sm text-muted-foreground">
                 {t("Upload employee onboarding documents for this process.")}
               </p>
               <div
-                className="border-2 border-dashed rounded-lg p-6 text-center transition-colors border-gray-300 hover:border-gray-400"
+                className="border-2 border-dashed rounded-lg p-6 text-center transition-colors border-slate-300 hover:border-slate-400"
                 onDragOver={(e) => { e.preventDefault(); }}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -2278,13 +2328,13 @@ export default function ProcessPage() {
                 }}
               >
                 <div className="space-y-2">
-                  <Upload className="h-10 w-10 mx-auto text-gray-400" />
-                  <p className="text-sm text-gray-600">
+                  <Upload className="h-10 w-10 mx-auto text-slate-400" />
+                  <p className="text-sm text-slate-600">
                     {t("Drag and drop files here, or")}{" "}
                     <button
                       type="button"
                       onClick={() => onboardingFileInputRef.current?.click()}
-                      className="text-blue-600 hover:underline font-medium"
+                      className="text-primary-600 hover:text-primary-700 font-medium"
                     >
                       {t("browse")}
                     </button>
@@ -2311,7 +2361,7 @@ export default function ProcessPage() {
                   <Label className="text-sm font-medium">{t("Files to Upload")} ({pendingOnboardingFiles.length})</Label>
                   <div className="border rounded-lg divide-y">
                     {pendingOnboardingFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                      <div key={index} className="flex items-center justify-between p-3 hover:bg-slate-50">
                         <div className="flex items-center gap-3">
                           <FileText className="h-5 w-5 text-green-600" />
                           <div>
@@ -2335,7 +2385,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddProcessOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2362,7 +2412,7 @@ export default function ProcessPage() {
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
               {/* Basic Information Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Basic Information")}</h4>
+                <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Basic Information")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Process Code")}</Label>
@@ -2421,7 +2471,7 @@ export default function ProcessPage() {
 
               {/* Process Details Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Process Details")}</h4>
+                <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Process Details")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
@@ -2491,7 +2541,7 @@ export default function ProcessPage() {
 
               {/* Dependencies & Options Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Dependencies & Options")}</h4>
+                <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Dependencies & Options")}</h4>
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -2575,7 +2625,7 @@ export default function ProcessPage() {
 
               {/* RACI Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("RACI Matrix")}</h4>
+                <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("RACI Matrix")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
@@ -2634,13 +2684,13 @@ export default function ProcessPage() {
 
               {/* Employee Onboarding Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Employee Onboarding")}</h4>
+                <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Employee Onboarding")}</h4>
                 <p className="text-sm text-muted-foreground">
                   {t("Upload employee onboarding documents for this process.")}
                 </p>
 
                 <div
-                  className="border-2 border-dashed rounded-lg p-6 text-center transition-colors border-gray-300 hover:border-gray-400"
+                  className="border-2 border-dashed rounded-lg p-6 text-center transition-colors border-slate-300 hover:border-slate-400"
                   onDragOver={(e) => { e.preventDefault(); }}
                   onDrop={(e) => {
                     e.preventDefault();
@@ -2649,13 +2699,13 @@ export default function ProcessPage() {
                   }}
                 >
                   <div className="space-y-2">
-                    <Upload className="h-10 w-10 mx-auto text-gray-400" />
-                    <p className="text-sm text-gray-600">
+                    <Upload className="h-10 w-10 mx-auto text-slate-400" />
+                    <p className="text-sm text-slate-600">
                       {t("Drag and drop files here, or")}{" "}
                       <button
                         type="button"
                         onClick={() => editOnboardingFileInputRef.current?.click()}
-                        className="text-blue-600 hover:underline font-medium"
+                        className="text-primary-600 hover:text-primary-700 font-medium"
                       >
                         {t("browse")}
                       </button>
@@ -2682,7 +2732,7 @@ export default function ProcessPage() {
                     <Label className="text-sm font-medium">{t("Existing Files")} ({editExistingOnboardingFiles.length})</Label>
                     <div className="border rounded-lg divide-y">
                       {editExistingOnboardingFiles.map((file) => (
-                        <div key={file.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                        <div key={file.id} className="flex items-center justify-between p-3 hover:bg-slate-50">
                           <div className="flex items-center gap-3">
                             <FileText className="h-5 w-5 text-green-600" />
                             <div>
@@ -2700,7 +2750,7 @@ export default function ProcessPage() {
                                   onClick={() => window.open(file.filePath, "_blank")}
                                   title={t("View")}
                                 >
-                                  <Eye className="h-4 w-4 text-blue-600" />
+                                  <Eye className="h-4 w-4 text-primary-600" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -2747,7 +2797,7 @@ export default function ProcessPage() {
                     <Label className="text-sm font-medium">{t("New Files to Upload")} ({editOnboardingFiles.length})</Label>
                     <div className="border rounded-lg divide-y">
                       {editOnboardingFiles.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                        <div key={index} className="flex items-center justify-between p-3 hover:bg-slate-50">
                           <div className="flex items-center gap-3">
                             <FileText className="h-5 w-5 text-green-600" />
                             <div>
@@ -2772,7 +2822,7 @@ export default function ProcessPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditProcessOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2799,8 +2849,8 @@ export default function ProcessPage() {
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
               {/* KPI Chart Section */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Performance Chart")}</h4>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h4 className="text-sm font-semibold text-slate-900">{t("Performance Chart")}</h4>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-slate-400">{t("Year")}</span>
                     <Select value={selectedKPIYear} onValueChange={setSelectedKPIYear}>
@@ -2872,7 +2922,7 @@ export default function ProcessPage() {
 
               {/* KPI Configuration Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("KPI Configuration")}</h4>
+                <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("KPI Configuration")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("KPI Objective")}</Label>
@@ -2903,7 +2953,7 @@ export default function ProcessPage() {
 
               {/* KPI Records Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("KPI Records")}</h4>
+                <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("KPI Records")}</h4>
                 <div className="border border-slate-200 rounded-lg p-8 bg-slate-50">
                   <div className="flex flex-col items-center justify-center text-center">
                     <p className="text-slate-400">{t("No KPI records yet")}</p>
@@ -2913,7 +2963,7 @@ export default function ProcessPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsKPIModalOpen(false)}>
               {t("Close")}
             </Button>

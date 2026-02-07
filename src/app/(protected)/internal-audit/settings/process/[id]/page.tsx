@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -949,27 +949,33 @@ export default function EditProcessPage() {
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 max-w-4xl mx-auto">
-            <Button variant="outline" onClick={() => router.push("/internal-audit/settings/process")}>
-              {t("Cancel")}
+          <div className="flex items-center gap-3 mt-8 max-w-4xl mx-auto">
+            <span className="text-xs font-medium text-slate-400 me-auto">
+              {t("Step")} {currentStep} {t("of")} {TOTAL_STEPS}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (currentStep === 1) {
+                  router.push("/internal-audit/settings/process");
+                } else {
+                  handlePrevious();
+                }
+              }}
+            >
+              {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+              {currentStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
-            <div className="flex gap-2">
-              {currentStep > 1 && (
-                <Button variant="outline" onClick={handlePrevious}>
-                  {t("Previous")}
-                </Button>
-              )}
-              {currentStep < TOTAL_STEPS && (
-                <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
-                  {t("Next")}
-                </Button>
-              )}
-              {currentStep === TOTAL_STEPS && (
-                <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
-                  {saving ? t("Saving...") : t("Update")}
-                </Button>
-              )}
-            </div>
+            {currentStep < TOTAL_STEPS ? (
+              <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
+                {t("Next")}
+                <ChevronRight className="h-4 w-4 ms-1" />
+              </Button>
+            ) : (
+              <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
+                {saving ? t("Saving...") : t("Update")}
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, MessageSquare, File, FileText, FileImage, FileSpreadsheet, Eye, X, Check, ArrowLeft, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, ChevronLeft, MessageSquare, File, FileText, FileImage, FileSpreadsheet, Eye, X, Check, ArrowLeft, Home, Users, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -27,7 +28,6 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRoles } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
@@ -165,6 +165,8 @@ const ISSUE_STEP_KEYS = [
   { id: 5, nameKey: "Preview & Save", descriptionKey: "Review and submit" },
 ];
 
+const ITEMS_PER_PAGE = 10;
+
 export default function ContextPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -204,6 +206,8 @@ export default function ContextPage() {
   const [issueCategoryFilter, setIssueCategoryFilter] = useState("all");
   const [issueDepartmentFilter, setIssueDepartmentFilter] = useState("all");
   const [issueSearch, setIssueSearch] = useState("");
+  const [stakeholderPage, setStakeholderPage] = useState(1);
+  const [issuePage, setIssuePage] = useState(1);
 
   // Form states
   const [showAddStakeholder, setShowAddStakeholder] = useState(false);
@@ -1262,94 +1266,9 @@ export default function ContextPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  // Stakeholder columns
-  const stakeholderColumns: ColumnDef<Stakeholder>[] = [
-    {
-      accessorKey: "name",
-      header: t("Name"),
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
-    },
-    {
-      accessorKey: "type",
-      header: t("Type"),
-      cell: ({ row }) => {
-        const type = row.getValue("type") as string;
-        return (
-          <Badge variant={type === "Internal" ? "default" : type === "External" ? "secondary" : "outline"}>
-            {type === "Internal" ? t("Internal") : type === "External" ? t("External") : t("Third Party")}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "department.name",
-      header: t("Department"),
-      cell: ({ row }) => row.original.department?.name || "-",
-    },
-    {
-      accessorKey: "status",
-      header: t("Status"),
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        return (
-          <Badge
-            variant="outline"
-            className={status === "Active"
-              ? "border-transparent bg-success-light text-success-dark"
-              : "border-transparent bg-slate-100 text-slate-600"
-            }
-          >
-            {status === "Active" ? t("Active") : t("Inactive")}
-          </Badge>
-        );
-      },
-    },
-    // Only show actions column for non-readonly roles
-    ...(!isReadOnlyRole ? [{
-      id: "actions",
-      header: t("Actions"),
-      cell: ({ row }: { row: { original: Stakeholder } }) => (
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleEditStakeholder(row.original)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-            onClick={() => {
-              setDeletingItem({ type: "stakeholder", id: row.original.id });
-              setIsDeleteDialogOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    }] : []),
-  ];
-
   // Get unique categories and domains from issues
   const uniqueCategories = [...new Set(issues.map((i) => i.category))];
   const uniqueDomains = [...new Set(issues.map((i) => i.domain))];
-
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Open":
-        return "bg-error-light text-error-dark";
-      case "In Progress":
-        return "bg-warning-light text-warning-dark";
-      case "Pending":
-        return "bg-info-light text-info-dark";
-      case "Resolved":
-        return "bg-success-light text-success-dark";
-      case "Closed":
-        return "bg-slate-100 text-slate-800";
-      default:
-        return "bg-slate-100 text-slate-800";
-    }
-  };
 
   if (loading) {
     return (
@@ -1543,12 +1462,12 @@ export default function ContextPage() {
                 {/* Description */}
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                  <textarea
+                  <Textarea
                     id="issueDescription"
                     value={newIssue.description}
                     onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
                     placeholder={t("Enter issue description")}
-                    className="w-full min-h-[100px] px-3 py-2 text-sm border border-slate-200 rounded-md mt-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="min-h-[100px] mt-1.5"
                   />
                 </div>
               </div>
@@ -1561,14 +1480,13 @@ export default function ContextPage() {
                 <p className="text-slate-500 text-sm">{t("Select regulations related to this issue (optional)")}</p>
                 <div className="border rounded-lg p-4 min-h-[200px]">
                   {regulations.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {regulations.map((reg) => (
-                        <label key={reg.id} className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer">
-                          <input
-                            type="checkbox"
+                        <label key={reg.id} className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-50 cursor-pointer transition-colors">
+                          <Checkbox
                             checked={newIssue.selectedRegulations.includes(reg.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
+                            onCheckedChange={(checked) => {
+                              if (checked) {
                                 setNewIssue({
                                   ...newIssue,
                                   selectedRegulations: [...newIssue.selectedRegulations, reg.id],
@@ -1580,17 +1498,16 @@ export default function ContextPage() {
                                 });
                               }
                             }}
-                            className="h-4 w-4"
                           />
                           <div className="flex-1">
-                            <span className="font-medium">{reg.name}</span>
-                            {reg.version && <span className="text-slate-500 ml-2 text-sm">v{reg.version}</span>}
+                            <span className="text-sm font-medium text-slate-700">{reg.name}</span>
+                            {reg.version && <span className="text-slate-400 ms-2 text-xs">v{reg.version}</span>}
                           </div>
                         </label>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center text-slate-500 h-full">
+                    <div className="flex items-center justify-center text-sm text-slate-400 h-full">
                       {t("No regulations available")}
                     </div>
                   )}
@@ -1604,6 +1521,7 @@ export default function ContextPage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Related Processes")}</h3>
                   <Button variant="outline" onClick={handleOpenProcessDialog}>
+                    <Plus className="h-4 w-4 me-1.5" />
                     {t("Choose Processes")}
                   </Button>
                 </div>
@@ -1728,7 +1646,7 @@ export default function ContextPage() {
                     onClick={handleAddStakeholderNeed}
                     disabled={!selectedStakeholderId || !selectedNeedExpectation}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-1.5" />
                     {t("Add Stakeholder")}
                   </Button>
                 </div>
@@ -1736,7 +1654,7 @@ export default function ContextPage() {
                 {/* Stakeholder Needs and Exceptions Table */}
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Needs and Expectations")}</Label>
-                  <div className="border rounded-lg min-h-[150px] mt-1.5">
+                  <div className="border rounded-lg min-h-[150px] mt-1.5 overflow-hidden">
                     {stakeholderNeeds.length > 0 ? (
                       <table className="w-full">
                         <thead className="bg-slate-50 border-b">
@@ -1870,7 +1788,10 @@ export default function ContextPage() {
         </div>
 
         {/* Fixed Footer with Navigation */}
-        <div className="flex-shrink-0 flex justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <span className="text-xs font-medium text-slate-400 me-auto">
+            {t("Step")} {currentStep} {t("of")} 5
+          </span>
           <Button
             variant="outline"
             onClick={() => {
@@ -1882,6 +1803,7 @@ export default function ContextPage() {
               }
             }}
           >
+            {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
             {currentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           <Button
@@ -1894,6 +1816,7 @@ export default function ContextPage() {
             }}
           >
             {currentStep === 5 ? t("Save Issue") : t("Next")}
+            {currentStep < 5 && <ChevronRight className="h-4 w-4 ms-1" />}
           </Button>
         </div>
       </DialogContent>
@@ -1918,7 +1841,7 @@ export default function ContextPage() {
                 className="mt-1.5"
               />
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
                 {t("Cancel")}
               </Button>
@@ -1949,7 +1872,7 @@ export default function ContextPage() {
                 className="mt-1.5"
               />
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
                 {t("Cancel")}
               </Button>
@@ -1980,7 +1903,7 @@ export default function ContextPage() {
                 className="mt-1.5"
               />
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
                 {t("Cancel")}
               </Button>
@@ -1993,20 +1916,20 @@ export default function ContextPage() {
 
         {/* Choose Processes Dialog */}
         <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
-          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Process")}</DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
                   {t("Select processes to link with this issue.")}
                 </DialogDescription>
               </DialogHeader>
             </div>
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder={t("Search processes...")}
                   value={processSearchQuery}
@@ -2014,46 +1937,49 @@ export default function ContextPage() {
                   className="pl-10"
                 />
               </div>
-              <div className="max-h-[300px] overflow-y-auto space-y-3">
+              <div className="border rounded-lg p-4 min-h-[200px]">
                 {filteredProcesses.length > 0 ? (
-                  <>
+                  <div className="space-y-1">
                     {filteredProcesses.map((process) => (
                       <label
                         key={process.id}
-                        className="flex items-start gap-3 p-4 border rounded-lg border-slate-200 cursor-pointer transition-colors"
+                        className={`flex items-start gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
+                          tempSelectedProcesses.includes(process.id)
+                            ? "bg-primary-50"
+                            : "hover:bg-slate-50"
+                        }`}
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={tempSelectedProcesses.includes(process.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
+                          onCheckedChange={(checked) => {
+                            if (checked) {
                               setTempSelectedProcesses([...tempSelectedProcesses, process.id]);
                             } else {
                               setTempSelectedProcesses(tempSelectedProcesses.filter((id) => id !== process.id));
                             }
                           }}
-                          className="h-4 w-4 mt-1"
+                          className="mt-0.5"
                         />
                         <div className="flex-1">
-                          <div className="text-primary-600 font-medium">
+                          <span className="text-sm font-medium text-slate-700">
                             {process.processCode} : {process.name}
-                          </div>
+                          </span>
                           {process.description && (
-                            <p className="text-sm text-slate-500 mt-1">{process.description}</p>
+                            <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{process.description}</p>
                           )}
                         </div>
                       </label>
                     ))}
-                  </>
+                  </div>
                 ) : (
-                  <div className="flex items-center justify-center h-[200px] text-slate-500">
+                  <div className="flex items-center justify-center h-[200px] text-sm text-slate-400">
                     {t("No processes found")}
                   </div>
                 )}
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setShowProcessDialog(false)}>
                 {t("Cancel")}
               </Button>
@@ -2090,7 +2016,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddNeedDialog(false); setNewNeedExpectation(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2288,12 +2214,12 @@ export default function ContextPage() {
                 {/* Description */}
                 <div>
                   <Label htmlFor="editIssueDescription" className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                  <textarea
+                  <Textarea
                     id="editIssueDescription"
                     value={editIssueForm.description}
                     onChange={(e) => setEditIssueForm({ ...editIssueForm, description: e.target.value })}
                     placeholder={t("Enter issue description")}
-                    className="w-full min-h-[100px] px-3 py-2 text-sm border border-slate-200 rounded-md mt-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="min-h-[100px] mt-1.5"
                   />
                 </div>
               </div>
@@ -2308,14 +2234,13 @@ export default function ContextPage() {
                 </div>
                 <div className="border rounded-lg p-4 min-h-[200px]">
                   {regulations.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {regulations.map((reg) => (
-                        <label key={reg.id} className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer">
-                          <input
-                            type="checkbox"
+                        <label key={reg.id} className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-50 cursor-pointer transition-colors">
+                          <Checkbox
                             checked={editIssueForm.selectedRegulations.includes(reg.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
+                            onCheckedChange={(checked) => {
+                              if (checked) {
                                 setEditIssueForm({
                                   ...editIssueForm,
                                   selectedRegulations: [...editIssueForm.selectedRegulations, reg.id],
@@ -2327,17 +2252,16 @@ export default function ContextPage() {
                                 });
                               }
                             }}
-                            className="h-4 w-4"
                           />
                           <div className="flex-1">
-                            <span className="font-medium">{reg.name}</span>
-                            {reg.version && <span className="text-slate-500 ml-2 text-sm">v{reg.version}</span>}
+                            <span className="text-sm font-medium text-slate-700">{reg.name}</span>
+                            {reg.version && <span className="text-slate-400 ms-2 text-xs">v{reg.version}</span>}
                           </div>
                         </label>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center text-slate-500 h-full">
+                    <div className="flex items-center justify-center text-sm text-slate-400 h-full">
                       {t("No regulations available")}
                     </div>
                   )}
@@ -2351,6 +2275,7 @@ export default function ContextPage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Related Processes")}</h3>
                   <Button variant="outline" onClick={handleOpenEditProcessDialog}>
+                    <Plus className="h-4 w-4 me-1.5" />
                     {t("Choose Processes")}
                   </Button>
                 </div>
@@ -2475,7 +2400,7 @@ export default function ContextPage() {
                     onClick={handleAddEditStakeholderNeed}
                     disabled={!editSelectedStakeholderId || !editSelectedNeedExpectation}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-1.5" />
                     {t("Add Stakeholder")}
                   </Button>
                 </div>
@@ -2483,7 +2408,7 @@ export default function ContextPage() {
                 {/* Stakeholder Needs and Exceptions Table */}
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Needs and Expectations")}</Label>
-                  <div className="border rounded-lg min-h-[150px] mt-1.5">
+                  <div className="border rounded-lg min-h-[150px] mt-1.5 overflow-hidden">
                     {editStakeholderNeeds.length > 0 ? (
                       <table className="w-full">
                         <thead className="bg-slate-50 border-b">
@@ -2531,46 +2456,46 @@ export default function ContextPage() {
             {editCurrentStep === 5 && (
               <div className="space-y-5">
                 <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Preview & Save")}</h3>
-                <div className="border rounded-lg p-6 space-y-4 bg-slate-50">
+                <div className="border border-slate-200 rounded-lg p-6 space-y-4 bg-slate-50">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-slate-500">{t("Title")}</Label>
-                      <p className="font-medium">{editIssueForm.title || "-"}</p>
+                      <p className="text-xs text-slate-500 mb-1">{t("Title")}</p>
+                      <p className="text-sm font-medium text-slate-800">{editIssueForm.title || "-"}</p>
                     </div>
                     <div>
-                      <Label className="text-slate-500">{t("Domain")}</Label>
-                      <p className="font-medium">{editIssueForm.domain}</p>
+                      <p className="text-xs text-slate-500 mb-1">{t("Domain")}</p>
+                      <p className="text-sm font-medium text-slate-800">{editIssueForm.domain}</p>
                     </div>
                     <div>
-                      <Label className="text-slate-500">{t("Category")}</Label>
-                      <p className="font-medium">{editIssueForm.category}</p>
+                      <p className="text-xs text-slate-500 mb-1">{t("Category")}</p>
+                      <p className="text-sm font-medium text-slate-800">{editIssueForm.category}</p>
                     </div>
                     <div>
-                      <Label className="text-slate-500">{t("Issue Type")}</Label>
-                      <p className="font-medium">{editIssueForm.issueType || "-"}</p>
+                      <p className="text-xs text-slate-500 mb-1">{t("Issue Type")}</p>
+                      <p className="text-sm font-medium text-slate-800">{editIssueForm.issueType || "-"}</p>
                     </div>
                     <div>
-                      <Label className="text-slate-500">{t("Department")}</Label>
-                      <p className="font-medium">
+                      <p className="text-xs text-slate-500 mb-1">{t("Department")}</p>
+                      <p className="text-sm font-medium text-slate-800">
                         {departments.find((d) => d.id === editIssueForm.departmentId)?.name || "-"}
                       </p>
                     </div>
                     <div>
-                      <Label className="text-slate-500">{t("Issue Owner")}</Label>
-                      <p className="font-medium">
+                      <p className="text-xs text-slate-500 mb-1">{t("Issue Owner")}</p>
+                      <p className="text-sm font-medium text-slate-800">
                         {users.find((u) => u.id === editIssueForm.ownerId)?.fullName || "-"}
                       </p>
                     </div>
                   </div>
                   {editIssueForm.description && (
                     <div>
-                      <Label className="text-slate-500">{t("Description")}</Label>
-                      <p className="font-medium">{editIssueForm.description}</p>
+                      <p className="text-xs text-slate-500 mb-1">{t("Description")}</p>
+                      <p className="text-sm font-medium text-slate-800">{editIssueForm.description}</p>
                     </div>
                   )}
                   {editIssueForm.selectedRegulations.length > 0 && (
                     <div>
-                      <Label className="text-slate-500">{t("Related Regulations")}</Label>
+                      <p className="text-xs text-slate-500 mb-1">{t("Related Regulations")}</p>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {editIssueForm.selectedRegulations.map((id) => {
                           const regulation = regulations.find((r) => r.id === id);
@@ -2583,7 +2508,7 @@ export default function ContextPage() {
                   )}
                   {editIssueForm.selectedProcesses.length > 0 && (
                     <div>
-                      <Label className="text-slate-500">{t("Related Processes")}</Label>
+                      <p className="text-xs text-slate-500 mb-1">{t("Related Processes")}</p>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {editIssueForm.selectedProcesses.map((id) => {
                           const process = processes.find((p) => p.id === id);
@@ -2596,13 +2521,13 @@ export default function ContextPage() {
                   )}
                   {editStakeholderNeeds.length > 0 && (
                     <div>
-                      <Label className="text-slate-500">{t("Stakeholder Needs and Expectations")}</Label>
+                      <p className="text-xs text-slate-500 mb-1">{t("Stakeholder Needs and Expectations")}</p>
                       <div className="mt-1 space-y-1">
                         {editStakeholderNeeds.map((item, index) => {
                           const stakeholder = stakeholders.find((s) => s.id === item.stakeholderId);
                           return (
-                            <div key={index} className="text-sm">
-                              <span className="font-medium">{stakeholder?.name}</span>: {item.needExpectation}
+                            <div key={index} className="text-sm text-slate-700">
+                              <span className="font-medium text-slate-800">{stakeholder?.name}</span>: {item.needExpectation}
                             </div>
                           );
                         })}
@@ -2617,7 +2542,10 @@ export default function ContextPage() {
         </div>
 
         {/* Fixed Footer with Navigation */}
-        <div className="flex-shrink-0 flex justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <span className="text-xs font-medium text-slate-400 me-auto">
+            {t("Step")} {editCurrentStep} {t("of")} 5
+          </span>
           <Button
             variant="outline"
             onClick={() => {
@@ -2630,6 +2558,7 @@ export default function ContextPage() {
               }
             }}
           >
+            {editCurrentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
             {editCurrentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           <Button
@@ -2642,6 +2571,7 @@ export default function ContextPage() {
             }}
           >
             {editCurrentStep === 5 ? t("Update Issue") : t("Next")}
+            {editCurrentStep < 5 && <ChevronRight className="h-4 w-4 ms-1" />}
           </Button>
         </div>
       </DialogContent>
@@ -2667,7 +2597,7 @@ export default function ContextPage() {
                 className="mt-1.5"
               />
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2706,7 +2636,7 @@ export default function ContextPage() {
                 className="mt-1.5"
               />
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2745,7 +2675,7 @@ export default function ContextPage() {
                 className="mt-1.5"
               />
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2765,20 +2695,20 @@ export default function ContextPage() {
 
         {/* Choose Processes Dialog for Edit */}
         <Dialog open={showEditProcessDialog} onOpenChange={setShowEditProcessDialog}>
-          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Process")}</DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
                   {t("Select processes to link with this issue.")}
                 </DialogDescription>
               </DialogHeader>
             </div>
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder={t("Search processes...")}
                   value={editProcessSearchQuery}
@@ -2786,46 +2716,49 @@ export default function ContextPage() {
                   className="pl-10"
                 />
               </div>
-              <div className="max-h-[300px] overflow-y-auto space-y-3">
+              <div className="border rounded-lg p-4 min-h-[200px]">
                 {filteredEditProcesses.length > 0 ? (
-                  <>
+                  <div className="space-y-1">
                     {filteredEditProcesses.map((process) => (
                       <label
                         key={process.id}
-                        className="flex items-start gap-3 p-4 border rounded-lg border-slate-200 cursor-pointer transition-colors"
+                        className={`flex items-start gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
+                          editTempSelectedProcesses.includes(process.id)
+                            ? "bg-primary-50"
+                            : "hover:bg-slate-50"
+                        }`}
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={editTempSelectedProcesses.includes(process.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
+                          onCheckedChange={(checked) => {
+                            if (checked) {
                               setEditTempSelectedProcesses([...editTempSelectedProcesses, process.id]);
                             } else {
                               setEditTempSelectedProcesses(editTempSelectedProcesses.filter((id) => id !== process.id));
                             }
                           }}
-                          className="h-4 w-4 mt-1"
+                          className="mt-0.5"
                         />
                         <div className="flex-1">
-                          <div className="text-primary-600 font-medium">
+                          <span className="text-sm font-medium text-slate-700">
                             {process.processCode} : {process.name}
-                          </div>
+                          </span>
                           {process.description && (
-                            <p className="text-sm text-slate-500 mt-1">{process.description}</p>
+                            <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{process.description}</p>
                           )}
                         </div>
                       </label>
                     ))}
-                  </>
+                  </div>
                 ) : (
-                  <div className="flex items-center justify-center h-[200px] text-slate-500">
+                  <div className="flex items-center justify-center h-[200px] text-sm text-slate-400">
                     {t("No processes found")}
                   </div>
                 )}
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setShowEditProcessDialog(false)}>
                 {t("Cancel")}
               </Button>
@@ -2838,32 +2771,38 @@ export default function ContextPage() {
 
         {/* Add Need/Expectation Dialog for Edit */}
         <Dialog open={showAddNeedDialog} onOpenChange={setShowAddNeedDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("Add New Need/Expectation")}</DialogTitle>
-              <DialogDescription>
-                {t("Enter a new need or expectation type.")}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editNewNeedExpectation">{t("Need/Expectation")} *</Label>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Need/Expectation")}</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  {t("Enter a new need or expectation type.")}
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              <div>
+                <Label htmlFor="editNewNeedExpectation" className="text-sm font-medium text-slate-700">{t("Need/Expectation")} *</Label>
                 <Input
                   id="editNewNeedExpectation"
                   value={newNeedExpectation}
                   onChange={(e) => setNewNeedExpectation(e.target.value)}
                   placeholder={t("Enter need/expectation")}
+                  className="mt-1.5"
                 />
               </div>
             </div>
-            <DialogFooter>
+            {/* Fixed Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddNeedDialog(false); setNewNeedExpectation(""); }}>
                 {t("Cancel")}
               </Button>
               <Button onClick={handleAddCustomNeedExpectation} disabled={!newNeedExpectation.trim()}>
                 {t("Add")}
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
     </Dialog>
@@ -2892,46 +2831,134 @@ export default function ContextPage() {
 
       {/* DepartmentContributor: Show Stakeholder without tabs */}
       {isDepartmentContributor ? (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder={t("Search stakeholders...")}
-                value={stakeholderSearch}
-                onChange={(e) => setStakeholderSearch(e.target.value)}
-                className="pl-10 w-[250px] bg-white"
-              />
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-semibold text-slate-800">{t("Stakeholders")}</h3>
+              {filteredStakeholders.length > 0 && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  {filteredStakeholders.length}
+                </span>
+              )}
             </div>
-            <Select value={stakeholderTypeFilter} onValueChange={setStakeholderTypeFilter}>
-              <SelectTrigger className="w-[150px] bg-white">
-                <SelectValue placeholder={t("Type")} />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4}>
-                <SelectItem value="all">{t("All Types")}</SelectItem>
-                <SelectItem value="Internal">{t("Internal")}</SelectItem>
-                <SelectItem value="External">{t("External")}</SelectItem>
-                <SelectItem value="Third Party">{t("Third Party")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={stakeholderStatusFilter} onValueChange={setStakeholderStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-white">
-                <SelectValue placeholder={t("Status")} />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4}>
-                <SelectItem value="all">{t("All Status")}</SelectItem>
-                <SelectItem value="Active">{t("Active")}</SelectItem>
-                <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          <DataGrid
-            columns={stakeholderColumns}
-            data={filteredStakeholders}
-            hideSearch={true}
-          />
-        </div>
+          {filteredStakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Search & Filters */}
+              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+                <div className="relative max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t("Search stakeholders...")}
+                    value={stakeholderSearch}
+                    onChange={(e) => { setStakeholderSearch(e.target.value); setStakeholderPage(1); }}
+                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  />
+                </div>
+                <div className="flex items-center gap-3 ml-auto">
+                <Select value={stakeholderTypeFilter} onValueChange={(v) => { setStakeholderTypeFilter(v); setStakeholderPage(1); }}>
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Type")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Types")}</SelectItem>
+                    <SelectItem value="Internal">{t("Internal")}</SelectItem>
+                    <SelectItem value="External">{t("External")}</SelectItem>
+                    <SelectItem value="Third Party">{t("Third Party")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={stakeholderStatusFilter} onValueChange={(v) => { setStakeholderStatusFilter(v); setStakeholderPage(1); }}>
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Status")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Status")}</SelectItem>
+                    <SelectItem value="Active">{t("Active")}</SelectItem>
+                    <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                </div>
+              </div>
+              {/* Column Headers */}
+              <div className="grid grid-cols-[1fr_120px_1fr_120px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <span>{t("Name")}</span>
+                <span>{t("Type")}</span>
+                <span>{t("Department")}</span>
+                <span>{t("Status")}</span>
+              </div>
+              {/* Rows */}
+              {(() => {
+                const paginated = filteredStakeholders.slice(
+                  (stakeholderPage - 1) * ITEMS_PER_PAGE,
+                  stakeholderPage * ITEMS_PER_PAGE
+                );
+                return (
+                  <>
+                    <div className="divide-y divide-slate-100">
+                      {paginated.map((s) => (
+                        <div key={s.id} className="grid grid-cols-[1fr_120px_1fr_120px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                              <Users className="h-4 w-4 text-primary-500" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-800 truncate">{s.name}</span>
+                          </div>
+                          <div>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              s.type === "Internal" ? "bg-primary-50 text-primary-700"
+                              : s.type === "External" ? "bg-amber-50 text-amber-700"
+                              : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {t(s.type)}
+                            </span>
+                          </div>
+                          <span className="text-sm text-slate-600 truncate">{s.department?.name || "-"}</span>
+                          <div>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              s.status === "Active" ? "bg-success-light text-success-dark" : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {t(s.status)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {paginated.length === 0 && (
+                        <div className="px-5 py-12 text-center text-sm text-slate-400">{t("No stakeholders match your search.")}</div>
+                      )}
+                    </div>
+                    {/* Pagination */}
+                    {filteredStakeholders.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                        <span className="text-xs text-slate-500">
+                          {(stakeholderPage - 1) * ITEMS_PER_PAGE + 1} {t("to")} {Math.min(stakeholderPage * ITEMS_PER_PAGE, filteredStakeholders.length)} {t("of")} {filteredStakeholders.length}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" disabled={stakeholderPage === 1} onClick={() => setStakeholderPage(stakeholderPage - 1)}>
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" disabled={stakeholderPage * ITEMS_PER_PAGE >= filteredStakeholders.length} onClick={() => setStakeholderPage(stakeholderPage + 1)}>
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-primary-500" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Stakeholders")}</h3>
+              <p className="text-sm text-slate-500">{t("No stakeholders have been added yet.")}</p>
+            </div>
+          )}
+        </>
       ) : (
         /* Other roles: Show normal tabs with Stakeholder and Issue List */
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -2942,277 +2969,360 @@ export default function ContextPage() {
 
           {/* Stakeholder Tab */}
           <TabsContent value="stakeholder" className="mt-6">
-            {/* Filters and Action Button */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    placeholder={t("Search stakeholders...")}
-                    value={stakeholderSearch}
-                    onChange={(e) => setStakeholderSearch(e.target.value)}
-                    className="pl-10 w-[250px] bg-white"
-                  />
-                </div>
-                <Select value={stakeholderTypeFilter} onValueChange={setStakeholderTypeFilter}>
-                  <SelectTrigger className="w-[150px] bg-white">
-                    <SelectValue placeholder={t("Type")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="all">{t("All Types")}</SelectItem>
-                    <SelectItem value="Internal">{t("Internal")}</SelectItem>
-                    <SelectItem value="External">{t("External")}</SelectItem>
-                    <SelectItem value="Third Party">{t("Third Party")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={stakeholderStatusFilter} onValueChange={setStakeholderStatusFilter}>
-                  <SelectTrigger className="w-[150px] bg-white">
-                    <SelectValue placeholder={t("Status")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="all">{t("All Status")}</SelectItem>
-                    <SelectItem value="Active">{t("Active")}</SelectItem>
-                    <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-semibold text-slate-800">{t("Stakeholders")}</h3>
+                {stakeholders.length > 0 && (
+                  <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {stakeholders.length}
+                  </span>
+                )}
               </div>
               {!isReadOnlyRole && (
                 <Button size="sm" onClick={() => setShowAddStakeholder(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   {t("New Stakeholder")}
                 </Button>
               )}
             </div>
 
-            <DataGrid
-              columns={stakeholderColumns}
-              data={filteredStakeholders}
-              hideSearch={true}
-            />
+            {stakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {/* Search & Filters */}
+                <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+                  <div className="relative max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={t("Search stakeholders...")}
+                      value={stakeholderSearch}
+                      onChange={(e) => { setStakeholderSearch(e.target.value); setStakeholderPage(1); }}
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 ml-auto">
+                  <Select value={stakeholderTypeFilter} onValueChange={(v) => { setStakeholderTypeFilter(v); setStakeholderPage(1); }}>
+                    <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                      <SelectValue placeholder={t("Type")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="all">{t("All Types")}</SelectItem>
+                      <SelectItem value="Internal">{t("Internal")}</SelectItem>
+                      <SelectItem value="External">{t("External")}</SelectItem>
+                      <SelectItem value="Third Party">{t("Third Party")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={stakeholderStatusFilter} onValueChange={(v) => { setStakeholderStatusFilter(v); setStakeholderPage(1); }}>
+                    <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                      <SelectValue placeholder={t("Status")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="all">{t("All Status")}</SelectItem>
+                      <SelectItem value="Active">{t("Active")}</SelectItem>
+                      <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  </div>
+                </div>
+                {/* Column Headers */}
+                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1fr_120px_1fr_120px_72px]" : "grid-cols-[1fr_120px_1fr_120px]"} gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider`}>
+                  <span>{t("Name")}</span>
+                  <span>{t("Type")}</span>
+                  <span>{t("Department")}</span>
+                  <span>{t("Status")}</span>
+                  {!isReadOnlyRole && <span className="text-end">{t("Actions")}</span>}
+                </div>
+                {/* Rows */}
+                {(() => {
+                  const paginated = filteredStakeholders.slice(
+                    (stakeholderPage - 1) * ITEMS_PER_PAGE,
+                    stakeholderPage * ITEMS_PER_PAGE
+                  );
+                  return (
+                    <>
+                      <div className="divide-y divide-slate-100">
+                        {paginated.map((s) => (
+                          <div key={s.id} className={`grid ${!isReadOnlyRole ? "grid-cols-[1fr_120px_1fr_120px_72px]" : "grid-cols-[1fr_120px_1fr_120px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors`}>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                                <Users className="h-4 w-4 text-primary-500" />
+                              </div>
+                              <span className="text-sm font-medium text-slate-800 truncate">{s.name}</span>
+                            </div>
+                            <div>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                s.type === "Internal" ? "bg-primary-50 text-primary-700"
+                                : s.type === "External" ? "bg-amber-50 text-amber-700"
+                                : "bg-slate-100 text-slate-600"
+                              }`}>
+                                {t(s.type)}
+                              </span>
+                            </div>
+                            <span className="text-sm text-slate-600 truncate">{s.department?.name || "-"}</span>
+                            <div>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                s.status === "Active" ? "bg-success-light text-success-dark" : "bg-slate-100 text-slate-600"
+                              }`}>
+                                {t(s.status)}
+                              </span>
+                            </div>
+                            {!isReadOnlyRole && (
+                              <div className="flex items-center justify-end gap-0.5">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleEditStakeholder(s)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setDeletingItem({ type: "stakeholder", id: s.id }); setIsDeleteDialogOpen(true); }}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {paginated.length === 0 && (
+                          <div className="px-5 py-12 text-center text-sm text-slate-400">{t("No stakeholders match your search.")}</div>
+                        )}
+                      </div>
+                      {/* Pagination */}
+                      {filteredStakeholders.length > ITEMS_PER_PAGE && (
+                        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                          <span className="text-xs text-slate-500">
+                            {(stakeholderPage - 1) * ITEMS_PER_PAGE + 1} {t("to")} {Math.min(stakeholderPage * ITEMS_PER_PAGE, filteredStakeholders.length)} {t("of")} {filteredStakeholders.length}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" disabled={stakeholderPage === 1} onClick={() => setStakeholderPage(stakeholderPage - 1)}>
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" disabled={stakeholderPage * ITEMS_PER_PAGE >= filteredStakeholders.length} onClick={() => setStakeholderPage(stakeholderPage + 1)}>
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-6 w-6 text-primary-500" />
+                </div>
+                <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Stakeholders")}</h3>
+                <p className="text-sm text-slate-500 mb-6">{t("Add your first stakeholder to get started.")}</p>
+                {!isReadOnlyRole && (
+                  <Button size="sm" onClick={() => setShowAddStakeholder(true)}>
+                    <Plus className="h-4 w-4 me-2" />
+                    {t("New Stakeholder")}
+                  </Button>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           {/* Issue List Tab */}
           <TabsContent value="issuelist" className="mt-6">
-            {/* Filters and Action Buttons */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    placeholder={t("Search issues...")}
-                    value={issueSearch}
-                    onChange={(e) => setIssueSearch(e.target.value)}
-                    className="pl-10 w-[250px] bg-white"
-                  />
-                </div>
-                <Select value={issueDepartmentFilter} onValueChange={setIssueDepartmentFilter}>
-                  <SelectTrigger className="w-[180px] bg-white">
-                    <SelectValue placeholder={t("Department")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="all">{t("All Departments")}</SelectItem>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={issueCategoryFilter} onValueChange={setIssueCategoryFilter}>
-                  <SelectTrigger className="w-[150px] bg-white">
-                    <SelectValue placeholder={t("Category")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="all">{t("All Categories")}</SelectItem>
-                    {uniqueCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={issueDomainFilter} onValueChange={setIssueDomainFilter}>
-                  <SelectTrigger className="w-[150px] bg-white">
-                    <SelectValue placeholder={t("Domain")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="all">{t("All Domains")}</SelectItem>
-                    {uniqueDomains.map((domain) => (
-                      <SelectItem key={domain} value={domain}>
-                        {domain}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-semibold text-slate-800">{t("Issues")}</h3>
+                {issues.length > 0 && (
+                  <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {issues.length}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {!isReadOnlyRole && (
                   <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     {t("Import")}
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={handleExport}>
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 me-2" />
                   {t("Export")}
                 </Button>
                 {!isReadOnlyRole && (
                   <Button size="sm" onClick={() => setShowAddIssue(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     {t("Add New")}
                   </Button>
                 )}
               </div>
             </div>
 
-            {/* Issue Cards - Single column list layout */}
-            <div className="space-y-3">
-              {filteredIssues.map((issue, index) => (
-                <div key={issue.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  {/* Card Header */}
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs font-semibold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-md">
-                        IS{String(index + 1).padStart(3, '0')}
-                      </span>
-                      <h3 className="text-sm font-semibold text-slate-800">{issue.title}</h3>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        variant="outline"
-                        className={
-                          issue.status === "Open"
-                            ? "border-transparent bg-error-light text-error-dark"
-                            : issue.status === "In Progress"
-                            ? "border-transparent bg-warning-light text-warning-dark"
-                            : issue.status === "Resolved"
-                            ? "border-transparent bg-success-light text-success-dark"
-                            : "border-transparent bg-slate-100 text-slate-600"
-                        }
-                      >
-                        {t(issue.status)}
-                      </Badge>
-                      {!isReadOnlyRole && (
-                        <div className="flex items-center gap-1 ml-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleEditIssue(issue)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                            onClick={() => {
-                              setDeletingItem({ type: "issue", id: issue.id });
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+            {issues.length > 0 || issueSearch || issueDepartmentFilter !== "all" || issueCategoryFilter !== "all" || issueDomainFilter !== "all" ? (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {/* Search & Filters */}
+                <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+                  <div className="relative max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={t("Search issues...")}
+                      value={issueSearch}
+                      onChange={(e) => { setIssueSearch(e.target.value); setIssuePage(1); }}
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 ml-auto">
+                  <Select value={issueDepartmentFilter} onValueChange={(v) => { setIssueDepartmentFilter(v); setIssuePage(1); }}>
+                    <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                      <SelectValue placeholder={t("Department")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="all">{t("All Departments")}</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={issueCategoryFilter} onValueChange={(v) => { setIssueCategoryFilter(v); setIssuePage(1); }}>
+                    <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                      <SelectValue placeholder={t("Category")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="all">{t("All Categories")}</SelectItem>
+                      {uniqueCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={issueDomainFilter} onValueChange={(v) => { setIssueDomainFilter(v); setIssuePage(1); }}>
+                    <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                      <SelectValue placeholder={t("Domain")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="all">{t("All Domains")}</SelectItem>
+                      {uniqueDomains.map((domain) => (
+                        <SelectItem key={domain} value={domain}>{domain}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  </div>
+                </div>
+                {/* Column Headers */}
+                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_1fr_110px_100px_1fr_100px_72px]" : "grid-cols-[1.5fr_1fr_110px_100px_1fr_100px]"} gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider`}>
+                  <span>{t("Title")}</span>
+                  <span>{t("Owner")}</span>
+                  <span>{t("Category")}</span>
+                  <span>{t("Domain")}</span>
+                  <span>{t("Department")}</span>
+                  <span>{t("Status")}</span>
+                  {!isReadOnlyRole && <span className="text-end">{t("Actions")}</span>}
+                </div>
+                {/* Rows */}
+                {(() => {
+                  const paginated = filteredIssues.slice(
+                    (issuePage - 1) * ITEMS_PER_PAGE,
+                    issuePage * ITEMS_PER_PAGE
+                  );
+                  return (
+                    <>
+                      <div className="divide-y divide-slate-100">
+                        {paginated.map((issue) => (
+                          <div key={issue.id}>
+                            <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_1fr_110px_100px_1fr_100px_72px]" : "grid-cols-[1.5fr_1fr_110px_100px_1fr_100px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors`}>
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                                  <AlertTriangle className="h-4 w-4 text-primary-500" />
+                                </div>
+                                <span className="text-sm font-medium text-slate-800 truncate">{issue.title}</span>
+                              </div>
+                              <span className="text-sm text-slate-600 truncate">{issue.owner?.fullName || "-"}</span>
+                              <span className="text-sm text-slate-600 truncate">{issue.category || "-"}</span>
+                              <span className="text-sm text-slate-600 truncate">{issue.domain || "-"}</span>
+                              <span className="text-sm text-slate-600 truncate">{issue.department?.name || "-"}</span>
+                              <div>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  issue.status === "Open" ? "bg-error-light text-error-dark"
+                                  : issue.status === "In Progress" ? "bg-warning-light text-warning-dark"
+                                  : issue.status === "Resolved" ? "bg-success-light text-success-dark"
+                                  : "bg-slate-100 text-slate-600"
+                                }`}>
+                                  {t(issue.status)}
+                                </span>
+                              </div>
+                              {!isReadOnlyRole && (
+                                <div className="flex items-center justify-end gap-0.5">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleEditIssue(issue)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setDeletingItem({ type: "issue", id: issue.id }); setIsDeleteDialogOpen(true); }}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            {/* Action Buttons Footer - Only show if there are actions or for readonly role */}
+                            {(isReadOnlyRole || (isReviewerRole && issue.actions && issue.actions.length > 0)) && (
+                              <div className="flex items-center gap-3 px-5 py-2.5 border-t border-slate-50 bg-slate-50/30">
+                                {isReadOnlyRole && (
+                                  <>
+                                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => { setSelectedIssueForAction(issue); setActionForm({ actionType: "", description: "", completion: 0, comment: "" }); setShowCreateActionDialog(true); }}>
+                                      <Plus className="h-3.5 w-3.5 mr-1.5" />
+                                      {t("Create Action")}
+                                    </Button>
+                                    {issue.actions && issue.actions.length > 0 && (
+                                      <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => { setSelectedIssueForAction(issue); setShowViewActionsDialog(true); }}>
+                                        <Eye className="h-3.5 w-3.5 mr-1.5" />
+                                        {t("View Actions")} ({issue.actions.length})
+                                      </Button>
+                                    )}
+                                  </>
+                                )}
+                                {isReviewerRole && issue.actions && issue.actions.length > 0 && (
+                                  <Button variant="default" size="sm" className="text-xs h-7" onClick={() => {
+                                    setSelectedIssueForAction(issue);
+                                    const pendingAction = issue.actions?.find(a => a.status === "Pending");
+                                    if (pendingAction) { setSelectedActionForReview(pendingAction); setShowActionReviewDialog(true); }
+                                    else { setShowViewActionsDialog(true); }
+                                  }}>
+                                    {t("Review Actions")} ({issue.actions.filter(a => a.status === "Pending").length} {t("pending")})
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {paginated.length === 0 && (
+                          <div className="px-5 py-12 text-center text-sm text-slate-400">{t("No issues match your search.")}</div>
+                        )}
+                      </div>
+                      {/* Pagination */}
+                      {filteredIssues.length > ITEMS_PER_PAGE && (
+                        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                          <span className="text-xs text-slate-500">
+                            {(issuePage - 1) * ITEMS_PER_PAGE + 1} {t("to")} {Math.min(issuePage * ITEMS_PER_PAGE, filteredIssues.length)} {t("of")} {filteredIssues.length}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" disabled={issuePage === 1} onClick={() => setIssuePage(issuePage - 1)}>
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" disabled={issuePage * ITEMS_PER_PAGE >= filteredIssues.length} onClick={() => setIssuePage(issuePage + 1)}>
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       )}
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="px-6 py-5">
-                    {/* Details Row */}
-                    <div className="grid grid-cols-5 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Owner")}</p>
-                        <p className="text-sm font-medium text-slate-700">{issue.owner?.fullName || "-"}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Category")}</p>
-                        <p className="text-sm font-medium text-slate-700">{issue.category || "-"}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Type")}</p>
-                        <p className="text-sm font-medium text-slate-700">{issue.issueType || "-"}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Domain")}</p>
-                        <p className="text-sm font-medium text-slate-700">{issue.domain || "-"}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Department")}</p>
-                        <p className="text-sm font-medium text-slate-700">{issue.department?.name || "-"}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons Footer - Only show if there are actions or for readonly role */}
-                  {(isReadOnlyRole || (isReviewerRole && issue.actions && issue.actions.length > 0)) && (
-                    <div className="flex items-center gap-3 px-6 py-3 border-t border-slate-100 bg-slate-50/30">
-                      {/* DeptReviewer/DeptContributor: Create Action and View Action buttons */}
-                      {isReadOnlyRole && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                              setSelectedIssueForAction(issue);
-                              setActionForm({ actionType: "", description: "", completion: 0, comment: "" });
-                              setShowCreateActionDialog(true);
-                            }}
-                          >
-                            <Plus className="h-3.5 w-3.5 mr-1.5" />
-                            {t("Create Action")}
-                          </Button>
-                          {issue.actions && issue.actions.length > 0 && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => {
-                                setSelectedIssueForAction(issue);
-                                setShowViewActionsDialog(true);
-                              }}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-1.5" />
-                              {t("View Actions")} ({issue.actions.length})
-                            </Button>
-                          )}
-                        </>
-                      )}
-
-                      {/* CustomerAdmin/Reviewer: Action button (only if actions exist) */}
-                      {isReviewerRole && issue.actions && issue.actions.length > 0 && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => {
-                            setSelectedIssueForAction(issue);
-                            const pendingAction = issue.actions?.find(a => a.status === "Pending");
-                            if (pendingAction) {
-                              setSelectedActionForReview(pendingAction);
-                              setShowActionReviewDialog(true);
-                            } else {
-                              setShowViewActionsDialog(true);
-                            }
-                          }}
-                        >
-                          {t("Review Actions")} ({issue.actions.filter(a => a.status === "Pending").length} {t("pending")})
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {filteredIssues.length === 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 p-16 text-center">
-                <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-6 w-6 text-slate-400" />
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="h-6 w-6 text-primary-500" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Issues Found")}</h3>
-                <p className="text-sm text-slate-500">
-                  {issueSearch || issueDepartmentFilter !== "all" || issueCategoryFilter !== "all" || issueDomainFilter !== "all"
-                    ? t("Try adjusting your filters to find issues.")
-                    : t("Create your first issue to get started.")}
-                </p>
+                <p className="text-sm text-slate-500 mb-6">{t("Create your first issue to get started.")}</p>
+                {!isReadOnlyRole && (
+                  <Button size="sm" onClick={() => setShowAddIssue(true)}>
+                    <Plus className="h-4 w-4 me-2" />
+                    {t("Add New")}
+                  </Button>
+                )}
               </div>
             )}
           </TabsContent>
@@ -3309,7 +3419,7 @@ export default function ContextPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowAddStakeholder(false)}>
               {t("Cancel")}
             </Button>
@@ -3402,7 +3512,7 @@ export default function ContextPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowEditStakeholder(false)}>
               {t("Cancel")}
             </Button>
@@ -3424,7 +3534,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3458,7 +3568,7 @@ export default function ContextPage() {
             />
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
               {t("Cancel")}
             </Button>
@@ -3492,7 +3602,7 @@ export default function ContextPage() {
             />
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
               {t("Cancel")}
             </Button>
@@ -3526,7 +3636,7 @@ export default function ContextPage() {
             />
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
               {t("Cancel")}
             </Button>
@@ -3656,7 +3766,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowCreateActionDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -3848,7 +3958,7 @@ export default function ContextPage() {
             />
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowViewActionsDialog(false)}>
               {t("Close")}
             </Button>
@@ -3959,7 +4069,7 @@ export default function ContextPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowActionReviewDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4010,7 +4120,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowResendDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4054,7 +4164,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowActionCommentsDialog(false)}>
               {t("Close")}
             </Button>
@@ -4131,7 +4241,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowEditActionDialog(false)}>
               {t("Cancel")}
             </Button>

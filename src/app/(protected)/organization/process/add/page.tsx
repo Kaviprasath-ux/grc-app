@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Check, Upload, FileText, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -764,28 +764,33 @@ export default function AddProcessPage() {
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8 pt-6 border-t">
-          <div>
-            {currentStep > 1 && (
-              <Button variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
-                {t("Previous")}
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push("/organization/process")}>
-              {t("Cancel")}
+        <div className="flex items-center gap-3 mt-8 pt-6 border-t">
+          <span className="text-xs font-medium text-slate-400 me-auto">
+            {t("Step")} {currentStep} {t("of")} 3
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (currentStep === 1) {
+                router.push("/organization/process");
+              } else {
+                setCurrentStep(currentStep - 1);
+              }
+            }}
+          >
+            {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+            {currentStep === 1 ? t("Cancel") : t("Previous")}
+          </Button>
+          {currentStep < 3 ? (
+            <Button onClick={() => setCurrentStep(currentStep + 1)}>
+              {t("Next")}
+              <ChevronRight className="h-4 w-4 ms-1" />
             </Button>
-            {currentStep < 3 ? (
-              <Button onClick={() => setCurrentStep(currentStep + 1)}>
-                {t("Next")}
-              </Button>
-            ) : (
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? t("Saving...") : t("Save")}
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? t("Saving...") : t("Save")}
+            </Button>
+          )}
         </div>
       </div>
     </div>

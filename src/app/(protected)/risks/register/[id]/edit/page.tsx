@@ -1050,30 +1050,27 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
           </Dialog>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t">
+          <div className="flex items-center gap-3 mt-8 pt-6 border-t">
+            <span className="text-xs font-medium text-slate-400 me-auto">
+              {t("Step")} {currentStep} {t("of")} {steps.length}
+            </span>
             <Button
               variant="outline"
               onClick={currentStep === 1 ? () => router.push("/risks/register") : handlePrevious}
             >
-              {currentStep === 1 ? t("cancel") : (
-                <>
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {t("previous")}
-                </>
-              )}
+              {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+              {currentStep === 1 ? t("cancel") : t("previous")}
             </Button>
-            <div className="flex gap-2">
-              {currentStep < steps.length ? (
-                <Button onClick={handleNext} disabled={!validateStep()}>
-                  {t("next")}
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              ) : (
-                <Button onClick={handleSubmit} disabled={loading}>
-                  {loading ? t("saving") : t("updateRisk")}
-                </Button>
-              )}
-            </div>
+            {currentStep < steps.length ? (
+              <Button onClick={handleNext} disabled={!validateStep()}>
+                {t("next")}
+                <ChevronRight className="h-4 w-4 ms-1" />
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? t("saving") : t("updateRisk")}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

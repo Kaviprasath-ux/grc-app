@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-table";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Settings2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -94,7 +94,7 @@ export function DataGrid<TData, TValue>({
   const endRow = Math.min((pageIndex + 1) * currentPageSize, totalRows);
 
   return (
-    <div className={cn("bg-white rounded-xl border border-slate-200", className)}>
+    <div className={cn("bg-white rounded-xl border border-slate-200 overflow-hidden", className)}>
       {/* Search and Column Selector */}
       {(!hideSearch || showColumnSelector) && (
         <div className="flex items-center justify-between gap-4 p-4 border-b border-slate-100">
@@ -144,29 +144,25 @@ export function DataGrid<TData, TValue>({
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="h-12 border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
+              <TableRow key={headerGroup.id} className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                 {headerGroup.headers.map((header, index) => (
                   <TableHead
                     key={header.id}
                     style={header.column.columnDef.size ? { minWidth: header.column.columnDef.size, width: header.column.columnDef.size } : undefined}
                     className={cn(
-                      "text-xs font-semibold text-slate-600 py-3 whitespace-nowrap",
-                      index === 0 && "pl-4",
+                      "text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap",
+                      index === 0 && "pl-5",
+                      index === headerGroup.headers.length - 1 && "pr-5",
                       header.column.getCanSort() && "cursor-pointer select-none"
                     )}
                     onClick={header.column.getToggleSortingHandler()}
                   >
-                    <div className="flex items-center gap-2">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                      {header.column.getCanSort() && (
-                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                      )}
-                    </div>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -179,8 +175,8 @@ export function DataGrid<TData, TValue>({
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                   className={cn(
-                    "border-b border-slate-100 last:border-0",
-                    onRowClick && "cursor-pointer hover:bg-slate-50"
+                    "border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors",
+                    onRowClick && "cursor-pointer"
                   )}
                   onClick={() => onRowClick?.(row.original)}
                 >
@@ -188,7 +184,7 @@ export function DataGrid<TData, TValue>({
                     <TableCell
                       key={cell.id}
                       style={cell.column.columnDef.size ? { minWidth: cell.column.columnDef.size, width: cell.column.columnDef.size } : undefined}
-                      className={cn("py-3 text-sm text-slate-700", index === 0 && "pl-4")}
+                      className={cn("py-3 text-sm text-slate-700", index === 0 && "pl-5", index === row.getVisibleCells().length - 1 && "pr-5")}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -213,24 +209,15 @@ export function DataGrid<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-        <span className="text-sm text-slate-500">
+      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+        <span className="text-xs text-slate-500">
           {totalRows > 0 ? `${startRow} ${t("to")} ${endRow} ${t("of")} ${totalRows}` : t("No results")}
         </span>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7 text-slate-400 hover:text-slate-600"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -239,20 +226,11 @@ export function DataGrid<TData, TValue>({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7 text-slate-400 hover:text-slate-600"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
             <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronsRight className="h-4 w-4" />
           </Button>
         </div>
       </div>

@@ -32,7 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, ArrowUpDown, Download, Upload, Search, Activity, CheckCircle, AlertTriangle, XCircle, Home, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpDown, Download, Upload, Search, Activity, CheckCircle, AlertTriangle, XCircle, Home, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import {
   Table,
@@ -1263,27 +1263,33 @@ export default function ProcessPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={handleCloseDialog}>
-              {t("Cancel")}
+          <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <span className="text-xs font-medium text-slate-400 me-auto">
+              {t("Step")} {currentStep} {t("of")} {TOTAL_STEPS}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (currentStep === 1) {
+                  handleCloseDialog();
+                } else {
+                  handlePrevious();
+                }
+              }}
+            >
+              {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+              {currentStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
-            <div className="flex gap-2">
-              {currentStep > 1 && (
-                <Button variant="outline" onClick={handlePrevious}>
-                  {t("Previous")}
-                </Button>
-              )}
-              {currentStep < TOTAL_STEPS && (
-                <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
-                  {t("Next")}
-                </Button>
-              )}
-              {currentStep === TOTAL_STEPS && (
-                <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
-                  {saving ? t("Saving...") : t("Save")}
-                </Button>
-              )}
-            </div>
+            {currentStep < TOTAL_STEPS ? (
+              <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
+                {t("Next")}
+                <ChevronRight className="h-4 w-4 ms-1" />
+              </Button>
+            ) : (
+              <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
+                {saving ? t("Saving...") : t("Save")}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

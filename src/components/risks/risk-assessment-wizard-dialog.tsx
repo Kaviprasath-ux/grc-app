@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
-import { Check, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface Risk {
@@ -961,27 +961,36 @@ export function RiskAssessmentWizardDialog({
 
           {/* Fixed Footer */}
           {!loading && risk && (
-            <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-100">
-              <div className="flex justify-end gap-2 w-full">
-                {currentStep > 1 && (
-                  <Button variant="outline" onClick={handlePrevious}>
-                    Previous
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
+            <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <span className="text-xs font-medium text-slate-400 me-auto">
+                Step {currentStep} of {assessmentSteps.length}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (currentStep === 1) {
+                    onOpenChange(false);
+                  } else {
+                    handlePrevious();
+                  }
+                }}
+              >
+                {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+                {currentStep === 1 ? "Cancel" : "Previous"}
+              </Button>
+              {currentStep < assessmentSteps.length ? (
+                <Button onClick={handleNext}>
+                  Next
+                  <ChevronRight className="h-4 w-4 ms-1" />
                 </Button>
-                {currentStep < assessmentSteps.length ? (
-                  <Button onClick={handleNext}>Next</Button>
-                ) : (
-                  (canCreate || canEdit) && (
-                    <Button onClick={handleSave}>
-                      Save
-                    </Button>
-                  )
-                )}
-              </div>
-            </DialogFooter>
+              ) : (
+                (canCreate || canEdit) && (
+                  <Button onClick={handleSave}>
+                    Save
+                  </Button>
+                )
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>

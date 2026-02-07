@@ -12,9 +12,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-// Unified subtle color for all elements
-const THEME_COLOR = "#64748b"; // slate-500 - subtle and professional
-const LINE_COLOR = "#cbd5e1"; // slate-300 - light for lines
+// Design system aligned colors
+const ROOT_COLOR = "#4F46E5"; // primary-600 - indigo for root node
+const NODE_COLOR = "#6366F1"; // primary-500 - indigo for child nodes
+const LINE_COLOR = "#C7D2FE"; // primary-200 - light indigo for connector lines
 
 interface Department {
   id: string;
@@ -40,35 +41,50 @@ interface TreeNode extends UserNode {
   children: TreeNode[];
 }
 
-// Single org chart node with unified color
+// Single org chart node with design system colors
 function OrgChartNode({ node, isRoot = false, showDepartment = true }: { node: TreeNode; isRoot?: boolean; showDepartment?: boolean }) {
   const roleName = node.userRoles?.[0]?.role?.name || node.role;
+  const headerColor = isRoot ? ROOT_COLOR : NODE_COLOR;
 
   return (
     <div className="flex flex-col items-center">
       <div
         className={cn(
-          "rounded-lg shadow-sm border min-w-[160px] max-w-[200px] overflow-hidden",
-          isRoot && "min-w-[200px]"
+          "rounded-lg border overflow-hidden transition-shadow",
+          isRoot
+            ? "min-w-[200px] max-w-[220px] shadow-md ring-1 ring-primary-200"
+            : "min-w-[160px] max-w-[200px] shadow-sm"
         )}
-        style={{ borderColor: LINE_COLOR }}
+        style={{ borderColor: isRoot ? headerColor : "#E0E7FF" }}
       >
         {/* Header with role/designation */}
         <div
-          className="px-3 py-2 text-white text-center"
-          style={{ backgroundColor: THEME_COLOR }}
+          className={cn(
+            "px-3 text-white text-center",
+            isRoot ? "py-2.5" : "py-2"
+          )}
+          style={{ backgroundColor: headerColor }}
         >
-          <p className="text-xs font-medium truncate">
+          <p className={cn(
+            "font-medium truncate",
+            isRoot ? "text-xs" : "text-xs"
+          )}>
             {node.designation || roleName}
           </p>
         </div>
         {/* Body with name */}
-        <div className="bg-white px-3 py-2 text-center">
-          <p className="text-sm font-semibold text-gray-700 truncate">
+        <div className={cn(
+          "bg-white text-center",
+          isRoot ? "px-4 py-3" : "px-3 py-2"
+        )}>
+          <p className={cn(
+            "font-semibold text-slate-800 truncate",
+            isRoot ? "text-sm" : "text-sm"
+          )}>
             {node.fullName}
           </p>
           {showDepartment && node.department?.name && (
-            <p className="text-xs text-gray-500 truncate mt-0.5">
+            <p className="text-xs text-slate-500 truncate mt-0.5">
               {node.department.name}
             </p>
           )}
@@ -443,16 +459,16 @@ export function OrgChart() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">{t("Loading organization chart...")}</p>
+      <div className="flex items-center justify-center h-48 px-5 py-5">
+        <p className="text-sm text-slate-400">{t("Loading organization chart...")}</p>
       </div>
     );
   }
 
   if (users.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">
+      <div className="flex items-center justify-center h-48 px-5 py-5">
+        <p className="text-sm text-slate-400">
           {t("No users found. Add users and assign reporting managers to build the organization chart.")}
         </p>
       </div>
@@ -461,12 +477,12 @@ export function OrgChart() {
 
   return (
     <div className="w-full">
-      {/* View Mode Controls */}
-      <div className="flex items-end gap-4 mb-6">
-        <div className="w-48">
-          <Label className="text-sm font-medium text-slate-700 mb-1.5 block">{t("View Mode")}</Label>
+      {/* View Mode Controls - section header style */}
+      <div className="flex items-center gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("View Mode")}</span>
           <Select value={viewMode} onValueChange={(value: ViewMode) => setViewMode(value)}>
-            <SelectTrigger>
+            <SelectTrigger className="w-[180px] h-8 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -477,10 +493,10 @@ export function OrgChart() {
         </div>
 
         {viewMode === "department" && (
-          <div className="w-48">
-            <Label className="text-sm font-medium text-slate-700 mb-1.5 block">{t("Department")}</Label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</span>
             <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-[180px] h-8 text-sm">
                 <SelectValue placeholder={t("Select department")} />
               </SelectTrigger>
               <SelectContent>
@@ -497,8 +513,8 @@ export function OrgChart() {
 
       {/* Chart Content */}
       {tree.length === 0 ? (
-        <div className="flex items-center justify-center h-64 border border-dashed border-slate-200 rounded-lg">
-          <p className="text-muted-foreground">
+        <div className="flex items-center justify-center h-48 mx-5 my-5 border border-dashed border-slate-200 rounded-lg">
+          <p className="text-sm text-slate-400">
             {viewMode === "department" && selectedDepartmentId
               ? `${t("No users found in")} ${selectedDepartment?.name || t("selected department")}. ${t("Assign users to this department to see the hierarchy.")}`
               : viewMode === "department"
@@ -508,7 +524,7 @@ export function OrgChart() {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <div className="min-w-max p-8">
+          <div className="min-w-max px-6 py-6">
             <OrgChartTree nodes={tree} showDepartment={viewMode === "role"} />
           </div>
         </div>

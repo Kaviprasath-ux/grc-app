@@ -2,30 +2,20 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, Search, ChevronRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, ChevronRight, Home, Package } from "lucide-react";
 import Link from "next/link";
-import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DataGrid } from "@/components/shared";
+import { ColumnDef } from "@tanstack/react-table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ColumnDef } from "@tanstack/react-table";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SettingItem {
@@ -97,7 +87,6 @@ export default function OrganizationSettingsPage() {
   const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(initialSettingsData);
-  const [searchTerm, setSearchTerm] = useState("");
   const [loadingData, setLoadingData] = useState(false);
 
   // Dialog states
@@ -143,12 +132,51 @@ export default function OrganizationSettingsPage() {
   const currentCategory = settingCategories.find((c) => c.id === activeCategory);
   const currentData = activeCategory ? settingsData[activeCategory] || [] : [];
 
-  // Filter data based on search
-  const filteredData = currentData.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Table columns
+  const settingColumns: ColumnDef<SettingItem>[] = [
+    {
+      accessorKey: "name",
+      header: t("Name"),
+      cell: ({ row }) => (
+        <span className="font-medium text-slate-800">{row.getValue("name")}</span>
+      ),
+    },
+    {
+      accessorKey: "description",
+      header: t("Description"),
+      cell: ({ row }) => (
+        <span className="text-slate-500">{row.getValue("description") || "—"}</span>
+      ),
+    },
+    {
+      id: "actions",
+      header: t("Actions"),
+      size: 100,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+            onClick={() => {
+              setEditingItem(row.original);
+              setIsEditItemOpen(true);
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+            onClick={() => setDeletingItemId(row.original.id)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   // CRUD operations
   const handleAddItem = async () => {
@@ -255,49 +283,6 @@ export default function OrganizationSettingsPage() {
     }
   };
 
-  // Columns for settings table - matching profile page pattern
-  const settingColumns: ColumnDef<SettingItem>[] = [
-    {
-      accessorKey: "name",
-      header: t("Name"),
-      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
-    },
-    {
-      accessorKey: "description",
-      header: t("Description"),
-      cell: ({ row }) => (
-        <span className="text-slate-600">{row.getValue("description") || "-"}</span>
-      ),
-    },
-    {
-      id: "actions",
-      header: t("Actions"),
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => {
-              setEditingItem(row.original);
-              setIsEditItemOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-            onClick={() => setDeletingItemId(row.original.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
   // Show settings list view
   if (activeCategory) {
     return (
@@ -323,21 +308,11 @@ export default function OrganizationSettingsPage() {
           <span className="text-primary-700 font-medium">{currentCategory ? t(currentCategory.title) : ""}</span>
         </nav>
 
-        {/* Page Header */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{currentCategory ? t(currentCategory.title) : ""}</h1>
-        </div>
-
-        {/* Toolbar - Search and Actions */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder={`${t("Search")} ${currentCategory ? t(currentCategory.title).toLowerCase() : ""}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
-            />
+        {/* Page Header with Count & Action */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-800">{currentCategory ? t(currentCategory.title) : ""}</h1>
+            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{currentData.length}</span>
           </div>
           <Button size="sm" onClick={() => setIsAddItemOpen(true)}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -345,11 +320,12 @@ export default function OrganizationSettingsPage() {
           </Button>
         </div>
 
-        {/* Data Grid - hide internal search */}
+        {/* Table */}
         <DataGrid
           columns={settingColumns}
-          data={filteredData}
-          hideSearch={true}
+          data={currentData}
+          searchPlaceholder={`${t("Search")} ${currentCategory ? t(currentCategory.title).toLowerCase() : ""}...`}
+          hideSearch={currentData.length === 0}
         />
 
         {/* Add Item Dialog */}
@@ -393,7 +369,7 @@ export default function OrganizationSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -443,7 +419,7 @@ export default function OrganizationSettingsPage() {
             )}
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditItemOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -453,20 +429,30 @@ export default function OrganizationSettingsPage() {
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deletingItemId} onOpenChange={(open) => !open && setDeletingItemId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t("Delete")} {currentCategory ? t(currentCategory.title) : ""}</AlertDialogTitle>
-              <AlertDialogDescription>
+        <Dialog open={!!deletingItemId} onOpenChange={(open) => !open && setDeletingItemId(null)}>
+          <DialogContent className="sm:max-w-[420px] p-0 gap-0">
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">
+                  {t("Delete")} {currentCategory ? t(currentCategory.title) : ""}
+                </DialogTitle>
+              </DialogHeader>
+            </div>
+            <div className="px-6 py-6">
+              <p className="text-sm text-slate-600">
                 {t("Are you sure you want to delete this item? This action cannot be undone.")}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteItem}>{t("Delete")}</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <Button variant="outline" onClick={() => setDeletingItemId(null)}>
+                {t("Cancel")}
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteItem}>
+                {t("Delete")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -494,42 +480,33 @@ export default function OrganizationSettingsPage() {
       </div>
 
       {/* Settings Card Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {settingCategories.map((category) => {
           const Icon = category.icon;
 
           return (
-            <div
+            <button
               key={category.id}
-              className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full min-h-[160px]"
+              className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left transition-all hover:border-primary-200 hover:shadow-md hover:shadow-primary-100/50 cursor-pointer"
+              onClick={() => {
+                if (category.id === "bia") {
+                  router.push("/organization/settings/bia");
+                } else {
+                  setActiveCategory(category.id);
+                }
+              }}
             >
-              <div className="flex items-start gap-4 flex-1">
-                <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
-                  <Icon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-base font-semibold text-slate-800">{t(category.title)}</h4>
-                  <p className="text-sm text-slate-500 line-clamp-2">
-                    {t(category.description)}
-                  </p>
-                </div>
+              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors group-hover:bg-primary-100">
+                <Icon className="h-5 w-5 text-primary-600" />
               </div>
-              <div className="flex items-center justify-end pt-3 mt-4 border-t border-slate-100">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (category.id === "bia") {
-                      router.push("/organization/settings/bia");
-                    } else {
-                      setActiveCategory(category.id);
-                    }
-                  }}
-                >
-                  {t("Manage")}
-                </Button>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-slate-800">{t(category.title)}</h4>
+                <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {t(category.description)}
+                </p>
               </div>
-            </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:text-primary-500 group-hover:translate-x-0.5" />
+            </button>
           );
         })}
       </div>

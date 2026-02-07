@@ -15,16 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,8 +29,6 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   ArrowUpDown,
   Pencil,
   Trash2,
@@ -657,73 +645,74 @@ export default function FrameworkOverviewPage() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search frameworks...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-white border-slate-200"
-          />
-        </div>
-        {!isReviewerRole && (
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => openCreateDialog(true)}
-              variant="outline"
-              size="sm"
-              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              {t("New Framework (AI)")}
-            </Button>
-            <Button
-              onClick={() => openCreateDialog(false)}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {t("New Framework")}
-            </Button>
+      {/* Data Table Card */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Embedded Toolbar */}
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search frameworks...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
           </div>
-        )}
-      </div>
+          {!isReviewerRole && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => openCreateDialog(true)}
+                variant="outline"
+                size="sm"
+                className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                {t("New Framework (AI)")}
+              </Button>
+              <Button
+                onClick={() => openCreateDialog(false)}
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t("New Framework")}
+              </Button>
+            </div>
+          )}
+        </div>
 
-      {/* Data Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="w-[120px] py-3">
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="w-[100px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">
                 <button
                   onClick={() => handleSort("code")}
-                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                  className="flex items-center gap-2 hover:text-slate-700"
                 >
                   {t("Code")}
                   <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                 </button>
               </TableHead>
-              <TableHead className="py-3">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
                 <button
                   onClick={() => handleSort("name")}
-                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                  className="flex items-center gap-2 hover:text-slate-700"
                 >
                   {t("Framework Name")}
                   <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                 </button>
               </TableHead>
-              <TableHead className="w-[40%] py-3">
+              <TableHead className="w-[40%] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
                 <button
                   onClick={() => handleSort("description")}
-                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                  className="flex items-center gap-2 hover:text-slate-700"
                 >
                   {t("Description")}
                   <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                 </button>
               </TableHead>
               {!isReviewerRole && (
-                <TableHead className="w-[100px] text-xs font-semibold text-slate-600 py-3">{t("Actions")}</TableHead>
+                <TableHead className="w-[100px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Actions")}</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -738,16 +727,16 @@ export default function FrameworkOverviewPage() {
               currentFrameworks.map((framework) => (
                 <TableRow
                   key={framework.id}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer"
+                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors cursor-pointer"
                   onDoubleClick={() => router.push(`/compliance/framework/${framework.id}`)}
                 >
-                  <TableCell className="py-3 text-sm font-medium text-slate-800">{framework.code || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{framework.name}</TableCell>
+                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{framework.code || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800">{framework.name}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600 truncate max-w-[400px]">
                     {framework.description || "-"}
                   </TableCell>
                   {!isReviewerRole && (
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 pr-5">
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -756,9 +745,9 @@ export default function FrameworkOverviewPage() {
                             e.stopPropagation();
                             openEditDialog(framework);
                           }}
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -767,9 +756,9 @@ export default function FrameworkOverviewPage() {
                             e.stopPropagation();
                             openDeleteDialog(framework);
                           }}
-                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -781,26 +770,17 @@ export default function FrameworkOverviewPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between p-4 border-t border-slate-100">
-          <div className="text-xs text-slate-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
             {sortedFrameworks.length > 0
               ? t("Showing {start} to {end} of {total}").replace("{start}", String(startIndex + 1)).replace("{end}", String(endIndex)).replace("{total}", String(sortedFrameworks.length))
               : t("No frameworks")}
-          </div>
+          </span>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(0)}
-              disabled={currentPage === 0}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 0}
             >
@@ -809,20 +789,11 @@ export default function FrameworkOverviewPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage >= totalPages - 1}
             >
               <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(totalPages - 1)}
-              disabled={currentPage >= totalPages - 1}
-            >
-              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -977,7 +948,7 @@ export default function FrameworkOverviewPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
@@ -1162,7 +1133,7 @@ export default function FrameworkOverviewPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={handleCloseImportDialog}>
               {importSuccess ? t("Close") : t("Skip")}
             </Button>
@@ -1187,20 +1158,24 @@ export default function FrameworkOverviewPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("Delete Framework")}</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[440px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Framework")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete this framework? This action cannot be undone.")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>{t("Delete")}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </p>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

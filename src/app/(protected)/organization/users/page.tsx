@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Pencil, Trash2, Search, Upload, Download, Home, ChevronRight, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Download, Home, ChevronRight, ChevronLeft, Eye, Users as UsersIcon } from "lucide-react";
 import Link from "next/link";
-import { DataGrid, FilterBar } from "@/components/shared";
+import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -584,23 +584,23 @@ export default function UsersPage() {
       id: "actions",
       header: t("Actions"),
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setViewingUser(row.original);
               setIsViewUserOpen(true);
             }}
             title={t("View Details")}
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingUser(row.original);
               if (row.original.function) {
@@ -610,16 +610,16 @@ export default function UsersPage() {
             }}
             title={t("Edit")}
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
             onClick={() => openDeleteDialog(row.original)}
             title={t("Delete")}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),
@@ -675,8 +675,14 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-slate-400">{t("Loading...")}</p>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading users...")}</p>
+        </div>
       </div>
     );
   }
@@ -748,175 +754,228 @@ export default function UsersPage() {
         </TabsList>
 
         {/* Account Overview Tab */}
-        <TabsContent value="account-overview" className="mt-6 space-y-4">
-          {/* Header with search and action buttons */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
+        <TabsContent value="account-overview" className="mt-6">
+          <div className="space-y-5">
+            {/* Section Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-semibold text-slate-800">{t("Departments")}</h3>
+                {usersByDepartment.length > 0 && (
+                  <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {usersByDepartment.length}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="h-4 w-4 me-2" />
+                  {t("Export")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+                  <Upload className="h-4 w-4 me-2" />
+                  {t("Import")}
+                </Button>
+                <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
+                  <Plus className="h-4 w-4 me-2" />
+                  {t("Add New")}
+                </Button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
                 placeholder={t("Search by Department Name")}
                 value={departmentSearchTerm}
                 onChange={(e) => setDepartmentSearchTerm(e.target.value)}
-                className="ps-10 bg-white"
+                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 me-2" />
-                {t("Export")}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                <Upload className="h-4 w-4 me-2" />
-                {t("Import")}
-              </Button>
-              <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
-                <Plus className="h-4 w-4 me-2" />
-                {t("Add New")}
-              </Button>
-            </div>
-          </div>
 
-          {/* Department Accordions */}
-          <Accordion type="multiple" className="w-full space-y-2">
-            {usersByDepartment.map((dept) => (
-              <AccordionItem
-                key={dept.id}
-                value={dept.id}
-                className="border rounded-lg px-4 bg-white"
-              >
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <span className="font-semibold text-foreground">
-                    {dept.name} - {dept.users.length}
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent>
-                  {dept.users.length > 0 ? (
-                    <div className="overflow-x-auto bg-white rounded-xl border border-slate-200">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-slate-100 bg-slate-50/50">
-                            <th className="text-start py-4 ps-4 text-xs font-semibold text-slate-600">{t("Full Name")}</th>
-                            <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Designation Name")}</th>
-                            <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Reporting Manager")}</th>
-                            <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Email ID")}</th>
-                            <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Last Login")}</th>
-                            <th className="text-center py-4 text-xs font-semibold text-slate-600">{t("Actions")}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white">
-                          {dept.users.map((user) => (
-                            <tr key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                              <td className="py-4 pl-4 text-sm text-slate-700">{user.fullName}</td>
-                              <td className="py-4 text-sm text-slate-700">{user.designation || "-"}</td>
-                              <td className="py-4 text-sm text-slate-700">{user.reportingManager?.fullName || "-"}</td>
-                              <td className="py-4 text-sm text-slate-700">{user.email}</td>
-                              <td className="py-4 text-sm text-slate-700">-</td>
-                              <td className="py-4">
-                                <div className="flex items-center justify-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                                    onClick={() => {
-                                      setViewingUser(user);
-                                      setIsViewUserOpen(true);
-                                    }}
-                                    title={t("View Details")}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                                    onClick={() => {
-                                      setEditingUser(user);
-                                      if (user.function) {
-                                        fetchReportingManagers(user.function);
-                                      }
-                                      setIsEditUserOpen(true);
-                                    }}
-                                    title={t("Edit")}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                                    onClick={() => openDeleteDialog(user)}
-                                    title={t("Delete")}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </td>
+            {/* Department Accordions */}
+            <Accordion type="multiple" className="w-full space-y-2">
+              {usersByDepartment.map((dept) => (
+                <AccordionItem
+                  key={dept.id}
+                  value={dept.id}
+                  className="border rounded-lg px-4 bg-white"
+                >
+                  <AccordionTrigger className="hover:no-underline py-4">
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-foreground">{dept.name}</span>
+                      <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {dept.users.length}
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {dept.users.length > 0 ? (
+                      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-slate-100 bg-slate-50">
+                              <th className="text-start py-3 ps-5 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Full Name")}</th>
+                              <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Designation")}</th>
+                              <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Reporting Manager")}</th>
+                              <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Email")}</th>
+                              <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Last Login")}</th>
+                              <th className="text-end py-3 pe-5 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {/* Pagination */}
-                      <div className="flex items-center justify-between p-4 border-t border-slate-100">
-                        <div className="text-xs text-slate-500">
-                          {t("Showing")} 1 {t("to")} {dept.users.length} {t("of")} {dept.users.length}
+                          </thead>
+                          <tbody>
+                            {dept.users.map((user) => (
+                              <tr key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3.5 ps-5 text-sm font-medium text-slate-800">{user.fullName}</td>
+                                <td className="py-3.5 text-sm text-slate-600">{user.designation || "-"}</td>
+                                <td className="py-3.5 text-sm text-slate-600">{user.reportingManager?.fullName || "-"}</td>
+                                <td className="py-3.5 text-sm text-slate-600">{user.email}</td>
+                                <td className="py-3.5 text-sm text-slate-600">-</td>
+                                <td className="py-3.5 pe-5">
+                                  <div className="flex items-center justify-end gap-0.5">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                      onClick={() => {
+                                        setViewingUser(user);
+                                        setIsViewUserOpen(true);
+                                      }}
+                                      title={t("View Details")}
+                                    >
+                                      <Eye className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                      onClick={() => {
+                                        setEditingUser(user);
+                                        if (user.function) {
+                                          fetchReportingManagers(user.function);
+                                        }
+                                        setIsEditUserOpen(true);
+                                      }}
+                                      title={t("Edit")}
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                                      onClick={() => openDeleteDialog(user)}
+                                      title={t("Delete")}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {/* Pagination */}
+                        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                          <span className="text-xs text-slate-500">
+                            1 {t("to")} {dept.users.length} {t("of")} {dept.users.length}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" disabled>
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" disabled>
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-xl border border-slate-200 p-8">
-                      <p className="text-slate-500 text-sm text-center">
-                        {t("No users in this department")}
-                      </p>
-                    </div>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                    ) : (
+                      <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                        <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                          <UsersIcon className="h-6 w-6 text-primary-500" />
+                        </div>
+                        <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Users")}</h3>
+                        <p className="text-sm text-slate-500">
+                          {t("No users in this department")}
+                        </p>
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </TabsContent>
 
         {/* User Management Tab */}
-        <TabsContent value="user-management" className="mt-6 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <FilterBar
-                searchPlaceholder={t("Search user...")}
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-                filters={[
-                  {
-                    id: "role",
-                    label: t("Role"),
-                    options: [
-                      { value: "all", label: t("All Roles") },
-                      ...allUserRoles.map((role) => ({ value: role, label: role })),
-                    ],
-                    value: roleFilter,
-                    onChange: setRoleFilter,
-                  },
-                  {
-                    id: "department",
-                    label: t("Department"),
-                    options: [
-                      { value: "all", label: t("All Departments") },
-                      ...departments.map((d) => ({ value: d.name, label: d.name })),
-                    ],
-                    value: departmentFilter,
-                    onChange: setDepartmentFilter,
-                  },
-                ]}
+        <TabsContent value="user-management" className="mt-6">
+          <div className="space-y-5">
+            {/* Section Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-semibold text-slate-800">{t("Users")}</h3>
+                {filteredUsers.length > 0 && (
+                  <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {filteredUsers.length}
+                  </span>
+                )}
+              </div>
+              <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
+                <Plus className="h-4 w-4 me-2" />
+                {t("New Account")}
+              </Button>
+            </div>
+
+            {/* Table Card with Integrated Filters */}
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Search & Filters */}
+              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+                <div className="relative max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t("Search user...")}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  />
+                </div>
+                <div className="flex items-center gap-3 ml-auto">
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Role")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Roles")}</SelectItem>
+                    {allUserRoles.map((role) => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                    <SelectValue placeholder={t("Department")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Departments")}</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                </div>
+              </div>
+              {/* DataGrid */}
+              <DataGrid
+                columns={userColumns}
+                data={filteredUsers}
+                hideSearch={true}
+                className="border-0 rounded-none"
               />
             </div>
-            <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
-              <Plus className="h-4 w-4 me-2" />
-              {t("New Account")}
-            </Button>
           </div>
-          <DataGrid
-            columns={userColumns}
-            data={filteredUsers}
-            hideSearch={true}
-          />
         </TabsContent>
       </Tabs>
 
@@ -1289,7 +1348,7 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsAddUserOpen(false);
               setUserForm({
@@ -1641,7 +1700,7 @@ export default function UsersPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1691,7 +1750,7 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-between gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 me-2" />
               {t("Download Template")}
@@ -1835,7 +1894,7 @@ export default function UsersPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsViewUserOpen(false)}>
               {t("Close")}
             </Button>
@@ -1847,7 +1906,7 @@ export default function UsersPage() {
               }
               setIsEditUserOpen(true);
             }}>
-              <Pencil className="h-4 w-4 mr-2" />
+              <Pencil className="h-4 w-4 me-1.5" />
               {t("Edit")}
             </Button>
           </div>
@@ -1912,7 +1971,7 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {

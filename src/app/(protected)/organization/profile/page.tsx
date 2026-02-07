@@ -3,9 +3,8 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft, Home, ChevronRight, Download, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft, Home, ChevronLeft, ChevronRight, Download, FileText, Search } from "lucide-react";
 import Link from "next/link";
-import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +34,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ColumnDef } from "@tanstack/react-table";
 import { EditProfileWizard } from "@/components/profile/edit-profile-wizard";
 import { OrgChart } from "@/components/organization/org-chart";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -160,6 +158,15 @@ function ProfilePageContent() {
   const [serviceItems, setServiceItems] = useState<string[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newItemName, setNewItemName] = useState("");
+
+  // Search & pagination states
+  const [serviceSearch, setServiceSearch] = useState("");
+  const [servicePage, setServicePage] = useState(1);
+  const [regulationSearch, setRegulationSearch] = useState("");
+  const [regulationPage, setRegulationPage] = useState(1);
+  const [departmentSearch, setDepartmentSearch] = useState("");
+  const [departmentPage, setDepartmentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Form states
   const [newDepartmentName, setNewDepartmentName] = useState("");
@@ -538,92 +545,6 @@ function ProfilePageContent() {
     setIsEditProfileWizardOpen(true);
   };
 
-  // Department columns
-  const departmentColumns: ColumnDef<Department>[] = [
-    {
-      accessorKey: "name",
-      header: t("Department Name"),
-      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
-    },
-    {
-      id: "actions",
-      header: t("Actions"),
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => {
-              setEditingDepartment(row.original);
-              setIsEditDepartmentOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-            onClick={() => handleDeleteDepartment(row.original.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  // Regulation columns
-  const regulationColumns: ColumnDef<Regulation>[] = [
-    {
-      accessorKey: "name",
-      header: t("Regulation Name"),
-      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
-    },
-    {
-      accessorKey: "version",
-      header: t("Version"),
-      cell: ({ row }) => <span className="text-slate-600">{row.getValue("version")}</span>,
-    },
-    {
-      accessorKey: "status",
-      header: t("Compliance Status"),
-      cell: ({ row }) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-compliance-compliant-bg text-semantic-success-dark">
-          {row.getValue("status")}
-        </span>
-      ),
-    },
-    {
-      id: "actions",
-      header: t("Actions"),
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => {
-              setEditingRegulation(row.original);
-              setIsEditRegulationOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-            onClick={() => handleDeleteRegulation(row.original.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -671,104 +592,180 @@ function ProfilePageContent() {
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-6">
           {organization ? (
-            <div className="bg-white rounded-xl border border-slate-200">
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <>
+              {/* Header - matches other tabs */}
+              <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-semibold text-slate-800">{t("Organization Information")}</h3>
-                <Button variant="outline" size="sm" onClick={openEditOrganization}>
+                <Button size="sm" onClick={openEditOrganization}>
                   <Pencil className="h-4 w-4 me-2" />
-                  {t("Edit")}
+                  {t("Edit Profile")}
                 </Button>
               </div>
 
-              {/* Content */}
-              <div className="p-6">
-                {/* Basic Info Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-6">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Organization Name")}</p>
-                    <p className="text-sm font-medium text-slate-800">{organization.name || "-"}</p>
+              <div className="space-y-5">
+                {/* General Information Section */}
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("General Information")}</span>
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Established Date")}</p>
-                    <p className="text-sm font-medium text-slate-800">{organization.establishedDate || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Employee Count")}</p>
-                    <p className="text-sm font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Branch Count")}</p>
-                    <p className="text-sm font-medium text-slate-800">{organization.branchCount || "0"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Head Office Location")}</p>
-                    <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Head Office Address")}</p>
-                    <p className="text-sm font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Website")}</p>
-                    <p className="text-sm font-medium text-primary-600">{organization.website || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Email")}</p>
-                    <p className="text-sm font-medium text-slate-800">{organization.email || "-"}</p>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-slate-100 my-6"></div>
-
-                {/* Description */}
-                <div className="mb-6">
-                  <p className="text-xs text-slate-500 mb-1">{t("Description")}</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{organization.description || "-"}</p>
-                </div>
-
-                {/* Vision & Mission */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Vision")}</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{organization.vision || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">{t("Mission")}</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{organization.mission || "-"}</p>
-                  </div>
-                </div>
-
-                {/* Brochure */}
-                {organization.brochure && (
-                  <>
-                    <div className="border-t border-slate-100 my-6"></div>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-2">{t("Brochure")}</p>
-                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 w-fit">
-                        <FileText className="h-5 w-5 text-slate-400 flex-shrink-0" />
-                        <span className="text-sm font-medium text-slate-700">{organization.brochure.split("/").pop()}</span>
-                        <a href={organization.brochure} target="_blank" rel="noopener noreferrer">
-                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </a>
-                        <a href={organization.brochure} download>
-                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </a>
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
+                          <Building2 className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Organization Name")}</p>
+                          <p className="text-sm font-medium text-slate-800">{organization.name || "-"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
+                          <Calendar className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Established Date")}</p>
+                          <p className="text-sm font-medium text-slate-800">{organization.establishedDate || "-"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
+                          <Users className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Employee Count")}</p>
+                          <p className="text-sm font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
+                          <MapPin className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Branch Count")}</p>
+                          <p className="text-sm font-medium text-slate-800">{organization.branchCount || "0"}</p>
+                        </div>
                       </div>
                     </div>
-                  </>
+                  </div>
+                </div>
+
+                {/* Location & Contact Section */}
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Location & Contact")}</span>
+                  </div>
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
+                          <MapPin className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Head Office Location")}</p>
+                          <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 col-span-2 lg:col-span-1">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
+                          <Home className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Head Office Address")}</p>
+                          <p className="text-sm font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
+                          <Globe className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Website")}</p>
+                          <p className="text-sm font-medium text-primary-600 truncate">{organization.website || "-"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
+                          <Target className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Email")}</p>
+                          <p className="text-sm font-medium text-slate-800 truncate">{organization.email || "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* About Section - Description, Vision, Mission */}
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("About")}</span>
+                  </div>
+                  <div className="p-5 space-y-5">
+                    {/* Description */}
+                    {organization.description && (
+                      <div className="border-l-2 border-primary-200 pl-4">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Description")}</p>
+                        <p className="text-sm text-slate-700 leading-relaxed">{organization.description}</p>
+                      </div>
+                    )}
+
+                    {/* Vision & Mission */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {organization.vision && (
+                        <div className="border-l-2 border-emerald-200 pl-4">
+                          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Vision")}</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{organization.vision}</p>
+                        </div>
+                      )}
+                      {organization.mission && (
+                        <div className="border-l-2 border-amber-200 pl-4">
+                          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Mission")}</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{organization.mission}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Brochure / Documents Section */}
+                {organization.brochure && (
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                      <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Documents")}</span>
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-lg border border-slate-200 w-fit">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                          <FileText className="h-4 w-4 text-primary-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-400 mb-0.5">{t("Brochure")}</p>
+                          <p className="text-sm font-medium text-slate-700">{organization.brochure.split("/").pop()}</p>
+                        </div>
+                        <div className="flex items-center gap-0.5 ml-2">
+                          <a href={organization.brochure} target="_blank" rel="noopener noreferrer">
+                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </a>
+                          <a href={organization.brochure} download>
+                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
+            </>
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <Building2 className="h-6 w-6 text-slate-400" />
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-6 w-6 text-primary-500" />
               </div>
               <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Profile")}</h3>
               <p className="text-sm text-slate-500 mb-6">
@@ -785,8 +782,15 @@ function ProfilePageContent() {
         {/* Services Tab */}
         <TabsContent value="services" className="mt-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">{t("Services")}</h3>
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-semibold text-slate-800">{t("Services")}</h3>
+              {services.length > 0 && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  {services.length}
+                </span>
+              )}
+            </div>
             <Button size="sm" onClick={() => setIsAddServiceOpen(true)}>
               <Plus className="h-4 w-4 me-2" />
               {t("Add Service")}
@@ -794,52 +798,135 @@ function ProfilePageContent() {
           </div>
 
           {services.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {services.map((service) => (
-                <div key={service.id} className="bg-white rounded-xl border border-slate-200 p-5">
-                  {/* Header with actions */}
-                  <div className="flex items-start justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-slate-800">{service.title}</h4>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                        onClick={() => {
-                          setEditingService(service);
-                          setIsEditServiceOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-slate-400 hover:text-semantic-error"
-                        onClick={() => handleDeleteService(service.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500">{t("User Type")}</span>
-                      <span className="font-medium text-slate-700">{service.serviceUser}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500">{t("Category")}</span>
-                      <span className="font-medium text-slate-700">{service.serviceCategory}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500">{t("Item")}</span>
-                      <span className="font-medium text-slate-700">{service.serviceItem}</span>
-                    </div>
-                  </div>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Search */}
+              <div className="px-5 py-3 border-b border-slate-100">
+                <div className="relative max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t("Search services...")}
+                    value={serviceSearch}
+                    onChange={(e) => { setServiceSearch(e.target.value); setServicePage(1); }}
+                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  />
                 </div>
-              ))}
+              </div>
+              {/* Table header */}
+              <div className="grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <span>{t("Service Name")}</span>
+                <span>{t("User Type")}</span>
+                <span>{t("Category")}</span>
+                <span>{t("Item")}</span>
+                <span className="text-end">{t("Actions")}</span>
+              </div>
+              {/* Table rows */}
+              {(() => {
+                const filtered = services.filter((s) =>
+                  s.title.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+                  s.serviceCategory?.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+                  s.serviceUser?.toLowerCase().includes(serviceSearch.toLowerCase())
+                );
+                const paginated = filtered.slice(
+                  (servicePage - 1) * ITEMS_PER_PAGE,
+                  servicePage * ITEMS_PER_PAGE
+                );
+                return (
+                  <>
+                    <div className="divide-y divide-slate-100">
+                      {paginated.map((service) => (
+                        <div
+                          key={service.id}
+                          className="grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
+                        >
+                          {/* Service Name */}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                              <Briefcase className="h-4 w-4 text-primary-500" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-800 truncate">{service.title}</span>
+                          </div>
+
+                          {/* User Type Badge */}
+                          <div>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              service.serviceUser === "Internal"
+                                ? "bg-primary-50 text-primary-700"
+                                : service.serviceUser === "External"
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {t(service.serviceUser)}
+                            </span>
+                          </div>
+
+                          {/* Category */}
+                          <span className="text-sm text-slate-600 truncate">{service.serviceCategory || "—"}</span>
+
+                          {/* Item */}
+                          <span className="text-sm text-slate-600 truncate">{service.serviceItem || "—"}</span>
+
+                          {/* Actions */}
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                              onClick={() => {
+                                setEditingService(service);
+                                setIsEditServiceOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                              onClick={() => handleDeleteService(service.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {filtered.length === 0 && (
+                        <div className="px-5 py-8 text-center text-sm text-slate-400">
+                          {t("No services match your search.")}
+                        </div>
+                      )}
+                    </div>
+                    {/* Pagination */}
+                    {filtered.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                        <span className="text-xs text-slate-500">
+                          {(servicePage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(servicePage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                            disabled={servicePage === 1}
+                            onClick={() => setServicePage(servicePage - 1)}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                            disabled={servicePage * ITEMS_PER_PAGE >= filtered.length}
+                            onClick={() => setServicePage(servicePage + 1)}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
@@ -861,8 +948,15 @@ function ProfilePageContent() {
         {/* Regulations Tab */}
         <TabsContent value="regulations" className="mt-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">{t("Regulations")}</h3>
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-semibold text-slate-800">{t("Regulations")}</h3>
+              {regulations.length > 0 && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  {regulations.length}
+                </span>
+              )}
+            </div>
             <Button size="sm" onClick={() => setIsAddRegulationOpen(true)}>
               <Plus className="h-4 w-4 me-2" />
               {t("Add Regulation")}
@@ -870,11 +964,125 @@ function ProfilePageContent() {
           </div>
 
           {regulations.length > 0 ? (
-            <DataGrid
-              columns={regulationColumns}
-              data={regulations}
-              searchPlaceholder={t("Search regulations...")}
-            />
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Search */}
+              <div className="px-5 py-3 border-b border-slate-100">
+                <div className="relative max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t("Search regulations...")}
+                    value={regulationSearch}
+                    onChange={(e) => { setRegulationSearch(e.target.value); setRegulationPage(1); }}
+                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  />
+                </div>
+              </div>
+              {/* Table header */}
+              <div className="grid grid-cols-[1fr_100px_120px_72px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <span>{t("Regulation Name")}</span>
+                <span>{t("Version")}</span>
+                <span>{t("Status")}</span>
+                <span className="text-end">{t("Actions")}</span>
+              </div>
+              {/* Table rows */}
+              {(() => {
+                const filtered = regulations.filter((r) =>
+                  r.name.toLowerCase().includes(regulationSearch.toLowerCase()) ||
+                  r.version?.toLowerCase().includes(regulationSearch.toLowerCase())
+                );
+                const paginated = filtered.slice(
+                  (regulationPage - 1) * ITEMS_PER_PAGE,
+                  regulationPage * ITEMS_PER_PAGE
+                );
+                return (
+                  <>
+                    <div className="divide-y divide-slate-100">
+                      {paginated.map((regulation) => (
+                        <div
+                          key={regulation.id}
+                          className="grid grid-cols-[1fr_100px_120px_72px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
+                        >
+                          {/* Regulation Name */}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                              <Scale className="h-4 w-4 text-primary-500" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-800 truncate">{regulation.name}</span>
+                          </div>
+
+                          {/* Version */}
+                          <span className="text-sm text-slate-600">{regulation.version || "—"}</span>
+
+                          {/* Status Badge */}
+                          <div>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-compliance-compliant-bg text-compliance-compliant">
+                              {regulation.status || "—"}
+                            </span>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                              onClick={() => {
+                                setEditingRegulation(regulation);
+                                setIsEditRegulationOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                              onClick={() => handleDeleteRegulation(regulation.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {filtered.length === 0 && (
+                        <div className="px-5 py-8 text-center text-sm text-slate-400">
+                          {t("No regulations match your search.")}
+                        </div>
+                      )}
+                    </div>
+                    {/* Pagination */}
+                    {filtered.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                        <span className="text-xs text-slate-500">
+                          {(regulationPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(regulationPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                            disabled={regulationPage === 1}
+                            onClick={() => setRegulationPage(regulationPage - 1)}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                            disabled={regulationPage * ITEMS_PER_PAGE >= filtered.length}
+                            onClick={() => setRegulationPage(regulationPage + 1)}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
@@ -895,8 +1103,15 @@ function ProfilePageContent() {
         {/* Departments Tab */}
         <TabsContent value="departments" className="mt-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">{t("Departments")}</h3>
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-semibold text-slate-800">{t("Departments")}</h3>
+              {departments.length > 0 && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  {departments.length}
+                </span>
+              )}
+            </div>
             <Button size="sm" onClick={() => setIsAddDepartmentOpen(true)}>
               <Plus className="h-4 w-4 me-2" />
               {t("Add Department")}
@@ -904,11 +1119,112 @@ function ProfilePageContent() {
           </div>
 
           {departments.length > 0 ? (
-            <DataGrid
-              columns={departmentColumns}
-              data={departments}
-              searchPlaceholder={t("Search departments...")}
-            />
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Search */}
+              <div className="px-5 py-3 border-b border-slate-100">
+                <div className="relative max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t("Search departments...")}
+                    value={departmentSearch}
+                    onChange={(e) => { setDepartmentSearch(e.target.value); setDepartmentPage(1); }}
+                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  />
+                </div>
+              </div>
+              {/* Table header */}
+              <div className="grid grid-cols-[1fr_72px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <span>{t("Department Name")}</span>
+                <span className="text-end">{t("Actions")}</span>
+              </div>
+              {/* Table rows */}
+              {(() => {
+                const filtered = departments.filter((dept) =>
+                  dept.name.toLowerCase().includes(departmentSearch.toLowerCase())
+                );
+                const paginated = filtered.slice(
+                  (departmentPage - 1) * ITEMS_PER_PAGE,
+                  departmentPage * ITEMS_PER_PAGE
+                );
+                return (
+                  <>
+                    <div className="divide-y divide-slate-100">
+                      {paginated.map((dept) => (
+                        <div
+                          key={dept.id}
+                          className="grid grid-cols-[1fr_72px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
+                        >
+                          {/* Department Name */}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                              <Building2 className="h-4 w-4 text-primary-500" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-800 truncate">{dept.name}</span>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                              onClick={() => {
+                                setEditingDepartment(dept);
+                                setIsEditDepartmentOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                              onClick={() => handleDeleteDepartment(dept.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {filtered.length === 0 && (
+                        <div className="px-5 py-8 text-center text-sm text-slate-400">
+                          {t("No departments match your search.")}
+                        </div>
+                      )}
+                    </div>
+                    {/* Pagination */}
+                    {filtered.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                        <span className="text-xs text-slate-500">
+                          {(departmentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(departmentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                            disabled={departmentPage === 1}
+                            onClick={() => setDepartmentPage(departmentPage - 1)}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                            disabled={departmentPage * ITEMS_PER_PAGE >= filtered.length}
+                            onClick={() => setDepartmentPage(departmentPage + 1)}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
@@ -928,12 +1244,12 @@ function ProfilePageContent() {
 
         {/* Organization Chart Tab */}
         <TabsContent value="orgchart" className="mt-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
+          {/* Header - matches other tabs */}
+          <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-semibold text-slate-800">{t("Organization Structure")}</h3>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <OrgChart />
           </div>
         </TabsContent>

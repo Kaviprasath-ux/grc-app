@@ -1334,30 +1334,27 @@ export function NewRiskWizard({
         </Dialog>
 
         {/* Navigation Buttons */}
-        <div className="flex-shrink-0 flex justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <span className="text-xs font-medium text-slate-400 me-auto">
+            Step {currentStep} of {steps.length}
+          </span>
           <Button
             variant="outline"
             onClick={currentStep === 1 ? handleClose : handlePrevious}
           >
-            {currentStep === 1 ? "Cancel" : (
-              <>
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </>
-            )}
+            {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+            {currentStep === 1 ? "Cancel" : "Previous"}
           </Button>
-          <div className="flex gap-2">
-            {currentStep < steps.length ? (
-              <Button onClick={handleNext} disabled={!validateStep()}>
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            ) : (
-              <Button onClick={handleSubmit} disabled={loading}>
-                {loading ? "Saving..." : (isEditMode ? "Update Risk" : "Save Risk")}
-              </Button>
-            )}
-          </div>
+          {currentStep < steps.length ? (
+            <Button onClick={handleNext} disabled={!validateStep()}>
+              Next
+              <ChevronRight className="h-4 w-4 ms-1" />
+            </Button>
+          ) : (
+            <Button onClick={handleSubmit} disabled={loading}>
+              {loading ? "Saving..." : (isEditMode ? "Update Risk" : "Save Risk")}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

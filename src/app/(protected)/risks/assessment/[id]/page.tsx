@@ -25,7 +25,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -933,26 +933,35 @@ export default function RiskAssessmentWizardPage() {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={() => router.push("/risks/assessment")}>
-          {t("Cancel")}
+      <div className="flex items-center gap-3 pt-4 border-t">
+        <span className="text-xs font-medium text-slate-400 me-auto">
+          {t("Step")} {currentStep} {t("of")} {assessmentSteps.length}
+        </span>
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (currentStep === 1) {
+              router.push("/risks/assessment");
+            } else {
+              handlePrevious();
+            }
+          }}
+        >
+          {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+          {currentStep === 1 ? t("Cancel") : t("Previous")}
         </Button>
-        <div className="flex gap-2">
-          {currentStep > 1 && (
-            <Button variant="outline" onClick={handlePrevious}>
-              {t("Previous")}
+        {currentStep < assessmentSteps.length ? (
+          <Button onClick={handleNext}>
+            {t("Next")}
+            <ChevronRight className="h-4 w-4 ms-1" />
+          </Button>
+        ) : (
+          (canCreate || canEdit) && (
+            <Button onClick={handleSave}>
+              {t("Save")}
             </Button>
-          )}
-          {currentStep < assessmentSteps.length ? (
-            <Button onClick={handleNext}>{t("Next")}</Button>
-          ) : (
-            (canCreate || canEdit) && (
-              <Button onClick={handleSave}>
-                {t("Save")}
-              </Button>
-            )
-          )}
-        </div>
+          )
+        )}
       </div>
 
       {/* Risk Response Strategy Dialog */}
