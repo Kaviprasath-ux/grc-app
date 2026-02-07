@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Sparkles, Upload, X, Home, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
+import { Sparkles, Upload, X, Home, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -49,7 +48,6 @@ const ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt";
 const MAX_FILES = 10;
 
 export default function RiskIdentificationPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
@@ -352,51 +350,60 @@ export default function RiskIdentificationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
-        <span className="text-sm text-primary-600 font-medium">
-          {t("AI-Powered Risk Assessment")}
-        </span>
       </div>
 
       {/* Main Form Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="p-6 space-y-6">
-          {/* Department Selection */}
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-2 block">
-              {t("Select a Department to Assess")}
-            </label>
-            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t("Select department...")} />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-slate-800">{t("Risk Assessment Parameters")}</h3>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2.5 py-1 rounded-full">
+            <Sparkles className="h-3 w-3" />
+            <span>{t("AI-Powered")}</span>
           </div>
+        </div>
+        <div className="px-6 py-5 space-y-5">
+          {/* Department & Audit Focus - 2 column grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Department Selection */}
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                {t("Department")} <span className="text-red-500">*</span>
+              </label>
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger className="w-full h-9 bg-white border-slate-300">
+                  <SelectValue placeholder={t("Select department...")} />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Specific Audit Focus */}
-          <div>
-            <label className="text-sm font-medium text-slate-700 mb-2 block">
-              {t("Specific Audit Focus (Optional)")}
-            </label>
-            <Textarea
-              placeholder={t("e.g. Payroll processing, Third-party management...")}
-              value={auditFocus}
-              onChange={(e) => setAuditFocus(e.target.value)}
-              rows={4}
-              className="resize-none"
-            />
+            {/* Specific Audit Focus */}
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                {t("Specific Audit Focus")}
+                <span className="text-slate-400 font-normal ml-1">({t("Optional")})</span>
+              </label>
+              <Textarea
+                placeholder={t("e.g. Payroll processing, Third-party management...")}
+                value={auditFocus}
+                onChange={(e) => setAuditFocus(e.target.value)}
+                rows={1}
+                className="resize-none bg-white border-slate-300 min-h-[36px]"
+              />
+            </div>
           </div>
 
           {/* File Upload Area */}
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-2 block">
-              {t("Supporting Documents (Optional)")}
+            <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+              {t("Supporting Documents")}
+              <span className="text-slate-400 font-normal ml-1">({t("Optional")})</span>
             </label>
             <input
               ref={fileInputRef}
@@ -407,13 +414,15 @@ export default function RiskIdentificationPage() {
               onChange={handleFileInputChange}
             />
             <div
-              className="border-2 border-dashed rounded-lg p-8 text-center border-slate-200 cursor-pointer"
+              className="border-2 border-dashed rounded-lg p-6 text-center border-slate-200 hover:border-primary-300 hover:bg-primary-50/30 cursor-pointer transition-colors"
               onClick={() => fileInputRef.current?.click()}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
             >
-              <Upload className="h-10 w-10 mx-auto text-slate-300 mb-3" />
-              <p className="text-slate-500 mb-2">{t("Drag and drop files here, or click to upload")}</p>
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <Upload className="h-5 w-5 text-slate-400" />
+              </div>
+              <p className="text-sm text-slate-600 mb-1">{t("Drag and drop files here, or click to upload")}</p>
               <p className="text-xs text-slate-400">
                 {t("PDF, DOC, DOCX, XLS, XLSX, CSV, TXT")} ({t("max")} {MAX_FILES} {t("files")})
               </p>
@@ -421,16 +430,16 @@ export default function RiskIdentificationPage() {
 
             {/* Uploaded Files List */}
             {files.length > 0 && (
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 space-y-1.5">
                 {files.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2"
+                    className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-3 py-2"
                   >
                     <span className="text-sm text-slate-700 truncate flex-1">
                       {file.name}
                     </span>
-                    <span className="text-xs text-slate-400 mx-2">
+                    <span className="text-xs text-slate-400 mx-3 shrink-0">
                       {(file.size / 1024).toFixed(1)} KB
                     </span>
                     <button
@@ -439,7 +448,7 @@ export default function RiskIdentificationPage() {
                         e.stopPropagation();
                         removeFile(index);
                       }}
-                      className="text-slate-400 hover:text-red-500 transition-colors"
+                      className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -448,126 +457,131 @@ export default function RiskIdentificationPage() {
               </div>
             )}
           </div>
+        </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSuggestRisks}
-              disabled={loading || !selectedDepartment}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t("Analyzing...")}
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {t("Suggest Risks with AI")}
-                </>
-              )}
-            </Button>
-          </div>
+        {/* Footer with Submit */}
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex justify-end">
+          <Button
+            size="sm"
+            onClick={handleSuggestRisks}
+            disabled={loading || !selectedDepartment}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                {t("Analyzing...")}
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Suggest Risks with AI")}
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
       {/* Recent Searches / Generated Risks */}
       {recentSearches.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-base font-semibold text-slate-800">{t("Recent Searches")}</h3>
+            <span className="text-xs text-slate-400">{recentSearches.length} {t("result(s)")}</span>
           </div>
           <div className="divide-y divide-slate-100">
             {recentSearches.map((search) => (
-              <div key={search.id} className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center shrink-0">
-                    <Sparkles className="h-4 w-4 text-slate-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <p className="font-medium text-slate-800">{search.query}</p>
-                      <span className="text-xs text-slate-400 shrink-0">
-                        {formatDate(search.timestamp)}
-                      </span>
+              <div key={search.id} className="px-6 py-5">
+                {/* Search Header */}
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-primary-50 border border-primary-100 flex items-center justify-center shrink-0">
+                      <Sparkles className="h-3.5 w-3.5 text-primary-500" />
                     </div>
-                    {search.result && (
-                      <p className="text-sm text-slate-600 mt-2">{search.result}</p>
-                    )}
-                    {search.generatedRisks && search.generatedRisks.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {search.generatedRisks.map((r, idx) => {
-                          const riskKey = `${search.id}-${idx}`;
-                          const isAdded = addedRisks.has(riskKey);
-                          const isAdding = addingRisks.has(riskKey);
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{search.query}</p>
+                      {search.result && (
+                        <p className="text-xs text-slate-500 mt-0.5">{search.result}</p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-400 shrink-0 whitespace-nowrap">
+                    {formatDate(search.timestamp)}
+                  </span>
+                </div>
 
-                          return (
-                            <div
-                              key={idx}
-                              className="text-sm border-l-2 border-primary-200 pl-3 py-2 bg-primary-50/50 rounded-r"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
-                                  <p className="font-medium text-slate-800">{r.title}</p>
-                                  {r.description && (
-                                    <p className="text-slate-600 mt-0.5 text-xs">{r.description}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500">
-                                    <Badge
-                                      variant={
-                                        r.level === "High"
-                                          ? "destructive"
-                                          : r.level === "Medium"
-                                            ? "secondary"
-                                            : "outline"
-                                      }
-                                      className="text-xs"
-                                    >
-                                      {r.level}
-                                    </Badge>
-                                    {r.inherent_likelihood && (
-                                      <span>{t("Likelihood")}: {r.inherent_likelihood}</span>
-                                    )}
-                                    {r.inherent_impact && (
-                                      <span>{t("Impact")}: {r.inherent_impact}</span>
-                                    )}
-                                  </div>
-                                </div>
-                                {/* Only show Add to Register for Audit Head and High/Medium risks */}
-                                {isAuditHead && (r.level === "High" || r.level === "Medium") && (
-                                  <div className="shrink-0">
-                                    {isAdded ? (
-                                      <div className="flex items-center gap-1.5 text-sm text-green-600 font-medium px-3 py-1.5 bg-green-50 rounded-md border border-green-200">
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        <span>{t("Added to Register")}</span>
-                                      </div>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={isAdding}
-                                        onClick={() => handleAddToRegister(r, search.id, idx, search.departmentId)}
-                                      >
-                                        {isAdding ? (
-                                          <>
-                                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                            {t("Adding...")}
-                                          </>
-                                        ) : (
-                                          t("Add to Register")
-                                        )}
-                                      </Button>
-                                    )}
-                                  </div>
+                {/* Generated Risks */}
+                {search.generatedRisks && search.generatedRisks.length > 0 && (
+                  <div className="space-y-2 ltr:ml-11 rtl:mr-11">
+                    {search.generatedRisks.map((r, idx) => {
+                      const riskKey = `${search.id}-${idx}`;
+                      const isAdded = addedRisks.has(riskKey);
+                      const isAdding = addingRisks.has(riskKey);
+
+                      return (
+                        <div
+                          key={idx}
+                          className="rounded-lg border border-slate-100 bg-slate-50/50 p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-800">{r.title}</p>
+                              {r.description && (
+                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{r.description}</p>
+                              )}
+                              <div className="flex flex-wrap items-center gap-2 mt-2">
+                                <Badge
+                                  className={`text-xs ${
+                                    r.level === "High"
+                                      ? "bg-red-100 text-red-700"
+                                      : r.level === "Medium"
+                                        ? "bg-yellow-100 text-yellow-700"
+                                        : "bg-slate-100 text-slate-600"
+                                  }`}
+                                >
+                                  {r.level}
+                                </Badge>
+                                {r.inherent_likelihood && (
+                                  <span className="text-xs text-slate-500">{t("Likelihood")}: <span className="font-medium text-slate-700">{r.inherent_likelihood}</span></span>
+                                )}
+                                {r.inherent_impact && (
+                                  <span className="text-xs text-slate-500">{t("Impact")}: <span className="font-medium text-slate-700">{r.inherent_impact}</span></span>
                                 )}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                            {/* Only show Add to Register for Audit Head and High/Medium risks */}
+                            {isAuditHead && (r.level === "High" || r.level === "Medium") && (
+                              <div className="shrink-0">
+                                {isAdded ? (
+                                  <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium px-2.5 py-1.5 bg-green-50 rounded-md border border-green-200">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    <span>{t("Added")}</span>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 text-xs"
+                                    disabled={isAdding}
+                                    onClick={() => handleAddToRegister(r, search.id, idx, search.departmentId)}
+                                  >
+                                    {isAdding ? (
+                                      <>
+                                        <Loader2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1 animate-spin" />
+                                        {t("Adding...")}
+                                      </>
+                                    ) : (
+                                      t("Add to Register")
+                                    )}
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

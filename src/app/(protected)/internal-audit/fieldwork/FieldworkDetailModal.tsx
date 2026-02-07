@@ -786,7 +786,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     <>
       {/* Main Detail Dialog */}
       <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-        <DialogContent className="sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[1200px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0 pr-14">
             <DialogHeader>

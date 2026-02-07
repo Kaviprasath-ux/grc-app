@@ -1,17 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Clock, CalendarDays, CheckCircle, AlertTriangle, PlayCircle, Home, ChevronRight } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Clock, CalendarDays, CheckCircle, AlertTriangle, PlayCircle, Home, ChevronRight, Building2, BarChart3, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { FieldworkDetailModal } from "../fieldwork/FieldworkDetailModal";
 
 interface AuditItem {
   id: string;
@@ -37,11 +45,12 @@ interface AuditUniverseData {
 }
 
 export default function AuditUniversePage() {
-  const router = useRouter();
   const { t } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [data, setData] = useState<AuditUniverseData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedEngagementId, setSelectedEngagementId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAuditUniverse();
@@ -61,23 +70,25 @@ export default function AuditUniversePage() {
     }
   };
 
-  const getStatusColor = (actualHours: number, plannedHours: number, status: string) => {
+  const getStatusStyle = (actualHours: number, plannedHours: number, status: string) => {
     const statusLower = status?.toLowerCase() || '';
 
     // Completed audits
     if (statusLower === 'completed' || statusLower === 'complete' || statusLower === 'closed') {
-      return actualHours > plannedHours ? "bg-red-500" : "bg-green-500";
+      return actualHours > plannedHours
+        ? { bg: "bg-red-50 border border-red-200", text: "text-red-700", sub: "text-red-600", dot: "bg-red-400" }
+        : { bg: "bg-emerald-50 border border-emerald-200", text: "text-emerald-700", sub: "text-emerald-600", dot: "bg-emerald-400" };
     }
 
     // In progress audits
     if (statusLower === 'in progress' || statusLower === 'inprogress' || statusLower === 'ongoing' || statusLower === 'active') {
-      if (actualHours > plannedHours) return "bg-red-500"; // Over budget
-      if (actualHours > plannedHours * 0.8) return "bg-yellow-500"; // Approaching limit
-      return "bg-orange-500"; // In progress
+      if (actualHours > plannedHours) return { bg: "bg-red-50 border border-red-200", text: "text-red-700", sub: "text-red-600", dot: "bg-red-400" };
+      if (actualHours > plannedHours * 0.8) return { bg: "bg-amber-50 border border-amber-200", text: "text-amber-700", sub: "text-amber-600", dot: "bg-amber-400" };
+      return { bg: "bg-sky-50 border border-sky-200", text: "text-sky-700", sub: "text-sky-600", dot: "bg-sky-400" };
     }
 
     // Planned/Draft audits
-    return "bg-blue-500";
+    return { bg: "bg-slate-50 border border-slate-200", text: "text-slate-700", sub: "text-slate-500", dot: "bg-slate-400" };
   };
 
   const getStatusIcon = (status: string) => {
@@ -102,8 +113,14 @@ export default function AuditUniversePage() {
   };
 
   const handleAuditClick = (auditId: string) => {
-    router.push(`/internal-audit/fieldwork/${auditId}`);
+    setSelectedEngagementId(auditId);
+    setDetailModalOpen(true);
   };
+
+  // Compute summary stats
+  const totalPlannedHours = data?.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0) || 0;
+  const totalActualHours = data?.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0) || 0;
+  const totalVariance = totalActualHours - totalPlannedHours;
 
   if (loading) {
     return (
@@ -166,24 +183,99 @@ export default function AuditUniversePage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Audit Universe")}</h1>
-        <div className="text-sm text-slate-500">
-          {data?.totalDepartments || 0} {t("Departments")} | {data?.totalAudits || 0} {t("Audits")}
+      </div>
+
+      {/* Summary Stat Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <Building2 className="h-5 w-5 text-primary-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500 mb-0.5">{t("Departments")}</p>
+              <p className="text-xl font-bold text-slate-800">{data?.totalDepartments || 0}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <BarChart3 className="h-5 w-5 text-primary-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500 mb-0.5">{t("Total Audits")}</p>
+              <p className="text-xl font-bold text-slate-800">{data?.totalAudits || 0}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <Timer className="h-5 w-5 text-primary-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500 mb-0.5">{t("Planned Hours")}</p>
+              <p className="text-xl font-bold text-slate-800">{totalPlannedHours}h</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <TrendingUp className="h-5 w-5 text-primary-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500 mb-0.5">{t("Variance")}</p>
+              <p className={`text-xl font-bold ${totalVariance > 0 ? 'text-red-600' : totalVariance < 0 ? 'text-green-600' : 'text-slate-800'}`}>
+                {totalVariance > 0 ? '+' : ''}{totalVariance}h
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Organization Map Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-slate-800">{t("Organization Map")}</h3>
+          {/* Inline Legend */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-slate-400 rounded-full"></div>
+              <span className="text-xs text-slate-500">{t("Planned")}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-sky-400 rounded-full"></div>
+              <span className="text-xs text-slate-500">{t("In Progress")}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-amber-400 rounded-full"></div>
+              <span className="text-xs text-slate-500">{t("Near Budget")}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full"></div>
+              <span className="text-xs text-slate-500">{t("Completed")}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-red-400 rounded-full"></div>
+              <span className="text-xs text-slate-500">{t("Over Budget")}</span>
+            </div>
+          </div>
+        </div>
         <div className="p-6">
           <div className="relative">
             {/* Root Node */}
             <div className="flex justify-center mb-8">
-              <div className="bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold">
+              <div className="bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold shadow-sm flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
                 {t("Audit Universe")}
               </div>
             </div>
 
             {/* Connection line from root */}
             <div className="flex justify-center mb-4">
-              <div className="w-0.5 h-8 bg-slate-300"></div>
+              <div className="w-0.5 h-8 bg-slate-200"></div>
             </div>
 
             {/* Scrollable container for horizontal line and departments */}
@@ -191,7 +283,7 @@ export default function AuditUniversePage() {
               {/* Horizontal line connecting all departments */}
               {data?.departments && data.departments.length > 0 && (
                 <div className="flex mb-4">
-                  <div className="h-0.5 bg-slate-300 flex-1" style={{ minWidth: `${data.departments.length * 160}px` }}></div>
+                  <div className="h-0.5 bg-slate-200 flex-1" style={{ minWidth: `${data.departments.length * 160}px` }}></div>
                 </div>
               )}
 
@@ -201,18 +293,21 @@ export default function AuditUniversePage() {
                   {data?.departments.map((dept) => (
                   <div key={dept.id} className="flex flex-col items-center flex-shrink-0">
                     {/* Vertical line to department */}
-                    <div className="w-0.5 h-4 bg-slate-300"></div>
+                    <div className="w-0.5 h-4 bg-slate-200"></div>
 
                     {/* Department box */}
-                    <div className={`border rounded-lg px-4 py-3 mb-4 min-w-[140px] text-center ${
+                    <div className={`rounded-xl px-5 py-3 mb-4 min-w-[150px] text-center transition-all ${
                       dept.audits.length > 0
-                        ? 'border-slate-200 bg-white'
-                        : 'border-dashed border-slate-200 bg-slate-50'
+                        ? 'border border-slate-200 bg-white shadow-sm'
+                        : 'border border-dashed border-slate-200 bg-slate-50/50'
                     }`}>
-                      <span className={`text-sm font-semibold ${dept.audits.length > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
-                        {dept.name}
-                      </span>
-                      <div className={`text-xs mt-1 ${dept.audits.length > 0 ? 'text-slate-400' : 'text-slate-300'}`}>
+                      <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                        <Building2 className={`h-3.5 w-3.5 ${dept.audits.length > 0 ? 'text-primary-500' : 'text-slate-300'}`} />
+                        <span className={`text-sm font-semibold ${dept.audits.length > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
+                          {dept.name}
+                        </span>
+                      </div>
+                      <div className={`text-xs ${dept.audits.length > 0 ? 'text-slate-400' : 'text-slate-300'}`}>
                         {dept.audits.length > 0 ? `${dept.audits.length} ${t("audit(s)")}` : t("No audits")}
                       </div>
                     </div>
@@ -223,49 +318,54 @@ export default function AuditUniversePage() {
                         dept.audits.map((audit) => (
                           <div key={audit.id} className="flex flex-col items-center">
                             {/* Connection line */}
-                            <div className="w-0.5 h-3 bg-slate-300"></div>
+                            <div className="w-0.5 h-3 bg-slate-200"></div>
 
                             {/* Audit card with tooltip */}
                             <Tooltip>
                               <TooltipTrigger asChild>
+                                {(() => {
+                                  const style = getStatusStyle(audit.actualHours, audit.plannedHours, audit.status);
+                                  return (
                                 <div
-                                  className={`${getStatusColor(audit.actualHours, audit.plannedHours, audit.status)} text-white rounded-lg px-4 py-3 min-w-[130px] text-center cursor-pointer transition-colors`}
+                                  className={`${style.bg} rounded-xl px-4 py-3 min-w-[135px] text-center cursor-pointer transition-all  active:scale-100`}
                                   onClick={() => handleAuditClick(audit.id)}
                                 >
-                                  <div className="flex items-center justify-center gap-1 font-semibold text-sm mb-2">
+                                  <div className={`flex items-center justify-center gap-1.5 font-semibold text-sm mb-2 ${style.text}`}>
                                     {getStatusIcon(audit.status)}
                                     <span>{audit.auditId}</span>
                                   </div>
                                   <div className="text-xs space-y-1">
                                     <div className="flex justify-between gap-4">
-                                      <span className="opacity-80">{t("Actual")}</span>
-                                      <span className="opacity-80">{t("Planned")}</span>
+                                      <span className={`${style.sub} opacity-75`}>{t("Actual")}</span>
+                                      <span className={`${style.sub} opacity-75`}>{t("Planned")}</span>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                      <span className="font-medium">
+                                      <span className={`font-medium ${style.text}`}>
                                         {audit.actualHours > 0 ? `${audit.actualHours}h` : '-'}
                                       </span>
-                                      <span className="font-medium">
+                                      <span className={`font-medium ${style.text}`}>
                                         {audit.plannedHours > 0 ? `${audit.plannedHours}h` : '-'}
                                       </span>
                                     </div>
                                   </div>
                                 </div>
+                                  );
+                                })()}
                               </TooltipTrigger>
-                              <TooltipContent side="right" className="max-w-xs">
+                              <TooltipContent side="right" className="max-w-xs p-3">
                                 <div className="space-y-2">
-                                  <p className="font-semibold">{audit.engagementTitle}</p>
-                                  <div className="text-xs space-y-1">
+                                  <p className="font-semibold text-slate-800">{audit.engagementTitle}</p>
+                                  <div className="text-xs space-y-1.5 text-slate-600">
                                     <div className="flex items-center gap-2">
-                                      <CalendarDays className="h-3 w-3" />
+                                      <CalendarDays className="h-3 w-3 text-slate-400" />
                                       <span>{t("Start")}: {formatDate(audit.startDate)}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <CalendarDays className="h-3 w-3" />
+                                      <CalendarDays className="h-3 w-3 text-slate-400" />
                                       <span>{t("End")}: {formatDate(audit.endDate)}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <Clock className="h-3 w-3" />
+                                      <Clock className="h-3 w-3 text-slate-400" />
                                       <span>{t("Status")}: {audit.status}</span>
                                     </div>
                                     {audit.actualHours > audit.plannedHours && (
@@ -275,7 +375,7 @@ export default function AuditUniversePage() {
                                       </div>
                                     )}
                                   </div>
-                                  <p className="text-xs text-slate-400 italic">{t("Click to view details")}</p>
+                                  <p className="text-xs text-slate-400 italic pt-1 border-t border-slate-100">{t("Click to view details")}</p>
                                 </div>
                               </TooltipContent>
                             </Tooltip>
@@ -295,42 +395,14 @@ export default function AuditUniversePage() {
 
             {/* Empty state */}
             {(!data?.departments || data.departments.length === 0) && (
-              <div className="text-center py-12 text-slate-500">
-                <p className="text-lg">{t("No audits in the universe yet")}</p>
-                <p className="text-sm mt-2">{t("Audits will appear here once created and assigned to departments")}</p>
+              <div className="text-center py-16">
+                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <Building2 className="h-7 w-7 text-slate-300" />
+                </div>
+                <p className="text-base font-medium text-slate-600">{t("No audits in the universe yet")}</p>
+                <p className="text-sm text-slate-400 mt-1">{t("Audits will appear here once created and assigned to departments")}</p>
               </div>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h3 className="text-base font-semibold text-slate-800">{t("Legend")}</h3>
-        </div>
-        <div className="p-6">
-          <div className="flex gap-6 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span className="text-sm text-slate-600">{t("Planned")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-500 rounded"></div>
-              <span className="text-sm text-slate-600">{t("In Progress")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-              <span className="text-sm text-slate-600">{t("Approaching Budget")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span className="text-sm text-slate-600">{t("Completed (On Budget)")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span className="text-sm text-slate-600">{t("Over Budget")}</span>
-            </div>
           </div>
         </div>
       </div>
@@ -341,62 +413,87 @@ export default function AuditUniversePage() {
           <div className="px-6 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Hours Summary by Department")}</h3>
           </div>
-          <div className="p-6">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    <th className="text-left py-3 text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Department")}</th>
-                    <th className="text-right py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Audits")}</th>
-                    <th className="text-right py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Total Planned Hours")}</th>
-                    <th className="text-right py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Total Actual Hours")}</th>
-                    <th className="text-right py-3 text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Variance")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.departments.map((dept) => {
-                    const totalPlanned = dept.audits.reduce((sum, a) => sum + a.plannedHours, 0);
-                    const totalActual = dept.audits.reduce((sum, a) => sum + a.actualHours, 0);
-                    const variance = totalActual - totalPlanned;
-                    const hasAudits = dept.audits.length > 0;
-                    return (
-                      <tr key={dept.id} className={`border-b border-slate-100 last:border-0 ${!hasAudits ? 'text-slate-400' : ''}`}>
-                        <td className="py-3 text-sm font-medium text-slate-800 pl-5">{dept.name}</td>
-                        <td className="text-right py-3 text-sm text-slate-700">{dept.audits.length}</td>
-                        <td className="text-right py-3 text-sm text-slate-700">{hasAudits ? `${totalPlanned}h` : '-'}</td>
-                        <td className="text-right py-3 text-sm text-slate-700">{hasAudits ? `${totalActual}h` : '-'}</td>
-                        <td className={`text-right py-3 text-sm font-medium pr-5 ${hasAudits ? (variance > 0 ? 'text-red-600' : variance < 0 ? 'text-green-600' : 'text-slate-700') : 'text-slate-700'}`}>
-                          {hasAudits ? `${variance > 0 ? '+' : ''}${variance}h` : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-slate-100 bg-slate-50/50 font-semibold text-slate-800">
-                    <td className="py-3 text-sm pl-5">{t("Total")}</td>
-                    <td className="text-right py-3 text-sm">{data.totalAudits}</td>
-                    <td className="text-right py-3 text-sm">
-                      {data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0)}h
-                    </td>
-                    <td className="text-right py-3 text-sm">
-                      {data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0)}h
-                    </td>
-                    <td className="text-right py-3 text-sm pr-5">
-                      {(() => {
-                        const totalP = data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0);
-                        const totalA = data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0);
-                        const v = totalA - totalP;
-                        return <span className={v > 0 ? 'text-red-600' : v < 0 ? 'text-green-600' : ''}>{v > 0 ? '+' : ''}{v}h</span>;
-                      })()}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Department")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 text-right">{t("Audits")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 text-right">{t("Planned Hours")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 text-right">{t("Actual Hours")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 text-right pr-5">{t("Variance")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.departments.map((dept) => {
+                const deptPlanned = dept.audits.reduce((sum, a) => sum + a.plannedHours, 0);
+                const deptActual = dept.audits.reduce((sum, a) => sum + a.actualHours, 0);
+                const variance = deptActual - deptPlanned;
+                const hasAudits = dept.audits.length > 0;
+                return (
+                  <TableRow key={dept.id} className={`border-b border-slate-100 last:border-0 ${!hasAudits ? 'text-slate-400' : ''}`}>
+                    <TableCell className="py-3 pl-5">
+                      <div className="flex items-center gap-2">
+                        <Building2 className={`h-3.5 w-3.5 ${hasAudits ? 'text-primary-500' : 'text-slate-300'}`} />
+                        <span className="text-sm font-medium text-slate-800">{dept.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right py-3">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-xs font-medium text-slate-600">
+                        {dept.audits.length}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right py-3 text-sm text-slate-700">{hasAudits ? `${deptPlanned}h` : '-'}</TableCell>
+                    <TableCell className="text-right py-3 text-sm text-slate-700">{hasAudits ? `${deptActual}h` : '-'}</TableCell>
+                    <TableCell className="text-right py-3 pr-5">
+                      {hasAudits ? (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          variance > 0 ? 'bg-red-50 text-red-700' : variance < 0 ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {variance > 0 ? '+' : ''}{variance}h
+                        </span>
+                      ) : (
+                        <span className="text-sm text-slate-400">-</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {/* Totals Row */}
+              <TableRow className="border-t border-slate-200 bg-slate-50/50 hover:bg-slate-50/50">
+                <TableCell className="py-3 pl-5">
+                  <span className="text-sm font-semibold text-slate-800">{t("Total")}</span>
+                </TableCell>
+                <TableCell className="text-right py-3">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 text-xs font-semibold text-primary-700">
+                    {data.totalAudits}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right py-3 text-sm font-semibold text-slate-800">
+                  {totalPlannedHours}h
+                </TableCell>
+                <TableCell className="text-right py-3 text-sm font-semibold text-slate-800">
+                  {totalActualHours}h
+                </TableCell>
+                <TableCell className="text-right py-3 pr-5">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    totalVariance > 0 ? 'bg-red-50 text-red-700' : totalVariance < 0 ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {totalVariance > 0 ? '+' : ''}{totalVariance}h
+                  </span>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
       )}
+
+      {/* Fieldwork Detail Modal */}
+      <FieldworkDetailModal
+        open={detailModalOpen}
+        onClose={() => { setDetailModalOpen(false); setSelectedEngagementId(null); fetchAuditUniverse(); }}
+        engagementId={selectedEngagementId}
+        mode="view"
+      />
     </div>
   );
 }

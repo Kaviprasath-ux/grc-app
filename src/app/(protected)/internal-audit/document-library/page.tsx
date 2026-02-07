@@ -371,7 +371,7 @@ export default function DocumentLibraryPage() {
     if (["pdf", "doc", "docx", "txt"].includes(type || "")) {
       return <FileText className="h-5 w-5 text-red-500" />;
     }
-    return <File className="h-5 w-5 text-gray-500" />;
+    return <File className="h-5 w-5 text-slate-500" />;
   };
 
   const getIngestStatusIcon = (doc: Document) => {
@@ -420,10 +420,10 @@ export default function DocumentLibraryPage() {
 
     return (
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
           isActive
             ? "border-primary-500 bg-primary-50"
-            : "border-gray-300 hover:border-gray-400"
+            : "border-slate-200 hover:border-primary-300 hover:bg-primary-50/30"
         }`}
         onDragEnter={(e) => handleDrag(e, category, true)}
         onDragLeave={(e) => handleDrag(e, category, false)}
@@ -442,14 +442,18 @@ export default function DocumentLibraryPage() {
           onChange={(e) => handleFileUpload(e.target.files, category)}
         />
         {isUploading ? (
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
-            <span className="text-gray-500">{t("Uploading...")}</span>
+            <span className="text-sm text-slate-500">{t("Uploading...")}</span>
           </div>
         ) : (
-          <p className="text-gray-500">
-            {t("Click here, or drop files here to upload.")}
-          </p>
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+              <File className="h-5 w-5 text-slate-400" />
+            </div>
+            <p className="text-sm text-slate-600 mb-1">{t("Drag and drop files here, or click to upload")}</p>
+            <p className="text-xs text-slate-400">{t("PDF, DOC, DOCX, XLS, XLSX, CSV, TXT")}</p>
+          </div>
         )}
       </div>
     );
@@ -468,7 +472,7 @@ export default function DocumentLibraryPage() {
     return {
       items: paginatedItems,
       pagination: items.length > 0 && (
-        <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
           <span className="text-xs text-slate-500">
             {startIndex + 1} {t("to")} {endIndex} {t("of")} {items.length}
           </span>
@@ -533,19 +537,18 @@ export default function DocumentLibraryPage() {
 
     return (
       <>
-        {pagination}
         <div className="space-y-2 mt-4">
           {items.map((doc) => (
             <div
               key={doc.id}
-              className="flex items-center justify-between p-3 border border-slate-200 rounded-lg"
+              className="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-slate-50 transition-colors"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFileIcon(doc.fileType)}
-                <span className="text-sm text-slate-700">{doc.fileName}</span>
+                <span className="text-sm text-slate-700 truncate">{doc.fileName}</span>
                 {getIngestStatusIcon(doc)}
               </div>
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-0.5 shrink-0">
                 {/* Re-ingest button for failed or not ingested documents */}
                 {!ingestingDocs.has(doc.id) && (
                   <Button
@@ -578,6 +581,7 @@ export default function DocumentLibraryPage() {
             </div>
           ))}
         </div>
+        {pagination}
       </>
     );
   };
@@ -608,7 +612,7 @@ export default function DocumentLibraryPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
+        <TabsList className="bg-slate-100">
           <TabsTrigger value="smart-search">{t("Smart Search")}</TabsTrigger>
           <TabsTrigger value="policies">{t("Company's Policies and Procedures")}</TabsTrigger>
           <TabsTrigger value="regulations">{t("Standard Regulations")}</TabsTrigger>
@@ -631,7 +635,7 @@ export default function DocumentLibraryPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="resize-none min-h-[120px] bg-white border-slate-200 pr-14 pb-12"
+                  className="resize-none min-h-[120px] bg-white border-slate-300 pr-14 pb-12"
                   rows={4}
                 />
                 <Button
@@ -651,10 +655,13 @@ export default function DocumentLibraryPage() {
 
           {/* Recent Searches */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Recent Searches")}
               </h3>
+              {recentSearches.length > 0 && (
+                <span className="text-xs text-slate-400">{recentSearches.length} {t("result(s)")}</span>
+              )}
             </div>
             <div className="p-6">
               {recentSearches.length === 0 ? (
@@ -663,28 +670,28 @@ export default function DocumentLibraryPage() {
                   <p className="text-sm">{t("No recent searches")}</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="divide-y divide-slate-100">
                   {recentSearches.map((search) => (
                     <div
                       key={search.id}
-                      className="border border-slate-200 rounded-lg p-4"
+                      className="py-4 first:pt-0 last:pb-0"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center flex-shrink-0">
-                          <Clock className="h-4 w-4 text-slate-400" />
+                        <div className="w-8 h-8 rounded-full bg-primary-50 border border-primary-100 flex items-center justify-center flex-shrink-0">
+                          <Clock className="h-3.5 w-3.5 text-primary-500" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-4">
-                            <p className="font-medium text-slate-900 truncate">
+                            <p className="text-sm font-semibold text-slate-800 truncate">
                               {search.query}
                             </p>
-                            <span className="text-xs text-primary-600 whitespace-nowrap">
+                            <span className="text-xs text-slate-400 whitespace-nowrap">
                               {formatDate(search.createdAt)}
                             </span>
                           </div>
                           {search.result && (
                             <p
-                              className={`text-sm mt-2 ${
+                              className={`text-sm mt-1.5 leading-relaxed ${
                                 search.status === "Unsatisfactory"
                                   ? "text-amber-600"
                                   : "text-slate-600"
@@ -706,10 +713,13 @@ export default function DocumentLibraryPage() {
         {/* Company Policies Tab */}
         <TabsContent value="policies">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Company's Policies and Procedures")}
               </h3>
+              {documents.policiesCount > 0 && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{documents.policiesCount}</span>
+              )}
             </div>
             <div className="p-6">
               {renderUploadArea("Policy")}
@@ -721,10 +731,13 @@ export default function DocumentLibraryPage() {
         {/* Standard Regulations Tab */}
         <TabsContent value="regulations">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Standard Regulations")}
               </h3>
+              {documents.regulationsCount > 0 && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{documents.regulationsCount}</span>
+              )}
             </div>
             <div className="p-6">
               {renderUploadArea("Regulation")}
@@ -740,10 +753,13 @@ export default function DocumentLibraryPage() {
         {/* Previous Audit Reports Tab */}
         <TabsContent value="reports">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Previous Audit Reports")}
               </h3>
+              {documents.auditReportsCount > 0 && (
+                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{documents.auditReportsCount}</span>
+              )}
             </div>
             <div className="p-6">
               {renderUploadArea("PreviousReport")}

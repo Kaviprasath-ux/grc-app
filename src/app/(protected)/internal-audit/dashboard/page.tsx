@@ -4,10 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
-import { StatsCard } from "@/components/shared";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Dialog,
@@ -38,8 +36,11 @@ import {
   ClipboardList,
   Calendar,
   Home,
+  Building2,
+  ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";
+import { FieldworkDetailModal } from "../fieldwork/FieldworkDetailModal";
 
 interface DashboardData {
   riskStats: {
@@ -145,32 +146,40 @@ interface DrillDownDialogState {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// Severity badge component
+// Severity badge - muted pill style
 const SeverityBadge = ({ severity }: { severity: string }) => {
-  const colors: Record<string, string> = {
-    extreme: "bg-red-600 text-white",
-    critical: "bg-red-600 text-white",
-    high: "bg-red-500 text-white",
-    medium: "bg-blue-500 text-white",
-    moderate: "bg-blue-500 text-white",
-    low: "bg-green-500 text-white",
+  const styles: Record<string, string> = {
+    extreme: "bg-red-100 text-red-700",
+    critical: "bg-red-100 text-red-700",
+    high: "bg-orange-100 text-orange-700",
+    medium: "bg-amber-100 text-amber-700",
+    moderate: "bg-amber-100 text-amber-700",
+    low: "bg-emerald-100 text-emerald-700",
   };
-  const color = colors[severity?.toLowerCase()] || "bg-slate-500 text-white";
-  return <Badge className={color}>{severity || 'N/A'}</Badge>;
+  const style = styles[severity?.toLowerCase()] || "bg-slate-100 text-slate-600";
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style}`}>
+      {severity || 'N/A'}
+    </span>
+  );
 };
 
-// Status badge component
+// Status badge - muted pill style
 const StatusBadge = ({ status }: { status: string }) => {
-  const colors: Record<string, string> = {
-    open: "bg-yellow-500 text-white",
-    "in progress": "bg-blue-500 text-white",
-    ongoing: "bg-blue-500 text-white",
-    completed: "bg-green-500 text-white",
-    closed: "bg-green-500 text-white",
-    planned: "bg-purple-500 text-white",
+  const styles: Record<string, string> = {
+    open: "bg-amber-100 text-amber-700",
+    "in progress": "bg-sky-100 text-sky-700",
+    ongoing: "bg-sky-100 text-sky-700",
+    completed: "bg-emerald-100 text-emerald-700",
+    closed: "bg-emerald-100 text-emerald-700",
+    planned: "bg-purple-100 text-purple-700",
   };
-  const color = colors[status?.toLowerCase()] || "bg-slate-500 text-white";
-  return <Badge className={color}>{status || 'N/A'}</Badge>;
+  const style = styles[status?.toLowerCase()] || "bg-slate-100 text-slate-600";
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${style}`}>
+      {status || 'N/A'}
+    </span>
+  );
 };
 
 export default function InternalAuditDashboard() {
@@ -192,12 +201,15 @@ export default function InternalAuditDashboard() {
   const [drillDownData, setDrillDownData] = useState<DrillDownData | null>(null);
   const [drillDownLoading, setDrillDownLoading] = useState(false);
 
+  // Fieldwork detail modal
+  const [fieldworkModalOpen, setFieldworkModalOpen] = useState(false);
+  const [selectedEngagementId, setSelectedEngagementId] = useState<string | null>(null);
+
   const isAuditee =
     session?.user?.roles?.includes("Auditee") &&
     !session?.user?.roles?.includes("AuditHead") &&
     !session?.user?.roles?.includes("Auditor");
 
-  // Only AuditHead and AuditManager can access drill-down reports
   const canDrillDown =
     session?.user?.roles?.includes("AuditHead") ||
     session?.user?.roles?.includes("AuditManager");
@@ -224,7 +236,6 @@ export default function InternalAuditDashboard() {
     }
   };
 
-  // Fetch drill-down data
   const fetchDrillDownData = async (type: string, params: Record<string, string> = {}) => {
     try {
       setDrillDownLoading(true);
@@ -244,26 +255,15 @@ export default function InternalAuditDashboard() {
     }
   };
 
-  // Handle card clicks - only AuditHead and AuditManager can drill down
   const handleRiskCardClick = (filter: string, title: string) => {
     if (!canDrillDown) return;
-    setDrillDown({
-      open: true,
-      type: 'risks',
-      title,
-      filter,
-    });
+    setDrillDown({ open: true, type: 'risks', title, filter });
     fetchDrillDownData('risks', { filter });
   };
 
   const handleAuditCardClick = (filter: string, title: string) => {
     if (!canDrillDown) return;
-    setDrillDown({
-      open: true,
-      type: 'audits',
-      title,
-      filter,
-    });
+    setDrillDown({ open: true, type: 'audits', title, filter });
     fetchDrillDownData('audits', { filter });
   };
 
@@ -284,13 +284,12 @@ export default function InternalAuditDashboard() {
     setDrillDown({
       open: true,
       type: 'audit-detail',
-      title: `Audit Details - ${title}`,
+      title: `${t("Audit Details")} - ${title}`,
       auditId,
     });
     fetchDrillDownData('audit-plan', { auditId });
   };
 
-  // Handle chart bar click
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChartBarClick = (data: any) => {
     if (!canDrillDown) return;
@@ -300,13 +299,12 @@ export default function InternalAuditDashboard() {
     }
   };
 
-  // Close drill-down dialog
   const closeDrillDown = () => {
     setDrillDown({ open: false, type: null, title: '' });
     setDrillDownData(null);
   };
 
-  // Navigate to detail page
+  // Navigate to detail - open modal for audit, navigate for others
   const navigateToDetail = (type: string, id: string) => {
     closeDrillDown();
     switch (type) {
@@ -314,7 +312,8 @@ export default function InternalAuditDashboard() {
         router.push(`/internal-audit/risk-register`);
         break;
       case 'audit':
-        router.push(`/internal-audit/fieldwork/${id}`);
+        setSelectedEngagementId(id);
+        setFieldworkModalOpen(true);
         break;
       case 'capa':
         router.push(`/internal-audit/capa-tracking`);
@@ -322,12 +321,12 @@ export default function InternalAuditDashboard() {
     }
   };
 
-  // Prepare risk chart data
+  // Risk chart data with Tailwind-friendly colors
   const riskChartData = data ? [
-    { name: "Extreme", value: data.riskStats.extreme, color: "#dc2626" },
-    { name: "High", value: data.riskStats.high, color: "#f97316" },
-    { name: "Medium", value: data.riskStats.medium, color: "#3b82f6" },
-    { name: "Low", value: data.riskStats.low, color: "#22c55e" },
+    { name: "Extreme", value: data.riskStats.extreme, barClass: "bg-red-400", dotClass: "bg-red-400" },
+    { name: "High", value: data.riskStats.high, barClass: "bg-orange-400", dotClass: "bg-orange-400" },
+    { name: "Medium", value: data.riskStats.medium, barClass: "bg-amber-400", dotClass: "bg-amber-400" },
+    { name: "Low", value: data.riskStats.low, barClass: "bg-emerald-400", dotClass: "bg-emerald-400" },
   ] : [];
 
   // Paginated CAPA data
@@ -337,7 +336,6 @@ export default function InternalAuditDashboard() {
     (capaPage + 1) * itemsPerPage
   ) || [];
 
-  // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -352,7 +350,6 @@ export default function InternalAuditDashboard() {
     );
   }
 
-  // Show unauthorized if user doesn't have view permission
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access the Internal Audit Dashboard.")} />;
   }
@@ -559,33 +556,33 @@ export default function InternalAuditDashboard() {
           <div className="max-h-[60vh] overflow-auto space-y-6">
             {/* Audit Info */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-slate-500" />
+                  <FileText className="h-4 w-4 text-slate-400" />
                   <span className="text-sm text-slate-500">{t("Audit ID")}:</span>
-                  <span className="font-medium">{auditDetail.auditId || 'N/A'}</span>
+                  <span className="text-sm font-medium text-slate-800">{auditDetail.auditId || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-slate-500" />
+                  <Building2 className="h-4 w-4 text-slate-400" />
                   <span className="text-sm text-slate-500">{t("Department")}:</span>
-                  <span className="font-medium">{auditDetail.department || 'N/A'}</span>
+                  <span className="text-sm font-medium text-slate-800">{auditDetail.department || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-slate-500" />
+                  <Shield className="h-4 w-4 text-slate-400" />
                   <span className="text-sm text-slate-500">{t("Type")}:</span>
-                  <span className="font-medium">{auditDetail.auditType || 'N/A'}</span>
+                  <span className="text-sm font-medium text-slate-800">{auditDetail.auditType || 'N/A'}</span>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-slate-500" />
+                  <Activity className="h-4 w-4 text-slate-400" />
                   <span className="text-sm text-slate-500">{t("Status")}:</span>
                   <StatusBadge status={auditDetail.status || ''} />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-slate-500" />
+                  <Calendar className="h-4 w-4 text-slate-400" />
                   <span className="text-sm text-slate-500">{t("Duration")}:</span>
-                  <span className="font-medium">
+                  <span className="text-sm font-medium text-slate-800">
                     {auditDetail.startDate
                       ? new Date(auditDetail.startDate).toLocaleDateString()
                       : 'N/A'} - {auditDetail.endDate
@@ -594,9 +591,9 @@ export default function InternalAuditDashboard() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-slate-500" />
+                  <CheckCircle className="h-4 w-4 text-slate-400" />
                   <span className="text-sm text-slate-500">{t("Auditor")}:</span>
-                  <span className="font-medium">
+                  <span className="text-sm font-medium text-slate-800">
                     {auditDetail.auditor?.name || t("Unassigned")}
                   </span>
                 </div>
@@ -635,9 +632,12 @@ export default function InternalAuditDashboard() {
 
             {/* View Full Details Button */}
             <div className="flex justify-end">
-              <Button onClick={() => navigateToDetail('audit', auditDetail.id || '')}>
+              <Button
+                className="bg-primary-600 hover:bg-primary-700"
+                onClick={() => navigateToDetail('audit', auditDetail.id || '')}
+              >
                 {t("View Full Details")}
-                <ExternalLink className="h-4 w-4 ml-2" />
+                <ExternalLink className="h-4 w-4 ltr:ml-2 rtl:mr-2" />
               </Button>
             </div>
           </div>
@@ -662,39 +662,66 @@ export default function InternalAuditDashboard() {
           <span className="text-primary-700 font-medium">{t("My Tasks")}</span>
         </nav>
 
-        {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold text-slate-800">{t("My Audit Tasks")}</h1>
           <p className="text-sm text-slate-500 mt-1">{t("Track your evidence requests and corrective actions")}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            label={t("Evidence Requests")}
-            value={data?.stats.evidenceRequests.total || 0}
-            href="/internal-audit/fieldwork"
-            icon={Activity}
-            description={`${data?.stats.evidenceRequests.pending || 0} ${t("Pending")}`}
-          />
-          <StatsCard
-            label={t("Corrective Actions")}
-            value={data?.stats.capa.total || 0}
-            href="/internal-audit/capa-tracking"
-            icon={CheckCircle}
-            description={`${data?.stats.capa.open || 0} ${t("Open")}`}
-          />
-          <StatsCard
-            label={t("Pending Actions")}
-            value={(data?.stats.evidenceRequests.pending || 0) + (data?.stats.capa.open || 0)}
-            icon={Clock}
-            description={t("Items requiring attention")}
-          />
-          <StatsCard
-            label={t("Overdue Items")}
-            value={(data?.stats.evidenceRequests.overdue || 0) + (data?.stats.capa.overdue || 0)}
-            icon={AlertTriangle}
-            description={t("Requires immediate attention")}
-          />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link href="/internal-audit/fieldwork" className="block">
+            <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                  <Activity className="h-5 w-5" />
+                </div>
+                <ArrowUpRight className="h-4 w-4 text-slate-400" />
+              </div>
+              <div className="text-3xl font-bold tracking-tight text-slate-800">{data?.stats.evidenceRequests.total || 0}</div>
+              <div className="mt-1">
+                <span className="text-sm font-medium text-slate-500">{t("Evidence Requests")}</span>
+                <p className="text-xs text-slate-400 mt-0.5">{data?.stats.evidenceRequests.pending || 0} {t("Pending")}</p>
+              </div>
+            </div>
+          </Link>
+          <Link href="/internal-audit/capa-tracking" className="block">
+            <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+                <ArrowUpRight className="h-4 w-4 text-slate-400" />
+              </div>
+              <div className="text-3xl font-bold tracking-tight text-slate-800">{data?.stats.capa.total || 0}</div>
+              <div className="mt-1">
+                <span className="text-sm font-medium text-slate-500">{t("Corrective Actions")}</span>
+                <p className="text-xs text-slate-400 mt-0.5">{data?.stats.capa.open || 0} {t("Open")}</p>
+              </div>
+            </div>
+          </Link>
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <Clock className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">{(data?.stats.evidenceRequests.pending || 0) + (data?.stats.capa.open || 0)}</div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">{t("Pending Actions")}</span>
+              <p className="text-xs text-slate-400 mt-0.5">{t("Items requiring attention")}</p>
+            </div>
+          </div>
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-red-600">{(data?.stats.evidenceRequests.overdue || 0) + (data?.stats.capa.overdue || 0)}</div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">{t("Overdue Items")}</span>
+              <p className="text-xs text-slate-400 mt-0.5">{t("Requires immediate attention")}</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -713,8 +740,7 @@ export default function InternalAuditDashboard() {
         <span className="text-primary-700 font-medium">{t("Dashboard")}</span>
       </nav>
 
-      {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Audit Dashboard")}</h1>
       </div>
 
@@ -736,34 +762,62 @@ export default function InternalAuditDashboard() {
       </Dialog>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div onClick={() => handleRiskCardClick('all', t('All Risks'))} className={canDrillDown ? "cursor-pointer" : ""}>
-          <StatsCard
-            label={t("Total Risks")}
-            value={data?.riskStats.total || 0}
-            icon={Shield}
-          />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div
+          className={`relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
+          onClick={() => handleRiskCardClick('all', t('All Risks'))}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Shield className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">{data?.riskStats.total || 0}</div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">{t("Total Risks")}</span>
+          </div>
         </div>
-        <div onClick={() => handleRiskCardClick('extreme', t('Extreme Severity Risks'))} className={canDrillDown ? "cursor-pointer" : ""}>
-          <StatsCard
-            label={t("Extreme Severity")}
-            value={data?.riskStats.extreme || 0}
-            icon={AlertTriangle}
-          />
+        <div
+          className={`relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
+          onClick={() => handleRiskCardClick('extreme', t('Extreme Severity Risks'))}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">{data?.riskStats.extreme || 0}</div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">{t("Extreme Severity")}</span>
+          </div>
         </div>
-        <div onClick={() => handleAuditCardClick('ongoing', t('Ongoing Audits'))} className={canDrillDown ? "cursor-pointer" : ""}>
-          <StatsCard
-            label={t("Ongoing Audits")}
-            value={data?.auditStats.ongoing || 0}
-            icon={Activity}
-          />
+        <div
+          className={`relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
+          onClick={() => handleAuditCardClick('ongoing', t('Ongoing Audits'))}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Activity className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">{data?.auditStats.ongoing || 0}</div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">{t("Ongoing Audits")}</span>
+          </div>
         </div>
-        <div onClick={() => handleAuditCardClick('completed', t('Completed Audits'))} className={canDrillDown ? "cursor-pointer" : ""}>
-          <StatsCard
-            label={t("Completed Audits")}
-            value={data?.auditStats.completed || 0}
-            icon={CheckCircle}
-          />
+        <div
+          className={`relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
+          onClick={() => handleAuditCardClick('completed', t('Completed Audits'))}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">{data?.auditStats.completed || 0}</div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">{t("Completed Audits")}</span>
+          </div>
         </div>
       </div>
 
@@ -783,25 +837,19 @@ export default function InternalAuditDashboard() {
                 <div
                   key={item.name}
                   className={canDrillDown ? "cursor-pointer group" : "group"}
-                  onClick={() => handleRiskCardClick(item.name.toLowerCase(), `${item.name} ${t("Severity Risks")}`)}
+                  onClick={() => handleChartBarClick(item)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                      <div className={`w-3 h-3 rounded-full ${item.dotClass}`} />
+                      <span className="text-sm font-medium text-slate-700">{t(item.name)}</span>
                     </div>
                     <span className="text-sm font-semibold text-slate-800">{item.value}</span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all duration-300"
-                      style={{
-                        width: `${percentage}%`,
-                        backgroundColor: item.color,
-                      }}
+                      className={`h-full rounded-full transition-all duration-300 ${item.barClass}`}
+                      style={{ width: `${percentage}%` }}
                     />
                   </div>
                 </div>
@@ -832,7 +880,7 @@ export default function InternalAuditDashboard() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span>{capaPage + 1} to {Math.min((capaPage + 1) * itemsPerPage, data?.capaStatusByDepartment.length || 0)} of {data?.capaStatusByDepartment.length || 0}</span>
+              <span className="text-xs">{capaPage + 1} {t("to")} {Math.min((capaPage + 1) * itemsPerPage, data?.capaStatusByDepartment.length || 0)} {t("of")} {data?.capaStatusByDepartment.length || 0}</span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -847,40 +895,43 @@ export default function InternalAuditDashboard() {
           <div className="p-6">
             {paginatedCapaData.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
-                <p>{t("No CAPA data available")}</p>
+                <p className="text-sm">{t("No CAPA data available")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 {paginatedCapaData.map((dept, index) => (
-                  <div key={index} className="bg-slate-50/50 border border-slate-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-slate-700 text-center mb-3">{dept.name}</h4>
+                  <div key={index} className="bg-slate-50/50 border border-slate-200 rounded-xl p-4">
+                    <div className="flex items-center gap-1.5 justify-center mb-3">
+                      <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                      <h4 className="text-sm font-semibold text-slate-700">{dept.name}</h4>
+                    </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600">{t("Open")}</span>
                         <div className="flex gap-1">
                           {dept.open.high > 0 && (
-                            <Badge
-                              className={`bg-red-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 ${canDrillDown ? "cursor-pointer hover:bg-red-200" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               H: {dept.open.high}
-                            </Badge>
+                            </span>
                           )}
                           {dept.open.medium > 0 && (
-                            <Badge
-                              className={`bg-blue-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 ${canDrillDown ? "cursor-pointer hover:bg-amber-200" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               M: {dept.open.medium}
-                            </Badge>
+                            </span>
                           )}
                           {dept.open.low > 0 && (
-                            <Badge
-                              className={`bg-green-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 ${canDrillDown ? "cursor-pointer hover:bg-emerald-200" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'open')}
                             >
                               L: {dept.open.low}
-                            </Badge>
+                            </span>
                           )}
                           {dept.open.high === 0 && dept.open.medium === 0 && dept.open.low === 0 && (
                             <span className="text-sm text-slate-400">-</span>
@@ -891,28 +942,28 @@ export default function InternalAuditDashboard() {
                         <span className="text-sm text-slate-600">{t("Closed")}</span>
                         <div className="flex gap-1">
                           {dept.closed.high > 0 && (
-                            <Badge
-                              className={`bg-red-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 ${canDrillDown ? "cursor-pointer hover:bg-red-200" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               H: {dept.closed.high}
-                            </Badge>
+                            </span>
                           )}
                           {dept.closed.medium > 0 && (
-                            <Badge
-                              className={`bg-blue-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 ${canDrillDown ? "cursor-pointer hover:bg-amber-200" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               M: {dept.closed.medium}
-                            </Badge>
+                            </span>
                           )}
                           {dept.closed.low > 0 && (
-                            <Badge
-                              className={`bg-green-500 text-white text-xs ${canDrillDown ? "cursor-pointer" : ""}`}
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 ${canDrillDown ? "cursor-pointer hover:bg-emerald-200" : ""}`}
                               onClick={() => handleCapaClick(dept.name, 'closed')}
                             >
                               L: {dept.closed.low}
-                            </Badge>
+                            </span>
                           )}
                           {dept.closed.high === 0 && dept.closed.medium === 0 && dept.closed.low === 0 && (
                             <span className="text-sm text-slate-400">-</span>
@@ -953,7 +1004,7 @@ export default function InternalAuditDashboard() {
                   data.annualAuditPlan.map((audit) => (
                     <TableRow
                       key={audit.id}
-                      className={`border-b border-slate-100 last:border-0 ${canDrillDown ? "cursor-pointer" : ""}`}
+                      className={`border-b border-slate-100 last:border-0 ${canDrillDown ? "cursor-pointer hover:bg-slate-50/50" : ""}`}
                       onClick={() => handleAuditPlanClick(audit.id, audit.engagementTitle || audit.auditId)}
                     >
                       <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">
@@ -968,11 +1019,11 @@ export default function InternalAuditDashboard() {
                         return (
                           <TableCell key={month} className="py-3 px-1">
                             {isStart ? (
-                              <Badge className="bg-orange-500 text-white text-xs whitespace-nowrap">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 whitespace-nowrap">
                                 {audit.durationDays} {t("Days")}
-                              </Badge>
+                              </span>
                             ) : isInRange ? (
-                              <div className="h-6 bg-orange-200 rounded-sm"></div>
+                              <div className="h-6 bg-sky-100 rounded-sm"></div>
                             ) : null}
                           </TableCell>
                         );
@@ -981,7 +1032,7 @@ export default function InternalAuditDashboard() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={14} className="h-24 text-center text-slate-500">
+                    <TableCell colSpan={14} className="h-24 text-center text-sm text-slate-500">
                       {t("No audit plans for this year")}
                     </TableCell>
                   </TableRow>
@@ -1017,7 +1068,6 @@ export default function InternalAuditDashboard() {
                     <TableRow key={auditor.id} className="border-b border-slate-100 last:border-0">
                       <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{auditor.name}</TableCell>
                       {MONTHS.map((month, monthIndex) => {
-                        // Find if auditor has any assignment in this month
                         const assignment = auditor.assignments.find(
                           (a) => monthIndex >= a.startMonth && monthIndex <= a.endMonth
                         );
@@ -1025,16 +1075,16 @@ export default function InternalAuditDashboard() {
                         return (
                           <TableCell key={month} className="py-3 px-1">
                             {isStart ? (
-                              <Badge
-                                className={`bg-blue-500 text-white text-xs whitespace-nowrap ${canDrillDown ? "cursor-pointer" : ""}`}
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700 whitespace-nowrap ${canDrillDown ? "cursor-pointer hover:bg-primary-200" : ""}`}
                                 onClick={() => handleAuditPlanClick(assignment.auditId, assignment.engagementTitle)}
                                 title={assignment.engagementTitle}
                               >
                                 {assignment.durationDays} {t("Days")}
-                              </Badge>
+                              </span>
                             ) : assignment ? (
                               <div
-                                className={`h-6 bg-blue-200 rounded-sm ${canDrillDown ? "cursor-pointer" : ""}`}
+                                className={`h-6 bg-primary-100 rounded-sm ${canDrillDown ? "cursor-pointer hover:bg-primary-200" : ""}`}
                                 onClick={() => handleAuditPlanClick(assignment.auditId, assignment.engagementTitle)}
                                 title={assignment.engagementTitle}
                               ></div>
@@ -1046,7 +1096,7 @@ export default function InternalAuditDashboard() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={13} className="h-24 text-center text-slate-500">
+                    <TableCell colSpan={13} className="h-24 text-center text-sm text-slate-500">
                       {t("No auditor schedules for this year")}
                     </TableCell>
                   </TableRow>
@@ -1056,6 +1106,14 @@ export default function InternalAuditDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Fieldwork Detail Modal */}
+      <FieldworkDetailModal
+        open={fieldworkModalOpen}
+        onClose={() => { setFieldworkModalOpen(false); setSelectedEngagementId(null); }}
+        engagementId={selectedEngagementId}
+        mode="view"
+      />
     </div>
   );
 }

@@ -26,7 +26,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -34,7 +33,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -1014,22 +1013,22 @@ export default function RiskRegisterPage() {
             onClick={openAIAuditSelection}
             className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
           >
-            <Sparkles className="h-4 w-4 mr-2" />
+            <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("AI Audit")}
           </Button>
           {!isReadOnlyRole && (
             <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Import")}
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
           {!isReadOnlyRole && (
             <Button onClick={openAddRiskModal}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Add Risk")}
             </Button>
           )}
@@ -1047,7 +1046,7 @@ export default function RiskRegisterPage() {
               placeholder={t("Search risks...")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full h-9 pl-9 pr-3 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               disabled={isReadOnlyRole}
             />
           </div>
@@ -1056,7 +1055,7 @@ export default function RiskRegisterPage() {
               <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300" disabled={isReadOnlyRole}>
                 <SelectValue placeholder={t("Year")} />
               </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4}>
+              <SelectContent className="bg-white" position="popper" sideOffset={4}>
                 <SelectItem value="all">{t("All Years")}</SelectItem>
                 {yearOptions.map((year) => (
                   <SelectItem key={year} value={year.toString()}>
@@ -1069,7 +1068,7 @@ export default function RiskRegisterPage() {
               <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300" disabled={isReadOnlyRole}>
                 <SelectValue placeholder={t("Department")} />
               </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4}>
+              <SelectContent className="bg-white" position="popper" sideOffset={4}>
                 <SelectItem value="all">{t("All Departments")}</SelectItem>
                 {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
@@ -1259,7 +1258,7 @@ export default function RiskRegisterPage() {
                 size="sm"
                 onClick={handleDownloadTemplate}
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Download Template")}
               </Button>
               <span className="text-xs text-slate-500">{t("Download the template file to see the required format")}</span>
@@ -1393,7 +1392,7 @@ export default function RiskRegisterPage() {
                               setAiDialogOpen(false);
                             }}
                           >
-                            <Plus className="h-4 w-4 mr-1" />
+                            <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                             {t("Create Audit")}
                           </Button>
                         </div>
@@ -1501,12 +1500,12 @@ export default function RiskRegisterPage() {
                           >
                             {generatingFieldworkDeptId === group.department.id ? (
                               <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                                 {t("Generating...")}
                               </>
                             ) : (
                               <>
-                                <FileText className="h-4 w-4 mr-2" />
+                                <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                                 {t("Generate Audit Plan")}
                               </>
                             )}
@@ -1599,13 +1598,13 @@ export default function RiskRegisterPage() {
                           )}
                         </div>
                         <Button
-                          className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                          className="bg-primary-600 hover:bg-primary-700 shrink-0"
                           onClick={() => handleAddToAuditPlan(plan, idx)}
                           disabled={addingToPlanning !== null}
                         >
                           {addingToPlanning === idx ? (
                             <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                               {t("Adding...")}
                             </>
                           ) : (
@@ -1695,7 +1694,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         {departments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
@@ -1713,7 +1712,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
@@ -1731,7 +1730,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select audit type")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         {auditTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id}>
                             {type.name}
@@ -1793,7 +1792,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select likelihood")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         {probabilities.map((prob) => (
                           <SelectItem key={prob.id} value={prob.value.toString()}>
                             {prob.label} ({prob.value})
@@ -1811,7 +1810,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select impact")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         {impacts.map((imp) => (
                           <SelectItem key={imp.id} value={imp.value.toString()}>
                             {imp.label} ({imp.value})
@@ -1845,7 +1844,7 @@ export default function RiskRegisterPage() {
                     <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder={t("Select effectiveness")} />
                     </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4}>
+                    <SelectContent className="bg-white" position="popper" sideOffset={4}>
                       <SelectItem value="Effective">{t("Effective")}</SelectItem>
                       <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
                       <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
@@ -1867,7 +1866,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select likelihood")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         {probabilities.map((prob) => (
                           <SelectItem key={prob.id} value={prob.value.toString()}>
                             {prob.label} ({prob.value})
@@ -1885,7 +1884,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select impact")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         {impacts.map((imp) => (
                           <SelectItem key={imp.id} value={imp.value.toString()}>
                             {imp.label} ({imp.value})
@@ -1921,7 +1920,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select status")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         <SelectItem value="Open">{t("Open")}</SelectItem>
                         <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
                         <SelectItem value="Closed">{t("Closed")}</SelectItem>
@@ -2079,7 +2078,7 @@ export default function RiskRegisterPage() {
                         <SelectTrigger className="mt-1.5 w-full bg-white">
                           <SelectValue placeholder={t("Select department")} />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
                           {departments.map((dept) => (
                             <SelectItem key={dept.id} value={dept.id}>
                               {dept.name}
@@ -2097,7 +2096,7 @@ export default function RiskRegisterPage() {
                         <SelectTrigger className="mt-1.5 w-full bg-white">
                           <SelectValue placeholder={t("Select category")} />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
                           {categories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
@@ -2115,7 +2114,7 @@ export default function RiskRegisterPage() {
                         <SelectTrigger className="mt-1.5 w-full bg-white">
                           <SelectValue placeholder={t("Select audit type")} />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
                           {auditTypes.map((type) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.name}
@@ -2177,7 +2176,7 @@ export default function RiskRegisterPage() {
                         <SelectTrigger className="mt-1.5 w-full bg-white">
                           <SelectValue placeholder={t("Select likelihood")} />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
                           {probabilities.map((prob) => (
                             <SelectItem key={prob.id} value={prob.value.toString()}>
                               {prob.label} ({prob.value})
@@ -2195,7 +2194,7 @@ export default function RiskRegisterPage() {
                         <SelectTrigger className="mt-1.5 w-full bg-white">
                           <SelectValue placeholder={t("Select impact")} />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
                           {impacts.map((imp) => (
                             <SelectItem key={imp.id} value={imp.value.toString()}>
                               {imp.label} ({imp.value})
@@ -2229,7 +2228,7 @@ export default function RiskRegisterPage() {
                       <SelectTrigger className="mt-1.5 w-full bg-white">
                         <SelectValue placeholder={t("Select effectiveness")} />
                       </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
                         <SelectItem value="Effective">{t("Effective")}</SelectItem>
                         <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
                         <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
@@ -2251,7 +2250,7 @@ export default function RiskRegisterPage() {
                         <SelectTrigger className="mt-1.5 w-full bg-white">
                           <SelectValue placeholder={t("Select likelihood")} />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
                           {probabilities.map((prob) => (
                             <SelectItem key={prob.id} value={prob.value.toString()}>
                               {prob.label} ({prob.value})
@@ -2269,7 +2268,7 @@ export default function RiskRegisterPage() {
                         <SelectTrigger className="mt-1.5 w-full bg-white">
                           <SelectValue placeholder={t("Select impact")} />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
                           {impacts.map((imp) => (
                             <SelectItem key={imp.id} value={imp.value.toString()}>
                               {imp.label} ({imp.value})
@@ -2305,7 +2304,7 @@ export default function RiskRegisterPage() {
                         <SelectTrigger className="mt-1.5 w-full bg-white">
                           <SelectValue placeholder={t("Select status")} />
                         </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
                           <SelectItem value="Open">{t("Open")}</SelectItem>
                           <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
                           <SelectItem value="Closed">{t("Closed")}</SelectItem>
@@ -2594,7 +2593,7 @@ export default function RiskRegisterPage() {
                 const risk = risks.find(r => r.id === viewingRisk.id);
                 if (risk) openEditRiskModal(risk);
               }}>
-                <Pencil className="h-4 w-4 mr-2" />
+                <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Edit")}
               </Button>
             )}

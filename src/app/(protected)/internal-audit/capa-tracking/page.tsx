@@ -21,7 +21,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -442,35 +441,33 @@ export default function CAPATrackingPage() {
     });
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case "high":
-      case "critical":
-        return "text-red-600 font-semibold";
-      case "medium":
-        return "text-orange-600 font-semibold";
-      case "low":
-        return "text-green-600 font-semibold";
-      default:
-        return "text-gray-600";
-    }
+  const getSeverityBadge = (severity: string) => {
+    const styles: Record<string, string> = {
+      high: "bg-red-100 text-red-700",
+      critical: "bg-red-100 text-red-700",
+      medium: "bg-amber-100 text-amber-700",
+      low: "bg-green-100 text-green-700",
+    };
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[severity.toLowerCase()] || "bg-slate-100 text-slate-600"}`}>
+        {severity}
+      </span>
+    );
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "open":
-        return "text-blue-600";
-      case "closed":
-        return "text-green-600";
-      case "in progress":
-        return "text-orange-600";
-      case "under review":
-        return "text-purple-600";
-      case "overdue":
-        return "text-red-600";
-      default:
-        return "text-gray-600";
-    }
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      open: "bg-blue-100 text-blue-700",
+      closed: "bg-green-100 text-green-700",
+      "in progress": "bg-amber-100 text-amber-700",
+      "under review": "bg-purple-100 text-purple-700",
+      overdue: "bg-red-100 text-red-700",
+    };
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${styles[status.toLowerCase()] || "bg-slate-100 text-slate-600"}`}>
+        {status}
+      </span>
+    );
   };
 
   const startIndex = (pagination.page - 1) * pagination.limit + 1;
@@ -516,7 +513,7 @@ export default function CAPATrackingPage() {
                 setSearchQuery(e.target.value);
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
-              className="pl-10 w-[300px] h-9 bg-white border-slate-200"
+              className="pl-10 w-[300px] h-9 bg-white border-slate-300"
             />
           </div>
           <div className="flex items-center gap-3 ml-auto">
@@ -527,7 +524,7 @@ export default function CAPATrackingPage() {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
             >
-              <SelectTrigger className="w-[200px] h-9 text-sm bg-white border-slate-200">
+              <SelectTrigger className="w-[200px] h-9 text-sm bg-white border-slate-300">
                 <SelectValue placeholder={t("All Departments")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -541,19 +538,20 @@ export default function CAPATrackingPage() {
             </Select>
           </div>
         </div>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Findings ID")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Finding")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Severity")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Plan")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Responsible Person")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Target Date")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pl-5 min-w-[100px]">{t("Findings ID")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 min-w-[200px]">{t("Finding")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[90px]">{t("Severity")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 min-w-[180px]">{t("Audit Plan")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[120px]">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[130px]">{t("Responsible")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Target Date")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Status")}</TableHead>
               {showActions && (
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Actions")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pr-5 min-w-[90px]">{t("Actions")}</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -572,25 +570,21 @@ export default function CAPATrackingPage() {
             ) : findings.length > 0 ? (
               findings.map((finding) => (
                 <TableRow key={finding.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{finding.findingId}</TableCell>
+                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900 whitespace-nowrap">{finding.findingId}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 max-w-[250px]">
                     <span className="line-clamp-2">{finding.finding}</span>
                   </TableCell>
-                  <TableCell className="py-3 text-sm">
-                    <span className={getSeverityColor(finding.severity)}>
-                      {finding.severity}
-                    </span>
+                  <TableCell className="py-3">
+                    {getSeverityBadge(finding.severity)}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 max-w-[200px]">
                     <span className="line-clamp-2">{finding.auditPlan}</span>
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{finding.departmentName}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{finding.responsiblePerson}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{formatDate(finding.targetDate)}</TableCell>
-                  <TableCell className="py-3 text-sm">
-                    <span className={getStatusColor(finding.status)}>
-                      {finding.status}
-                    </span>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{finding.departmentName}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{finding.responsiblePerson}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(finding.targetDate)}</TableCell>
+                  <TableCell className="py-3">
+                    {getStatusBadge(finding.status)}
                   </TableCell>
                   {showActions && (
                     <TableCell className="py-3 pr-5">
@@ -650,6 +644,7 @@ export default function CAPATrackingPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
         {pagination.total > 0 && (
@@ -730,7 +725,7 @@ export default function CAPATrackingPage() {
             >
               {deleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Deleting...")}
                 </>
               ) : (
@@ -756,13 +751,13 @@ export default function CAPATrackingPage() {
             {/* Audit Plan */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <Label className="text-slate-800 font-medium">{t("Audit plan")}</Label>
-              <Input value={findingToView?.auditPlan || ""} readOnly className="bg-gray-50" />
+              <Input value={findingToView?.auditPlan || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Finding Title */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <Label className="text-slate-800 font-medium">{t("Finding title")}</Label>
-              <Input value={findingToView?.finding || ""} readOnly className="bg-gray-50" />
+              <Input value={findingToView?.finding || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Severity */}
@@ -787,31 +782,31 @@ export default function CAPATrackingPage() {
             {/* Criteria */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <Label className="text-slate-800 font-medium">{t("Criteria")}</Label>
-              <Input value={findingToView?.criteria || ""} readOnly className="bg-gray-50" />
+              <Input value={findingToView?.criteria || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Condition */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <Label className="text-slate-800 font-medium">{t("Condition")}</Label>
-              <Input value={findingToView?.condition || ""} readOnly className="bg-gray-50" />
+              <Input value={findingToView?.condition || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Cause */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <Label className="text-slate-800 font-medium">{t("Cause")}</Label>
-              <Input value={findingToView?.cause || ""} readOnly className="bg-gray-50" />
+              <Input value={findingToView?.cause || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Effect */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <Label className="text-slate-800 font-medium">{t("Effect")}</Label>
-              <Input value={findingToView?.effect || ""} readOnly className="bg-gray-50" />
+              <Input value={findingToView?.effect || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Recommendation */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <Label className="text-slate-800 font-medium">{t("Recommendation")}</Label>
-              <Input value={findingToView?.recommendation || ""} readOnly className="bg-gray-50" />
+              <Input value={findingToView?.recommendation || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Status */}
@@ -839,7 +834,7 @@ export default function CAPATrackingPage() {
               <Input
                 value={findingToView?.targetDate ? formatDate(findingToView.targetDate) : ""}
                 readOnly
-                className="bg-gray-50"
+                className="bg-slate-50"
               />
             </div>
 
@@ -849,7 +844,7 @@ export default function CAPATrackingPage() {
               <Textarea
                 value={findingToView?.auditeeComment || ""}
                 readOnly
-                className="bg-gray-50"
+                className="bg-slate-50"
                 rows={3}
               />
             </div>
@@ -882,7 +877,7 @@ export default function CAPATrackingPage() {
                   <Textarea
                     value={findingToView.aiReviewDescription || ""}
                     readOnly
-                    className="bg-gray-50"
+                    className="bg-slate-50"
                     rows={3}
                   />
                 </div>
@@ -893,7 +888,7 @@ export default function CAPATrackingPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
-              className="bg-primary-600 hover:bg-primary-700"
+              variant="outline"
               onClick={() => {
                 setViewDialogOpen(false);
                 setFindingToView(null);
@@ -927,10 +922,10 @@ export default function CAPATrackingPage() {
                 }
                 disabled={isAuditeeOnly}
               >
-                <SelectTrigger className={isAuditeeOnly ? "bg-gray-50" : ""}>
+                <SelectTrigger className={isAuditeeOnly ? "bg-slate-50" : "bg-white"}>
                   <SelectValue placeholder={t("Select audit plan")} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {auditEngagements.map((engagement) => (
                     <SelectItem key={engagement.id} value={engagement.id}>
                       {engagement.engagementTitle}
@@ -949,7 +944,7 @@ export default function CAPATrackingPage() {
                   setEditForm((prev) => ({ ...prev, finding: e.target.value }))
                 }
                 disabled={isAuditeeOnly}
-                className={isAuditeeOnly ? "bg-gray-50" : ""}
+                className={isAuditeeOnly ? "bg-slate-50" : "bg-white"}
               />
             </div>
 
@@ -988,7 +983,7 @@ export default function CAPATrackingPage() {
                   setEditForm((prev) => ({ ...prev, criteria: e.target.value }))
                 }
                 disabled={isAuditeeOnly}
-                className={isAuditeeOnly ? "bg-gray-50" : ""}
+                className={isAuditeeOnly ? "bg-slate-50" : "bg-white"}
               />
             </div>
 
@@ -1001,7 +996,7 @@ export default function CAPATrackingPage() {
                   setEditForm((prev) => ({ ...prev, condition: e.target.value }))
                 }
                 disabled={isAuditeeOnly}
-                className={isAuditeeOnly ? "bg-gray-50" : ""}
+                className={isAuditeeOnly ? "bg-slate-50" : "bg-white"}
               />
             </div>
 
@@ -1014,7 +1009,7 @@ export default function CAPATrackingPage() {
                   setEditForm((prev) => ({ ...prev, cause: e.target.value }))
                 }
                 disabled={isAuditeeOnly}
-                className={isAuditeeOnly ? "bg-gray-50" : ""}
+                className={isAuditeeOnly ? "bg-slate-50" : "bg-white"}
               />
             </div>
 
@@ -1027,7 +1022,7 @@ export default function CAPATrackingPage() {
                   setEditForm((prev) => ({ ...prev, effect: e.target.value }))
                 }
                 disabled={isAuditeeOnly}
-                className={isAuditeeOnly ? "bg-gray-50" : ""}
+                className={isAuditeeOnly ? "bg-slate-50" : "bg-white"}
               />
             </div>
 
@@ -1040,7 +1035,7 @@ export default function CAPATrackingPage() {
                   setEditForm((prev) => ({ ...prev, recommendation: e.target.value }))
                 }
                 disabled={isAuditeeOnly}
-                className={isAuditeeOnly ? "bg-gray-50" : ""}
+                className={isAuditeeOnly ? "bg-slate-50" : "bg-white"}
               />
             </div>
 
@@ -1101,14 +1096,14 @@ export default function CAPATrackingPage() {
                 <Label className="text-slate-800 font-medium pt-2">{t("Attachments")}</Label>
                 <div className="space-y-2">
                   {existingAttachments.map((att) => (
-                    <div key={att.id} className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-blue-600" />
-                      <span className="text-blue-600 text-sm flex-1">{att.fileName}</span>
+                    <div key={att.id} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <FileText className="h-4 w-4 text-slate-500" />
+                      <span className="text-sm text-slate-700 flex-1 truncate">{att.fileName}</span>
                       <div className="flex items-center gap-1">
                         <a
                           href={att.filePath}
                           download={att.fileName}
-                          className="text-gray-500 hover:text-blue-600 p-1"
+                          className="text-slate-400 hover:text-primary-600 p-1"
                           title={t("Download")}
                         >
                           <Download className="h-4 w-4" />
@@ -1117,7 +1112,7 @@ export default function CAPATrackingPage() {
                           href={att.filePath}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-500 hover:text-blue-600 p-1"
+                          className="text-slate-400 hover:text-primary-600 p-1"
                           title={t("View")}
                         >
                           <Eye className="h-4 w-4" />
@@ -1145,7 +1140,7 @@ export default function CAPATrackingPage() {
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
               <Label className="text-slate-800 font-medium pt-2"></Label>
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleFileDrop}
@@ -1157,24 +1152,30 @@ export default function CAPATrackingPage() {
                   className="hidden"
                   onChange={handleFileSelect}
                 />
-                <p className="text-gray-500">
-                  {t("Click here, or drop files here to upload.")}
-                </p>
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                    <FileText className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <p className="text-sm text-slate-600 mb-1">{t("Drag and drop files here, or click to upload")}</p>
+                  <p className="text-xs text-slate-400">{t("PDF, DOC, DOCX, XLS, XLSX, CSV, TXT")}</p>
+                </div>
                 {uploadedFiles.length > 0 && (
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-3 space-y-1.5">
                     {uploadedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-center gap-2 text-sm text-green-600">
-                        <FileText className="h-4 w-4" />
-                        <span>{file.name}</span>
+                      <div key={index} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2 text-sm text-slate-700">
+                          <FileText className="h-4 w-4 text-slate-400" />
+                          <span className="truncate">{file.name}</span>
+                        </div>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
                           }}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ))}
@@ -1264,7 +1265,7 @@ export default function CAPATrackingPage() {
             >
               {saving || uploading || aiReviewing ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {uploading ? t("Uploading...") : aiReviewing ? t("Analyzing...") : t("Saving...")}
                 </>
               ) : (
