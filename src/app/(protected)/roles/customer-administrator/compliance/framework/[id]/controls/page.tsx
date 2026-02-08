@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -22,9 +21,7 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  ArrowUpDown,
+  Search,
   Settings2,
   Home,
 } from "lucide-react";
@@ -265,147 +262,132 @@ export default function ControlsByFrameworkPage() {
       {/* Page Header */}
       <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
 
-      {/* Search Row */}
-      <div className="flex items-center gap-4">
-        <Input
-          placeholder={t("Search by control code or name...")}
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setCurrentPage(0);
-          }}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="max-w-md bg-white"
-        />
-      </div>
-
       {/* Data Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative max-w-xs">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search by control code or name...")}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(0);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+                  <Settings2 className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.controlName}
+                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlName: checked })}
+                >
+                  {t("Control Name")}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.controlCode}
+                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlCode: checked })}
+                >
+                  {t("Control Code")}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.functionalGrouping}
+                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, functionalGrouping: checked })}
+                >
+                  {t("Functional Grouping")}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.status}
+                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, status: checked })}
+                >
+                  {t("Status")}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.assignee}
+                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, assignee: checked })}
+                >
+                  {t("Assignee")}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.domain}
+                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, domain: checked })}
+                >
+                  {t("Domain Name")}
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+            <TableRow className="bg-slate-50 border-b border-slate-100">
               {visibleColumns.controlName && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 pl-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5 cursor-pointer select-none"
                   onClick={() => handleSort("name")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Control Name")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Control Name")}
                 </TableHead>
               )}
               {visibleColumns.controlCode && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none"
                   onClick={() => handleSort("controlCode")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Control Code")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Control Code")}
                 </TableHead>
               )}
               {visibleColumns.functionalGrouping && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none"
                   onClick={() => handleSort("functionalGrouping")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Functional Grouping")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Functional Grouping")}
                 </TableHead>
               )}
               {visibleColumns.status && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none"
                   onClick={() => handleSort("status")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Status")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Status")}
                 </TableHead>
               )}
               {visibleColumns.assignee && (
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assignee")}</TableHead>
               )}
               {visibleColumns.domain && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5 cursor-pointer select-none"
                   onClick={() => handleSort("domain")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Domain Name")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Domain Name")}
                 </TableHead>
               )}
-              <TableHead className="w-[50px] py-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Settings2 className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.controlName}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlName: checked })}
-                    >
-                      {t("Control Name")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.controlCode}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlCode: checked })}
-                    >
-                      {t("Control Code")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.functionalGrouping}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, functionalGrouping: checked })}
-                    >
-                      {t("Functional Grouping")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.status}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, status: checked })}
-                    >
-                      {t("Status")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.assignee}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, assignee: checked })}
-                    >
-                      {t("Assignee")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.domain}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, domain: checked })}
-                    >
-                      {t("Domain Name")}
-                    </DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={7} className="text-center py-12">
                   <div className="flex items-center justify-center">
-                    <div className="relative h-6 w-6">
-                      <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-                      <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-                    </div>
+                    <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
                   </div>
                 </TableCell>
               </TableRow>
             ) : paginatedControls.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={7} className="text-center py-12 text-sm text-slate-500">
                   {t("No controls found for this framework.")}
                 </TableCell>
               </TableRow>
@@ -413,28 +395,27 @@ export default function ControlsByFrameworkPage() {
               paginatedControls.map((control) => (
                 <TableRow
                   key={control.id}
-                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
                   onDoubleClick={() => router.push(`/compliance/control/${control.id}`)}
                 >
                   {visibleColumns.controlName && (
-                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{control.name}</TableCell>
+                    <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{control.name}</TableCell>
                   )}
                   {visibleColumns.controlCode && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.controlCode}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{control.controlCode}</TableCell>
                   )}
                   {visibleColumns.functionalGrouping && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.functionalGrouping || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{control.functionalGrouping || "-"}</TableCell>
                   )}
                   {visibleColumns.status && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.status}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{control.status}</TableCell>
                   )}
                   {visibleColumns.assignee && (
-                    <TableCell className="py-4 text-sm text-slate-700">{getAssigneeName(control)}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{getAssigneeName(control)}</TableCell>
                   )}
                   {visibleColumns.domain && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                    <TableCell className="py-3 pr-5 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
                   )}
-                  <TableCell className="py-4"></TableCell>
                 </TableRow>
               ))
             )}
@@ -442,8 +423,8 @@ export default function ControlsByFrameworkPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <span className="text-sm text-slate-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
             {total > 0
               ? `${startIndex + 1} ${t("to")} ${endIndex} ${t("of")} ${total}`
               : t("No controls")}
@@ -452,18 +433,9 @@ export default function ControlsByFrameworkPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setCurrentPage(0)}
-              disabled={currentPage === 0}
-              className="h-8 w-8"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 0}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -472,18 +444,9 @@ export default function ControlsByFrameworkPage() {
               size="icon"
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage >= totalPages - 1}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(totalPages - 1)}
-              disabled={currentPage >= totalPages - 1}
-              className="h-8 w-8"
-            >
-              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>

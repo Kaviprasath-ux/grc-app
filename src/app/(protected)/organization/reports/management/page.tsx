@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Download } from "lucide-react";
+import { ChevronRight, Download, Home } from "lucide-react";
+import Link from "next/link";
 import {
   PieChart,
   Pie,
@@ -196,36 +197,59 @@ function ManagementReportContent() {
     }, {} as Record<string, number>)
   ).map(([name, value]) => ({ name, value, fill: BAR_COLORS[name] || "#9ca3af" }));
 
-  // Custom label for pie charts
-  const renderCustomLabel = ({ name, percent }: { name?: string; percent?: number }) => {
-    return `${name || ''} (${((percent || 0) * 100).toFixed(0)}%)`;
+  // Legend component for pie charts
+  const ChartLegend = ({ data, colors }: { data: { name: string; value: number }[]; colors: string[] }) => {
+    const total = data.reduce((sum, d) => sum + d.value, 0);
+    return (
+      <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center mt-4">
+        {data.map((entry, index) => (
+          <div key={entry.name} className="flex items-center gap-1.5">
+            <div
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: colors[index % colors.length] }}
+            />
+            <span className="text-xs text-slate-600">
+              {entry.name} ({total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0}%)
+            </span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Page Header with Back Button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-slate-600 hover:text-slate-800"
-            onClick={() => router.push("/organization/reports")}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-slate-800">{t("Management Report")}</h1>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("Organization")}</span>
         </div>
-        <Button onClick={handleDownloadReport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Dashboard")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/organization/reports" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Reports")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Management Report")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Management Report")}</h1>
+        <Button size="sm" onClick={handleDownloadReport}>
+          <Download className="h-4 w-4 me-2" />
           {t("Download Report")}
         </Button>
       </div>
@@ -247,25 +271,29 @@ function ManagementReportContent() {
               </div>
               <div className="p-6">
                 {processByDepartmentData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={processByDepartmentData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={renderCustomLabel}
-                      >
-                        {processByDepartmentData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={processByDepartmentData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          stroke="white"
+                          strokeWidth={2}
+                        >
+                          {processByDepartmentData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: number) => [value, t("Processes")]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <ChartLegend data={processByDepartmentData} colors={PIE_COLORS} />
+                  </>
                 ) : (
                   <p className="text-sm text-slate-500 text-center py-8">{t("No data available")}</p>
                 )}
@@ -281,25 +309,29 @@ function ManagementReportContent() {
               </div>
               <div className="p-6">
                 {processByCriticalityData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={processByCriticalityData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={renderCustomLabel}
-                      >
-                        {processByCriticalityData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={processByCriticalityData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          stroke="white"
+                          strokeWidth={2}
+                        >
+                          {processByCriticalityData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: number) => [value, t("Processes")]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <ChartLegend data={processByCriticalityData} colors={PIE_COLORS} />
+                  </>
                 ) : (
                   <p className="text-sm text-slate-500 text-center py-8">{t("No data available")}</p>
                 )}
@@ -315,25 +347,29 @@ function ManagementReportContent() {
               </div>
               <div className="p-6">
                 {kpiByMeasurementData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={kpiByMeasurementData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={renderCustomLabel}
-                      >
-                        {kpiByMeasurementData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={kpiByMeasurementData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          stroke="white"
+                          strokeWidth={2}
+                        >
+                          {kpiByMeasurementData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: number) => [value, t("KPIs")]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <ChartLegend data={kpiByMeasurementData} colors={PIE_COLORS} />
+                  </>
                 ) : (
                   <p className="text-sm text-slate-500 text-center py-8">{t("No KPI data available")}</p>
                 )}
@@ -349,25 +385,29 @@ function ManagementReportContent() {
               </div>
               <div className="p-6">
                 {processByRiskData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={processByRiskData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={renderCustomLabel}
-                      >
-                        {processByRiskData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={processByRiskData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          stroke="white"
+                          strokeWidth={2}
+                        >
+                          {processByRiskData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: number) => [value, t("Risk Score")]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <ChartLegend data={processByRiskData} colors={PIE_COLORS} />
+                  </>
                 ) : (
                   <p className="text-sm text-slate-500 text-center py-8">{t("No risk data available")}</p>
                 )}
@@ -469,7 +509,7 @@ export default function OrganizationManagementReportPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
       </div>
     }>
       <ManagementReportContent />

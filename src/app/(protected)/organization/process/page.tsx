@@ -1196,21 +1196,21 @@ export default function ProcessPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => openEditProcess(row.original)}
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
             onClick={() => {
               setDeletingProcessId(row.original.id);
               setIsDeleteDialogOpen(true);
             }}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),
@@ -1260,11 +1260,11 @@ export default function ProcessPage() {
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Process")}</span>
       </nav>
 
@@ -1282,53 +1282,42 @@ export default function ProcessPage() {
 
         {/* Repository Tab */}
         <TabsContent value="repository" className="mt-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <h3 className="text-base font-semibold text-slate-800">{t("Processes")}</h3>
-              {filteredProcesses.length > 0 && (
-                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                  {filteredProcesses.length}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 mb-4">
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 me-2" />
+              {t("Export")}
+            </Button>
+            {!isDepartmentContributor && (
               <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                {t("Export")}
+                <Upload className="h-4 w-4 me-2" />
+                {t("Import")}
               </Button>
-              {!isDepartmentContributor && (
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  {t("Import")}
-                </Button>
-              )}
-              {canAddProcess && (
-                <Button onClick={() => setIsAddProcessOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t("Add New")}
-                </Button>
-              )}
-            </div>
+            )}
+            {canAddProcess && (
+              <Button size="sm" onClick={() => setIsAddProcessOpen(true)}>
+                <Plus className="h-4 w-4 me-2" />
+                {t("Add Process")}
+              </Button>
+            )}
           </div>
-
           {/* Table Card with Integrated Filters */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {/* Search & Filters */}
             <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
               <div className="relative max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder={t("Search processes...")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                 />
               </div>
-              <div className="flex items-center gap-3 ml-auto">
+              <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1341,7 +1330,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Process Owner")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1354,7 +1343,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Frequency")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1380,37 +1369,29 @@ export default function ProcessPage() {
 
         {/* Business Impact Analysis Tab */}
         <TabsContent value="bia" className="mt-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <h3 className="text-base font-semibold text-slate-800">{t("Business Impact Analysis")}</h3>
-              <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                {filteredProcesses.length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                {t("Export")}
-              </Button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 mb-4">
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 me-2" />
+              {t("Export")}
+            </Button>
           </div>
 
           {/* Table Card with Integrated Filters */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
               <div className="relative max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   placeholder={t("Search By Process ID, Name")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                 />
               </div>
-              <div className="flex items-center gap-3 ml-auto">
+              <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1423,7 +1404,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Process Owner")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1583,7 +1564,6 @@ export default function ProcessPage() {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     <h3 className="text-base font-semibold text-slate-800">{t("KPI Processes")}</h3>
-                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{kpiProcesses.length}</span>
                   </div>
                 </div>
 
@@ -1592,18 +1572,18 @@ export default function ProcessPage() {
                   {/* Search and Filter Row */}
                   <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
                     <div className="relative max-w-xs">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
                         placeholder={t("Search processes...")}
                         value={kpiSearchTerm}
                         onChange={(e) => setKpiSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                        className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                       />
                     </div>
-                    <div className="flex items-center gap-3 ml-auto">
+                    <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
                       <Select value={kpiDepartmentFilter} onValueChange={setKpiDepartmentFilter}>
-                        <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                        <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                           <SelectValue placeholder={t("Department")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>

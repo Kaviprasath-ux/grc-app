@@ -451,14 +451,25 @@ export default function ContextPage() {
   };
 
   const handleDownloadTemplate = () => {
-    const csvContent = "title,description,domain,category,type\nSample Issue 1,Description for issue 1,Internal,Finance,Financial\nSample Issue 2,Description for issue 2,External,Security,Compliance";
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "issues_template.csv";
-    a.click();
-    window.URL.revokeObjectURL(url);
+    if (activeTab === "stakeholder") {
+      const csvContent = "name,type,status\nJohn Doe,Internal,Active\nAcme Corp,External,Active\nPartner Inc,Third Party,Active";
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "stakeholders_template.csv";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } else {
+      const csvContent = "title,description,domain,category,type\nSample Issue 1,Description for issue 1,Internal,Finance,Financial\nSample Issue 2,Description for issue 2,External,Security,Compliance";
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "issues_template.csv";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
   };
 
   const handleImport = async () => {
@@ -475,56 +486,103 @@ export default function ContextPage() {
       }
 
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-      const titleIndex = headers.findIndex(h => h === 'title');
-      const descriptionIndex = headers.findIndex(h => h === 'description');
-      const domainIndex = headers.findIndex(h => h === 'domain');
-      const categoryIndex = headers.findIndex(h => h === 'category');
-      const issueTypeIndex = headers.findIndex(h => h === 'issuetype' || h === 'issue type' || h === 'type');
 
-      if (titleIndex === -1) {
-        toast({ title: t("Error"), description: t("CSV must have a \"title\" column"), variant: "destructive" });
-        return;
-      }
+      if (activeTab === "stakeholder") {
+        // Import stakeholders
+        const nameIndex = headers.findIndex(h => h === 'name');
+        const typeIndex = headers.findIndex(h => h === 'type');
+        const statusIndex = headers.findIndex(h => h === 'status');
 
-      const newIssues: Issue[] = [];
-
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        const title = values[titleIndex];
-
-        if (!title) continue;
-
-        const issueData = {
-          title,
-          description: descriptionIndex !== -1 ? values[descriptionIndex] || null : null,
-          domain: domainIndex !== -1 ? values[domainIndex] || 'Internal' : 'Internal',
-          category: categoryIndex !== -1 ? values[categoryIndex] || 'Finance' : 'Finance',
-          issueType: issueTypeIndex !== -1 ? values[issueTypeIndex] || '' : '',
-          status: 'Open',
-          dueDate: null,
-          departmentId: null,
-        };
-
-        const res = await fetch('/api/issues', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(issueData),
-        });
-
-        if (res.ok) {
-          const issue = await res.json();
-          newIssues.push(issue);
+        if (nameIndex === -1) {
+          toast({ title: t("Error"), description: t("CSV must have a \"name\" column"), variant: "destructive" });
+          return;
         }
-      }
 
-      setIssues([...issues, ...newIssues]);
-      setShowImportDialog(false);
-      setImportFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      toast({ title: t("Success"), description: t("Successfully imported {count} issues").replace("{count}", String(newIssues.length)) });
+        const newStakeholders: Stakeholder[] = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const name = values[nameIndex];
+
+          if (!name) continue;
+
+          const stakeholderData = {
+            name,
+            type: typeIndex !== -1 ? values[typeIndex] || 'Internal' : 'Internal',
+            status: statusIndex !== -1 ? values[statusIndex] || 'Active' : 'Active',
+            departmentId: null,
+          };
+
+          const res = await fetch('/api/stakeholders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stakeholderData),
+          });
+
+          if (res.ok) {
+            const stakeholder = await res.json();
+            newStakeholders.push(stakeholder);
+          }
+        }
+
+        setStakeholders([...stakeholders, ...newStakeholders]);
+        setShowImportDialog(false);
+        setImportFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        toast({ title: t("Success"), description: t("Successfully imported {count} stakeholders").replace("{count}", String(newStakeholders.length)) });
+      } else {
+        // Import issues
+        const titleIndex = headers.findIndex(h => h === 'title');
+        const descriptionIndex = headers.findIndex(h => h === 'description');
+        const domainIndex = headers.findIndex(h => h === 'domain');
+        const categoryIndex = headers.findIndex(h => h === 'category');
+        const issueTypeIndex = headers.findIndex(h => h === 'issuetype' || h === 'issue type' || h === 'type');
+
+        if (titleIndex === -1) {
+          toast({ title: t("Error"), description: t("CSV must have a \"title\" column"), variant: "destructive" });
+          return;
+        }
+
+        const newIssues: Issue[] = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const title = values[titleIndex];
+
+          if (!title) continue;
+
+          const issueData = {
+            title,
+            description: descriptionIndex !== -1 ? values[descriptionIndex] || null : null,
+            domain: domainIndex !== -1 ? values[domainIndex] || 'Internal' : 'Internal',
+            category: categoryIndex !== -1 ? values[categoryIndex] || 'Finance' : 'Finance',
+            issueType: issueTypeIndex !== -1 ? values[issueTypeIndex] || '' : '',
+            status: 'Open',
+            dueDate: null,
+            departmentId: null,
+          };
+
+          const res = await fetch('/api/issues', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(issueData),
+          });
+
+          if (res.ok) {
+            const issue = await res.json();
+            newIssues.push(issue);
+          }
+        }
+
+        setIssues([...issues, ...newIssues]);
+        setShowImportDialog(false);
+        setImportFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        toast({ title: t("Success"), description: t("Successfully imported {count} issues").replace("{count}", String(newIssues.length)) });
+      }
     } catch (error) {
-      console.error('Error importing issues:', error);
-      toast({ title: t("Error"), description: t("Error importing issues. Please check the file format."), variant: "destructive" });
+      console.error('Error importing:', error);
+      toast({ title: t("Error"), description: t("Error importing data. Please check the file format."), variant: "destructive" });
     }
     setImporting(false);
   };
@@ -1239,7 +1297,7 @@ export default function ContextPage() {
   );
 
   // Export Issues handler
-  const handleExport = () => {
+  const handleExportIssues = () => {
     const headers = ["Title", "Description", "Domain", "Category", "Issue Type", "Status", "Department"];
     const csvRows = [headers.join(",")];
 
@@ -1264,6 +1322,40 @@ export default function ContextPage() {
     a.download = `issues_export_${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  // Export Stakeholders handler
+  const handleExportStakeholders = () => {
+    const headers = ["Name", "Type", "Department", "Status"];
+    const csvRows = [headers.join(",")];
+
+    filteredStakeholders.forEach((s) => {
+      const row = [
+        `"${s.name.replace(/"/g, '""')}"`,
+        `"${s.type}"`,
+        `"${s.department?.name || ""}"`,
+        `"${s.status}"`,
+      ];
+      csvRows.push(row.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `stakeholders_export_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Context-aware export handler based on active tab
+  const handleExport = () => {
+    if (activeTab === "stakeholder") {
+      handleExportStakeholders();
+    } else {
+      handleExportIssues();
+    }
   };
 
   // Get unique categories and domains from issues
@@ -2832,35 +2924,23 @@ export default function ContextPage() {
       {/* DepartmentContributor: Show Stakeholder without tabs */}
       {isDepartmentContributor ? (
         <>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <h3 className="text-base font-semibold text-slate-800">{t("Stakeholders")}</h3>
-              {filteredStakeholders.length > 0 && (
-                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                  {filteredStakeholders.length}
-                </span>
-              )}
-            </div>
-          </div>
-
           {filteredStakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search & Filters */}
               <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
                 <div className="relative max-w-xs">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     placeholder={t("Search stakeholders...")}
                     value={stakeholderSearch}
                     onChange={(e) => { setStakeholderSearch(e.target.value); setStakeholderPage(1); }}
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
-                <div className="flex items-center gap-3 ml-auto">
+                <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
                 <Select value={stakeholderTypeFilter} onValueChange={(v) => { setStakeholderTypeFilter(v); setStakeholderPage(1); }}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Type")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -2871,7 +2951,7 @@ export default function ContextPage() {
                   </SelectContent>
                 </Select>
                 <Select value={stakeholderStatusFilter} onValueChange={(v) => { setStakeholderStatusFilter(v); setStakeholderPage(1); }}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Status")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -2969,16 +3049,18 @@ export default function ContextPage() {
 
           {/* Stakeholder Tab */}
           <TabsContent value="stakeholder" className="mt-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <h3 className="text-base font-semibold text-slate-800">{t("Stakeholders")}</h3>
-                {stakeholders.length > 0 && (
-                  <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                    {stakeholders.length}
-                  </span>
-                )}
-              </div>
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2 mb-4">
+              <Button variant="outline" size="sm" onClick={handleExportStakeholders}>
+                <Download className="h-4 w-4 me-2" />
+                {t("Export")}
+              </Button>
+              {!isReadOnlyRole && (
+                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+                  <Upload className="h-4 w-4 me-2" />
+                  {t("Import")}
+                </Button>
+              )}
               {!isReadOnlyRole && (
                 <Button size="sm" onClick={() => setShowAddStakeholder(true)}>
                   <Plus className="h-4 w-4 me-2" />
@@ -2986,24 +3068,23 @@ export default function ContextPage() {
                 </Button>
               )}
             </div>
-
             {stakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {/* Search & Filters */}
                 <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
                   <div className="relative max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder={t("Search stakeholders...")}
                       value={stakeholderSearch}
                       onChange={(e) => { setStakeholderSearch(e.target.value); setStakeholderPage(1); }}
-                      className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3 ml-auto">
+                  <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
                   <Select value={stakeholderTypeFilter} onValueChange={(v) => { setStakeholderTypeFilter(v); setStakeholderPage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Type")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3014,7 +3095,7 @@ export default function ContextPage() {
                     </SelectContent>
                   </Select>
                   <Select value={stakeholderStatusFilter} onValueChange={(v) => { setStakeholderStatusFilter(v); setStakeholderPage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Status")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3069,11 +3150,11 @@ export default function ContextPage() {
                             </div>
                             {!isReadOnlyRole && (
                               <div className="flex items-center justify-end gap-0.5">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleEditStakeholder(s)}>
-                                  <Pencil className="h-4 w-4" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => handleEditStakeholder(s)}>
+                                  <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setDeletingItem({ type: "stakeholder", id: s.id }); setIsDeleteDialogOpen(true); }}>
-                                  <Trash2 className="h-4 w-4" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50" onClick={() => { setDeletingItem({ type: "stakeholder", id: s.id }); setIsDeleteDialogOpen(true); }}>
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             )}
@@ -3122,53 +3203,42 @@ export default function ContextPage() {
 
           {/* Issue List Tab */}
           <TabsContent value="issuelist" className="mt-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <h3 className="text-base font-semibold text-slate-800">{t("Issues")}</h3>
-                {issues.length > 0 && (
-                  <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                    {issues.length}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {!isReadOnlyRole && (
-                  <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                    <Download className="h-4 w-4 me-2" />
-                    {t("Import")}
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" onClick={handleExport}>
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2 mb-4">
+              <Button variant="outline" size="sm" onClick={handleExportIssues}>
+                <Download className="h-4 w-4 me-2" />
+                {t("Export")}
+              </Button>
+              {!isReadOnlyRole && (
+                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
                   <Upload className="h-4 w-4 me-2" />
-                  {t("Export")}
+                  {t("Import")}
                 </Button>
-                {!isReadOnlyRole && (
-                  <Button size="sm" onClick={() => setShowAddIssue(true)}>
-                    <Plus className="h-4 w-4 me-2" />
-                    {t("Add New")}
-                  </Button>
-                )}
-              </div>
+              )}
+              {!isReadOnlyRole && (
+                <Button size="sm" onClick={() => setShowAddIssue(true)}>
+                  <Plus className="h-4 w-4 me-2" />
+                  {t("Add Issue")}
+                </Button>
+              )}
             </div>
-
             {issues.length > 0 || issueSearch || issueDepartmentFilter !== "all" || issueCategoryFilter !== "all" || issueDomainFilter !== "all" ? (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {/* Search & Filters */}
                 <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
                   <div className="relative max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder={t("Search issues...")}
                       value={issueSearch}
                       onChange={(e) => { setIssueSearch(e.target.value); setIssuePage(1); }}
-                      className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3 ml-auto">
+                  <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
                   <Select value={issueDepartmentFilter} onValueChange={(v) => { setIssueDepartmentFilter(v); setIssuePage(1); }}>
-                    <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+                    <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3179,7 +3249,7 @@ export default function ContextPage() {
                     </SelectContent>
                   </Select>
                   <Select value={issueCategoryFilter} onValueChange={(v) => { setIssueCategoryFilter(v); setIssuePage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3190,7 +3260,7 @@ export default function ContextPage() {
                     </SelectContent>
                   </Select>
                   <Select value={issueDomainFilter} onValueChange={(v) => { setIssueDomainFilter(v); setIssuePage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                    <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3203,9 +3273,8 @@ export default function ContextPage() {
                   </div>
                 </div>
                 {/* Column Headers */}
-                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_1fr_110px_100px_1fr_100px_72px]" : "grid-cols-[1.5fr_1fr_110px_100px_1fr_100px]"} gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider`}>
+                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_120px_100px_1fr_110px_72px]" : "grid-cols-[1.5fr_120px_100px_1fr_110px]"} gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider`}>
                   <span>{t("Title")}</span>
-                  <span>{t("Owner")}</span>
                   <span>{t("Category")}</span>
                   <span>{t("Domain")}</span>
                   <span>{t("Department")}</span>
@@ -3223,14 +3292,13 @@ export default function ContextPage() {
                       <div className="divide-y divide-slate-100">
                         {paginated.map((issue) => (
                           <div key={issue.id}>
-                            <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_1fr_110px_100px_1fr_100px_72px]" : "grid-cols-[1.5fr_1fr_110px_100px_1fr_100px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors`}>
+                            <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_120px_100px_1fr_110px_72px]" : "grid-cols-[1.5fr_120px_100px_1fr_110px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors`}>
                               <div className="flex items-center gap-3 min-w-0">
                                 <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
                                   <AlertTriangle className="h-4 w-4 text-primary-500" />
                                 </div>
                                 <span className="text-sm font-medium text-slate-800 truncate">{issue.title}</span>
                               </div>
-                              <span className="text-sm text-slate-600 truncate">{issue.owner?.fullName || "-"}</span>
                               <span className="text-sm text-slate-600 truncate">{issue.category || "-"}</span>
                               <span className="text-sm text-slate-600 truncate">{issue.domain || "-"}</span>
                               <span className="text-sm text-slate-600 truncate">{issue.department?.name || "-"}</span>
@@ -3246,11 +3314,11 @@ export default function ContextPage() {
                               </div>
                               {!isReadOnlyRole && (
                                 <div className="flex items-center justify-end gap-0.5">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleEditIssue(issue)}>
-                                    <Pencil className="h-4 w-4" />
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => handleEditIssue(issue)}>
+                                    <Pencil className="h-3.5 w-3.5" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setDeletingItem({ type: "issue", id: issue.id }); setIsDeleteDialogOpen(true); }}>
-                                    <Trash2 className="h-4 w-4" />
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50" onClick={() => { setDeletingItem({ type: "issue", id: issue.id }); setIsDeleteDialogOpen(true); }}>
+                                    <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
                               )}
@@ -3320,7 +3388,7 @@ export default function ContextPage() {
                 {!isReadOnlyRole && (
                   <Button size="sm" onClick={() => setShowAddIssue(true)}>
                     <Plus className="h-4 w-4 me-2" />
-                    {t("Add New")}
+                    {t("Add Issue")}
                   </Button>
                 )}
               </div>
@@ -4252,7 +4320,7 @@ export default function ContextPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Import Issues Dialog */}
+      {/* Import Dialog (context-aware) */}
       <Dialog open={showImportDialog} onOpenChange={(open) => {
         setShowImportDialog(open);
         if (!open) {
@@ -4264,9 +4332,13 @@ export default function ContextPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Issues")}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {activeTab === "stakeholder" ? t("Import Stakeholders") : t("Import Issues")}
+              </DialogTitle>
               <DialogDescription>
-                {t("Import issues from a CSV file. The file should have columns: title (required), description, domain, category, type.")}
+                {activeTab === "stakeholder"
+                  ? t("Import stakeholders from a CSV file. The file should have columns: name (required), type, status.")
+                  : t("Import issues from a CSV file. The file should have columns: title (required), description, domain, category, type.")}
               </DialogDescription>
             </DialogHeader>
           </div>

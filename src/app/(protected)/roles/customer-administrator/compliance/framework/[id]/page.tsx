@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -41,9 +42,8 @@ import {
   Link2,
   AlertTriangle,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Home,
+  Search,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Unauthorized } from "@/components/ui/unauthorized";
@@ -1295,72 +1295,79 @@ export default function CustomerAdminFrameworkDetailPage({
         </TabsList>
 
         {/* Requirements Tab */}
-        <TabsContent value="requirements" className="mt-6 space-y-4">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between mb-4">
-            <Input
-              placeholder={t("Search by requirement code, name, control code...")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm bg-white"
-            />
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleExportRequirements}>
-                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Export")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsUpdateRequirementOpen(true)}
-              >
-                <Edit2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Update")}
-              </Button>
-              <Button size="sm" onClick={() => setIsAddRequirementOpen(true)}>
-                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("New Requirement")}
-              </Button>
+        <TabsContent value="requirements" className="mt-6">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+              <div className="relative max-w-xs">
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={t("Search by requirement code, name, control code...")}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                />
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button variant="outline" size="sm" onClick={handleExportRequirements} className="h-9 text-sm">
+                  <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+                  {t("Export")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 text-sm"
+                  onClick={() => setIsUpdateRequirementOpen(true)}
+                >
+                  <Edit2 className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+                  {t("Update")}
+                </Button>
+                <Button size="sm" className="h-9 text-sm" onClick={() => setIsAddRequirementOpen(true)}>
+                  <Plus className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+                  {t("New Requirement")}
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {/* Requirements Accordion */}
-          <div className="bg-white rounded-xl border border-slate-200">
+            {/* Requirements Accordion */}
             <Accordion type="multiple" className="w-full">
               {filteredHierarchy.map((category) => (
-                <AccordionItem key={category.id} value={category.id}>
-                  <AccordionTrigger className="px-4 hover:no-underline">
+                <AccordionItem key={category.id} value={category.id} className="border-b border-slate-100 last:border-0">
+                  <AccordionTrigger className="px-5 py-3.5 hover:no-underline hover:bg-slate-50/60 transition-colors">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{category.name}</span>
-                      <span className="text-slate-400 text-sm">
+                      <span className="text-sm font-medium text-slate-800">{category.name}</span>
+                      <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                         {category.children?.length || 0} {t("items")}
                       </span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
+                  <AccordionContent className="px-5 pb-4">
                     <Accordion type="multiple" className="w-full">
                       {category.children?.map((requirement) => (
                         <AccordionItem
                           key={requirement.id}
                           value={requirement.id}
+                          className="border-b border-slate-100 last:border-0"
                         >
-                          <AccordionTrigger className="hover:no-underline">
+                          <AccordionTrigger className="py-3 hover:no-underline text-sm text-slate-700">
                             <span>
                               {requirement.code} - {requirement.name}
                             </span>
                           </AccordionTrigger>
-                          <AccordionContent className="space-y-4">
+                          <AccordionContent className="space-y-4 pb-4">
                             {/* Requirement Description */}
-                            <div className="flex items-start justify-between p-4 bg-muted/50 rounded-lg">
-                              <p className="text-sm flex-1">
+                            <div className="flex items-start justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                              <p className="text-sm text-slate-600 flex-1">
                                 {requirement.description || t("No description")}
                               </p>
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50 shrink-0 ltr:ml-3 rtl:mr-3"
                                 onClick={() => handleOpenUpdateRequirement(requirement)}
                               >
-                                <Edit2 className="h-4 w-4" />
+                                <Edit2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
 
@@ -1369,23 +1376,25 @@ export default function CustomerAdminFrameworkDetailPage({
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="h-8 text-xs"
                                 onClick={() => {
                                   setSelectedRequirement(requirement);
                                   setIsAddExceptionOpen(true);
                                 }}
                               >
-                                <AlertTriangle className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                <AlertTriangle className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
                                 {t("Add Exception")}
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="h-8 text-xs"
                                 onClick={() => {
                                   setSelectedRequirement(requirement);
                                   setIsLinkControlsOpen(true);
                                 }}
                               >
-                                <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                <Link2 className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
                                 {t("Link Controls")}
                               </Button>
                             </div>
@@ -1394,59 +1403,62 @@ export default function CustomerAdminFrameworkDetailPage({
                             {requirement.controls &&
                               requirement.controls.length > 0 && (
                                 <div className="mt-4">
-                                  <h4 className="font-medium mb-2">
+                                  <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
                                     {t("Linked Controls")}
                                   </h4>
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>{t("Control Code")}</TableHead>
-                                        <TableHead>{t("Control Name")}</TableHead>
-                                        <TableHead>{t("Status")}</TableHead>
-                                        <TableHead>{t("Action")}</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {requirement.controls.map((rc) => (
-                                        <TableRow key={rc.id}>
-                                          <TableCell>
-                                            {rc.control.controlCode}
-                                          </TableCell>
-                                          <TableCell>
-                                            {rc.control.name}
-                                          </TableCell>
-                                          <TableCell>
-                                            <span
-                                              className={`px-2 py-1 rounded-full text-xs ${
-                                                rc.control.status === "Compliant"
-                                                  ? "bg-green-100 text-green-800"
-                                                  : rc.control.status ===
-                                                    "Partial Compliant"
-                                                  ? "bg-yellow-100 text-yellow-800"
-                                                  : "bg-red-100 text-red-800"
-                                              }`}
-                                            >
-                                              {rc.control.status}
-                                            </span>
-                                          </TableCell>
-                                          <TableCell>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() =>
-                                                handleUnlinkControl(
-                                                  requirement.id,
-                                                  rc.control.id
-                                                )
-                                              }
-                                            >
-                                              {t("Unlink")}
-                                            </Button>
-                                          </TableCell>
+                                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="bg-slate-50 border-b border-slate-100">
+                                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-4">{t("Control Code")}</TableHead>
+                                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Control Name")}</TableHead>
+                                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
+                                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-4">{t("Action")}</TableHead>
                                         </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {requirement.controls.map((rc) => (
+                                          <TableRow key={rc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                                            <TableCell className="py-3 pl-4 text-sm font-medium text-slate-800">
+                                              {rc.control.controlCode}
+                                            </TableCell>
+                                            <TableCell className="py-3 text-sm text-slate-700">
+                                              {rc.control.name}
+                                            </TableCell>
+                                            <TableCell className="py-3">
+                                              <span
+                                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                  rc.control.status === "Compliant"
+                                                    ? "bg-green-50 text-green-700"
+                                                    : rc.control.status ===
+                                                      "Partial Compliant"
+                                                    ? "bg-amber-50 text-amber-700"
+                                                    : "bg-red-50 text-red-700"
+                                                }`}
+                                              >
+                                                {rc.control.status}
+                                              </span>
+                                            </TableCell>
+                                            <TableCell className="py-3 pr-4">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 text-xs text-slate-500 hover:text-semantic-error hover:bg-red-50"
+                                                onClick={() =>
+                                                  handleUnlinkControl(
+                                                    requirement.id,
+                                                    rc.control.id
+                                                  )
+                                                }
+                                              >
+                                                {t("Unlink")}
+                                              </Button>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
                                 </div>
                               )}
                           </AccordionContent>
@@ -1461,46 +1473,46 @@ export default function CustomerAdminFrameworkDetailPage({
         </TabsContent>
 
         {/* SOA Tab */}
-        <TabsContent value="soa" className="mt-6 space-y-4">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-slate-800">{t("Statement of Applicability")}</h3>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Download Report")}
-              </Button>
-              <Button size="sm">{t("Save")}</Button>
+        <TabsContent value="soa" className="mt-6">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">{t("Statement of Applicability")}</h3>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button variant="outline" size="sm" className="h-9 text-sm">
+                  <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+                  {t("Download Report")}
+                </Button>
+                <Button size="sm" className="h-9 text-sm">{t("Save")}</Button>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-xl border border-slate-200">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                  <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Code")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Requirement")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Applicability")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Justification")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Implementation Status")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Compliance")}</TableHead>
+                <TableRow className="bg-slate-50 border-b border-slate-100">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Code")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Applicability")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Justification")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Implementation Status")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Control Compliance")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {soaRequirements.map((req) => (
-                  <TableRow key={req.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-800">{req.code}</TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700 max-w-xs truncate">
+                  <TableRow key={req.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{req.code}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700 max-w-xs truncate">
                       {req.name}
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="py-3">
                       <Select
                         value={req.applicability || ""}
                         onValueChange={(value) =>
                           handleSOAUpdate(req.id, "applicability", value)
                         }
                       >
-                        <SelectTrigger className="w-24 bg-white">
+                        <SelectTrigger className="w-24 h-8 text-sm bg-white border-slate-300">
                           <SelectValue placeholder="-" />
                         </SelectTrigger>
                         <SelectContent className="bg-white">
@@ -1509,9 +1521,9 @@ export default function CustomerAdminFrameworkDetailPage({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="py-3">
                       <Input
-                        className="w-40 bg-white"
+                        className="w-40 h-8 text-sm bg-white border-slate-300"
                         value={req.justification || ""}
                         onChange={(e) =>
                           handleSOAUpdate(req.id, "justification", e.target.value)
@@ -1519,14 +1531,14 @@ export default function CustomerAdminFrameworkDetailPage({
                         placeholder={t("Enter justification")}
                       />
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="py-3">
                       <Select
                         value={req.implementationStatus || ""}
                         onValueChange={(value) =>
                           handleSOAUpdate(req.id, "implementationStatus", value)
                         }
                       >
-                        <SelectTrigger className="w-28 bg-white">
+                        <SelectTrigger className="w-28 h-8 text-sm bg-white border-slate-300">
                           <SelectValue placeholder="-" />
                         </SelectTrigger>
                         <SelectContent className="bg-white">
@@ -1537,14 +1549,14 @@ export default function CustomerAdminFrameworkDetailPage({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="py-3 pr-5">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                           req.controlCompliance === "Compliant"
-                            ? "bg-success-light text-semantic-success-dark"
+                            ? "bg-green-50 text-green-700"
                             : req.controlCompliance === "Partial Compliant"
-                            ? "bg-warning-light text-warning-dark"
-                            : "bg-error-light text-semantic-error"
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-red-50 text-red-700"
                         }`}
                       >
                         {req.controlCompliance || "Non Compliant"}
@@ -1555,8 +1567,8 @@ export default function CustomerAdminFrameworkDetailPage({
               </TableBody>
             </Table>
 
-            {/* Pagination inside card */}
-            <div className="flex items-center justify-between p-4 border-t border-slate-100">
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
               <div className="text-xs text-slate-500">
                 {flatRequirements.length > 0
                   ? `${t("Showing")} ${soaStartIndex + 1} ${t("to")} ${soaEndIndex} ${t("of")} ${flatRequirements.length}`
@@ -1566,16 +1578,7 @@ export default function CustomerAdminFrameworkDetailPage({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setSoaPage(0)}
-                  disabled={soaPage === 0}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
                   onClick={() => setSoaPage(soaPage - 1)}
                   disabled={soaPage === 0}
                 >
@@ -1584,20 +1587,11 @@ export default function CustomerAdminFrameworkDetailPage({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
                   onClick={() => setSoaPage(soaPage + 1)}
                   disabled={soaPage >= soaTotalPages - 1}
                 >
                   <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setSoaPage(soaTotalPages - 1)}
-                  disabled={soaPage >= soaTotalPages - 1}
-                >
-                  <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -1617,7 +1611,9 @@ export default function CustomerAdminFrameworkDetailPage({
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Requirement")}</DialogTitle>
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Requirement")}</DialogTitle>
+            </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
@@ -1721,7 +1717,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setIsAddRequirementOpen(false)}
@@ -1743,7 +1739,9 @@ export default function CustomerAdminFrameworkDetailPage({
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Control Select")}</DialogTitle>
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Control Select")}</DialogTitle>
+            </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
@@ -1841,7 +1839,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -1866,7 +1864,9 @@ export default function CustomerAdminFrameworkDetailPage({
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Exception")}</DialogTitle>
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Exception")}</DialogTitle>
+            </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
@@ -1956,7 +1956,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -1976,7 +1976,9 @@ export default function CustomerAdminFrameworkDetailPage({
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Requirement")}</DialogTitle>
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Requirement")}</DialogTitle>
+            </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
@@ -2116,7 +2118,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setIsUpdateRequirementOpen(false)}

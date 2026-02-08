@@ -553,7 +553,6 @@ export default function BIASettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h3 className="text-base font-semibold text-slate-800">{t("BIA Rating")}</h3>
-                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{ratings.length}</span>
               </div>
               <Button
                 size="sm"
@@ -593,7 +592,6 @@ export default function BIASettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <h4 className="text-sm font-semibold text-slate-800">{t("Scoring Calculation")}</h4>
-                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{filteredScoringRanges.length}</span>
                   </div>
                   <Button
                     size="sm"
@@ -883,7 +881,7 @@ export default function BIASettingsPage() {
                       : setNewBcp({ ...newBcp, type: value })
                   }
                 >
-                  <SelectTrigger className="mt-1.5 bg-white">
+                  <SelectTrigger className="w-full mt-1.5 bg-white">
                     <SelectValue placeholder={t("Select type")} />
                   </SelectTrigger>
                   <SelectContent className="bg-white" position="popper" sideOffset={4}>

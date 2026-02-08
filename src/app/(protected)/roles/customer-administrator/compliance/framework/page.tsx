@@ -12,6 +12,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -20,8 +21,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Lock,
   Loader2,
   Sparkles,
@@ -33,6 +32,8 @@ import {
   CheckCircle2,
   X,
   Home,
+  Search,
+  Info,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
@@ -94,6 +95,7 @@ export default function CustomerAdminFrameworkPage() {
   const [subscribingId, setSubscribingId] = useState<string | null>(null);
 
   // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<string>("Subscribed");
   const [typeFilter, setTypeFilter] = useState<string>("");
 
@@ -151,6 +153,12 @@ export default function CustomerAdminFrameworkPage() {
 
   // Apply filters
   const filteredFrameworks = frameworks.filter((fw) => {
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!fw.name.toLowerCase().includes(q) && !(fw.description || "").toLowerCase().includes(q) && !fw.type.toLowerCase().includes(q)) return false;
+    }
+
     // Subscription filter
     if (subscriptionFilter === "Subscribed" && fw.status !== "Subscribed") return false;
     if (subscriptionFilter === "Not Subscribed" && fw.status === "Subscribed") return false;
@@ -780,7 +788,7 @@ export default function CustomerAdminFrameworkPage() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [subscriptionFilter, typeFilter]);
+  }, [subscriptionFilter, typeFilter, searchQuery]);
 
   if (loading) {
     return (
@@ -810,7 +818,7 @@ export default function CustomerAdminFrameworkPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
@@ -821,282 +829,296 @@ export default function CustomerAdminFrameworkPage() {
         <span className="text-primary-700 font-medium">{t("Integrated Frameworks")}</span>
       </nav>
 
-      {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
+      {/* Page Title */}
+      <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          {/* Subscription Type Filter - hidden for GRC Reviewer */}
-          {!isReviewerRole && (
-            <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
-              <SelectTrigger className="w-[160px] bg-white">
-                <SelectValue placeholder={t("Subscription")} />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="all">{t("All Subscriptions")}</SelectItem>
-                <SelectItem value="Subscribed">{t("Subscribed")}</SelectItem>
-                <SelectItem value="Not Subscribed">{t("Not Subscribed")}</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Type Filter */}
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder={t("All Types")} />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="all">{t("All Types")}</SelectItem>
-              <SelectItem value="Framework">{t("Framework")}</SelectItem>
-              <SelectItem value="Standard">{t("Standard")}</SelectItem>
-              <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Action Buttons */}
-        {!isReviewerRole && (
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={openAICreateDialog}
-              variant="outline"
-              size="sm"
-              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-            >
-              <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("New Framework (AI)")}
-            </Button>
-            <Button
-              onClick={openCreateDialog}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("New Framework")}
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Framework Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {currentFrameworks.length === 0 ? (
-          <div className="col-span-full bg-white rounded-xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-500">{t("No frameworks found.")}</p>
-          </div>
-        ) : (
-          currentFrameworks.map((framework) => {
-            const isLocked = framework.status !== "Subscribed";
-            return (
-            <div
-              key={framework.id}
-              className={`bg-white rounded-xl border border-slate-200 p-4 ${isLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-              onClick={() => handleFrameworkClick(framework)}
-            >
-              {/* Framework Name with Lock Icon and Subscribe Button */}
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-base font-semibold text-slate-800 truncate flex-1">
-                  {framework.name}
-                </h4>
-                {isLocked && (
-                  <div className="flex items-center gap-2 ltr:ml-2 rtl:mr-2 flex-shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs"
-                      onClick={(e) => handleSubscribe(framework.id, e)}
-                      disabled={subscribingId === framework.id}
-                    >
-                      {subscribingId === framework.id ? (
-                        <>
-                          <Loader2 className="h-3 w-3 ltr:mr-1 rtl:ml-1 animate-spin" />
-                          {t("Subscribing...")}
-                        </>
-                      ) : (
-                        t("Subscribe")
-                      )}
-                    </Button>
-                    <Lock className="h-5 w-5 text-slate-400" />
-                  </div>
-                )}
-              </div>
-
-              {/* Compliance Circle - Clickable only if subscribed */}
-              <div className="flex justify-center mb-4">
-                <div
-                  className={`relative w-28 h-28 ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isLocked) return;
-                    if (!framework.id) {
-                      console.error("Framework ID is missing:", framework);
-                      return;
-                    }
-                    router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
-                  }}
-                  title={isLocked ? t("Framework not subscribed") : t("Click to view controls")}
-                >
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    {/* Background circle */}
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="#e2e8f0"
-                      strokeWidth="8"
-                    />
-                    {/* Progress circle */}
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="#22c55e"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      strokeDasharray={`${framework.compliancePercentage * 2.51} 251`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-bold text-slate-800">
-                      {framework.compliancePercentage.toFixed(1)}%
-                    </span>
-                    <span className="text-xs text-slate-500">{t("Compliance")}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Policy and Evidence Progress Bars - Clickable only if subscribed */}
-              <div className="space-y-3">
-                {/* Policy - Clickable only if subscribed */}
-                <div
-                  className={`flex items-center gap-2 p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isLocked) return;
-                    if (!framework.id) {
-                      console.error("Framework ID is missing:", framework);
-                      return;
-                    }
-                    router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
-                  }}
-                  title={isLocked ? t("Framework not subscribed") : t("Click to view policies")}
-                >
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-success-500 rounded-full"
-                      style={{ width: `${framework.policyPercentage}%` }}
-                    />
-                  </div>
-                  <div className="text-right min-w-[80px]">
-                    <span className="text-sm font-medium text-slate-700">{framework.policyPercentage.toFixed(1)}%</span>
-                    <span className="text-xs text-slate-500 ltr:ml-1 rtl:mr-1">{t("Policy")}</span>
-                  </div>
-                </div>
-
-                {/* Evidence - Clickable only if subscribed */}
-                <div
-                  className={`flex items-center gap-2 p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isLocked) return;
-                    if (!framework.id) {
-                      console.error("Framework ID is missing:", framework);
-                      return;
-                    }
-                    router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
-                  }}
-                  title={isLocked ? t("Framework not subscribed") : t("Click to view evidence")}
-                >
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-success-500 rounded-full"
-                      style={{ width: `${framework.evidencePercentage}%` }}
-                    />
-                  </div>
-                  <div className="text-right min-w-[80px]">
-                    <span className="text-sm font-medium text-slate-700">{framework.evidencePercentage.toFixed(1)}%</span>
-                    <span className="text-xs text-slate-500 ltr:ml-1 rtl:mr-1">{t("Evidence")}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-          })
-        )}
-      </div>
-
-      {/* Pagination */}
-      {filteredFrameworks.length > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-slate-500">
-            {t("Showing")} {startIndex + 1} {t("to")} {endIndex} {t("of")} {filteredFrameworks.length} {t("frameworks")}
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(0)}
-              disabled={currentPage === 0}
-              className="h-8 w-8"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 0}
-              className="h-8 w-8"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage >= totalPages - 1}
-              className="h-8 w-8"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(totalPages - 1)}
-              disabled={currentPage >= totalPages - 1}
-              className="h-8 w-8"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* Action Buttons */}
+      {!isReviewerRole && (
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            onClick={openAICreateDialog}
+            variant="outline"
+            size="sm"
+            className="h-9 bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+          >
+            <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New Framework (AI)")}
+          </Button>
+          <Button
+            onClick={openCreateDialog}
+            size="sm"
+            className="h-9"
+          >
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New Framework")}
+          </Button>
         </div>
       )}
+
+      {/* Card Container */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Toolbar: Search + Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative max-w-xs">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search frameworks...")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            {!isReviewerRole && (
+              <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
+                <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                  <SelectValue placeholder={t("Subscription")} />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all">{t("All Subscriptions")}</SelectItem>
+                  <SelectItem value="Subscribed">{t("Subscribed")}</SelectItem>
+                  <SelectItem value="Not Subscribed">{t("Not Subscribed")}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                <SelectValue placeholder={t("All Types")} />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="all">{t("All Types")}</SelectItem>
+                <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Framework Cards Grid */}
+        <div className="p-5">
+          {currentFrameworks.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <Search className="h-6 w-6 text-primary-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-600">{t("No frameworks found")}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search or filters")}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {currentFrameworks.map((framework) => {
+                const isLocked = framework.status !== "Subscribed";
+                return (
+                  <div
+                    key={framework.id}
+                    className={`rounded-lg border border-slate-200 p-4 transition-all ${isLocked ? "opacity-60 cursor-not-allowed bg-slate-50/50" : "cursor-pointer hover:border-slate-300 hover:shadow-sm bg-white"}`}
+                    onClick={() => handleFrameworkClick(framework)}
+                  >
+                    {/* Framework Name + Type Badge + Lock */}
+                    <div className="flex items-start justify-between mb-1">
+                      <h4 className="text-sm font-semibold text-slate-800 truncate flex-1 leading-tight">
+                        {framework.name}
+                      </h4>
+                      {isLocked && (
+                        <div className="flex items-center gap-1.5 ltr:ml-2 rtl:mr-2 flex-shrink-0">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-[11px]"
+                            onClick={(e) => handleSubscribe(framework.id, e)}
+                            disabled={subscribingId === framework.id}
+                          >
+                            {subscribingId === framework.id ? (
+                              <>
+                                <Loader2 className="h-3 w-3 ltr:mr-1 rtl:ml-1 animate-spin" />
+                                {t("Subscribing...")}
+                              </>
+                            ) : (
+                              t("Subscribe")
+                            )}
+                          </Button>
+                          <Lock className="h-4 w-4 text-slate-400" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Type Badge */}
+                    {framework.type && (
+                      <span className="inline-block text-[11px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mb-3">
+                        {framework.type}
+                      </span>
+                    )}
+
+                    {/* Compliance Circle - Smaller */}
+                    <div className="flex justify-center mb-3">
+                      <div
+                        className={`relative w-[88px] h-[88px] ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isLocked) return;
+                          if (!framework.id) {
+                            console.error("Framework ID is missing:", framework);
+                            return;
+                          }
+                          router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
+                        }}
+                        title={isLocked ? t("Framework not subscribed") : t("Click to view controls")}
+                      >
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" strokeWidth="8" />
+                          <circle
+                            cx="50" cy="50" r="40" fill="none" stroke="#22c55e" strokeWidth="8"
+                            strokeLinecap="round"
+                            strokeDasharray={`${framework.compliancePercentage * 2.51} 251`}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-base font-bold text-slate-800">
+                            {framework.compliancePercentage.toFixed(1)}%
+                          </span>
+                          <span className="text-[10px] text-slate-500">{t("Compliance")}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Policy and Evidence Progress Bars */}
+                    <div className="space-y-2.5">
+                      <div
+                        className={`flex items-center gap-2 p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-slate-50"}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isLocked) return;
+                          if (!framework.id) {
+                            console.error("Framework ID is missing:", framework);
+                            return;
+                          }
+                          router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
+                        }}
+                        title={isLocked ? t("Framework not subscribed") : t("Click to view policies")}
+                      >
+                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary-500 rounded-full transition-all"
+                            style={{ width: `${framework.policyPercentage}%` }}
+                          />
+                        </div>
+                        <div className="text-right min-w-[72px]">
+                          <span className="text-xs font-medium text-slate-700">{framework.policyPercentage.toFixed(1)}%</span>
+                          <span className="text-[11px] text-slate-400 ltr:ml-1 rtl:mr-1">{t("Policy")}</span>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`flex items-center gap-2 p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-slate-50"}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isLocked) return;
+                          if (!framework.id) {
+                            console.error("Framework ID is missing:", framework);
+                            return;
+                          }
+                          router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
+                        }}
+                        title={isLocked ? t("Framework not subscribed") : t("Click to view evidence")}
+                      >
+                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500 rounded-full transition-all"
+                            style={{ width: `${framework.evidencePercentage}%` }}
+                          />
+                        </div>
+                        <div className="text-right min-w-[72px]">
+                          <span className="text-xs font-medium text-slate-700">{framework.evidencePercentage.toFixed(1)}%</span>
+                          <span className="text-[11px] text-slate-400 ltr:ml-1 rtl:mr-1">{t("Evidence")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {filteredFrameworks.length > 0 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <div className="text-xs text-slate-500">
+              {t("Showing")} {startIndex + 1} {t("to")} {endIndex} {t("of")} {filteredFrameworks.length} {t("frameworks")}
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 0}
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage >= totalPages - 1}
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* AI Create Framework Dialog */}
       <Dialog open={isAICreateDialogOpen} onOpenChange={setIsAICreateDialogOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create Integrated Framework (AI)")}</DialogTitle>
+          <div className="px-6 py-5 border-b border-slate-100 shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create Integrated Framework (AI)")}</DialogTitle>
+            </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-              {t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
-            </p>
+          <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+            <div className="flex items-start gap-2.5 p-3 bg-primary-50/50 border border-primary-100 rounded-lg">
+              <Info className="h-4 w-4 text-primary-500 mt-0.5 shrink-0" />
+              <p className="text-sm text-primary-700">
+                {t("Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
+              </p>
+            </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
-                {t("Integrated Framework Name")} <span className="text-semantic-error">*</span>
-              </Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={t("Enter framework name")}
-                className="bg-white"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  {t("Integrated Framework Name")} <span className="text-semantic-error">*</span>
+                </Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder={t("Enter framework name")}
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  {t("Framework Type")} <span className="text-semantic-error">*</span>
+                </Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => setFormData({ ...formData, type: value })}
+                >
+                  <SelectTrigger className="w-full bg-white">
+                    <SelectValue placeholder={t("Select type")} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                    <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                    <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -1108,25 +1130,6 @@ export default function CustomerAdminFrameworkPage() {
                 rows={3}
                 className="bg-white"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
-                {t("Framework Type")} <span className="text-semantic-error">*</span>
-              </Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value })}
-              >
-                <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder={t("Select type")} />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="Framework">{t("Framework")}</SelectItem>
-                  <SelectItem value="Standard">{t("Standard")}</SelectItem>
-                  <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1203,7 +1206,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -1238,24 +1241,48 @@ export default function CustomerAdminFrameworkPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create Integrated Framework")}</DialogTitle>
+          <div className="px-6 py-5 border-b border-slate-100 shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create Integrated Framework")}</DialogTitle>
+            </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-              {t("Create a new framework and import requirements from an Excel file.")}
-              {" "}{t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
-            </p>
+          <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+            <div className="flex items-start gap-2.5 p-3 bg-primary-50/50 border border-primary-100 rounded-lg">
+              <Info className="h-4 w-4 text-primary-500 mt-0.5 shrink-0" />
+              <p className="text-sm text-primary-700">
+                {t("Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
+              </p>
+            </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">{t("Code")}</Label>
-              <Input
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder={t("Enter code")}
-                className="bg-white"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">{t("Code")}</Label>
+                <Input
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder={t("Enter code")}
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  {t("Framework Type")} <span className="text-semantic-error">*</span>
+                </Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => setFormData({ ...formData, type: value })}
+                >
+                  <SelectTrigger className="w-full bg-white">
+                    <SelectValue placeholder={t("Select type")} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                    <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                    <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -1279,25 +1306,6 @@ export default function CustomerAdminFrameworkPage() {
                 rows={3}
                 className="bg-white"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
-                {t("Framework Type")} <span className="text-semantic-error">*</span>
-              </Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value })}
-              >
-                <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder={t("Select type")} />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="Framework">{t("Framework")}</SelectItem>
-                  <SelectItem value="Standard">{t("Standard")}</SelectItem>
-                  <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1326,7 +1334,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1346,10 +1354,11 @@ export default function CustomerAdminFrameworkPage() {
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
-              <FileSpreadsheet className="h-5 w-5 text-success-500" />
-              {t("Import Framework Requirements")}
-            </DialogTitle>
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {t("Import Framework Requirements")}
+              </DialogTitle>
+            </DialogHeader>
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
@@ -1490,7 +1499,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button variant="outline" size="sm" onClick={handleCloseImportDialog}>
               {importSuccess ? t("Close") : t("Skip")}
             </Button>
