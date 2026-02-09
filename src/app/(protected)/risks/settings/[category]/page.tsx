@@ -264,7 +264,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Vulnerability Category
   const handleAddVulnCat = async () => {
-    if (!vulnCatForm.name.trim()) return;
+    if (!vulnCatForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Name is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/vulnerability-categories", {
         method: "POST",
@@ -286,7 +293,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditVulnCat = async () => {
-    if (!selectedItem || !vulnCatForm.name.trim()) return;
+    if (!selectedItem || !vulnCatForm.name.trim()) {
+      if (!vulnCatForm.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Name is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch(`/api/vulnerability-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -320,7 +336,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Threat Category
   const handleAddThreatCat = async () => {
-    if (!threatCatForm.name.trim()) return;
+    if (!threatCatForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Name is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/threat-categories", {
         method: "POST",
@@ -342,7 +365,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditThreatCat = async () => {
-    if (!selectedItem || !threatCatForm.name.trim()) return;
+    if (!selectedItem || !threatCatForm.name.trim()) {
+      if (!threatCatForm.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Name is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch(`/api/threat-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -376,7 +408,22 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Control Strength
   const handleAddControlStrength = async () => {
-    if (!controlStrengthForm.name.trim()) return;
+    if (!controlStrengthForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Name is required"),
+      });
+      return;
+    }
+    if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Score is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/control-strengths", {
         method: "POST",
@@ -398,7 +445,24 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditControlStrength = async () => {
-    if (!selectedItem || !controlStrengthForm.name.trim()) return;
+    if (!selectedItem || !controlStrengthForm.name.trim()) {
+      if (!controlStrengthForm.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Name is required"),
+        });
+      }
+      return;
+    }
+    if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Score is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch(`/api/control-strengths/${selectedItem.id}`, {
         method: "PUT",
@@ -432,7 +496,30 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Likelihood
   const handleAddLikelihood = async () => {
-    if (!likelihoodForm.title.trim()) return;
+    if (!likelihoodForm.title.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Title is required"),
+      });
+      return;
+    }
+    if (!likelihoodForm.timeFrame || !likelihoodForm.timeFrame.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Time Frame is required"),
+      });
+      return;
+    }
+    if (!likelihoodForm.probability || !likelihoodForm.probability.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Probability is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/risk-likelihoods", {
         method: "POST",
@@ -454,7 +541,32 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditLikelihood = async () => {
-    if (!selectedItem || !likelihoodForm.title.trim()) return;
+    if (!selectedItem || !likelihoodForm.title.trim()) {
+      if (!likelihoodForm.title.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Title is required"),
+        });
+      }
+      return;
+    }
+    if (!likelihoodForm.timeFrame || !likelihoodForm.timeFrame.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Time Frame is required"),
+      });
+      return;
+    }
+    if (!likelihoodForm.probability || !likelihoodForm.probability.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Probability is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch(`/api/risk-likelihoods/${selectedItem.id}`, {
         method: "PUT",
@@ -488,7 +600,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Threat
   const handleAddThreat = async () => {
-    if (!threatForm.name.trim()) return;
+    if (!threatForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Name is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/risk-threats", {
         method: "POST",
@@ -510,7 +629,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditThreat = async () => {
-    if (!selectedItem || !threatForm.name.trim()) return;
+    if (!selectedItem || !threatForm.name.trim()) {
+      if (!threatForm.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Name is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch("/api/risk-threats", {
         method: "PUT",
@@ -544,7 +672,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Vulnerability
   const handleAddVulnerability = async () => {
-    if (!vulnerabilityForm.name.trim()) return;
+    if (!vulnerabilityForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Name is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/risk-vulnerabilities", {
         method: "POST",
@@ -566,7 +701,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditVulnerability = async () => {
-    if (!selectedItem || !vulnerabilityForm.name.trim()) return;
+    if (!selectedItem || !vulnerabilityForm.name.trim()) {
+      if (!vulnerabilityForm.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Name is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch("/api/risk-vulnerabilities", {
         method: "PUT",
@@ -600,7 +744,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Risk Category
   const handleAddRiskCategory = async () => {
-    if (!riskCategoryForm.name.trim()) return;
+    if (!riskCategoryForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Name is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/risk-categories", {
         method: "POST",
@@ -622,7 +773,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditRiskCategory = async () => {
-    if (!selectedItem || !riskCategoryForm.name.trim()) return;
+    if (!selectedItem || !riskCategoryForm.name.trim()) {
+      if (!riskCategoryForm.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Name is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch("/api/risk-categories", {
         method: "PUT",
@@ -656,7 +816,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Impact Category
   const handleAddImpactCat = async () => {
-    if (!impactCatForm.name.trim()) return;
+    if (!impactCatForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Name is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/impact-categories", {
         method: "POST",
@@ -678,7 +845,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditImpactCat = async () => {
-    if (!selectedItem || !impactCatForm.name.trim()) return;
+    if (!selectedItem || !impactCatForm.name.trim()) {
+      if (!impactCatForm.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Name is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch(`/api/impact-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -712,7 +888,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Impact Rating
   const handleAddImpactRating = async () => {
-    if (!impactRatingForm.name.trim()) return;
+    if (!impactRatingForm.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Name is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/impact-ratings", {
         method: "POST",
@@ -734,7 +917,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditImpactRating = async () => {
-    if (!selectedItem || !impactRatingForm.name.trim()) return;
+    if (!selectedItem || !impactRatingForm.name.trim()) {
+      if (!impactRatingForm.name.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Name is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch(`/api/impact-ratings/${selectedItem.id}`, {
         method: "PUT",
@@ -768,7 +960,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Vulnerability Rating
   const handleAddVulnRating = async () => {
-    if (!vulnRatingForm.label.trim()) return;
+    if (!vulnRatingForm.label.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Label is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/vulnerability-ratings", {
         method: "POST",
@@ -790,7 +989,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditVulnRating = async () => {
-    if (!selectedItem || !vulnRatingForm.label.trim()) return;
+    if (!selectedItem || !vulnRatingForm.label.trim()) {
+      if (!vulnRatingForm.label.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Label is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch(`/api/vulnerability-ratings/${selectedItem.id}`, {
         method: "PUT",
@@ -824,7 +1032,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Risk Sub Category
   const handleAddRiskSubCat = async () => {
-    if (!riskSubCatForm.type.trim()) return;
+    if (!riskSubCatForm.type.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Type is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/risk-sub-categories", {
         method: "POST",
@@ -846,7 +1061,16 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditRiskSubCat = async () => {
-    if (!selectedItem || !riskSubCatForm.type.trim()) return;
+    if (!selectedItem || !riskSubCatForm.type.trim()) {
+      if (!riskSubCatForm.type.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Type is required"),
+        });
+      }
+      return;
+    }
     try {
       const res = await fetch(`/api/risk-sub-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -880,7 +1104,38 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Risk Range
   const handleAddRiskRange = async () => {
-    if (!riskRangeForm.title.trim()) return;
+    if (!riskRangeForm.title.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Title is required"),
+      });
+      return;
+    }
+    if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Color is required"),
+      });
+      return;
+    }
+    if (riskRangeForm.lowRange === null || riskRangeForm.lowRange === undefined) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Low Range is required"),
+      });
+      return;
+    }
+    if (riskRangeForm.highRange === null || riskRangeForm.highRange === undefined) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("High Range is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch("/api/risk-ranges", {
         method: "POST",
@@ -902,7 +1157,40 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditRiskRange = async () => {
-    if (!selectedItem || !riskRangeForm.title.trim()) return;
+    if (!selectedItem || !riskRangeForm.title.trim()) {
+      if (!riskRangeForm.title.trim()) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Title is required"),
+        });
+      }
+      return;
+    }
+    if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Color is required"),
+      });
+      return;
+    }
+    if (riskRangeForm.lowRange === null || riskRangeForm.lowRange === undefined) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Low Range is required"),
+      });
+      return;
+    }
+    if (riskRangeForm.highRange === null || riskRangeForm.highRange === undefined) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("High Range is required"),
+      });
+      return;
+    }
     try {
       const res = await fetch(`/api/risk-ranges/${selectedItem.id}`, {
         method: "PUT",
@@ -1798,24 +2086,24 @@ export default function RiskSettingsCategoryPage() {
           <div className="px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                 <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} placeholder={t("Enter vulnerability category")} className="bg-white" />
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                 <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} placeholder={t("Enter threat category")} className="bg-white" />
               </div>
             )}
             {category === "control-strength" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} placeholder={t("Enter name")} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Score")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
                   <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} placeholder={t("Enter score")} className="bg-white" />
                 </div>
               </>
@@ -1823,19 +2111,19 @@ export default function RiskSettingsCategoryPage() {
             {category === "likelihood" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Title")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
                   <Input value={likelihoodForm.title} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, title: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Score")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
                   <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Time Frame")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Time Frame")} <span className="text-red-500">*</span></Label>
                   <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Probability")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Probability")} <span className="text-red-500">*</span></Label>
                   <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} className="bg-white" />
                 </div>
               </>
@@ -1843,7 +2131,7 @@ export default function RiskSettingsCategoryPage() {
             {category === "threat" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input value={threatForm.name} onChange={(e) => setThreatForm({ ...threatForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -1868,7 +2156,7 @@ export default function RiskSettingsCategoryPage() {
             {category === "vulnerability" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input value={vulnerabilityForm.name} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -1893,20 +2181,20 @@ export default function RiskSettingsCategoryPage() {
             {category === "risk-methodology" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Title")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
                   <Input value={riskRangeForm.title} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, title: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Color")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Color")} <span className="text-red-500">*</span></Label>
                   <Input type="color" value={riskRangeForm.color} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, color: e.target.value })} className="bg-white h-10" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("Low Range")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Low Range")} <span className="text-red-500">*</span></Label>
                     <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("High Range")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("High Range")} <span className="text-red-500">*</span></Label>
                     <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                 </div>
@@ -1923,7 +2211,7 @@ export default function RiskSettingsCategoryPage() {
             {category === "risk-category" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Type")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Type")} <span className="text-red-500">*</span></Label>
                   <Input value={riskCategoryForm.name} onChange={(e) => setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -1942,18 +2230,18 @@ export default function RiskSettingsCategoryPage() {
             )}
             {category === "impact" && activeTab === "tab1" && (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                 <Input value={impactCatForm.name} onChange={(e) => setImpactCatForm({ name: e.target.value })} className="bg-white" />
               </div>
             )}
             {category === "impact" && activeTab === "tab2" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input value={impactRatingForm.name} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Score")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
                   <Input type="number" value={impactRatingForm.score} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -1965,18 +2253,18 @@ export default function RiskSettingsCategoryPage() {
             {category === "vulnerability-rating" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                   <Input value={vulnRatingForm.label} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, label: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Score")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
                   <Input type="number" value={vulnRatingForm.score} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "risk-sub-category" && (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t("Type")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Type")} <span className="text-red-500">*</span></Label>
                 <Input value={riskSubCatForm.type} onChange={(e) => setRiskSubCatForm({ type: e.target.value })} className="bg-white" />
               </div>
             )}
@@ -2023,24 +2311,24 @@ export default function RiskSettingsCategoryPage() {
           <div className="px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                 <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} className="bg-white" />
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                 <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} className="bg-white" />
               </div>
             )}
             {category === "control-strength" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Score")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
                   <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
               </>
@@ -2048,19 +2336,19 @@ export default function RiskSettingsCategoryPage() {
             {category === "likelihood" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Title")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
                   <Input value={likelihoodForm.title} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, title: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Score")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
                   <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Time Frame")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Time Frame")} <span className="text-red-500">*</span></Label>
                   <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Probability")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Probability")} <span className="text-red-500">*</span></Label>
                   <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} className="bg-white" />
                 </div>
               </>
@@ -2068,7 +2356,7 @@ export default function RiskSettingsCategoryPage() {
             {category === "threat" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input value={threatForm.name} onChange={(e) => setThreatForm({ ...threatForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -2093,7 +2381,7 @@ export default function RiskSettingsCategoryPage() {
             {category === "vulnerability" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input value={vulnerabilityForm.name} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -2118,20 +2406,20 @@ export default function RiskSettingsCategoryPage() {
             {category === "risk-methodology" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Title")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
                   <Input value={riskRangeForm.title} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, title: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Color")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Color")} <span className="text-red-500">*</span></Label>
                   <Input type="color" value={riskRangeForm.color} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, color: e.target.value })} className="bg-white h-10" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("Low Range")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Low Range")} <span className="text-red-500">*</span></Label>
                     <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("High Range")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("High Range")} <span className="text-red-500">*</span></Label>
                     <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                 </div>
@@ -2148,7 +2436,7 @@ export default function RiskSettingsCategoryPage() {
             {category === "risk-category" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Type")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Type")} <span className="text-red-500">*</span></Label>
                   <Input value={riskCategoryForm.name} onChange={(e) => setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -2167,18 +2455,18 @@ export default function RiskSettingsCategoryPage() {
             )}
             {category === "impact" && activeTab === "tab1" && (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                 <Input value={impactCatForm.name} onChange={(e) => setImpactCatForm({ name: e.target.value })} className="bg-white" />
               </div>
             )}
             {category === "impact" && activeTab === "tab2" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input value={impactRatingForm.name} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Score")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
                   <Input type="number" value={impactRatingForm.score} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -2190,18 +2478,18 @@ export default function RiskSettingsCategoryPage() {
             {category === "vulnerability-rating" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                   <Input value={vulnRatingForm.label} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, label: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Score")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
                   <Input type="number" value={vulnRatingForm.score} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "risk-sub-category" && (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t("Type")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Type")} <span className="text-red-500">*</span></Label>
                 <Input value={riskSubCatForm.type} onChange={(e) => setRiskSubCatForm({ type: e.target.value })} className="bg-white" />
               </div>
             )}
