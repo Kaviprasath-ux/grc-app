@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check } from "lucide-react";
+import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -15,18 +16,53 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Locale } from "@/i18n/config";
+import { useNotifications, getNotificationStyle, Notification } from "@/hooks/useNotifications";
 
 interface HeaderProps {
   onMenuClick?: () => void;
 }
 
+// Helper function to get icon component based on notification type
+function NotificationIcon({ type }: { type: string }) {
+  const style = getNotificationStyle(type);
+
+  switch (style.icon) {
+    case 'clock':
+      return <Clock className="h-4 w-4" />;
+    case 'user':
+      return <User className="h-4 w-4" />;
+    case 'alert':
+      return <AlertTriangle className="h-4 w-4" />;
+    case 'check':
+      return <CheckCircle className="h-4 w-4" />;
+    case 'bell':
+      return <Bell className="h-4 w-4" />;
+    default:
+      return <Info className="h-4 w-4" />;
+  }
+}
+
 export function Header({ onMenuClick }: HeaderProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const { locale, setLocale, t, locales, localeNames, localeFlags } = useLanguage();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+  // Notifications hook
+  const {
+    notifications,
+    unreadCount,
+    isLoading: notificationsLoading,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications({
+    autoFetch: true,
+    pollingInterval: 60000, // Poll every minute
+    limit: 10,
+  });
 
   useEffect(() => {
     setCurrentTime(new Date());
@@ -43,6 +79,28 @@ export function Header({ onMenuClick }: HeaderProps) {
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  // Handle notification click
+  const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read if not already
+    if (!notification.isRead) {
+      await markAsRead(notification.id);
+    }
+    // Navigate to the link if provided
+    if (notification.link) {
+      router.push(notification.link);
+    }
+  };
+
+  // Format notification time
+  const formatNotificationTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch {
+      return '';
+    }
   };
 
   return (
@@ -134,60 +192,81 @@ export function Header({ onMenuClick }: HeaderProps) {
               className="relative text-slate-500 hover:text-slate-700 hover:bg-slate-100"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute -top-0.5 ltr:-right-0.5 rtl:-left-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
-                3
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 ltr:-right-0.5 rtl:-left-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel className="flex items-center justify-between py-3">
               <span className="text-base font-semibold text-slate-800">{t("Notifications")}</span>
-              <Button variant="ghost" size="sm" className="text-xs text-primary-600 hover:text-primary-700 h-auto p-0">
-                {t("Mark all read")}
-              </Button>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-primary-600 hover:text-primary-700 h-auto p-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    markAllAsRead();
+                  }}
+                >
+                  {t("Mark all read")}
+                </Button>
+              )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="max-h-80 overflow-y-auto">
-              <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
-                <div className="flex items-start gap-3 w-full">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                    <Clock className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800">{t("Evidence request due tomorrow")}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Control: A.5.1.1 - Information Security Policy</p>
-                    <p className="text-xs text-slate-400 mt-1">{t("2 hours ago")}</p>
-                  </div>
+              {notificationsLoading ? (
+                <div className="py-8 text-center text-sm text-slate-500">
+                  {t("Loading...")}
                 </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
-                <div className="flex items-start gap-3 w-full">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800">{t("Risk assessment assigned")}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">RSK-045: Data Security Risk</p>
-                    <p className="text-xs text-slate-400 mt-1">{t("Yesterday")}</p>
-                  </div>
+              ) : notifications.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Bell className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                  <p className="text-sm text-slate-500">{t("No notifications")}</p>
                 </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
-                <div className="flex items-start gap-3 w-full">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
-                    <Bell className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800">{t("New audit finding created")}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">FND-012: Access Control Gap</p>
-                    <p className="text-xs text-slate-400 mt-1">{t("2 days ago")}</p>
-                  </div>
-                </div>
-              </DropdownMenuItem>
+              ) : (
+                notifications.map((notification) => {
+                  const style = getNotificationStyle(notification.type);
+                  return (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      className={`flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer ${
+                        !notification.isRead ? 'bg-primary-50/50' : ''
+                      }`}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                      <div className="flex items-start gap-3 w-full">
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${style.bgColor} ${style.textColor}`}>
+                          <NotificationIcon type={notification.type} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium text-slate-800 ${!notification.isRead ? 'font-semibold' : ''}`}>
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notification.message}</p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {formatNotificationTime(notification.createdAt)}
+                          </p>
+                        </div>
+                        {!notification.isRead && (
+                          <div className="h-2 w-2 rounded-full bg-primary-500 shrink-0 mt-2" />
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  );
+                })
+              )}
             </div>
             <DropdownMenuSeparator />
             <div className="p-2">
-              <Button variant="ghost" className="w-full text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50">
+              <Button
+                variant="ghost"
+                className="w-full text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+                onClick={() => router.push('/notifications')}
+              >
                 {t("View all notifications")}
               </Button>
             </div>

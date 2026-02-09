@@ -293,18 +293,18 @@ export default function OrganizationSettingsPage() {
             <Home className="h-4 w-4" />
             <span>{t("Organization")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Dashboard")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <button
             onClick={() => setActiveCategory(null)}
             className="text-slate-500 hover:text-primary-600 transition-colors"
           >
             {t("Settings")}
           </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{currentCategory ? t(currentCategory.title) : ""}</span>
         </nav>
 
@@ -312,7 +312,6 @@ export default function OrganizationSettingsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-slate-800">{currentCategory ? t(currentCategory.title) : ""}</h1>
-            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{currentData.length}</span>
           </div>
           <Button size="sm" onClick={() => setIsAddItemOpen(true)}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -466,11 +465,11 @@ export default function OrganizationSettingsPage() {
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Settings")}</span>
       </nav>
 

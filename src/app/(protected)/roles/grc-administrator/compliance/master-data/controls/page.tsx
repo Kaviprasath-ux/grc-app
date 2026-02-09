@@ -1486,7 +1486,7 @@ export default function ControlsMasterDataPage() {
             <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-semantic-error hover:bg-semantic-error/90 h-9"
+              className="bg-red-600 hover:bg-red-700 text-white h-9"
             >
               {t("Delete")}
             </AlertDialogAction>

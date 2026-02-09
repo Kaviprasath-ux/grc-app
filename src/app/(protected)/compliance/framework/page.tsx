@@ -685,25 +685,57 @@ export default function FrameworkOverviewPage() {
         )}
       </div>
 
+      {/* Section Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="text-base font-semibold text-slate-800">{t("Integrated Frameworks")}</h3>
+          {sortedFrameworks.length > 0 && (
+            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              {sortedFrameworks.length}
+            </span>
+          )}
+        </div>
+        {!isReviewerRole && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => openCreateDialog(true)}
+              variant="outline"
+              size="sm"
+              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+            >
+              <Sparkles className="h-4 w-4 me-2" />
+              {t("New Framework (AI)")}
+            </Button>
+            <Button
+              onClick={() => openCreateDialog(false)}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 me-2" />
+              {t("New Framework")}
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* Data Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {/* Search */}
+        {/* Search Toolbar */}
         <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative">
+          <div className="relative max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder={t("Search frameworks...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[300px] h-9 bg-white border-slate-200"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
         </div>
 
         <Table>
           <TableHeader>
-            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="w-[100px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">
+            <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="w-[80px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">
                 <button
                   onClick={() => handleSort("code")}
                   className="flex items-center gap-2 hover:text-slate-700"
@@ -721,7 +753,7 @@ export default function FrameworkOverviewPage() {
                   <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                 </button>
               </TableHead>
-              <TableHead className="w-[40%] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
+              <TableHead className="w-[45%] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
                 <button
                   onClick={() => handleSort("description")}
                   className="flex items-center gap-2 hover:text-slate-700"
@@ -731,7 +763,7 @@ export default function FrameworkOverviewPage() {
                 </button>
               </TableHead>
               {!isReviewerRole && (
-                <TableHead className="w-[100px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Actions")}</TableHead>
+                <TableHead className="w-[90px] text-end text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -749,14 +781,14 @@ export default function FrameworkOverviewPage() {
                   className="border-b border-slate-100 last:border-0 cursor-pointer"
                   onDoubleClick={() => router.push(`/compliance/framework/${framework.id}`)}
                 >
-                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{framework.code || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm font-medium text-slate-800">{framework.name}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-600 truncate max-w-[400px]">
+                  <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{framework.code || "-"}</TableCell>
+                  <TableCell className="py-3.5 text-sm font-medium text-slate-800">{framework.name}</TableCell>
+                  <TableCell className="py-3.5 text-sm text-slate-600 truncate max-w-[500px]">
                     {framework.description || "-"}
                   </TableCell>
                   {!isReviewerRole && (
-                    <TableCell className="py-3 pr-5">
-                      <div className="flex items-center gap-0.5">
+                    <TableCell className="py-3.5 pe-5">
+                      <div className="flex items-center justify-end gap-0.5">
                         <Button
                           variant="ghost"
                           size="icon"

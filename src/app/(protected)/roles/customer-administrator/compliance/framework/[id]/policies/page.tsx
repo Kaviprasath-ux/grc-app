@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -17,8 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
+  Search,
   Home,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
@@ -291,117 +289,100 @@ export default function PoliciesByFrameworkPage() {
 
         {/* Tab Content - Same structure for all tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
-          <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
-            {/* Search Row */}
-            <div className="flex items-center gap-4">
-              <Input
-                placeholder={t("Search by name or code...")}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCurrentPage(1);
-                }}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="max-w-md bg-white"
-              />
-            </div>
-
-            {/* Table */}
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="relative h-8 w-8">
-                  <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          <TabsContent key={docType} value={docType} className="mt-6">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Toolbar */}
+              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+                <div className="relative max-w-xs">
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t("Search by name or code...")}
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  />
                 </div>
               </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-slate-200">
+
+              {/* Table */}
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
+              ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Code")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Name")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Approver")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
+                    <TableRow className="bg-slate-50 border-b border-slate-100">
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Code")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Name")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assignee")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approver")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Department")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedPolicies.map((policy) => (
                       <TableRow
                         key={policy.id}
-                        className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                        className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
                         onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
                       >
-                        <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
-                        <TableCell className="py-4 text-sm text-slate-700">{policy.name}</TableCell>
-                        <TableCell className="py-4">
+                        <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{policy.code}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{policy.name}</TableCell>
+                        <TableCell className="py-3">
                           <Badge className={getStatusBadgeColor(policy.status)}>
                             {policy.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="py-4 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
-                        <TableCell className="py-4 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
-                        <TableCell className="py-4 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
+                        <TableCell className="py-3 pr-5 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
                       </TableRow>
                     ))}
                     {paginatedPolicies.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                        <TableCell colSpan={6} className="text-center py-12 text-sm text-slate-500">
                           {t("No items found for this framework")}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+              )}
 
-                {/* Pagination */}
-                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-                  <span className="text-sm text-slate-500">
-                    {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No items")}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(1)}
-                      className="h-8 w-8"
-                    >
-                      <ChevronsLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((p) => p - 1)}
-                      className="h-8 w-8"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={currentPage >= totalPages}
-                      onClick={() => setCurrentPage((p) => p + 1)}
-                      className="h-8 w-8"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={currentPage >= totalPages}
-                      onClick={() => setCurrentPage(totalPages)}
-                      className="h-8 w-8"
-                    >
-                      <ChevronsRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No items")}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-            )}
+            </div>
           </TabsContent>
         ))}
       </Tabs>

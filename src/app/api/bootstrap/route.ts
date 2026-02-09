@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 // POST - Bootstrap the superadmin user if it doesn't exist
 // This ensures there's always a way to access the system
@@ -11,9 +12,68 @@ export async function POST() {
     });
 
     if (existingUser) {
+      let needsUpdate = false;
+      const updateData: { password?: string; isActive?: boolean; isBlocked?: boolean } = {};
+
+      // Check if password is properly hashed (bcrypt hashes start with $2)
+      if (!existingUser.password.startsWith("$2")) {
+        updateData.password = await bcrypt.hash("Baarez@2025", 10);
+        needsUpdate = true;
+      }
+
+      // Ensure user is active and not blocked
+      if (!existingUser.isActive || existingUser.isBlocked) {
+        updateData.isActive = true;
+        updateData.isBlocked = false;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: updateData,
+        });
+        console.log("✅ Bootstrap: Superadmin user fixed");
+      }
+
+      // Ensure GRCAdministrator role is assigned
+      let grcAdminRole = await prisma.role.findUnique({
+        where: { name: "GRCAdministrator" },
+      });
+
+      if (!grcAdminRole) {
+        grcAdminRole = await prisma.role.create({
+          data: {
+            name: "GRCAdministrator",
+            description: "Full system access, all modules, all data",
+            isSystem: true,
+          },
+        });
+      }
+
+      // Check if role is assigned
+      const existingUserRole = await prisma.userRole.findFirst({
+        where: {
+          userId: existingUser.id,
+          roleId: grcAdminRole.id,
+        },
+      });
+
+      if (!existingUserRole) {
+        await prisma.userRole.create({
+          data: {
+            userId: existingUser.id,
+            roleId: grcAdminRole.id,
+          },
+        });
+        console.log("✅ Bootstrap: GRCAdministrator role assigned to superadmin");
+        needsUpdate = true;
+      }
+
       return NextResponse.json({
-        message: "Superadmin already exists",
-        created: false
+        message: needsUpdate ? "Superadmin user fixed" : "Superadmin already exists",
+        created: false,
+        updated: needsUpdate
       });
     }
 
@@ -47,13 +107,16 @@ export async function POST() {
       });
     }
 
+    // Hash the password for secure storage
+    const hashedPassword = await bcrypt.hash("Baarez@2025", 10);
+
     // Create the superadmin user
     const superadminUser = await prisma.user.create({
       data: {
         userId: "SUPERADMIN-001",
         userName: "superadmin",
         email: "superadmin@baarez.com",
-        password: "Baarez@2025",
+        password: hashedPassword,
         firstName: "Super",
         lastName: "Admin",
         fullName: "Super Admin",

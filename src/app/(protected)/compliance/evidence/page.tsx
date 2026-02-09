@@ -386,15 +386,13 @@ export default function EvidencePage() {
 
   const getCustomerScopedDepartments = () => departments;
 
-  // Filter users for Assignee dropdown: only DepartmentReviewers and DepartmentContributors from the selected department
+  // Filter users for Assignee dropdown: only DepartmentContributors from the selected department
   const filteredUsers = (() => {
     if (!createForm.departmentId) return [];
 
     return users.filter((u) => {
       if (u.departmentId !== createForm.departmentId) return false;
-      return u.userRoles?.some((ur) =>
-        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
-      );
+      return u.userRoles?.some((ur) => ur.role?.name === "DepartmentContributor");
     });
   })();
 

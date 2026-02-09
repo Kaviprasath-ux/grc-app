@@ -2,14 +2,24 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
 
-// GET all asset groups
+// GET all asset groups (optionally filtered by subCategoryId)
 export const GET = withAuth(
-  async (_req, _context, session) => {
+  async (req, _context, session) => {
     try {
       const tenantFilter = getTenantFilter(session);
+      const { searchParams } = new URL(req.url);
+      const subCategoryId = searchParams.get("subCategoryId");
+
+      // Build where clause
+      const where: Record<string, unknown> = { ...tenantFilter };
+
+      // If subCategoryId is provided, filter by it
+      if (subCategoryId) {
+        where.subCategoryId = subCategoryId;
+      }
 
       const groups = await prisma.assetGroup.findMany({
-        where: tenantFilter as Record<string, unknown>,
+        where,
         include: {
           subCategory: true,
           _count: {
@@ -52,7 +62,7 @@ export const POST = withAuth(
         where: {
           name: name.trim(),
           customerAccountId,
-        } as Record<string, unknown>,
+        },
       });
 
       if (existing) {
@@ -69,7 +79,7 @@ export const POST = withAuth(
           status: status || "Active",
           subCategoryId: subCategoryId || null,
           customerAccountId,
-        } as Record<string, unknown>,
+        },
         include: {
           subCategory: true,
           _count: {

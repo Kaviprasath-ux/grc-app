@@ -91,12 +91,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(classification, { status: 201 });
   } catch (error: unknown) {
     console.error("Error creating asset CIA classification:", error);
-    if (error && typeof error === 'object' && 'code' in error && error.code === "P2002") {
-      return NextResponse.json(
-        { error: "Classification for this sub-category and group already exists" },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to create asset CIA classification" },
       { status: 500 }

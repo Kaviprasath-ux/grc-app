@@ -48,8 +48,8 @@ async function handler(
 `);
 
         const response = await aiApiClient.get(endpoint);
-        const rawData = response.data;
-        const aiResult = rawData?.result ?? rawData;
+        const rawData = response.data as Record<string, unknown>;
+        const aiResult = (rawData?.result ?? rawData) as Record<string, unknown>;
 
         console.log(`
 📋 FRAMEWORK DATA RECEIVED FROM AI BACKEND

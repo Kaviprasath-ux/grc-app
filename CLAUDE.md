@@ -284,6 +284,21 @@ npm run dev  # Uses local PostgreSQL (localhost:5432/grc_app)
 git add . && git commit -m "message" && git push
 ```
 
+**CRITICAL: Run Local Build Before Every Deployment**
+
+Before deploying to Vercel, ALWAYS run a local production build to catch TypeScript errors:
+
+```bash
+cd "C:\Claude apps\grc-app"
+npm run build
+```
+
+This is critical because:
+- Vercel runs stricter TypeScript checking during production builds
+- Errors that don't appear in `npm run dev` will fail the Vercel build
+- Common issues: `null` vs `undefined`, missing interface properties, Prisma `select`/`include` conflicts, implicit `any` types
+- Fix ALL errors locally before attempting deployment
+
 **IMPORTANT: Full Deployment with Database Seeding (Recommended Approach)**
 
 Due to git author permission issues with Vercel, use this temp directory approach:
@@ -293,7 +308,7 @@ Due to git author permission issues with Vercel, use this temp directory approac
 rm -rf /c/temp/grc-deploy 2>/dev/null
 mkdir -p /c/temp/grc-deploy
 cd "C:\Claude apps\grc-app"
-cp -r src package.json package-lock.json tsconfig.json next.config.ts postcss.config.mjs prisma components.json public .vercel /c/temp/grc-deploy/
+cp -r src package.json package-lock.json tsconfig.json next.config.ts postcss.config.mjs prisma components.json public .vercel scripts locales i18n /c/temp/grc-deploy/
 
 # Step 2: Deploy from temp directory
 cd /c/temp/grc-deploy

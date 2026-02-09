@@ -697,6 +697,20 @@ CREATE TABLE "Evidence" (
 );
 
 -- CreateTable
+CREATE TABLE "EvidenceCycleComment" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "cyclePeriod" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "comment" TEXT NOT NULL,
+    "userId" TEXT,
+    "userName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EvidenceCycleComment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "EvidenceControl" (
     "id" TEXT NOT NULL,
     "evidenceId" TEXT NOT NULL,
@@ -999,6 +1013,34 @@ CREATE TABLE "AssetCIAClassification" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "AssetCIAClassification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AssetScoringConfig" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "calculationType" TEXT NOT NULL DEFAULT 'high_of_all',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AssetScoringConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AssetScoringRange" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "calculationType" TEXT NOT NULL,
+    "level" TEXT NOT NULL,
+    "minScore" INTEGER NOT NULL DEFAULT 0,
+    "maxScore" INTEGER NOT NULL DEFAULT 0,
+    "color" TEXT DEFAULT '#000000',
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AssetScoringRange_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -2153,6 +2195,42 @@ CREATE TABLE "PolicyAIReview" (
 );
 
 -- CreateTable
+CREATE TABLE "Notification" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "relatedEntityType" TEXT,
+    "relatedEntityId" TEXT,
+    "link" TEXT,
+    "priority" TEXT NOT NULL DEFAULT 'normal',
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "readAt" TIMESTAMP(3),
+    "metadata" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "NotificationPreference" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "notificationType" TEXT NOT NULL,
+    "inAppEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "emailEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "emailFrequency" TEXT NOT NULL DEFAULT 'immediate',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "NotificationPreference_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_EngagementTeamMembers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
@@ -2294,6 +2372,9 @@ CREATE INDEX "Evidence_customerAccountId_idx" ON "Evidence"("customerAccountId")
 CREATE UNIQUE INDEX "Evidence_customerAccountId_evidenceCode_key" ON "Evidence"("customerAccountId", "evidenceCode");
 
 -- CreateIndex
+CREATE INDEX "EvidenceCycleComment_evidenceId_cyclePeriod_idx" ON "EvidenceCycleComment"("evidenceId", "cyclePeriod");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EvidenceControl_evidenceId_controlId_key" ON "EvidenceControl"("evidenceId", "controlId");
 
 -- CreateIndex
@@ -2372,7 +2453,19 @@ CREATE UNIQUE INDEX "AssetSensitivity_customerAccountId_name_key" ON "AssetSensi
 CREATE INDEX "AssetCIAClassification_customerAccountId_idx" ON "AssetCIAClassification"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetCIAClassification_customerAccountId_subCategoryId_grou_key" ON "AssetCIAClassification"("customerAccountId", "subCategoryId", "groupId");
+CREATE INDEX "AssetScoringConfig_customerAccountId_idx" ON "AssetScoringConfig"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssetScoringConfig_customerAccountId_key" ON "AssetScoringConfig"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AssetScoringRange_customerAccountId_idx" ON "AssetScoringRange"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AssetScoringRange_calculationType_idx" ON "AssetScoringRange"("calculationType");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssetScoringRange_customerAccountId_calculationType_level_key" ON "AssetScoringRange"("customerAccountId", "calculationType", "level");
 
 -- CreateIndex
 CREATE INDEX "AssetLifecycleStatus_customerAccountId_idx" ON "AssetLifecycleStatus"("customerAccountId");
@@ -2771,6 +2864,21 @@ CREATE INDEX "EvidenceAIIngestResult_jobId_idx" ON "EvidenceAIIngestResult"("job
 CREATE INDEX "PolicyAIReview_policyId_idx" ON "PolicyAIReview"("policyId");
 
 -- CreateIndex
+CREATE INDEX "Notification_userId_isRead_idx" ON "Notification"("userId", "isRead");
+
+-- CreateIndex
+CREATE INDEX "Notification_customerAccountId_idx" ON "Notification"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "Notification_createdAt_idx" ON "Notification"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "NotificationPreference_customerAccountId_idx" ON "NotificationPreference"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "NotificationPreference_userId_notificationType_key" ON "NotificationPreference"("userId", "notificationType");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
 
 -- CreateIndex
@@ -2996,6 +3104,9 @@ ALTER TABLE "Evidence" ADD CONSTRAINT "Evidence_departmentId_fkey" FOREIGN KEY (
 ALTER TABLE "Evidence" ADD CONSTRAINT "Evidence_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "EvidenceCycleComment" ADD CONSTRAINT "EvidenceCycleComment_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "EvidenceControl" ADD CONSTRAINT "EvidenceControl_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -3120,6 +3231,12 @@ ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_subC
 
 -- AddForeignKey
 ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "AssetGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetScoringConfig" ADD CONSTRAINT "AssetScoringConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetScoringRange" ADD CONSTRAINT "AssetScoringRange_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AssetLifecycleStatus" ADD CONSTRAINT "AssetLifecycleStatus_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -3519,6 +3636,18 @@ ALTER TABLE "PolicyAIReview" ADD CONSTRAINT "PolicyAIReview_policyId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "PolicyAIReview" ADD CONSTRAINT "PolicyAIReview_aiOperationId_fkey" FOREIGN KEY ("aiOperationId") REFERENCES "AIOperation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -52,7 +52,7 @@ async function handler(
 
         // Call Python backend via centralized client
         const response = await aiApiClient.get(endpoint);
-        const result = response.data;
+        const result = response.data as Record<string, unknown>;
         const latency = Date.now() - startTime;
 
         console.log(`
@@ -61,7 +61,7 @@ async function handler(
 
 📊 POLL RESPONSE:
   Job ID            : ${id}
-  Status            : ${(result.status || 'UNKNOWN').toUpperCase()}
+  Status            : ${(String(result.status) || 'UNKNOWN').toUpperCase()}
   Response Time     : ${latency}ms
   Progress          : ${result.progress || 'N/A'}%
   
@@ -96,7 +96,7 @@ async function handler(
   Next Poll         : In 15 seconds
   Keep polling...
 `);
-        } else if (['failed', 'FAILED', 'error', 'ERROR'].includes(result.status)) {
+        } else if (['failed', 'FAILED', 'error', 'ERROR'].includes(String(result.status))) {
             console.log(`
 ❌ JOB FAILED / ERROR
   Status            : ${result.status}
@@ -111,7 +111,7 @@ async function handler(
 
         // Sync with local DB
         if (result.status) {
-            const dbStatus = result.status.toUpperCase();
+            const dbStatus = String(result.status).toUpperCase();
             await aiAuditService.updateJobStatus(id, dbStatus);
         }
 

@@ -244,8 +244,7 @@ export const DELETE = withAuth(
       // First, verify the policy belongs to the user's customer account
       const existing = await prisma.policy.findUnique({
         where: { id },
-        select: { customerAccountId: true, code: true },
-        include: { attachments: true },
+        select: { customerAccountId: true, code: true, attachments: true },
       });
 
       if (!existing) {
@@ -265,7 +264,7 @@ export const DELETE = withAuth(
       try {
         const aiResults = await aiDeleteService.deleteAllForPolicy(
           id,
-          session.user?.id
+          session.id
         );
         console.log(
           `[Policy Delete] AI cleanup: ${aiResults.filter((r) => r.status === "deleted").length}/${aiResults.length} documents deleted`
