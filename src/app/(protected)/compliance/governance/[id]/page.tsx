@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
+import { useGovernanceAIReview } from "@/hooks/useGovernanceAIReview";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -72,6 +73,7 @@ import {
   FileType,
   X,
   Eye,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -229,18 +231,19 @@ interface AIReviewEvidenceResult {
 
 // AI Review Response interface
 interface AIReviewResponse {
-  success: boolean;
-  compliance_score: number;
-  compliance_summary: string;
-  total_controls: number;
-  compliant_controls: number;
-  gaps: Array<{
+  success?: boolean;
+  compliance_score?: number;
+  compliance_summary?: string;
+  total_controls?: number;
+  compliant_controls?: number;
+  gaps?: Array<{
     control_code: string;
-    status: string;
-    answer: string;
+    status?: string;
+    answer?: string;
+    issue?: string;
     score?: number | null;
   }>;
-  recommendations: Array<{
+  recommendations?: Array<{
     control_code: string;
     recommendation: string;
   }>;
@@ -355,6 +358,39 @@ export default function GovernanceDetailPage() {
   // AI Review Details Modal state
   const [aiReviewDetailsOpen, setAiReviewDetailsOpen] = useState(false);
   const [aiReviewResult, setAiReviewResult] = useState<AIReviewResponse | null>(null);
+
+  // AI Review Hook - orchestrates ingest → review flow
+  const {
+    phase: aiReviewPhase,
+    progress: aiReviewProgress,
+    error: aiReviewError,
+    startAIReview,
+    reset: resetAIReview,
+  } = useGovernanceAIReview({
+    policyId: id as string,
+    onIngestStart: () => {
+      console.log('[Governance] Document ingest started');
+    },
+    onIngestComplete: (documentId) => {
+      console.log('[Governance] Document ingested:', documentId);
+      toast.success(t('Document processed successfully'));
+    },
+    onReviewStart: () => {
+      console.log('[Governance] AI review started');
+      setPolicy(prev => prev ? { ...prev, aiReviewStatus: 'In Progress' } : prev);
+    },
+    onReviewComplete: (result) => {
+      console.log('[Governance] AI review completed:', result);
+      setAiReviewResult(result as AIReviewResponse);
+      fetchPolicy();
+      toast.success(t('AI Review completed'));
+    },
+    onError: (error) => {
+      console.error('[Governance] AI review error:', error);
+      toast.error(error);
+      fetchPolicy();
+    },
+  });
 
   // Vault document linking state
   const [linkFromVaultDialogOpen, setLinkFromVaultDialogOpen] = useState(false);
@@ -704,45 +740,9 @@ export default function GovernanceDetailPage() {
     }
   };
 
-  const handleTriggerAIReview = async () => {
-    try {
-      // Set status to In Progress first
-      setPolicy(prev => prev ? { ...prev, aiReviewStatus: "In Progress" } : prev);
-
-      // Call real RunPod API for policy review
-      const response = await fetch("/api/ai/governance/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ policyId: id }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        // Store the AI review result for detailed view
-        setAiReviewResult(result);
-        // Refresh policy to get updated AI review results
-        fetchPolicy();
-      } else {
-        const error = await response.json();
-        console.error("AI Review failed:", error);
-        // Update status to Failed
-        await fetch(`/api/policies/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ aiReviewStatus: "Failed" }),
-        });
-        fetchPolicy();
-      }
-    } catch (error) {
-      console.error("Error triggering AI review:", error);
-      // Update status to Failed on error
-      await fetch(`/api/policies/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ aiReviewStatus: "Failed" }),
-      });
-      fetchPolicy();
-    }
+  // Trigger AI Review using the new hook (handles ingest → review flow)
+  const handleTriggerAIReview = () => {
+    startAIReview();
   };
 
   const handleClearAIReview = async () => {
@@ -1308,19 +1308,28 @@ export default function GovernanceDetailPage() {
 
           {/* AI Review Buttons - Requires edit permission */}
           <PermissionGate resource="compliance.governance" action="edit">
-            {policy.aiReviewStatus === "In Progress" ? (
+            {/* AI Review in progress via hook */}
+            {aiReviewPhase !== 'idle' && aiReviewPhase !== 'complete' && aiReviewPhase !== 'error' ? (
               <Button variant="outline" disabled>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
-                {t("AI Review in Progress...")}
+                <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                {aiReviewPhase === 'checking' && t("Checking status...")}
+                {aiReviewPhase === 'ingesting' && t("Uploading document...")}
+                {aiReviewPhase === 'polling' && t("Processing document...")}
+                {aiReviewPhase === 'reviewing' && t("Analyzing...")}
               </Button>
-            ) : policy.aiReviewStatus === "Completed" ? (
+            ) : policy.aiReviewStatus === "Completed" || policy.aiReviewStatus === "Published" ? (
               <Button variant="outline" onClick={handleClearAIReview}>
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Clear AI Results")}
+              </Button>
+            ) : aiReviewPhase === 'error' ? (
+              <Button variant="outline" onClick={handleTriggerAIReview}>
+                <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Retry AI Review")}
               </Button>
             ) : (
               <Button variant="outline" onClick={handleTriggerAIReview}>
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Start AI Review")}
               </Button>
             )}

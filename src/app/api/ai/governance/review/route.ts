@@ -105,8 +105,10 @@ export async function POST(req: NextRequest) {
     const docType = policy.documentType || "Policy";
 
     // Construct the payload for RunPod
+    // IMPORTANT: Use customerAccountId as user_id to match the base_id used during ingest
+    // This ensures the vector search queries the correct tenant namespace
     const runpodPayload = {
-      user_id: userId,
+      user_id: policy.customerAccountId, // Must match base_id from ingest for tenant isolation
       doc_type: docType, // Use actual document type from policy record
       policies: [
         {

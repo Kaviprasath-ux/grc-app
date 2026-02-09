@@ -253,10 +253,17 @@ export async function POST(req: NextRequest) {
             }
         });
 
-        // Update policy status
+        // Update policy status and RESET AI ingest status
+        // IMPORTANT: When a new document is generated, we must reset the ingest status
+        // so the AI Review flow knows to re-ingest the new document
         await prisma.policy.update({
             where: { id: policyId },
-            data: { status: "Draft" }
+            data: {
+                status: "Draft",
+                aiIngestStatus: null,
+                aiIngestedAt: null,
+                aiIngestJobId: null,
+            }
         });
 
         return NextResponse.json({

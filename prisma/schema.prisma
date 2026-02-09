@@ -962,6 +962,10 @@ model Policy {
   effectiveDate         DateTime?
   reviewDate            DateTime?
   content               String?
+  // AI Ingest Fields
+  aiIngestStatus        String?            // NOT_STARTED, QUEUED, PROCESSING, INGESTED, FAILED
+  aiIngestedAt          DateTime?
+  aiIngestJobId         String?            // RunPod job ID for polling
   // AI Review Fields
   aiReviewStatus        String?            @default("Pending") // Pending, In Progress, Completed
   aiReviewScore         Float?             @default(0)

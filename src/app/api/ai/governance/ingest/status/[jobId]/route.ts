@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
+import { prisma } from "@/lib/prisma";
 import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 import {
   unauthorizedResponse,
@@ -38,13 +39,84 @@ export async function GET(
         // Call backend to check job status
         const response = await aiApiClient.get(`${AI_ENDPOINTS.INGEST_STATUS}/${jobId}`);
 
-        const statusData = response.data as { status?: string };
+        const statusData = response.data as { status?: string; document_id?: string };
 
         // Update AIJob status in database
         await aiAuditService.updateJobStatus(
             jobId,
             statusData.status?.toUpperCase() || 'PROCESSING'
         );
+
+        // Update Policy AI Ingest Status based on job status
+        const normalizedStatus = statusData.status?.toLowerCase();
+        if (normalizedStatus === 'completed' || normalizedStatus === 'success') {
+            // Find policy by job ID and update
+            const policy = await prisma.policy.findFirst({
+                where: { aiIngestJobId: jobId },
+            });
+
+            if (policy) {
+                await prisma.policy.update({
+                    where: { id: policy.id },
+                    data: {
+                        aiIngestStatus: 'INGESTED',
+                        aiIngestedAt: new Date(),
+                    },
+                });
+
+                // Update PolicyAIReview status
+                await prisma.policyAIReview.updateMany({
+                    where: {
+                        policyId: policy.id,
+                        status: 'processing',
+                    },
+                    data: {
+                        status: 'ingested',
+                        documentId: statusData.document_id || jobId,
+                    },
+                });
+
+                console.log(`[Governance Ingest Status] Updated policy ${policy.id} to INGESTED`);
+            }
+        } else if (normalizedStatus === 'failed' || normalizedStatus === 'error') {
+            // Update policy to failed status
+            const policy = await prisma.policy.findFirst({
+                where: { aiIngestJobId: jobId },
+            });
+
+            if (policy) {
+                await prisma.policy.update({
+                    where: { id: policy.id },
+                    data: {
+                        aiIngestStatus: 'FAILED',
+                    },
+                });
+
+                await prisma.policyAIReview.updateMany({
+                    where: {
+                        policyId: policy.id,
+                        status: 'processing',
+                    },
+                    data: {
+                        status: 'failed',
+                    },
+                });
+            }
+        } else if (normalizedStatus === 'processing' || normalizedStatus === 'queued') {
+            // Update to PROCESSING if still in progress
+            const policy = await prisma.policy.findFirst({
+                where: { aiIngestJobId: jobId },
+            });
+
+            if (policy && policy.aiIngestStatus === 'QUEUED') {
+                await prisma.policy.update({
+                    where: { id: policy.id },
+                    data: {
+                        aiIngestStatus: 'PROCESSING',
+                    },
+                });
+            }
+        }
 
         const latency = Date.now() - startTime;
 

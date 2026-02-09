@@ -10,12 +10,18 @@ import {
   notFoundResponse,
   errorResponse,
 } from "@/lib/ai-route-helpers";
+import { readFile } from "fs/promises";
+import path from "path";
 
 /**
  * POST /api/ai/governance/ingest
  *
  * Ingests a policy document into RunPod /api/grc_ingest.
  * Aligned with 100% OpenAPI contract.
+ *
+ * Accepts either:
+ * - FormData with 'policyId' and 'file'
+ * - FormData with just 'policyId' (will read file from disk based on attachment)
  */
 export async function POST(req: NextRequest) {
     const startTime = Date.now();
@@ -30,19 +36,57 @@ export async function POST(req: NextRequest) {
 
         const formData = await req.formData();
         const policyId = formData.get("policyId") as string;
-        const file = formData.get("file") as File;
+        let file = formData.get("file") as File | null;
 
-        if (!policyId || !file) {
-            return badRequestResponse("policyId and file are required");
+        if (!policyId) {
+            return badRequestResponse("policyId is required");
         }
 
-        // Fetch policy details for file_code
+        // Fetch policy details with attachments
         const policy = await prisma.policy.findUnique({
-            where: { id: policyId }
+            where: { id: policyId },
+            include: {
+                attachments: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                },
+            },
         });
 
         if (!policy) {
             return notFoundResponse("Policy");
+        }
+
+        // If no file provided, read from disk using the latest attachment
+        if (!file) {
+            const latestAttachment = policy.attachments[0];
+            if (!latestAttachment) {
+                return badRequestResponse("No document attached to this policy");
+            }
+
+            console.log(`[Governance Ingest] Reading file from disk: ${latestAttachment.filePath}`);
+
+            // Convert relative path to absolute path
+            // filePath is stored as "/uploads/policies/file.docx"
+            const relativePath = latestAttachment.filePath.startsWith('/')
+                ? latestAttachment.filePath.slice(1)
+                : latestAttachment.filePath;
+            const absolutePath = path.join(process.cwd(), 'public', relativePath);
+
+            try {
+                const fileBuffer = await readFile(absolutePath);
+                const mimeType = latestAttachment.fileType === 'docx'
+                    ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    : latestAttachment.fileType === 'pdf'
+                        ? 'application/pdf'
+                        : 'application/octet-stream';
+
+                file = new File([fileBuffer], latestAttachment.fileName, { type: mimeType });
+                console.log(`[Governance Ingest] File loaded from disk: ${latestAttachment.fileName} (${fileBuffer.length} bytes)`);
+            } catch (readError) {
+                console.error(`[Governance Ingest] Failed to read file from disk:`, readError);
+                return errorResponse(`File not found on disk: ${latestAttachment.fileName}`, 404);
+            }
         }
 
         // Canonical OpenAPI Payload construction
@@ -110,6 +154,16 @@ export async function POST(req: NextRequest) {
                 status: jobId ? "processing" : "ingested",
                 aiOperationId: operation?.id,
             }
+        });
+
+        // Step 6: Update Policy AI Ingest Status
+        await prisma.policy.update({
+            where: { id: policyId },
+            data: {
+                aiIngestStatus: jobId ? 'QUEUED' : 'INGESTED',
+                aiIngestJobId: jobId || null,
+                aiIngestedAt: jobId ? null : new Date(),
+            },
         });
 
         return NextResponse.json({

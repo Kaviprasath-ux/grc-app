@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
+import { prisma } from "@/lib/prisma";
 import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 import {
   unauthorizedResponse,
@@ -38,7 +39,7 @@ export async function GET(
         // Call backend to get job result
         const response = await aiApiClient.get(`${AI_ENDPOINTS.INGEST_RESULT}/${jobId}`);
 
-        const resultData = response.data;
+        const resultData = response.data as { document_id?: string; status?: boolean | string };
 
         // Update AIJob status to COMPLETED with result
         await aiAuditService.updateJobStatus(
@@ -46,6 +47,36 @@ export async function GET(
             'COMPLETED',
             JSON.stringify(resultData)
         );
+
+        // Update Policy and PolicyAIReview with result
+        const policy = await prisma.policy.findFirst({
+            where: { aiIngestJobId: jobId },
+        });
+
+        if (policy) {
+            // Update policy to INGESTED
+            await prisma.policy.update({
+                where: { id: policy.id },
+                data: {
+                    aiIngestStatus: 'INGESTED',
+                    aiIngestedAt: new Date(),
+                },
+            });
+
+            // Update PolicyAIReview with document ID
+            await prisma.policyAIReview.updateMany({
+                where: {
+                    policyId: policy.id,
+                    status: { in: ['processing', 'queued'] },
+                },
+                data: {
+                    status: 'ingested',
+                    documentId: resultData.document_id || jobId,
+                },
+            });
+
+            console.log(`[Governance Ingest Result] Updated policy ${policy.id} with document ID: ${resultData.document_id || jobId}`);
+        }
 
         const latency = Date.now() - startTime;
 
