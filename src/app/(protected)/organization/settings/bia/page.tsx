@@ -96,9 +96,9 @@ export default function BIASettingsPage() {
 
   // New item forms
   const [newCategory, setNewCategory] = useState({ name: "", description: "" });
-  const [newRating, setNewRating] = useState({ label: "", score: 0, description: "" });
-  const [newRange, setNewRange] = useState<{ label: string; lowValue: number; highValue: number | null }>({ label: "", lowValue: 0, highValue: null });
-  const [newBcp, setNewBcp] = useState({ name: "", type: "RTO", hours: 0, description: "" });
+  const [newRating, setNewRating] = useState({ label: "", score: "" as string | number, description: "" });
+  const [newRange, setNewRange] = useState<{ label: string; lowValue: number | ""; highValue: number | "" | null }>({ label: "", lowValue: "", highValue: "" });
+  const [newBcp, setNewBcp] = useState({ name: "", type: "RTO", hours: 0, description: "", isActive: true });
 
   useEffect(() => {
     fetchAllData();
@@ -162,6 +162,12 @@ export default function BIASettingsPage() {
 
   // ==================== Rating CRUD ====================
   const handleSaveRating = async () => {
+    const label = editingRating ? editingRating.label : newRating.label;
+    const score = editingRating ? editingRating.score : newRating.score;
+    if (!label?.trim() || score === "" || score === undefined || score === null) {
+      toast({ title: t("Validation Error"), description: t("Rating and Score are required fields"), variant: "destructive" });
+      return;
+    }
     try {
       const isEditing = !!editingRating;
       const url = isEditing ? `/api/bia-ratings/${editingRating.id}` : "/api/bia-ratings";
@@ -179,7 +185,7 @@ export default function BIASettingsPage() {
         fetchAllData();
         setIsRatingDialogOpen(false);
         setEditingRating(null);
-        setNewRating({ label: "", score: 0, description: "" });
+        setNewRating({ label: "", score: "", description: "" });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to save rating"), variant: "destructive" });
@@ -192,6 +198,13 @@ export default function BIASettingsPage() {
 
   // ==================== Scoring Range CRUD ====================
   const handleSaveRange = async () => {
+    const rangeLabel = editingRange ? editingRange.label : newRange.label;
+    const highValue = editingRange ? editingRange.highValue : newRange.highValue;
+    const lowValue = editingRange ? editingRange.lowValue : newRange.lowValue;
+    if (!rangeLabel?.trim() || highValue === "" || highValue === null || highValue === undefined || lowValue === "" || lowValue === undefined) {
+      toast({ title: t("Validation Error"), description: t("Rating, High Range Value and Low Range Value are required fields"), variant: "destructive" });
+      return;
+    }
     try {
       const isEditing = !!editingRange;
       const url = isEditing ? `/api/bia-scoring-ranges/${editingRange.id}` : "/api/bia-scoring-ranges";
@@ -211,7 +224,7 @@ export default function BIASettingsPage() {
         fetchAllData();
         setIsRangeDialogOpen(false);
         setEditingRange(null);
-        setNewRange({ label: "", lowValue: 0, highValue: null });
+        setNewRange({ label: "", lowValue: "", highValue: "" });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to save scoring range"), variant: "destructive" });
@@ -430,11 +443,12 @@ export default function BIASettingsPage() {
       header: t("Name"),
       cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
-    {
-      accessorKey: "type",
-      header: t("Type"),
-      cell: ({ row }) => <span className="text-slate-600">{row.getValue("type")}</span>,
-    },
+    // Hidden: Type column kept for future use
+    // {
+    //   accessorKey: "type",
+    //   header: t("Type"),
+    //   cell: ({ row }) => <span className="text-slate-600">{row.getValue("type")}</span>,
+    // },
     {
       accessorKey: "isActive",
       header: t("Status"),
@@ -558,7 +572,7 @@ export default function BIASettingsPage() {
                 size="sm"
                 onClick={() => {
                   setEditingRating(null);
-                  setNewRating({ label: "", score: 0, description: "" });
+                  setNewRating({ label: "", score: "", description: "" });
                   setIsRatingDialogOpen(true);
                 }}
               >
@@ -597,7 +611,7 @@ export default function BIASettingsPage() {
                     size="sm"
                     onClick={() => {
                       setEditingRange(null);
-                      setNewRange({ label: "", lowValue: 0, highValue: null });
+                      setNewRange({ label: "", lowValue: "", highValue: "" });
                       setIsRangeDialogOpen(true);
                     }}
                   >
@@ -725,8 +739,8 @@ export default function BIASettingsPage() {
                   value={editingRating?.score ?? newRating.score}
                   onChange={(e) =>
                     editingRating
-                      ? setEditingRating({ ...editingRating, score: parseInt(e.target.value) || 0 })
-                      : setNewRating({ ...newRating, score: parseInt(e.target.value) || 0 })
+                      ? setEditingRating({ ...editingRating, score: e.target.value === "" ? "" : (parseInt(e.target.value) || 0) })
+                      : setNewRating({ ...newRating, score: e.target.value === "" ? "" : (parseInt(e.target.value) || 0) })
                   }
                   placeholder={t("e.g., 100")}
                   className="mt-1.5 bg-white"
@@ -789,7 +803,9 @@ export default function BIASettingsPage() {
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("High Range")}</Label>
+                <Label className="text-sm font-medium text-slate-700">
+                  {t("High Range")} <span className="text-error">*</span>
+                </Label>
                 <Input
                   type="number"
                   value={(editingRange ? editingRange.highValue : newRange.highValue) ?? ""}
@@ -817,9 +833,9 @@ export default function BIASettingsPage() {
                     const rawValue = e.target.value;
                     const numValue = rawValue === "" ? null : Number(rawValue);
                     if (editingRange) {
-                      setEditingRange({ ...editingRange, lowValue: numValue ?? 0 });
+                      setEditingRange({ ...editingRange, lowValue: numValue as number });
                     } else {
-                      setNewRange({ ...newRange, lowValue: numValue ?? 0 });
+                      setNewRange({ ...newRange, lowValue: numValue === null ? "" : numValue });
                     }
                   }}
                   placeholder={t("e.g., 250")}
@@ -870,42 +886,6 @@ export default function BIASettingsPage() {
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("Type")} <span className="text-error">*</span>
-                </Label>
-                <Select
-                  value={editingBcp?.type || newBcp.type}
-                  onValueChange={(value) =>
-                    editingBcp
-                      ? setEditingBcp({ ...editingBcp, type: value })
-                      : setNewBcp({ ...newBcp, type: value })
-                  }
-                >
-                  <SelectTrigger className="w-full mt-1.5 bg-white">
-                    <SelectValue placeholder={t("Select type")} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                    <SelectItem value="RTO">RTO</SelectItem>
-                    <SelectItem value="RPO">RPO</SelectItem>
-                    <SelectItem value="Criticality">{t("Criticality")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Hours")}</Label>
-                <Input
-                  type="number"
-                  value={editingBcp?.hours ?? newBcp.hours}
-                  onChange={(e) =>
-                    editingBcp
-                      ? setEditingBcp({ ...editingBcp, hours: parseInt(e.target.value) || 0 })
-                      : setNewBcp({ ...newBcp, hours: parseInt(e.target.value) || 0 })
-                  }
-                  placeholder={t("e.g., 4")}
-                  className="mt-1.5 bg-white"
-                />
-              </div>
-              <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <Input
                   value={editingBcp?.description || newBcp.description}
@@ -917,6 +897,39 @@ export default function BIASettingsPage() {
                   placeholder={t("Enter description")}
                   className="mt-1.5 bg-white"
                 />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                <div className="flex items-center gap-4 mt-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="bcp-status"
+                      checked={(editingBcp ? editingBcp.isActive : newBcp.isActive) !== false}
+                      onChange={() =>
+                        editingBcp
+                          ? setEditingBcp({ ...editingBcp, isActive: true })
+                          : setNewBcp({ ...newBcp, isActive: true })
+                      }
+                      className="accent-primary"
+                    />
+                    <span className="text-sm">{t("Active")}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="bcp-status"
+                      checked={(editingBcp ? editingBcp.isActive : newBcp.isActive) === false}
+                      onChange={() =>
+                        editingBcp
+                          ? setEditingBcp({ ...editingBcp, isActive: false })
+                          : setNewBcp({ ...newBcp, isActive: false })
+                      }
+                      className="accent-primary"
+                    />
+                    <span className="text-sm">{t("Inactive")}</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
