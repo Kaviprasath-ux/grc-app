@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 
 /**
  * POST /api/ai/control-extraction
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
 
         // Step 1: Log AIOperation (Request) - Standard Pre-flight Hook
         const operation = await aiAuditService.logOperation({
-            endpoint: "/api/extract_process_controls",
+            endpoint: AI_ENDPOINTS.EXTRACT_CONTROLS,
             method: "POST",
             requestBody: { fileName: file.name, fileSize: file.size, fileType: file.type },
             userId,
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
         console.log(`[AI Control Extraction] Standardized processing for: ${file.name}`);
 
         // Step 2: Call RunPod via aiApiClient
-        const response = await aiApiClient.post("/api/extract_process_controls", formData, {
+        const response = await aiApiClient.post(AI_ENDPOINTS.EXTRACT_CONTROLS, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
@@ -63,23 +64,24 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(response.data);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latencyMs = Date.now() - startTime;
-        console.error("[AI Control Extraction] Error:", error);
+        const err = error as { message?: string; status?: number };
+        console.error("[AI Control Extraction] Error:", err);
 
         // Standard Error Logging
         await aiAuditService.logOperation({
-            endpoint: "/api/extract_process_controls",
+            endpoint: AI_ENDPOINTS.EXTRACT_CONTROLS,
             method: "POST",
-            error: error.message || "Unknown error",
-            statusCode: error.status || 500,
+            error: err.message || "Unknown error",
+            statusCode: err.status || 500,
             latencyMs,
             userId,
         });
 
         return NextResponse.json(
-            { error: error.message || "Failed to extract controls" },
-            { status: error.status || 500 }
+            { error: err.message || "Failed to extract controls" },
+            { status: err.status || 500 }
         );
     }
 }

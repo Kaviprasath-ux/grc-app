@@ -4,6 +4,7 @@ import { z } from "zod";
 import { RiskInputSchema, RiskOutputSchema, SemanticMatchInputSchema } from "@/lib/validations/risk";
 import { proxyToExternalApi } from "@/lib/api-proxy";
 import { auth } from "@/lib/auth";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 
 // --- Types ---
 export type RiskGenerationStatus = "idle" | "generating" | "polling" | "completed" | "error";
@@ -24,7 +25,7 @@ export async function startRiskGenerationJob(input: z.infer<typeof RiskInputSche
     // Using generic type 'any' for response parsing here, but we should type it strict if we knew the exact job_id shape
     const response = await proxyToExternalApi({
         service: "PYTHON_BACKEND",
-        path: "/api/generate_process_asset_risk_v2", // V2 as per common usage, or check V1
+        path: AI_ENDPOINTS.GENERATE_RISK,
         method: "POST",
         body: validatedData,
     });
@@ -99,7 +100,7 @@ export async function startSemanticMatchJob(input: z.infer<typeof SemanticMatchI
     // Call RunPod
     const response = await proxyToExternalApi({
         service: "PYTHON_BACKEND",
-        path: "/api/semanticMatch_process_asset_riskV2",
+        path: AI_ENDPOINTS.SEMANTIC_MATCH,
         method: "POST",
         body: input,
     });

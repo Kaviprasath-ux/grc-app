@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { proxyToExternalApi } from "@/lib/api-proxy";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 
 export const maxDuration = 60;
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
 
             const response = await proxyToExternalApi({
                 service: "PYTHON_BACKEND",
-                path: "/api/generate_process_asset_risk_v2",
+                path: AI_ENDPOINTS.GENERATE_RISK,
                 method: "POST",
                 body: payload,
                 contentType: "application/json",
@@ -199,7 +200,7 @@ export async function POST(req: NextRequest) {
 
         const response = await proxyToExternalApi({
             service: "PYTHON_BACKEND",
-            path: "/api/semanticMatch_process_asset_riskV2",
+            path: AI_ENDPOINTS.SEMANTIC_MATCH,
             method: "POST",
             body: runpodPayload,
             contentType: "application/x-www-form-urlencoded",

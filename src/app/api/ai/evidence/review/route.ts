@@ -44,6 +44,11 @@ export const POST = withAuth(
           description: true,
           customerAccountId: true,
           aiIngestStatus: true,
+          attachments: {
+            select: { fileName: true },
+            orderBy: { uploadedAt: 'desc' },
+            take: 1,
+          },
         },
       });
 
@@ -67,7 +72,8 @@ export const POST = withAuth(
       await updateEvidenceAIStatus(evidenceId, { reviewStatus: 'IN_PROGRESS' });
 
       // Build AI query payload
-      const requestBody = buildEvidencePayload(evidence, session.id);
+      // IMPORTANT: Use customerAccountId (not session.id) to match base_id from ingest
+      const requestBody = buildEvidencePayload(evidence, evidence.customerAccountId);
 
       // Create AI operation record
       const aiOperation = await createAIOperation({

@@ -34,6 +34,7 @@ export const AI_ENDPOINTS = {
   // Compliance Self-Assessment
   // ─────────────────────────────────────────────────────────────────────────
   SELF_ASSESSMENT_QUERY: '/api/grc_selfassesment_query',
+  CONTROL_CODE_QUERY: '/api/control_code_query',
 
   // ─────────────────────────────────────────────────────────────────────────
   // Risk Evaluation
@@ -52,6 +53,7 @@ export const AI_ENDPOINTS = {
   // Framework Generation
   // ─────────────────────────────────────────────────────────────────────────
   GENERATE_FRAMEWORK: '/api/generate_framework',
+  GENERATE_FRAMEWORK_JOB: '/api/generate_framework_job',
   FRAMEWORK_STATUS: '/api/framework_status',
   FRAMEWORK_RESULT: '/api/framework_result',
 
@@ -104,8 +106,10 @@ export const ENDPOINT_NAMES: Record<string, string> = {
   [AI_ENDPOINTS.SEMANTIC_MATCH_RESULT]: 'Semantic Match Result',
   [AI_ENDPOINTS.EXTRACT_CONTROLS]: 'Control Extraction',
   [AI_ENDPOINTS.GENERATE_FRAMEWORK]: 'Framework Generation',
+  [AI_ENDPOINTS.GENERATE_FRAMEWORK_JOB]: 'Framework Generation Job',
   [AI_ENDPOINTS.FRAMEWORK_STATUS]: 'Framework Status',
   [AI_ENDPOINTS.FRAMEWORK_RESULT]: 'Framework Result',
+  [AI_ENDPOINTS.CONTROL_CODE_QUERY]: 'Control Code Query',
   [AI_ENDPOINTS.AUDIT_INGEST]: 'Audit Document Ingest',
   [AI_ENDPOINTS.AUDIT_INGEST_STATUS]: 'Audit Ingest Status',
   [AI_ENDPOINTS.AUDIT_INGEST_RESULT]: 'Audit Ingest Result',

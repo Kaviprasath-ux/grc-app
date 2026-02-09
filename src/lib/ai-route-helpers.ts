@@ -146,7 +146,10 @@ export function reviewCompletedResponse(
 // ============================================================================
 
 /**
- * Build evidence payload for AI queries
+ * Build evidence payload for AI queries (grc_evidence_query)
+ *
+ * IMPORTANT: customerAccountId must be used (not session userId) to match
+ * the base_id used during ingest for proper tenant isolation.
  */
 export function buildEvidencePayload(
   evidence: {
@@ -155,21 +158,25 @@ export function buildEvidencePayload(
     description?: string | null;
     attachments?: Array<{ fileName: string }>;
   },
-  userId: string
+  customerAccountId: string
 ): {
   user_id: string;
   evidence_id: string;
   doc_type: string;
-  evidences: Array<{ evidence_code: string; evidence_description: string }>;
+  evidences: Array<{ evidence_code: string; evidence_description: string; evidence_artifact: string }>;
 } {
+  // Get artifact name from first attachment (required by RunPod API)
+  const artifactName = evidence.attachments?.[0]?.fileName || '';
+
   return {
-    user_id: userId,
+    user_id: customerAccountId,
     evidence_id: evidence.id,
     doc_type: 'evidence',
     evidences: [
       {
         evidence_code: evidence.evidenceCode,
         evidence_description: evidence.description || '',
+        evidence_artifact: artifactName,
       },
     ],
   };

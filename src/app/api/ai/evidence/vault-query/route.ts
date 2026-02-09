@@ -211,9 +211,11 @@ export const POST = withAuth(
       // ─────────────────────────────────────────────────────────────────────
       console.log(`[Vault Query] Step 2: Querying vault...`);
 
+      // IMPORTANT: Use customerAccountId (not session userId) to match base_id from ingest
+      // This ensures tenant isolation - query searches in the same namespace where docs were ingested
       const vaultQueryPayload = buildVaultQueryPayload(
         evidence.description,
-        userId,
+        evidence.customerAccountId,
         'evidence'
       );
 

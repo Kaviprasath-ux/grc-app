@@ -140,7 +140,8 @@ export const GET = withAuth(
             await updateEvidenceAIStatus(ingestJob.evidenceId, { reviewStatus: "IN_PROGRESS" });
 
             // Prepare request body for /api/grc_evidence_query using helper
-            const reviewRequestBody = buildEvidencePayload(fullEvidence, session.id);
+            // IMPORTANT: Use customerAccountId (not session.id) to match base_id from ingest
+            const reviewRequestBody = buildEvidencePayload(fullEvidence, ingestJob.evidence.customerAccountId);
 
             // Call RunPod evidence query endpoint via standardized aiApiClient
             console.log(`[Evidence Ingest Result] AUTO-TRIGGER evidence review`);

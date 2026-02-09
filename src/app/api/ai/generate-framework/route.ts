@@ -3,6 +3,7 @@ import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 
 /**
  * POST /api/ai/generate-framework
@@ -29,7 +30,7 @@ import { prisma } from "@/lib/prisma";
  */
 async function handler(req: NextRequest, _context: any, session: AuthenticatedRequest['user']) {
     const startTime = Date.now();
-    const endpoint = "/api/generate_framework_job";
+    const endpoint = AI_ENDPOINTS.GENERATE_FRAMEWORK_JOB;
     let jobId: string | undefined;
     let requestPayload: any = {};
 

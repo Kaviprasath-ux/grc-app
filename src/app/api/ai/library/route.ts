@@ -1,14 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuthOnly } from "@/lib/api-auth";
+import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 
-async function handler(req: NextRequest) {
+async function handler(
+    req: NextRequest,
+    _context: unknown,
+    session: AuthenticatedRequest['user']
+) {
     try {
+        // Tenant isolation: filter by customerAccountId
+        const customerAccountId = session.customerAccountId;
+        const tenantFilter = customerAccountId ? { customerAccountId } : {};
+
         const [controls, threats, vulnerabilities, risks] = await Promise.all([
-            prisma.control.findMany({ select: { name: true, controlCode: true } }),
-            prisma.riskThreat.findMany({ select: { name: true, threatId: true } }),
-            prisma.riskVulnerability.findMany({ select: { name: true, vulnId: true } }),
-            prisma.risk.findMany({ select: { name: true, riskId: true } }),
+            prisma.control.findMany({
+                where: tenantFilter,
+                select: { name: true, controlCode: true }
+            }),
+            prisma.riskThreat.findMany({
+                where: tenantFilter,
+                select: { name: true, threatId: true }
+            }),
+            prisma.riskVulnerability.findMany({
+                where: tenantFilter,
+                select: { name: true, vulnId: true }
+            }),
+            prisma.risk.findMany({
+                where: tenantFilter,
+                select: { name: true, riskId: true }
+            }),
         ]);
 
         const library = {

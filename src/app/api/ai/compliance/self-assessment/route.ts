@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 import {
-  unauthorizedResponse,
   missingFieldResponse,
   errorResponse,
 } from "@/lib/ai-route-helpers";
@@ -15,17 +14,15 @@ import {
  * Run AI-powered self-assessment query on compliance/policy documents.
  * Aligned with RunPod /api/grc_selfassesment_query OpenAPI contract.
  */
-export async function POST(req: NextRequest) {
+async function handler(
+    req: NextRequest,
+    _context: unknown,
+    session: AuthenticatedRequest['user']
+) {
     const startTime = Date.now();
-    let userId: string | undefined;
+    const userId = session.id;
 
     try {
-        const session = await auth();
-        if (!session?.user) {
-            return unauthorizedResponse();
-        }
-        userId = session.user.id;
-
         const body = await req.json();
         const { question } = body;
 
@@ -34,9 +31,10 @@ export async function POST(req: NextRequest) {
         }
 
         // Construct payload matching OpenAPI schema: queryPayLoad
+        // IMPORTANT: Use customerAccountId for tenant isolation (matches base_id from ingest)
         const payload = {
             question,
-            user_id: userId,
+            user_id: session.customerAccountId || userId,
         };
 
         // Call backend API using centralized endpoint constant
@@ -82,3 +80,5 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+
+export const POST = withAuthOnly(handler);
