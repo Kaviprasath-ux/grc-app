@@ -13,11 +13,17 @@ import {
 /**
  * POST /api/ai/risk-evaluation
  *
+ * ARCHITECTURE RULE: This endpoint should NOT persist risks directly.
+ * Use persist=false (recommended) and call /api/ai/risk-semantic-match/register after semantic matching.
+ * See: Implementation plan for Process AI Risk Flow Alignment
+ *
  * Generates AI-powered risks for a Process.
  *
+ * RunPod Endpoint: POST /api/generate_process_asset_risk_v2
+ *
  * Options:
- * - persist: true (default) - Generate and store risks immediately
- * - persist: false - Generate risks only, return raw AI response for semantic matching
+ * - persist: false (RECOMMENDED) - Generate risks only, return raw AI response for semantic matching
+ * - persist: true (DEPRECATED) - Generate and store risks immediately (bypasses semantic matching)
  *
  * Follows Synchronous v2 contract.
  */
@@ -31,10 +37,15 @@ async function handler(
 
     try {
         const body = await req.json();
-        const { processId, regenerate = false, persist = true } = body;
+        const { processId, regenerate = false, persist = false } = body;
 
         if (!processId) {
             return missingFieldResponse("processId");
+        }
+
+        // Deprecation warning for persist=true
+        if (persist === true) {
+            console.warn(`[DEPRECATED] persist=true in risk-evaluation for process ${processId}. Use persist=false and call /register endpoint after semantic matching.`);
         }
 
         // 1. Fetch Process Details from DB (use tenant filter with globalAccess for GRCAdmin cross-tenant access)
@@ -43,7 +54,7 @@ async function handler(
         console.log("[Risk Evaluation] Session customerAccountId:", session.customerAccountId);
         console.log("[Risk Evaluation] Tenant filter:", tenantFilter);
         console.log("[Risk Evaluation] Looking for processId:", processId);
-        console.log("[Risk Evaluation] Persist mode:", persist);
+        console.log("[Risk Evaluation] Persist mode:", persist, persist ? "(DEPRECATED)" : "(Recommended)");
 
         const process = await prisma.process.findFirst({
             where: { id: processId, ...tenantFilter },

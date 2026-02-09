@@ -7,9 +7,11 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/ai/framework-status/{jobId}
- * 
+ *
  * Check the status of a framework generation job.
  * This is Step 2 of the 3-step async process.
+ *
+ * RunPod Endpoint: GET /api/framework_job_status/{jobId}
  * 
  * Called automatically every 15 seconds by polling hook.
  * Expected statuses: QUEUED → PROCESSING → COMPLETED

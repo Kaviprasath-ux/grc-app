@@ -3,10 +3,11 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
 // GET all control strengths - with tenant filtering
+// GRC Admins get global access to view all settings across tenants
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: true });
 
       const strengths = await prisma.controlStrength.findMany({
         where: tenantFilter,

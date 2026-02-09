@@ -191,35 +191,50 @@ export default function ProcessPage() {
   const [evaluatingProcess, setEvaluatingProcess] = useState<Process | null>(null);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiRisks, setAiRisks] = useState<any[]>([]);
-  const [semanticMatchStats, setSemanticMatchStats] = useState<{ created: number; updated: number; skipped: number } | null>(null);
+  const [semanticMatchStats, setSemanticMatchStats] = useState<{
+    created?: number;
+    updated?: number;
+    skipped?: number;
+    risks?: { total: number; created: number; matched: number; skipped: number; errors: number };
+  } | null>(null);
+  const [showMatchResults, setShowMatchResults] = useState(false);
 
-  // Semantic matching hook for background deduplication (runs silently)
+  // Semantic matching hook - decoupled flow with explicit registration
   const {
     submitJob: submitSemanticMatch,
+    registerRisks,
     status: semanticStatus,
     result: semanticResult,
     isLoading: isSemanticLoading,
     isPolling: isSemanticPolling,
+    isRegistering: isSemanticRegistering,
     error: semanticError,
     reset: resetSemanticMatch,
   } = useRiskSemanticMatch({
     onComplete: (result) => {
-      console.log("[Process] Semantic matching completed:", result);
-      console.log("[Process] Stats:", JSON.stringify(result.stats, null, 2));
-      console.log("[Process] Processed risks:", JSON.stringify(result.risks, null, 2));
+      // Results received - show preview to user
+      console.log("[Process] Semantic matching completed - showing preview");
+      console.log("[Process] Preview stats:", JSON.stringify(result.stats, null, 2));
+      setShowMatchResults(true);
+      toast({
+        title: t("Matching Complete"),
+        description: t("Review the matched results below before registering."),
+      });
+    },
+    onRegistered: (result) => {
+      // Registration complete - update stats and refresh
+      console.log("[Process] Risks registered:", result);
       setSemanticMatchStats(result.stats ?? null);
-      // Refresh data after semantic matching completes
       fetchData();
-      // Show toast notification with results
       toast({
         title: t("Risk Library Updated"),
-        description: `${t("Created")}: ${result.stats?.created || 0}, ${t("Linked")}: ${result.stats?.skipped || 0}`,
+        description: `${t("Created")}: ${result.stats?.risks?.created || 0}, ${t("Linked")}: ${result.stats?.risks?.matched || 0}`,
       });
     },
     onError: (error) => {
       console.error("[Process] Semantic matching error:", error);
       toast({
-        title: t("Semantic Matching Failed"),
+        title: t("Operation Failed"),
         description: error,
         variant: "destructive",
       });
@@ -249,6 +264,7 @@ export default function ProcessPage() {
     setIsAiGenerating(true);
     setAiRisks([]);
     setSemanticMatchStats(null);
+    setShowMatchResults(false);
     resetSemanticMatch();
     setIsAIEvaluationOpen(true);
 
@@ -305,19 +321,31 @@ export default function ProcessPage() {
     });
   };
 
-  // Navigate to risk register immediately, run semantic matching silently in background
-  const handleGoToRiskRegister = () => {
-    // Close the dialog and navigate immediately
-    setIsAIEvaluationOpen(false);
-    router.push("/risks/register");
-
-    // Run semantic matching silently in background (don't await)
+  // Start semantic matching process (Step 1 of new flow)
+  const handleStartSemanticMatch = () => {
     if (aiRisks.length > 0) {
-      console.log("[Process] Starting background semantic matching for", aiRisks.length, "risks");
+      console.log("[Process] Starting semantic matching for", aiRisks.length, "risks");
       submitSemanticMatch(aiRisks, evaluatingProcess?.id || "").catch((error) => {
-        console.error("[Process] Background semantic matching error:", error);
+        console.error("[Process] Semantic matching error:", error);
       });
     }
+  };
+
+  // Register risks and navigate to risk register (Step 2 of new flow)
+  const handleRegisterAndNavigate = async () => {
+    console.log("[Process] Registering risks...");
+    const result = await registerRisks(evaluatingProcess?.id);
+    if (result?.success) {
+      // Close the dialog and navigate to risk register
+      setIsAIEvaluationOpen(false);
+      router.push("/risks/register");
+    }
+  };
+
+  // Legacy: Navigate directly without semantic matching (for quick access)
+  const handleGoToRiskRegister = () => {
+    setIsAIEvaluationOpen(false);
+    router.push("/risks/register");
   };
   const [saving, setSaving] = useState(false);
 
@@ -1695,20 +1723,60 @@ export default function ProcessPage() {
                   <div className="p-4 bg-red-50 rounded-lg border border-red-200 flex items-center gap-3">
                     <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-red-900">{t("Semantic Matching Failed")}</h4>
+                      <h4 className="font-medium text-red-900">{t("Operation Failed")}</h4>
                       <p className="text-sm text-red-700">{semanticError}</p>
                     </div>
                   </div>
                 )}
 
+                {/* Match Preview Results - shown after semantic matching completes */}
+                {showMatchResults && semanticResult && !semanticMatchStats && (
+                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <h4 className="font-medium text-amber-900 mb-2">{t("Match Preview")}</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-amber-700">
+                          <span className="font-medium">{t("New Risks")}:</span> {semanticResult.summary?.newRisksToCreate || 0}
+                        </p>
+                        <p className="text-amber-700">
+                          <span className="font-medium">{t("Existing Matches")}:</span> {semanticResult.summary?.existingRisksToMatch || 0}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-amber-700">
+                          <span className="font-medium">{t("New Controls")}:</span> {semanticResult.summary?.newControlsToCreate || 0}
+                        </p>
+                        <p className="text-amber-700">
+                          <span className="font-medium">{t("New Threats")}:</span> {semanticResult.summary?.newThreatsToCreate || 0}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-600 mt-2">
+                      {t("Click 'Confirm & Register' to add these risks to your library.")}
+                    </p>
+                  </div>
+                )}
+
+                {/* Registration Complete Banner */}
                 {semanticMatchStats && (
                   <div className="p-4 bg-green-50 rounded-lg border border-green-200 flex items-center gap-3">
                     <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-green-900">{t("Risk Library Updated")}</h4>
                       <p className="text-sm text-green-700">
-                        {t("Created")}: {semanticMatchStats.created} | {t("Updated")}: {semanticMatchStats.updated} | {t("Skipped (duplicates)")}: {semanticMatchStats.skipped}
+                        {t("Created")}: {semanticMatchStats.risks?.created || semanticMatchStats.created || 0} | {t("Matched")}: {semanticMatchStats.risks?.matched || semanticMatchStats.updated || 0} | {t("Skipped")}: {semanticMatchStats.risks?.skipped || semanticMatchStats.skipped || 0}
                       </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Registering Banner */}
+                {isSemanticRegistering && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 text-blue-600 animate-spin flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-blue-900">{t("Registering Risks")}</h4>
+                      <p className="text-sm text-blue-700">{t("Adding risks to your library...")}</p>
                     </div>
                   </div>
                 )}
@@ -1718,9 +1786,11 @@ export default function ProcessPage() {
                   <p className="text-sm text-primary-700">
                     {semanticMatchStats
                       ? t("These risks have been compared with your existing library. Only new risks were added to the Risk Register.")
-                      : (isSemanticLoading || isSemanticPolling)
-                        ? t("Comparing with existing risk library...")
-                        : t("Review the AI-identified risks below. Remove any unwanted risks, then click 'Go to Risk Register' to process them.")}
+                      : showMatchResults
+                        ? t("Review the matching results above. Click 'Confirm & Register' to add new risks to your library.")
+                        : (isSemanticLoading || isSemanticPolling)
+                          ? t("Comparing with existing risk library...")
+                          : t("Review the AI-identified risks below. Remove any unwanted risks, then click 'Match with Library' to find duplicates.")}
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -1737,7 +1807,7 @@ export default function ProcessPage() {
                             {risk.riskRating || risk.risk_rating || "Medium"}
                           </Badge>
                           {/* Delete button - only show before semantic matching starts */}
-                          {!isSemanticLoading && !isSemanticPolling && !semanticMatchStats && (
+                          {!isSemanticLoading && !isSemanticPolling && !showMatchResults && !semanticMatchStats && !isSemanticRegistering && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1802,25 +1872,54 @@ export default function ProcessPage() {
               variant="outline"
               onClick={() => {
                 setIsAIEvaluationOpen(false);
+                setShowMatchResults(false);
                 resetSemanticMatch();
               }}
-              disabled={isSemanticLoading || isSemanticPolling}
+              disabled={isSemanticLoading || isSemanticPolling || isSemanticRegistering}
             >
               {t("Close")}
             </Button>
-            <Button
-              onClick={handleGoToRiskRegister}
-              disabled={isSemanticLoading || isSemanticPolling || isAiGenerating || aiRisks.length === 0}
-            >
-              {(isSemanticLoading || isSemanticPolling) ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t("Processing...")}
-                </>
-              ) : (
-                t("Go to Risk Register")
-              )}
-            </Button>
+
+            {/* Phase 1: Match with Library button - shown when risks are generated but not yet matched */}
+            {!showMatchResults && !semanticMatchStats && (
+              <Button
+                onClick={handleStartSemanticMatch}
+                disabled={isSemanticLoading || isSemanticPolling || isAiGenerating || aiRisks.length === 0}
+              >
+                {(isSemanticLoading || isSemanticPolling) ? (
+                  <>
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                    {t("Matching...")}
+                  </>
+                ) : (
+                  t("Match with Library")
+                )}
+              </Button>
+            )}
+
+            {/* Phase 2: Confirm & Register button - shown after matching completes */}
+            {showMatchResults && !semanticMatchStats && (
+              <Button
+                onClick={handleRegisterAndNavigate}
+                disabled={isSemanticRegistering}
+              >
+                {isSemanticRegistering ? (
+                  <>
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                    {t("Registering...")}
+                  </>
+                ) : (
+                  t("Confirm & Register")
+                )}
+              </Button>
+            )}
+
+            {/* Phase 3: Go to Risk Register button - shown after registration completes */}
+            {semanticMatchStats && (
+              <Button onClick={handleGoToRiskRegister}>
+                {t("Go to Risk Register")}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

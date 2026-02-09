@@ -16,6 +16,8 @@ interface RouteContext {
 /**
  * GET /api/ai/evidence/ingest-status/[jobId]
  * Poll ingest job status from RunPod
+ *
+ * RunPod Endpoint: GET /api/grc_ingest_status/{jobId}
  */
 export const GET = withAuth(
   async (req: NextRequest, context: RouteContext, session) => {

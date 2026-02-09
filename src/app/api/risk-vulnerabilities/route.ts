@@ -3,10 +3,11 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
 // GET all risk vulnerabilities - with tenant filtering
+// GRC Admins get global access to view all vulnerabilities across tenants
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: true });
 
       const vulnerabilities = await prisma.riskVulnerability.findMany({
         where: tenantFilter,

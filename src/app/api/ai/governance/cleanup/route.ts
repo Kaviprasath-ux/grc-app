@@ -13,6 +13,8 @@ import {
  *
  * Cleans up AI-processed documents for a policy.
  * Uses aiDeleteService for consistent delete operations.
+ *
+ * RunPod Endpoint: POST /api/grc_delete
  */
 async function handler(
   req: NextRequest,

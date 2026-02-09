@@ -10,9 +10,11 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/ai/framework-result/{jobId}
- * 
+ *
  * Get the result of a completed framework generation job.
  * This is Step 3 of the 3-step async process.
+ *
+ * RunPod Endpoint: GET /api/framework_job_result/{jobId}
  * 
  * IMPORTANT: This route now handles server-side persistence (Rule #6).
  */

@@ -207,11 +207,55 @@ export interface RiskSemanticMatchResult {
     job_id?: string;
     error?: string | null;
     message?: string;
+    requiresRegistration?: boolean;
     stats?: {
-        created: number;
-        updated: number;
-        skipped: number;
+        // Flat structure (legacy)
+        created?: number;
+        updated?: number;
+        skipped?: number;
         errors?: number;
+        // Nested structure (new)
+        risks?: {
+            total: number;
+            created: number;
+            matched: number;
+            skipped: number;
+            errors: number;
+        };
+        threats?: {
+            detected: number;
+            created: number;
+            matched: number;
+            linkedToRisks: number;
+        };
+        vulnerabilities?: {
+            detected: number;
+            created: number;
+            matched: number;
+            linkedToThreats: number;
+        };
+        controls?: {
+            detected: number;
+            created: number;
+            matched: number;
+            linkedToRisks: number;
+        };
+    };
+    summary?: {
+        risksProcessed?: number;
+        newRisksToCreate?: number;
+        newRisksCreated?: number;
+        existingRisksToMatch?: number;
+        duplicatesToSkip?: number;
+        threatsDetected?: number;
+        newThreatsToCreate?: number;
+        newThreatsCreated?: number;
+        vulnerabilitiesDetected?: number;
+        newVulnerabilitiesToCreate?: number;
+        newVulnerabilitiesCreated?: number;
+        controlsDetected?: number;
+        newControlsToCreate?: number;
+        newControlsCreated?: number;
     };
     risks?: any[];
 }

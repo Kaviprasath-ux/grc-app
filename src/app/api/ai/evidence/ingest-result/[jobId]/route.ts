@@ -18,6 +18,10 @@ interface RouteContext {
 /**
  * GET /api/ai/evidence/ingest-result/[jobId]
  * Fetch ingest result from RunPod and persist to database
+ *
+ * RunPod Endpoints:
+ * - GET /api/grc_ingest_result/{jobId} (fetch result)
+ * - POST /api/grc_evidence_query (auto-triggered review)
  */
 export const GET = withAuth(
   async (req: NextRequest, context: RouteContext, session) => {

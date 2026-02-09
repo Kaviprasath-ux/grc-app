@@ -6,9 +6,11 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * POST /api/ai/generate-framework
- * 
+ *
  * Submit a framework generation job to the Python backend.
  * This is Step 1 of the 3-step async process.
+ *
+ * RunPod Endpoint: POST /api/generate_framework_job
  * 
  * Request (multipart/form-data):
  * - framework_name: string (required)

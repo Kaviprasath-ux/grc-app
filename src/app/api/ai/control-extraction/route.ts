@@ -6,9 +6,11 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * POST /api/ai/control-extraction
- * 
+ *
  * Extracts controls from a process document.
  * Standardized with Atomic Audit Hook pattern.
+ *
+ * RunPod Endpoint: POST /api/extract_process_controls
  */
 export async function POST(req: NextRequest) {
     const startTime = Date.now();
