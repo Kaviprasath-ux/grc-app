@@ -96,7 +96,14 @@ export default function AuditCategoriesPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Category name is required",
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -406,7 +413,7 @@ export default function AuditCategoriesPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
+            <Button onClick={handleSave} disabled={saving}>
               {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>

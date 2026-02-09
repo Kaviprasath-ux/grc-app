@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 interface RiskFactor {
   id: string;
@@ -82,6 +83,7 @@ const CALCULATION_TYPES = [
 export default function RiskAssessmentConfigPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [loading, setLoading] = useState(true);
 
@@ -206,13 +208,37 @@ export default function RiskAssessmentConfigPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.label?.trim()) return;
+    if (!formData.label?.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Label is required"),
+      });
+      return;
+    }
+
+    // Validate value fields for probability and impact
+    if (dialogType === "probability" || dialogType === "impact") {
+      if (formData.value === undefined || formData.value === null || formData.value === "") {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Value is required"),
+        });
+        return;
+      }
+    }
 
     // Validate scoring range: highest value must be greater than lowest value
     if (dialogType === "scoringRange") {
       const lowValue = Number(formData.lowValue) || 0;
       const highValue = Number(formData.highValue) || 0;
       if (highValue <= lowValue) {
+        toast({
+          variant: "destructive",
+          title: t("Error"),
+          description: t("Highest value must be greater than lowest value"),
+        });
         setValidationError(t("Highest value must be greater than lowest value"));
         return;
       }
@@ -738,7 +764,7 @@ export default function RiskAssessmentConfigPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.label?.trim()}>
+            <Button onClick={handleSave} disabled={saving}>
               {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>

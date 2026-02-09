@@ -96,7 +96,20 @@ export default function AddRiskPage() {
 
   useEffect(() => {
     fetchReferenceData();
+    fetchNextRiskId();
   }, []);
+
+  const fetchNextRiskId = async () => {
+    try {
+      const response = await fetch("/api/internal-audit/risks/next-id");
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({ ...prev, riskId: data.nextRiskId }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch next risk ID:", error);
+    }
+  };
 
   const fetchReferenceData = async () => {
     try {
@@ -220,10 +233,61 @@ export default function AddRiskPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation: Risk Name
     if (!formData.riskName.trim()) {
       toast({
         title: t("Error"),
-        description: t("Risk name is required."),
+        description: t("Risk name is required"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation: Risk Description
+    if (!formData.riskDescription.trim()) {
+      toast({
+        title: t("Error"),
+        description: t("Risk description is required"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation: Inherent Likelihood
+    if (!formData.inherentLikelihood) {
+      toast({
+        title: t("Error"),
+        description: t("Inherent likelihood is required"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation: Inherent Impact
+    if (!formData.inherentImpact) {
+      toast({
+        title: t("Error"),
+        description: t("Inherent impact is required"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation: Residual Likelihood
+    if (!formData.residualLikelihood) {
+      toast({
+        title: t("Error"),
+        description: t("Residual likelihood is required"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation: Residual Impact
+    if (!formData.residualImpact) {
+      toast({
+        title: t("Error"),
+        description: t("Residual impact is required"),
         variant: "destructive",
       });
       return;
@@ -328,13 +392,16 @@ export default function AddRiskPage() {
             <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Basic Information")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Risk ID")}</Label>
+                <Label className="text-sm font-medium text-slate-700">
+                  {t("Risk ID")} <span className="text-slate-400 font-normal text-xs">({t("Auto-generated")})</span>
+                </Label>
                 <Input
                   id="riskId"
                   value={formData.riskId}
                   onChange={(e) => setFormData({ ...formData, riskId: e.target.value })}
-                  placeholder={t("Enter risk ID (e.g., RISK-001)")}
-                  className="mt-1.5 w-full bg-white"
+                  placeholder={t("Auto-generated if left empty")}
+                  className="mt-1.5 w-full bg-slate-50"
+                  disabled
                 />
               </div>
               <div>
@@ -434,7 +501,7 @@ export default function AddRiskPage() {
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Risk Description")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Risk Description")} <span className="text-red-500">*</span></Label>
               <Textarea
                 id="riskDescription"
                 value={formData.riskDescription}
@@ -442,6 +509,7 @@ export default function AddRiskPage() {
                 placeholder={t("Enter risk description")}
                 className="mt-1.5 w-full bg-white"
                 rows={3}
+                required
               />
             </div>
           </div>
@@ -451,10 +519,11 @@ export default function AddRiskPage() {
             <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Inherent Risk Assessment")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Likelihood")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.inherentLikelihood}
                   onValueChange={(value) => setFormData({ ...formData, inherentLikelihood: value })}
+                  required
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder={t("Select likelihood")} />
@@ -469,10 +538,11 @@ export default function AddRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Impact")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.inherentImpact}
                   onValueChange={(value) => setFormData({ ...formData, inherentImpact: value })}
+                  required
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder={t("Select impact")} />
@@ -528,10 +598,11 @@ export default function AddRiskPage() {
             <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Residual Risk Assessment")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Likelihood")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.residualLikelihood}
                   onValueChange={(value) => setFormData({ ...formData, residualLikelihood: value })}
+                  required
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder={t("Select likelihood")} />
@@ -546,10 +617,11 @@ export default function AddRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Impact")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.residualImpact}
                   onValueChange={(value) => setFormData({ ...formData, residualImpact: value })}
+                  required
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder={t("Select impact")} />

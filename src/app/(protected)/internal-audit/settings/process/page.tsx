@@ -353,8 +353,22 @@ export default function ProcessPage() {
   };
 
   const handleSave = async () => {
+    // Validate required fields
     if (!formData.name.trim()) {
-      toast({ title: t("Error"), description: t("Please enter a process name"), variant: "destructive" });
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Process name is required"),
+      });
+      return;
+    }
+
+    if (!formData.ownerId || !formData.ownerId.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Process owner is required"),
+      });
       return;
     }
 
@@ -929,7 +943,7 @@ export default function ProcessPage() {
 
               {/* Process Owner */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Process Owner")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.ownerId}
                   onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
@@ -1281,12 +1295,12 @@ export default function ProcessPage() {
               {currentStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             {currentStep < TOTAL_STEPS ? (
-              <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
+              <Button onClick={handleNext}>
                 {t("Next")}
                 <ChevronRight className="h-4 w-4 ms-1" />
               </Button>
             ) : (
-              <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
+              <Button onClick={handleSave} disabled={saving}>
                 {saving ? t("Saving...") : t("Save")}
               </Button>
             )}

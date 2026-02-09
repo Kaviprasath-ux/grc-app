@@ -96,7 +96,14 @@ export default function NatureOfControlsPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.label.trim()) return;
+    if (!formData.label.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Label is required"),
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -406,7 +413,7 @@ export default function NatureOfControlsPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.label.trim()}>
+            <Button onClick={handleSave} disabled={saving}>
               {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>

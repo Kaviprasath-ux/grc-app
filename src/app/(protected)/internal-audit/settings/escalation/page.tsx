@@ -59,6 +59,40 @@ export default function EscalationConfigPage() {
   };
 
   const handleSave = async () => {
+    // Validate all fields are positive numbers
+    if (!formData.responseSubmission || Number(formData.responseSubmission) < 1) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Response Submission must be at least 1 day"),
+      });
+      return;
+    }
+    if (!formData.acknowledgement || Number(formData.acknowledgement) < 1) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Acknowledgement must be at least 1 day"),
+      });
+      return;
+    }
+    if (!formData.clarification || Number(formData.clarification) < 1) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Clarification must be at least 1 day"),
+      });
+      return;
+    }
+    if (!formData.issueResolution || Number(formData.issueResolution) < 1) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Issue Resolution must be at least 1 day"),
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const response = await fetch("/api/internal-audit/escalation-config", {
@@ -171,7 +205,7 @@ export default function EscalationConfigPage() {
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Response Submission")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Response Submission")} <span className="text-red-500">*</span></Label>
               <div className="flex items-center gap-2 mt-1.5">
                 <Input
                   type="number"
@@ -185,7 +219,7 @@ export default function EscalationConfigPage() {
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Acknowledgement")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Acknowledgement")} <span className="text-red-500">*</span></Label>
               <div className="flex items-center gap-2 mt-1.5">
                 <Input
                   type="number"
@@ -199,7 +233,7 @@ export default function EscalationConfigPage() {
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Clarification")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Clarification")} <span className="text-red-500">*</span></Label>
               <div className="flex items-center gap-2 mt-1.5">
                 <Input
                   type="number"
@@ -213,7 +247,7 @@ export default function EscalationConfigPage() {
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Issue Resolution")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Issue Resolution")} <span className="text-red-500">*</span></Label>
               <div className="flex items-center gap-2 mt-1.5">
                 <Input
                   type="number"

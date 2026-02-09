@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuditType {
   id: string;
@@ -44,6 +45,7 @@ interface AuditType {
 export default function AuditTypesPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [items, setItems] = useState<AuditType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +96,14 @@ export default function AuditTypesPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Type Name is required"),
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -369,7 +378,7 @@ export default function AuditTypesPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
+            <Button onClick={handleSave} disabled={saving}>
               {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>

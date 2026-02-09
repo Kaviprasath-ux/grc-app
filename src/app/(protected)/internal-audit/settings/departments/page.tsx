@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 interface Department {
   id: string;
@@ -59,6 +60,7 @@ interface User {
 export default function DepartmentsPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [items, setItems] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -127,7 +129,14 @@ export default function DepartmentsPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Department Name is required"),
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -439,7 +448,7 @@ export default function DepartmentsPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
+            <Button onClick={handleSave} disabled={saving}>
               {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>

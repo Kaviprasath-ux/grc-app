@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 interface Periodicity {
   id: string;
@@ -45,6 +46,7 @@ interface Periodicity {
 export default function PeriodicityPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [items, setItems] = useState<Periodicity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +97,22 @@ export default function PeriodicityPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.interval.trim()) return;
+    if (!formData.interval.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Interval is required"),
+      });
+      return;
+    }
+    if (!formData.months || Number(formData.months) < 1) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Months must be at least 1"),
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -388,7 +405,7 @@ export default function PeriodicityPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.interval.trim()}>
+            <Button onClick={handleSave} disabled={saving}>
               {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>

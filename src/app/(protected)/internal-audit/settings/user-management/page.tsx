@@ -269,9 +269,40 @@ export default function UserManagementPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.firstName.trim() || !formData.email.trim()) return;
+    if (!formData.firstName.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("First Name is required"),
+      });
+      return;
+    }
+    if (!formData.email.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Email is required"),
+      });
+      return;
+    }
+    if (!editItem && !formData.password.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("Password is required"),
+      });
+      return;
+    }
     if (!editItem && formData.password !== formData.confirmPassword) {
       toast({ title: t("Error"), description: t("Passwords do not match"), variant: "destructive" });
+      return;
+    }
+    if (!formData.roles || formData.roles.length === 0) {
+      toast({
+        variant: "destructive",
+        title: t("Error"),
+        description: t("At least one role must be selected"),
+      });
       return;
     }
 
@@ -633,7 +664,7 @@ export default function UserManagementPage() {
 
               {/* User Role (multi-select with checkboxes) */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("User Role")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("User Role")} <span className="text-red-500">*</span></Label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2 border border-slate-200 rounded-lg p-3 bg-white">
                   {allowedRoles.map((role) => (
                     <div key={role} className="flex items-center space-x-2">
@@ -700,7 +731,7 @@ export default function UserManagementPage() {
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 {t("Cancel")}
               </Button>
-              <Button onClick={handleSave} disabled={saving || !formData.firstName.trim() || !formData.email.trim()}>
+              <Button onClick={handleSave} disabled={saving}>
                 {saving ? t("Saving...") : t("Save")}
               </Button>
             </div>

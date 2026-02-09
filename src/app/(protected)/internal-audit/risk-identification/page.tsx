@@ -134,8 +134,15 @@ export default function RiskIdentificationPage() {
   };
 
   const handleSuggestRisks = async () => {
+    // Validation: Check department
     if (!selectedDepartment) {
       toast.error(t("Please select a department first"));
+      return;
+    }
+
+    // Validation: Check if user has permission (only Audit Head can suggest risks)
+    if (!isAuditHead) {
+      toast.error(t("Only Audit Head can suggest risks with AI"));
       return;
     }
 
@@ -464,7 +471,8 @@ export default function RiskIdentificationPage() {
           <Button
             size="sm"
             onClick={handleSuggestRisks}
-            disabled={loading || !selectedDepartment}
+            disabled={loading}
+            className={!isAuditHead ? "opacity-50" : ""}
           >
             {loading ? (
               <>

@@ -834,6 +834,11 @@ export default function FieldworkDetailsPage() {
       return;
     }
 
+    if (!fullFinding.responsiblePersonId || fullFinding.responsiblePersonId.trim() === "") {
+      toast.error(t("Responsible person is required"));
+      return;
+    }
+
     setSavingFullFinding(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, {
@@ -1507,6 +1512,11 @@ export default function FieldworkDetailsPage() {
   const handleAddEvidence = async () => {
     if (!newEvidence.title.trim()) {
       toast.error(t("Evidence title is required"));
+      return;
+    }
+
+    if (!newEvidence.auditeeId || !newEvidence.auditeeId.trim()) {
+      toast.error(t("Auditee is required"));
       return;
     }
 
@@ -3021,7 +3031,7 @@ export default function FieldworkDetailsPage() {
 
             {/* Responsible Person */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-end text-slate-500">{t("Responsible Person")}</Label>
+              <Label className="text-end text-slate-500">{t("Responsible Person")} <span className="text-red-500">*</span></Label>
               <Select
                 value={fullFinding.responsiblePersonId}
                 onValueChange={(value) => setFullFinding({ ...fullFinding, responsiblePersonId: value })}

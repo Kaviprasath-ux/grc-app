@@ -225,6 +225,16 @@ export default function ViewFindingPage() {
   const handleSave = async () => {
     if (!formData) return;
 
+    if (!formData.title || !formData.title.trim()) {
+      toast.error(t("Finding title is required"));
+      return;
+    }
+
+    if (!formData.responsiblePersonId || formData.responsiblePersonId === "none" || formData.responsiblePersonId.trim() === "") {
+      toast.error(t("Responsible person is required"));
+      return;
+    }
+
     setSaving(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings/${findingId}`, {
@@ -313,7 +323,7 @@ export default function ViewFindingPage() {
         <div className="space-y-6">
           {/* Finding Title */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">{t("Finding Title")}</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Finding Title")} <span className="text-red-500">*</span></Label>
             {isEditing ? (
               <Input
                 value={formData.title}
@@ -582,7 +592,7 @@ export default function ViewFindingPage() {
 
             {/* Responsible Person */}
             <div className="space-y-2 mb-4">
-              <Label className="text-[#1e3a5f] font-medium">{t("Responsible Person")}</Label>
+              <Label className="text-[#1e3a5f] font-medium">{t("Responsible Person")} <span className="text-red-500">*</span></Label>
               {isEditing ? (
                 <Select
                   value={formData.responsiblePersonId || "none"}
