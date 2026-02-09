@@ -697,6 +697,20 @@ CREATE TABLE "Evidence" (
 );
 
 -- CreateTable
+CREATE TABLE "EvidenceCycleComment" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "cyclePeriod" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "comment" TEXT NOT NULL,
+    "userId" TEXT,
+    "userName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EvidenceCycleComment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "EvidenceControl" (
     "id" TEXT NOT NULL,
     "evidenceId" TEXT NOT NULL,
@@ -999,6 +1013,34 @@ CREATE TABLE "AssetCIAClassification" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "AssetCIAClassification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AssetScoringConfig" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "calculationType" TEXT NOT NULL DEFAULT 'high_of_all',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AssetScoringConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AssetScoringRange" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "calculationType" TEXT NOT NULL,
+    "level" TEXT NOT NULL,
+    "minScore" INTEGER NOT NULL DEFAULT 0,
+    "maxScore" INTEGER NOT NULL DEFAULT 0,
+    "color" TEXT DEFAULT '#000000',
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AssetScoringRange_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -2294,6 +2336,9 @@ CREATE INDEX "Evidence_customerAccountId_idx" ON "Evidence"("customerAccountId")
 CREATE UNIQUE INDEX "Evidence_customerAccountId_evidenceCode_key" ON "Evidence"("customerAccountId", "evidenceCode");
 
 -- CreateIndex
+CREATE INDEX "EvidenceCycleComment_evidenceId_cyclePeriod_idx" ON "EvidenceCycleComment"("evidenceId", "cyclePeriod");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EvidenceControl_evidenceId_controlId_key" ON "EvidenceControl"("evidenceId", "controlId");
 
 -- CreateIndex
@@ -2372,7 +2417,19 @@ CREATE UNIQUE INDEX "AssetSensitivity_customerAccountId_name_key" ON "AssetSensi
 CREATE INDEX "AssetCIAClassification_customerAccountId_idx" ON "AssetCIAClassification"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetCIAClassification_customerAccountId_subCategoryId_grou_key" ON "AssetCIAClassification"("customerAccountId", "subCategoryId", "groupId");
+CREATE INDEX "AssetScoringConfig_customerAccountId_idx" ON "AssetScoringConfig"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssetScoringConfig_customerAccountId_key" ON "AssetScoringConfig"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AssetScoringRange_customerAccountId_idx" ON "AssetScoringRange"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AssetScoringRange_calculationType_idx" ON "AssetScoringRange"("calculationType");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssetScoringRange_customerAccountId_calculationType_level_key" ON "AssetScoringRange"("customerAccountId", "calculationType", "level");
 
 -- CreateIndex
 CREATE INDEX "AssetLifecycleStatus_customerAccountId_idx" ON "AssetLifecycleStatus"("customerAccountId");
@@ -2996,6 +3053,9 @@ ALTER TABLE "Evidence" ADD CONSTRAINT "Evidence_departmentId_fkey" FOREIGN KEY (
 ALTER TABLE "Evidence" ADD CONSTRAINT "Evidence_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "EvidenceCycleComment" ADD CONSTRAINT "EvidenceCycleComment_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "EvidenceControl" ADD CONSTRAINT "EvidenceControl_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -3120,6 +3180,12 @@ ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_subC
 
 -- AddForeignKey
 ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "AssetGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetScoringConfig" ADD CONSTRAINT "AssetScoringConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetScoringRange" ADD CONSTRAINT "AssetScoringRange_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AssetLifecycleStatus" ADD CONSTRAINT "AssetLifecycleStatus_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;

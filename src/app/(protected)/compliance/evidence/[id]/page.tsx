@@ -86,6 +86,17 @@ interface EvidenceComment {
   createdAt: string;
 }
 
+interface CycleComment {
+  id: string;
+  evidenceId: string;
+  cyclePeriod: string;
+  action: string;
+  comment: string;
+  userId: string | null;
+  userName: string | null;
+  createdAt: string;
+}
+
 interface LinkedKPI {
   id: string;
   code: string;
@@ -273,6 +284,8 @@ export default function EvidenceDetailPage() {
   const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
   const isCustomerAdmin = session?.user?.roles?.includes("CustomerAdministrator");
   const isDepartmentReviewer = session?.user?.roles?.includes("DepartmentReviewer");
+  const isDepartmentContributor = session?.user?.roles?.includes("DepartmentContributor");
+  const isReviewer = session?.user?.roles?.includes("Reviewer");
   const currentUserId = session?.user?.id;
 
   const [evidence, setEvidence] = useState<Evidence | null>(null);
@@ -323,6 +336,14 @@ export default function EvidenceDetailPage() {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Send Back / Resubmit / View Comments dialog state
+  const [sendBackDialogOpen, setSendBackDialogOpen] = useState(false);
+  const [resubmitDialogOpen, setResubmitDialogOpen] = useState(false);
+  const [viewCycleCommentsOpen, setViewCycleCommentsOpen] = useState(false);
+  const [cycleComment, setCycleComment] = useState("");
+  const [cycleComments, setCycleComments] = useState<CycleComment[]>([]);
+  const [cycleCommentSubmitting, setCycleCommentSubmitting] = useState(false);
 
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -392,7 +413,7 @@ export default function EvidenceDetailPage() {
     try {
       const [deptRes, usersRes, fwRes, controlsRes, controlDomainsRes] = await Promise.all([
         fetch("/api/departments"),
-        fetch("/api/users"),
+        fetch("/api/users?role=DepartmentContributor"),
         fetch("/api/frameworks"),
         fetch("/api/controls?limit=1000"),
         fetch("/api/control-domains"),
@@ -489,8 +510,8 @@ export default function EvidenceDetailPage() {
   // Helper: Check if current user is the assignee
   const isAssignee = evidence?.assigneeId === currentUserId;
 
-  // Helper: Can validate/reject (CustomerAdmin OR Assignee)
-  const canValidateReject = isCustomerAdmin || isAssignee;
+  // Helper: Can validate/reject (DepartmentReviewer only)
+  const canValidateReject = isDepartmentReviewer;
 
   // Helper: Get current cycle
   const currentCycle = evidence ? getCurrentCycle(evidence.recurrence) : null;
@@ -555,11 +576,102 @@ export default function EvidenceDetailPage() {
     }
   };
 
-  // Handler: Reject (CustomerAdmin or Assignee)
-  const handleReject = () => {
+  // Fetch cycle comments for a specific period
+  const fetchCycleComments = async (period: string) => {
+    if (!evidence?.id) return;
+    try {
+      const res = await fetch(`/api/evidences/${evidence.id}/cycle-comments?cyclePeriod=${encodeURIComponent(period)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCycleComments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching cycle comments:", error);
+    }
+  };
+
+  // Handler: Open Send Back dialog
+  const handleOpenSendBack = () => {
     if (!selectedMonth) return;
-    updateCycleStatus(selectedMonth, { status: "rejected" });
-    toast.info(`${selectedMonth} ${t("cycle rejected.")}`);
+    setCycleComment("");
+    fetchCycleComments(selectedMonth);
+    setSendBackDialogOpen(true);
+  };
+
+  // Handler: Send Back with comment
+  const handleSendBack = async () => {
+    if (!selectedMonth || !cycleComment.trim() || !evidence?.id) return;
+    setCycleCommentSubmitting(true);
+    try {
+      const res = await fetch(`/api/evidences/${evidence.id}/cycle-comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cyclePeriod: selectedMonth,
+          action: "sendback",
+          comment: cycleComment.trim(),
+        }),
+      });
+      if (res.ok) {
+        updateCycleStatus(selectedMonth, { status: "rejected" });
+        toast.info(`${selectedMonth} ${t("cycle sent back.")}`);
+        setSendBackDialogOpen(false);
+        setCycleComment("");
+      } else {
+        toast.error(t("Failed to send back."));
+      }
+    } catch (error) {
+      console.error("Error sending back:", error);
+      toast.error(t("Failed to send back."));
+    } finally {
+      setCycleCommentSubmitting(false);
+    }
+  };
+
+  // Handler: Open View Cycle Comments dialog (for validated state)
+  const handleOpenViewCycleComments = (period?: string) => {
+    const target = period || selectedMonth;
+    if (!target) return;
+    fetchCycleComments(target);
+    setViewCycleCommentsOpen(true);
+  };
+
+  // Handler: Open Resubmit dialog
+  const handleOpenResubmit = () => {
+    if (!selectedMonth) return;
+    setCycleComment("");
+    fetchCycleComments(selectedMonth);
+    setResubmitDialogOpen(true);
+  };
+
+  // Handler: Resubmit with comment
+  const handleResubmit = async () => {
+    if (!selectedMonth || !cycleComment.trim() || !evidence?.id) return;
+    setCycleCommentSubmitting(true);
+    try {
+      const res = await fetch(`/api/evidences/${evidence.id}/cycle-comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cyclePeriod: selectedMonth,
+          action: "resubmit",
+          comment: cycleComment.trim(),
+        }),
+      });
+      if (res.ok) {
+        updateCycleStatus(selectedMonth, { status: "submitted" });
+        toast.success(`${selectedMonth} ${t("cycle resubmitted.")}`);
+        setResubmitDialogOpen(false);
+        setCycleComment("");
+      } else {
+        toast.error(t("Failed to resubmit."));
+      }
+    } catch (error) {
+      console.error("Error resubmitting:", error);
+      toast.error(t("Failed to resubmit."));
+    } finally {
+      setCycleCommentSubmitting(false);
+    }
   };
 
   // Handler: Publish with validation
@@ -1384,13 +1496,6 @@ export default function EvidenceDetailPage() {
             <MessageSquare className="h-4 w-4 mr-2" />
             {t("Comments")} ({evidence.comments?.length || 0})
           </Button>
-          <Button
-            variant="destructive"
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            {t("Delete")}
-          </Button>
         </div>
       </div>
       <p className="text-gray-600">{evidence.evidenceCode}</p>
@@ -1436,8 +1541,8 @@ export default function EvidenceDetailPage() {
         </div>
       </div>
 
-      {/* Publish Button - visible after Draft state but with validation */}
-      {hasAnyAttachments && evidence.status !== "Published" && (
+      {/* Publish Button - visible only for CustomerAdministrator and Reviewer roles */}
+      {hasAnyAttachments && evidence.status !== "Published" && (isCustomerAdmin || isReviewer) && (
         <div className="flex justify-end">
           <Button onClick={handlePublishWithValidation} className="bg-green-600 hover:bg-green-700">
             <Check className="h-4 w-4 mr-2" />
@@ -1822,15 +1927,24 @@ export default function EvidenceDetailPage() {
                     </Button>
                     {/* Validated/Rejected Tags */}
                     {cycleStatus?.status === "validated" && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-green-500 text-green-700 bg-green-50 rounded">
-                        <CheckCircle className="h-3 w-3" />
-                        {t("Validated")}
-                      </span>
+                      <>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-green-500 text-green-700 bg-green-50 rounded">
+                          <CheckCircle className="h-3 w-3" />
+                          {t("Validated")}
+                        </span>
+                        <button
+                          onClick={() => handleOpenViewCycleComments(period)}
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          title={t("View Comments")}
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                        </button>
+                      </>
                     )}
                     {cycleStatus?.status === "rejected" && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-red-500 text-red-700 bg-red-50 rounded">
                         <XCircle className="h-3 w-3" />
-                        {t("Rejected")}
+                        {t("Sent Back")}
                       </span>
                     )}
                     {cycleStatus?.status === "submitted" && (
@@ -1853,8 +1967,8 @@ export default function EvidenceDetailPage() {
             {/* Approval Workflow Buttons */}
             {selectedMonth && (
               <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-                {/* Submit for Approval - DepartmentReviewer only */}
-                {isDepartmentReviewer && getSelectedCycleStatus().status === "none" && (
+                {/* Submit for Approval - DepartmentContributor only */}
+                {isDepartmentContributor && getSelectedCycleStatus().status === "none" && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -1880,11 +1994,11 @@ export default function EvidenceDetailPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={handleReject}
+                      onClick={handleOpenSendBack}
                       className="border-red-500 text-red-600 hover:bg-red-50"
                     >
                       <X className="h-4 w-4 mr-1" />
-                      {t("Reject")}
+                      {t("Send Back")}
                     </Button>
                   </>
                 )}
@@ -1896,15 +2010,26 @@ export default function EvidenceDetailPage() {
                     {t("This cycle has been validated")}
                   </span>
                 )}
-                {getSelectedCycleStatus().status === "rejected" && (
+                {getSelectedCycleStatus().status === "rejected" && isDepartmentContributor && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleOpenResubmit}
+                    className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                  >
+                    <Send className="h-4 w-4 mr-1" />
+                    {t("Resubmit")}
+                  </Button>
+                )}
+                {getSelectedCycleStatus().status === "rejected" && !isDepartmentContributor && (
                   <span className="text-sm text-red-600 font-medium flex items-center gap-1">
                     <XCircle className="h-4 w-4" />
-                    {t("This cycle has been rejected")}
+                    {t("This cycle has been sent back")}
                   </span>
                 )}
-                {getSelectedCycleStatus().status === "none" && !isDepartmentReviewer && (
+                {getSelectedCycleStatus().status === "none" && !isDepartmentContributor && (
                   <span className="text-sm text-gray-500">
-                    {t("Awaiting submission from Department Reviewer")}
+                    {t("Awaiting submission from Department Contributor")}
                   </span>
                 )}
               </div>
@@ -2619,6 +2744,192 @@ export default function EvidenceDetailPage() {
                     {t("Link Artifacts")}
                   </>
                 )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Back Dialog */}
+      <Dialog open={sendBackDialogOpen} onOpenChange={(open) => {
+        setSendBackDialogOpen(open);
+        if (!open) {
+          setCycleComment("");
+          setCycleComments([]);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Evidence Send Back")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-blue-600 font-semibold">{t("Comment")}</Label>
+              <Textarea
+                value={cycleComment}
+                onChange={(e) => setCycleComment(e.target.value)}
+                placeholder={t("Enter your comment...")}
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            {cycleComments.length > 0 && (
+              <div>
+                <Label className="text-blue-600 font-semibold">{t("Previous Comments")}</Label>
+                <div className="mt-1 max-h-[200px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-gray-50">
+                  {cycleComments.map((c) => {
+                    const date = new Date(c.createdAt);
+                    return (
+                      <div key={c.id} className="text-sm">
+                        <div className="flex justify-between items-start">
+                          <span>{c.comment}</span>
+                          <span className="text-gray-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
+                            {date.toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-gray-500">
+                          <span>~ {c.userName || t("Unknown")}</span>
+                          <span className="text-xs">{date.toLocaleTimeString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSendBackDialogOpen(false)}>
+                {t("Cancel")}
+              </Button>
+              <Button
+                onClick={handleSendBack}
+                disabled={!cycleComment.trim() || cycleCommentSubmitting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {cycleCommentSubmitting ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4 mr-1" />
+                )}
+                {t("Send Back")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resubmit Dialog */}
+      <Dialog open={resubmitDialogOpen} onOpenChange={(open) => {
+        setResubmitDialogOpen(open);
+        if (!open) {
+          setCycleComment("");
+          setCycleComments([]);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Comment")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-blue-600 font-semibold">{t("Comment")}</Label>
+              <Textarea
+                value={cycleComment}
+                onChange={(e) => setCycleComment(e.target.value)}
+                placeholder={t("Enter your comment...")}
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            {cycleComments.length > 0 && (
+              <div>
+                <Label className="text-blue-600 font-semibold">{t("Previous Comments")}</Label>
+                <div className="mt-1 max-h-[200px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-gray-50">
+                  {cycleComments.map((c) => {
+                    const date = new Date(c.createdAt);
+                    return (
+                      <div key={c.id} className="text-sm">
+                        <div className="flex justify-between items-start">
+                          <span>{c.comment}</span>
+                          <span className="text-gray-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
+                            {date.toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-gray-500">
+                          <span>~ {c.userName || t("Unknown")}</span>
+                          <span className="text-xs">{date.toLocaleTimeString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setResubmitDialogOpen(false)}>
+                {t("Cancel")}
+              </Button>
+              <Button
+                onClick={handleResubmit}
+                disabled={!cycleComment.trim() || cycleCommentSubmitting}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                {cycleCommentSubmitting ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-1" />
+                )}
+                {t("Resend")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Cycle Comments Dialog (for validated state) */}
+      <Dialog open={viewCycleCommentsOpen} onOpenChange={(open) => {
+        setViewCycleCommentsOpen(open);
+        if (!open) {
+          setCycleComments([]);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Comments")} - {selectedMonth}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {cycleComments.length > 0 ? (
+              <div className="max-h-[300px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-gray-50">
+                {cycleComments.map((c) => {
+                  const date = new Date(c.createdAt);
+                  return (
+                    <div key={c.id} className="text-sm">
+                      <div className="flex justify-between items-start">
+                        <span>{c.comment}</span>
+                        <span className="text-gray-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
+                          {date.toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-gray-500">
+                        <span>~ {c.userName || t("Unknown")}</span>
+                        <span className="text-xs">{date.toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 text-sm py-4">
+                {t("No comments yet")}
+              </p>
+            )}
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setViewCycleCommentsOpen(false)}>
+                {t("Close")}
               </Button>
             </div>
           </div>

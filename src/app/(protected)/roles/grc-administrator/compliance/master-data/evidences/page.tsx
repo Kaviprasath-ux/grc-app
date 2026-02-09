@@ -83,6 +83,7 @@ interface User {
   id: string;
   name: string;
   departmentId?: string;
+  userRoles?: { role: { name: string } }[];
 }
 
 interface Control {
@@ -194,7 +195,7 @@ export default function EvidencesMasterDataPage() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const response = await fetch("/api/users");
+      const response = await fetch("/api/users?role=DepartmentContributor");
       if (response.ok) {
         const data = await response.json();
         setUsers(Array.isArray(data) ? data : data.data || []);
@@ -250,8 +251,11 @@ export default function EvidencesMasterDataPage() {
   }, [fetchEvidences, fetchDepartments, fetchUsers, fetchControls, fetchControlDomains, fetchFrameworks]);
 
   // Filter users by selected department
+  // Filter users by selected department and DepartmentContributor role only
   const filteredUsers = users.filter(
-    (user) => !newFormData.departmentId || user.departmentId === newFormData.departmentId
+    (user) =>
+      (!newFormData.departmentId || user.departmentId === newFormData.departmentId) &&
+      user.userRoles?.some((ur) => ur.role.name === "DepartmentContributor")
   );
 
   // Filter controls based on search and filters

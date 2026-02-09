@@ -63,7 +63,7 @@ interface Template {
   fileType: string | null;
   fileSize: number | null;
   filePath: string;
-  uploadedBy: string | null;
+  uploadedBy: { id: string; fullName: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -94,6 +94,7 @@ export default function GovernanceTemplatesPage() {
     file: null as File | null,
   });
   const [dragOver, setDragOver] = useState(false);
+  const [fileError, setFileError] = useState("");
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -115,6 +116,12 @@ export default function GovernanceTemplatesPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
+    if (file && !file.name.toLowerCase().endsWith(".docx")) {
+      setFileError(t("Only .docx files are supported for governance templates"));
+      e.target.value = "";
+      return;
+    }
+    setFileError("");
     setFormData({ ...formData, file });
   };
 
@@ -137,23 +144,18 @@ export default function GovernanceTemplatesPage() {
     const files = e.dataTransfer.files;
     if (files && files[0]) {
       const file = files[0];
-      const validTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.ms-excel",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      ];
-      const validExtensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx"];
-      const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
-      if (validTypes.includes(file.type) || validExtensions.includes(fileExtension)) {
-        setFormData({ ...formData, file });
+      if (!file.name.toLowerCase().endsWith(".docx")) {
+        setFileError(t("Only .docx files are supported for governance templates"));
+        return;
       }
+      setFileError("");
+      setFormData({ ...formData, file });
     }
   };
 
   const handleRemoveFile = () => {
     setFormData({ ...formData, file: null });
+    setFileError("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -398,7 +400,9 @@ export default function GovernanceTemplatesPage() {
                       className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
                         dragOver
                           ? "border-primary bg-primary/5"
-                          : "border-slate-300 hover:border-slate-400"
+                          : fileError
+                            ? "border-red-400 bg-red-50"
+                            : "border-slate-300 hover:border-slate-400"
                       }`}
                       onDragOver={handleFileDragOver}
                       onDragLeave={handleFileDragLeave}
@@ -416,14 +420,14 @@ export default function GovernanceTemplatesPage() {
                               <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                accept=".docx"
                                 className="hidden"
                                 onChange={handleFileChange}
                               />
                             </label>
                           </p>
                           <p className="text-xs text-slate-400 mt-1">
-                            {t("Supported formats: PDF, DOC, DOCX, XLS, XLSX. Max Size: 10MB")}
+                            {t("Supported format: DOCX only. Max Size: 25MB")}
                           </p>
                         </div>
                       ) : (
@@ -448,6 +452,9 @@ export default function GovernanceTemplatesPage() {
                         </div>
                       )}
                     </div>
+                    {fileError && (
+                      <p className="text-sm text-red-500 mt-1">{fileError}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -516,7 +523,7 @@ export default function GovernanceTemplatesPage() {
                     </span>
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
-                    {template.uploadedBy || t("System")}
+                    {template.uploadedBy?.fullName || t("System")}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
                     {formatDate(template.createdAt)}
@@ -643,7 +650,9 @@ export default function GovernanceTemplatesPage() {
                   className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
                     dragOver
                       ? "border-primary bg-primary/5"
-                      : "border-slate-300 hover:border-slate-400"
+                      : fileError
+                        ? "border-red-400 bg-red-50"
+                        : "border-slate-300 hover:border-slate-400"
                   }`}
                   onDragOver={handleFileDragOver}
                   onDragLeave={handleFileDragLeave}
@@ -661,14 +670,14 @@ export default function GovernanceTemplatesPage() {
                           <input
                             ref={editFileInputRef}
                             type="file"
-                            accept=".pdf,.doc,.docx,.xls,.xlsx"
+                            accept=".docx"
                             className="hidden"
                             onChange={handleFileChange}
                           />
                         </label>
                       </p>
                       <p className="text-xs text-slate-400 mt-1">
-                        {t("Supported formats: PDF, DOC, DOCX, XLS, XLSX. Max Size: 10MB")}
+                        {t("Supported format: DOCX only. Max Size: 25MB")}
                       </p>
                     </div>
                   ) : (
@@ -693,6 +702,9 @@ export default function GovernanceTemplatesPage() {
                     </div>
                   )}
                 </div>
+                {fileError && (
+                  <p className="text-sm text-red-500 mt-1">{fileError}</p>
+                )}
               </div>
               {selectedTemplate && !formData.file && (
                 <div className="p-3 bg-slate-50 rounded-lg">

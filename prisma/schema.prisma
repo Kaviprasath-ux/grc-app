@@ -67,6 +67,8 @@ model CustomerAccount {
   ciaRatings             CIARating[]
   assetSensitivities     AssetSensitivity[]
   assetCIAClassifications AssetCIAClassification[]
+  assetScoringConfigs    AssetScoringConfig[]
+  assetScoringRanges     AssetScoringRange[]
   assetLifecycleStatuses AssetLifecycleStatus[]
   assetClassifications   AssetClassification[]
   riskCategories         RiskCategory[]
@@ -1015,9 +1017,25 @@ model Evidence {
   evidenceAIReviews     EvidenceAIReview[]
   evidenceAIIngestJobs  EvidenceAIIngestJob[]
   evidenceAIIngestResults EvidenceAIIngestResult[]
+  cycleComments          EvidenceCycleComment[]
 
   @@unique([customerAccountId, evidenceCode])
   @@index([customerAccountId])
+}
+
+// Evidence Cycle Comments for Send Back / Resubmit workflow
+model EvidenceCycleComment {
+  id          String   @id @default(cuid())
+  evidenceId  String
+  evidence    Evidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  cyclePeriod String   // e.g. "Jan-Dec", "Q1", "Jan"
+  action      String   // "sendback" or "resubmit"
+  comment     String
+  userId      String?
+  userName    String?
+  createdAt   DateTime @default(now())
+
+  @@index([evidenceId, cyclePeriod])
 }
 
 // Evidence-Control Many-to-Many Junction Table
@@ -1149,7 +1167,7 @@ model KPI {
   departmentId       String?
   department         Department?     @relation(fields: [departmentId], references: [id])
   evidenceId         String?
-  evidence           Evidence?       @relation(fields: [evidenceId], references: [id])
+  evidence           Evidence?       @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   // KPI Review History
@@ -1400,8 +1418,42 @@ model AssetCIAClassification {
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
-  @@unique([customerAccountId, subCategoryId, groupId])
   @@index([customerAccountId])
+}
+
+// Asset Scoring Configuration (stores the calculation type setting)
+model AssetScoringConfig {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  calculationType   String           @default("high_of_all") // high_of_all, addition_of_all, product_of_all
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId])
+  @@index([customerAccountId])
+}
+
+// Asset Scoring Range (defines criticality levels based on scores for each calculation type)
+model AssetScoringRange {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  calculationType   String           // high_of_all, addition_of_all, product_of_all
+  level             String           // Critical, High, Medium, Low
+  minScore          Int              @default(0)
+  maxScore          Int              @default(0)
+  color             String?          @default("#000000")
+  sortOrder         Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, calculationType, level])
+  @@index([customerAccountId])
+  @@index([calculationType])
 }
 
 // Asset Lifecycle Status
