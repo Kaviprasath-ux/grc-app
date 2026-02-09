@@ -859,15 +859,6 @@ export default function ProcessPage() {
 
   // Handle Add Process
   const handleAddProcess = async () => {
-    if (!processForm.name) {
-      toast({
-        title: t("Error"),
-        description: t("Please fill in required fields (Name)"),
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSaving(true);
     try {
       const { responsible, accountable, consulted, informed, frequency, location, kpiRecurrence, kpiReviewDate, assetId, ...rest } = processForm;
@@ -2143,7 +2134,7 @@ export default function ProcessPage() {
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Basic Information")}</h4>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-error">*</span></Label>
+                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">{t("Process Name")}</Label>
                   <Input
                     id="name"
                     value={processForm.name}
@@ -2514,7 +2505,7 @@ export default function ProcessPage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="editName" className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-error">*</span></Label>
+                  <Label htmlFor="editName" className="text-sm font-medium text-slate-700">{t("Process Name")}</Label>
                   <Input
                     id="editName"
                     value={editingProcess.name}

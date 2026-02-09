@@ -64,13 +64,6 @@ export async function POST(request: NextRequest) {
       informedId,
     } = body;
 
-    if (!name) {
-      return NextResponse.json(
-        { error: "Process name is required" },
-        { status: 400 }
-      );
-    }
-
     if (!customerAccountId) {
       return NextResponse.json(
         { error: "User must belong to a customer account" },
@@ -81,14 +74,15 @@ export async function POST(request: NextRequest) {
     // Generate process code if not provided (tenant-scoped)
     let finalProcessCode = processCode;
     if (!finalProcessCode) {
-      const lastProcess = await prisma.process.findFirst({
+      const allProcesses = await prisma.process.findMany({
         where: { customerAccountId },
-        orderBy: { processCode: "desc" },
+        select: { processCode: true },
       });
-      const lastNum = lastProcess
-        ? parseInt(lastProcess.processCode.replace("PRO", "")) || 0
-        : 0;
-      finalProcessCode = `PRO${lastNum + 1}`;
+      const maxNum = allProcesses.reduce((max, p) => {
+        const num = parseInt(p.processCode.replace("PRO", "")) || 0;
+        return num > max ? num : max;
+      }, 0);
+      finalProcessCode = `PRO${maxNum + 1}`;
     }
 
     // Check if process code already exists within the same tenant
