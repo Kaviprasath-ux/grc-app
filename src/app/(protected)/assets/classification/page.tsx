@@ -45,6 +45,7 @@ interface AssetSubCategory {
 interface AssetGroup {
   id: string;
   name: string;
+  description?: string;
 }
 
 interface AssetSensitivity {
@@ -1286,7 +1287,7 @@ export default function AssetClassificationPage() {
               const removeRisk = (index: number) => {
                 setDisplayedRisks((prev) => {
                   const list = prev ?? aiRiskResults?.results?.risks ?? aiRiskResults?.risks ?? [];
-                  return list.filter((_, i) => i !== index);
+                  return list.filter((_: unknown, i: number) => i !== index);
                 });
               };
 

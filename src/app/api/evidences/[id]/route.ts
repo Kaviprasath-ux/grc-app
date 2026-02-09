@@ -168,8 +168,7 @@ export async function DELETE(
     // Fetch evidence with attachments
     const existing = await prisma.evidence.findUnique({
       where: { id },
-      select: { evidenceCode: true },
-      include: { attachments: true },
+      select: { evidenceCode: true, attachments: true },
     });
 
     if (!existing) {

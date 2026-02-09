@@ -111,20 +111,20 @@ async function backfillDocumentTracking() {
         updates.artifactDocumentId =
           rawResponse.documentTracking?.sentArtifactDocId ||
           rawResponse.artifactId ||
-          null;
+          undefined;
       }
 
       if (!review.ingestJobId) {
         updates.ingestJobId =
           rawResponse.documentTracking?.ingestJobId ||
           review.documentId ||
-          null;
+          undefined;
       }
 
       if (!review.runpodDocumentRef) {
         updates.runpodDocumentRef =
           rawResponse.documentTracking?.returnedDocId ||
-          null;
+          undefined;
       }
 
       // Migrate sources from suggestions to dedicated sources field

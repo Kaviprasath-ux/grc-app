@@ -52,7 +52,7 @@ export const POST = withAuth(
         where: {
           name: name.trim(),
           customerAccountId,
-        } as Record<string, unknown>,
+        },
       });
 
       if (existing) {
@@ -69,7 +69,7 @@ export const POST = withAuth(
           status: status || "Active",
           subCategoryId: subCategoryId || null,
           customerAccountId,
-        } as Record<string, unknown>,
+        },
         include: {
           subCategory: true,
           _count: {

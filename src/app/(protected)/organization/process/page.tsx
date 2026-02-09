@@ -74,6 +74,7 @@ interface Process {
   frequency?: string;
   natureOfImplementation?: string;
   assetDependency?: boolean;
+  assetId?: string | null;
   externalDependency?: boolean;
   location?: string | string[];
   kpiMeasurementRequired?: boolean;
@@ -90,6 +91,8 @@ interface Process {
   informed?: string;
   biaCompleted?: boolean;
   processCriticality?: string;
+  recurrence?: string;
+  reviewDate?: string;
   biaData?: BIAData;
 }
 
@@ -204,7 +207,7 @@ export default function ProcessPage() {
       console.log("[Process] Semantic matching completed:", result);
       console.log("[Process] Stats:", JSON.stringify(result.stats, null, 2));
       console.log("[Process] Processed risks:", JSON.stringify(result.risks, null, 2));
-      setSemanticMatchStats(result.stats);
+      setSemanticMatchStats(result.stats ?? null);
       // Refresh data after semantic matching completes
       fetchData();
       // Show toast notification with results
@@ -2595,7 +2598,7 @@ export default function ProcessPage() {
                       <Input
                         type="date"
                         value={editingProcess.reviewDate ? new Date(editingProcess.reviewDate).toISOString().split('T')[0] : ""}
-                        onChange={(e) => setEditingProcess({ ...editingProcess, reviewDate: e.target.value ? new Date(e.target.value) : null })}
+                        onChange={(e) => setEditingProcess({ ...editingProcess, reviewDate: e.target.value || undefined })}
                         className="mt-1.5 bg-white"
                       />
                     </div>
