@@ -290,86 +290,16 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header with Back button and Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm">
-          <Link href="/internal-audit/report" className="flex items-center gap-1 text-gray-600 hover:text-[#1e3a5f]">
-            <ArrowLeft className="h-4 w-4" />
-            {t("Back")}
-          </Link>
-          <span className="text-gray-400">|</span>
-          <span className="text-gray-600">{t("Report")}</span>
-          <span className="text-gray-400">|</span>
-          <span className="text-[#1e3a5f] font-semibold">{t("Audit Report")}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
-            onClick={handleDownloadReport}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {t("Download Report")}
-          </Button>
-          {(isAuditHead || isAuditManager) && (
-            <>
-              {!isEditing ? (
-                <Button
-                  className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  {t("Edit")}
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditing(false);
-                      // Static template defaults
-                      const defaultExecutiveSummary = `This report presents the results of the internal audit conducted for ${report.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`;
-                      const defaultOverallResultText = "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.";
-                      const defaultBackground = "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter.";
-                      const defaultObjective = "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements.";
-                      const defaultScope = "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report.";
-                      const defaultRecommendations = "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency.";
-                      const targetDate = new Date(report.engagement.actualEndDate || report.engagement.plannedEndDate || new Date()).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                      const processName = report.title;
-                      const defaultConclusion = `Based on the audit procedures performed and the evidence obtained, Internal Audit concludes that the system of internal control over ${processName} as of the audit period.\n\nThe control environment supports the integrity, accuracy, and reliability of the organization's financial data within the audited areas.\n\nAccordingly, this audit engagement is formally closed as of ${targetDate}.`;
-
-                      setEditForm({
-                        executiveSummary: report.executiveSummary || defaultExecutiveSummary,
-                        overallResultText: report.observations || defaultOverallResultText,
-                        background: report.methodology || defaultBackground,
-                        objective: report.objectives || report.engagement.engagementObjective || defaultObjective,
-                        scope: report.scope || report.engagement.engagementScope || defaultScope,
-                        recommendations: report.recommendations || defaultRecommendations,
-                        conclusion: report.conclusion || defaultConclusion,
-                        auditeeId: report.auditeeId || "",
-                      });
-                    }}
-                  >
-                    {t("Cancel")}
-                  </Button>
-                  <Button
-                    className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {t("Saving...")}
-                      </>
-                    ) : (
-                      t("Save")
-                    )}
-                  </Button>
-                </>
-              )}
-            </>
-          )}
-        </div>
+      {/* Header with Back button */}
+      <div className="flex items-center gap-2 text-sm">
+        <Link href="/internal-audit/report" className="flex items-center gap-1 text-slate-600 hover:text-primary-600">
+          <ArrowLeft className="h-4 w-4" />
+          {t("Back")}
+        </Link>
+        <span className="text-slate-400">|</span>
+        <span className="text-slate-600">{t("Report")}</span>
+        <span className="text-slate-400">|</span>
+        <span className="text-primary-600 font-semibold">{t("Audit Report")}</span>
       </div>
 
       {/* Report Content */}
@@ -680,13 +610,13 @@ export default function AuditReportViewPage({ params }: PageProps) {
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+                  className="bg-primary-600 hover:bg-primary-700"
                   onClick={handleSaveAuditeeComment}
                   disabled={savingAuditeeComment}
                 >
                   {savingAuditeeComment ? (
                     <>
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      <Loader2 className="h-3 w-3 ltr:mr-1 rtl:ml-1 animate-spin" />
                       {t("Saving...")}
                     </>
                   ) : (
@@ -711,6 +641,76 @@ export default function AuditReportViewPage({ params }: PageProps) {
             </p>
           )}
         </div>
+      </div>
+
+      {/* Footer with Action Buttons */}
+      <div className="flex justify-end items-center gap-3 pt-4 border-t border-slate-200">
+        <Button
+          className="bg-primary-600 hover:bg-primary-700"
+          onClick={handleDownloadReport}
+        >
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Download Report")}
+        </Button>
+        {(isAuditHead || isAuditManager) && (
+          <>
+            {!isEditing ? (
+              <Button
+                className="bg-primary-600 hover:bg-primary-700"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Edit")}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(false);
+                    // Static template defaults
+                    const defaultExecutiveSummary = `This report presents the results of the internal audit conducted for ${report.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`;
+                    const defaultOverallResultText = "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.";
+                    const defaultBackground = "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter.";
+                    const defaultObjective = "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements.";
+                    const defaultScope = "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report.";
+                    const defaultRecommendations = "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency.";
+                    const targetDate = new Date(report.engagement.actualEndDate || report.engagement.plannedEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const processName = report.engagement.process?.name || report.title;
+                    const defaultConclusion = `Based on the audit procedures performed and the evidence obtained, Internal Audit concludes that the system of internal control over ${processName} as of the audit period.\n\nThe control environment supports the integrity, accuracy, and reliability of the organization's financial data within the audited areas.\n\nAccordingly, this audit engagement is formally closed as of ${targetDate}.`;
+
+                    setEditForm({
+                      executiveSummary: report.executiveSummary || defaultExecutiveSummary,
+                      overallResultText: report.observations || defaultOverallResultText,
+                      background: report.methodology || defaultBackground,
+                      objective: report.objectives || report.engagement.engagementObjective || defaultObjective,
+                      scope: report.scope || report.engagement.engagementScope || defaultScope,
+                      recommendations: report.recommendations || defaultRecommendations,
+                      conclusion: report.conclusion || defaultConclusion,
+                      auditeeId: report.auditeeId || "",
+                    });
+                  }}
+                >
+                  {t("Cancel")}
+                </Button>
+                <Button
+                  className="bg-primary-600 hover:bg-primary-700"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                      {t("Saving...")}
+                    </>
+                  ) : (
+                    t("Save")
+                  )}
+                </Button>
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

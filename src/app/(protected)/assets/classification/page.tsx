@@ -85,6 +85,7 @@ export default function AssetClassificationPage() {
   const [classifications, setCIAClassifications] = useState<CIAClassification[]>([]);
   const [subCategories, setSubCategories] = useState<AssetSubCategory[]>([]);
   const [groups, setGroups] = useState<AssetGroup[]>([]);
+  const [filteredGroups, setFilteredGroups] = useState<AssetGroup[]>([]);
   const [sensitivities, setSensitivities] = useState<AssetSensitivity[]>([]);
   const [ciaRatings, setCIARatings] = useState<CIARating[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,7 +229,7 @@ export default function AssetClassificationPage() {
     }
   };
 
-  const openEditDialog = (classification: CIAClassification) => {
+  const openEditDialog = async (classification: CIAClassification) => {
     setSelectedClassification(classification);
     setFormData({
       subCategoryId: classification.subCategoryId,
@@ -241,6 +242,20 @@ export default function AssetClassificationPage() {
       availability: classification.availability,
       availabilityScore: classification.availabilityScore,
     });
+
+    // Fetch filtered groups for the existing subCategoryId
+    if (classification.subCategoryId) {
+      try {
+        const res = await fetch(`/api/asset-groups?subCategoryId=${classification.subCategoryId}`);
+        if (res.ok) {
+          const groups = await res.json();
+          setFilteredGroups(groups);
+        }
+      } catch (error) {
+        console.error("Error fetching filtered groups:", error);
+      }
+    }
+
     setIsEditOpen(true);
   };
 
@@ -261,6 +276,7 @@ export default function AssetClassificationPage() {
       availability: "low",
       availabilityScore: 0,
     });
+    setFilteredGroups([]);
   };
 
   const updateCIAValue = (field: "confidentiality" | "integrity" | "availability", value: string) => {
@@ -276,6 +292,30 @@ export default function AssetClassificationPage() {
         [field]: value,
         [`${field}Score`]: rating.value,
       });
+    }
+  };
+
+  // Handle sub-category change - fetch filtered groups
+  const handleSubCategoryChange = async (subCategoryId: string) => {
+    // Reset groupId when sub-category changes
+    setFormData(prev => ({ ...prev, subCategoryId, groupId: "" }));
+
+    if (!subCategoryId) {
+      setFilteredGroups([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/asset-groups?subCategoryId=${subCategoryId}`);
+      if (res.ok) {
+        const groups = await res.json();
+        setFilteredGroups(groups);
+      } else {
+        setFilteredGroups([]);
+      }
+    } catch (error) {
+      console.error("Error fetching filtered groups:", error);
+      setFilteredGroups([]);
     }
   };
 
@@ -789,7 +829,7 @@ export default function AssetClassificationPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.subCategoryId}
-                    onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
+                    onValueChange={handleSubCategoryChange}
                   >
                     <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder={t("Select Sub Category")} />
@@ -808,12 +848,13 @@ export default function AssetClassificationPage() {
                   <Select
                     value={formData.groupId}
                     onValueChange={(value) => setFormData({ ...formData, groupId: value })}
+                    disabled={!formData.subCategoryId}
                   >
                     <SelectTrigger className="mt-1.5 w-full">
-                      <SelectValue placeholder={t("Select Group")} />
+                      <SelectValue placeholder={formData.subCategoryId ? t("Select Group") : t("Select Sub Category first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {groups.map((g) => (
+                      {filteredGroups.map((g) => (
                         <SelectItem key={g.id} value={g.id}>
                           {g.name}
                         </SelectItem>
@@ -981,7 +1022,7 @@ export default function AssetClassificationPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.subCategoryId}
-                    onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
+                    onValueChange={handleSubCategoryChange}
                   >
                     <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder={t("Select Sub Category")} />
@@ -1000,12 +1041,13 @@ export default function AssetClassificationPage() {
                   <Select
                     value={formData.groupId}
                     onValueChange={(value) => setFormData({ ...formData, groupId: value })}
+                    disabled={!formData.subCategoryId}
                   >
                     <SelectTrigger className="mt-1.5 w-full">
-                      <SelectValue placeholder={t("Select Group")} />
+                      <SelectValue placeholder={formData.subCategoryId ? t("Select Group") : t("Select Sub Category first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {groups.map((g) => (
+                      {filteredGroups.map((g) => (
                         <SelectItem key={g.id} value={g.id}>
                           {g.name}
                         </SelectItem>
