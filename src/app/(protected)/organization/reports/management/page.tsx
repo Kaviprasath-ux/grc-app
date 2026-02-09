@@ -289,7 +289,7 @@ function ManagementReportContent() {
                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value: number) => [value, t("Processes")]} />
+                        <Tooltip formatter={(value) => [value, t("Processes")]} />
                       </PieChart>
                     </ResponsiveContainer>
                     <ChartLegend data={processByDepartmentData} colors={PIE_COLORS} />
@@ -327,7 +327,7 @@ function ManagementReportContent() {
                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value: number) => [value, t("Processes")]} />
+                        <Tooltip formatter={(value) => [value, t("Processes")]} />
                       </PieChart>
                     </ResponsiveContainer>
                     <ChartLegend data={processByCriticalityData} colors={PIE_COLORS} />
@@ -365,7 +365,7 @@ function ManagementReportContent() {
                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value: number) => [value, t("KPIs")]} />
+                        <Tooltip formatter={(value) => [value, t("KPIs")]} />
                       </PieChart>
                     </ResponsiveContainer>
                     <ChartLegend data={kpiByMeasurementData} colors={PIE_COLORS} />
@@ -403,7 +403,7 @@ function ManagementReportContent() {
                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value: number) => [value, t("Risk Score")]} />
+                        <Tooltip formatter={(value) => [value, t("Risk Score")]} />
                       </PieChart>
                     </ResponsiveContainer>
                     <ChartLegend data={processByRiskData} colors={PIE_COLORS} />
