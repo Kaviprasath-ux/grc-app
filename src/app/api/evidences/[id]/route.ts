@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { aiDeleteService } from "@/services/ai-delete-service";
 import { unlink } from "fs/promises";
 import path from "path";
+import { withAuth } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 // GET single evidence with all related data
 export async function GET(
@@ -60,102 +62,114 @@ export async function GET(
 }
 
 // PUT update evidence
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const {
-      name,
-      description,
-      domain,
-      frameworkId,
-      controlId,
-      departmentId,
-      assigneeId,
-      dueDate,
-      status,
-      recurrence,
-      reviewDate,
-      publishedAt,
-      kpiRequired,
-      kpiObjective,
-      kpiDataSource,
-      kpiExpectedScore,
-      kpiDescription,
-      kpiCalculationFormula,
-    } = body;
+export const PUT = withAuth(
+  async (req, context, session) => {
+    try {
+      const { id } = await context.params as { id: string };
+      const body = await req.json();
+      const {
+        name,
+        description,
+        domain,
+        frameworkId,
+        controlId,
+        departmentId,
+        assigneeId,
+        dueDate,
+        status,
+        recurrence,
+        reviewDate,
+        publishedAt,
+        kpiRequired,
+        kpiObjective,
+        kpiDataSource,
+        kpiExpectedScore,
+        kpiDescription,
+        kpiCalculationFormula,
+      } = body;
 
-    // Build update data, only including defined fields
-    const updateData: Record<string, unknown> = {};
-    if (name !== undefined) updateData.name = name;
-    if (description !== undefined) updateData.description = description;
-    if (domain !== undefined) updateData.domain = domain;
-    if (frameworkId !== undefined) updateData.frameworkId = frameworkId;
-    if (controlId !== undefined) updateData.controlId = controlId;
-    if (departmentId !== undefined) updateData.departmentId = departmentId;
-    if (assigneeId !== undefined) updateData.assigneeId = assigneeId;
-    if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
-    if (status !== undefined) updateData.status = status;
-    if (recurrence !== undefined) updateData.recurrence = recurrence;
-    if (reviewDate !== undefined) updateData.reviewDate = reviewDate ? new Date(reviewDate) : null;
-    if (publishedAt !== undefined) updateData.publishedAt = publishedAt ? new Date(publishedAt) : null;
-    if (kpiRequired !== undefined) updateData.kpiRequired = kpiRequired;
-    if (kpiObjective !== undefined) updateData.kpiObjective = kpiObjective;
-    if (kpiDataSource !== undefined) updateData.kpiDataSource = kpiDataSource;
-    if (kpiExpectedScore !== undefined) updateData.kpiExpectedScore = kpiExpectedScore;
-    if (kpiDescription !== undefined) updateData.kpiDescription = kpiDescription;
-    if (kpiCalculationFormula !== undefined) updateData.kpiCalculationFormula = kpiCalculationFormula;
+      // Build update data, only including defined fields
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (domain !== undefined) updateData.domain = domain;
+      if (frameworkId !== undefined) updateData.frameworkId = frameworkId;
+      if (controlId !== undefined) updateData.controlId = controlId;
+      if (departmentId !== undefined) updateData.departmentId = departmentId;
+      if (assigneeId !== undefined) updateData.assigneeId = assigneeId;
+      if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+      if (status !== undefined) updateData.status = status;
+      if (recurrence !== undefined) updateData.recurrence = recurrence;
+      if (reviewDate !== undefined) updateData.reviewDate = reviewDate ? new Date(reviewDate) : null;
+      if (publishedAt !== undefined) updateData.publishedAt = publishedAt ? new Date(publishedAt) : null;
+      if (kpiRequired !== undefined) updateData.kpiRequired = kpiRequired;
+      if (kpiObjective !== undefined) updateData.kpiObjective = kpiObjective;
+      if (kpiDataSource !== undefined) updateData.kpiDataSource = kpiDataSource;
+      if (kpiExpectedScore !== undefined) updateData.kpiExpectedScore = kpiExpectedScore;
+      if (kpiDescription !== undefined) updateData.kpiDescription = kpiDescription;
+      if (kpiCalculationFormula !== undefined) updateData.kpiCalculationFormula = kpiCalculationFormula;
 
-    const evidence = await prisma.evidence.update({
-      where: { id },
-      data: updateData,
-      include: {
-        framework: true,
-        control: {
-          include: {
-            domain: true,
+      const updatedEvidence = await prisma.evidence.update({
+        where: { id },
+        data: updateData,
+        include: {
+          framework: true,
+          control: {
+            include: {
+              domain: true,
+            },
           },
-        },
-        department: true,
-        assignee: true,
-        attachments: true,
-        kpis: true,
-        evidenceControls: {
-          include: {
-            control: {
-              include: {
-                domain: true,
-                framework: true,
+          department: true,
+          assignee: true,
+          attachments: true,
+          kpis: true,
+          evidenceControls: {
+            include: {
+              control: {
+                include: {
+                  domain: true,
+                  framework: true,
+                },
               },
             },
           },
-        },
-        linkedArtifacts: {
-          include: {
-            artifact: true,
+          linkedArtifacts: {
+            include: {
+              artifact: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return NextResponse.json(evidence);
-  } catch (error: unknown) {
-    console.error("Error updating evidence:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      // Notify new assignee if assignee changed and is different from current user
+      if (assigneeId && assigneeId !== session?.id && session?.customerAccountId) {
+        await notificationService.notifyEvidenceAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          assigneeId: assigneeId,
+          evidenceId: updatedEvidence.id,
+          evidenceName: updatedEvidence.name,
+          controlCode: updatedEvidence.control?.controlCode ?? undefined,
+        });
+      }
+
+      return NextResponse.json(updatedEvidence);
+    } catch (error: unknown) {
+      console.error("Error updating evidence:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: "Evidence not found" },
-        { status: 404 }
+        { error: "Failed to update evidence" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to update evidence" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.evidence", action: "edit" }
+);
 
 // DELETE evidence
 export async function DELETE(

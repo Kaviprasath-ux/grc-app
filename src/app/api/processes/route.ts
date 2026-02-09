@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { notificationService } from "@/lib/notification-service";
 
 // GET all processes - filtered by tenant
 export async function GET() {
@@ -136,6 +137,30 @@ export async function POST(request: NextRequest) {
         owner: true,
       },
     });
+
+    // Helper to send process assignment notification
+    const notifyProcessAssignment = async (userId: string, role: string) => {
+      if (userId && userId !== session?.user?.id && customerAccountId) {
+        await notificationService.send({
+          customerAccountId: customerAccountId,
+          actorId: session?.user?.id || '',
+          recipientId: userId,
+          event: 'PROCESS_ASSIGNED',
+          title: `Process ${role} assignment`,
+          message: `You have been assigned as ${role} for process "${process.name}"`,
+          relatedEntityType: 'process',
+          relatedEntityId: process.id,
+          link: `/organization/process/${process.id}`,
+        });
+      }
+    };
+
+    // Notify all assigned users
+    if (ownerId) await notifyProcessAssignment(ownerId, 'Owner');
+    if (responsibleId) await notifyProcessAssignment(responsibleId, 'Responsible');
+    if (accountableId) await notifyProcessAssignment(accountableId, 'Accountable');
+    if (consultedId) await notifyProcessAssignment(consultedId, 'Consulted');
+    if (informedId) await notifyProcessAssignment(informedId, 'Informed');
 
     return NextResponse.json(process, { status: 201 });
   } catch (error: any) {

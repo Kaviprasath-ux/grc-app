@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter } from '@/lib/api-auth';
+import { notificationService } from '@/lib/notification-service';
 
 // GET /api/internal-audit/engagements/[id] - Get a single engagement
 // Uses audit.fieldwork:view to allow auditees to view engagement details
@@ -115,6 +116,31 @@ export const PUT = withAuth(
           }
         }
       });
+
+      // Notify assigned auditor
+      if (auditorId && auditorId !== session.id && session.customerAccountId) {
+        await notificationService.notifyEngagementAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          assigneeId: auditorId,
+          engagementId: engagement.id,
+          engagementCode: engagement.auditId,
+          engagementName: engagement.engagementTitle || engagement.auditId,
+          role: 'Auditor',
+        });
+      }
+      // Notify auditee
+      if (auditeeId && auditeeId !== session.id && session.customerAccountId) {
+        await notificationService.notifyEngagementAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          assigneeId: auditeeId,
+          engagementId: engagement.id,
+          engagementCode: engagement.auditId,
+          engagementName: engagement.engagementTitle || engagement.auditId,
+          role: 'Auditee',
+        });
+      }
 
       return NextResponse.json(engagement);
     } catch (error) {

@@ -1,61 +1,129 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
 
 // GET all comments for an exception
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
+export const GET = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
 
-    const comments = await prisma.exceptionComment.findMany({
-      where: { exceptionId: id },
-      orderBy: { createdAt: "desc" },
-    });
+      // Check if exception belongs to user's tenant
+      const exception = await prisma.exception.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
 
-    return NextResponse.json(comments);
-  } catch (error) {
-    console.error("Error fetching exception comments:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch exception comments" },
-      { status: 500 }
-    );
-  }
-}
+      if (!exception) {
+        return NextResponse.json(
+          { error: "Exception not found" },
+          { status: 404 }
+        );
+      }
 
-// POST create new comment
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { content, userId, userName } = body;
+      if (!validateTenantAccess(session, exception.customerAccountId)) {
+        return forbidden("Access denied to this exception");
+      }
 
-    if (!content) {
+      const comments = await prisma.exceptionComment.findMany({
+        where: { exceptionId: id },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return NextResponse.json(comments);
+    } catch (error) {
+      console.error("Error fetching exception comments:", error);
       return NextResponse.json(
-        { error: "Comment content is required" },
-        { status: 400 }
+        { error: "Failed to fetch exception comments" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "compliance.exceptions", action: "view" }
+);
 
-    const comment = await prisma.exceptionComment.create({
-      data: {
-        exceptionId: id,
-        content,
-        userId,
-        userName,
-      },
-    });
+// POST create new comment
+export const POST = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
+      const { content } = body;
 
-    return NextResponse.json(comment, { status: 201 });
-  } catch (error) {
-    console.error("Error creating exception comment:", error);
-    return NextResponse.json(
-      { error: "Failed to create exception comment" },
-      { status: 500 }
-    );
-  }
-}
+      if (!content) {
+        return NextResponse.json(
+          { error: "Comment content is required" },
+          { status: 400 }
+        );
+      }
+
+      // Fetch exception to get requester and approver for notifications
+      const exception = await prisma.exception.findUnique({
+        where: { id },
+        select: { id: true, name: true, requesterId: true, approverId: true, customerAccountId: true },
+      });
+
+      if (!exception) {
+        return NextResponse.json(
+          { error: "Exception not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, exception.customerAccountId)) {
+        return forbidden("Access denied to this exception");
+      }
+
+      const comment = await prisma.exceptionComment.create({
+        data: {
+          exceptionId: id,
+          content,
+          userId: session.id,
+          userName: session.name,
+        },
+      });
+
+      // Notify the requester about the comment (if different from commenter)
+      if (exception.requesterId && exception.requesterId !== session.id && exception.customerAccountId) {
+        await notificationService.notifyCommentAdded({
+          customerAccountId: exception.customerAccountId,
+          actorId: session.id,
+          recipientId: exception.requesterId,
+          entityType: "Exception",
+          entityId: exception.id,
+          entityName: exception.name,
+          commentPreview: content.substring(0, 100),
+          link: `/compliance/exceptions/${exception.id}`,
+        });
+      }
+
+      // Also notify the approver about the comment (if different from commenter and requester)
+      if (exception.approverId && exception.approverId !== session.id && exception.approverId !== exception.requesterId && exception.customerAccountId) {
+        await notificationService.notifyCommentAdded({
+          customerAccountId: exception.customerAccountId,
+          actorId: session.id,
+          recipientId: exception.approverId,
+          entityType: "Exception",
+          entityId: exception.id,
+          entityName: exception.name,
+          commentPreview: content.substring(0, 100),
+          link: `/compliance/exceptions/${exception.id}`,
+        });
+      }
+
+      return NextResponse.json(comment, { status: 201 });
+    } catch (error) {
+      console.error("Error creating exception comment:", error);
+      return NextResponse.json(
+        { error: "Failed to create exception comment" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "compliance.exceptions", action: "edit" }
+);

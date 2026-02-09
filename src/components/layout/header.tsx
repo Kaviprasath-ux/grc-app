@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -40,6 +40,10 @@ function NotificationIcon({ type }: { type: string }) {
       return <CheckCircle className="h-4 w-4" />;
     case 'bell':
       return <Bell className="h-4 w-4" />;
+    case 'comment':
+      return <MessageSquare className="h-4 w-4" />;
+    case 'send-back':
+      return <RotateCcw className="h-4 w-4" />;
     default:
       return <Info className="h-4 w-4" />;
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -93,9 +94,17 @@ export const PUT = withAuth(
       } = body;
 
       // Verify the process belongs to the same customer account
+      // Also fetch current RACI assignments for change detection
       const existingProcess = await prisma.process.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: {
+          customerAccountId: true,
+          ownerId: true,
+          responsibleId: true,
+          accountableId: true,
+          consultedId: true,
+          informedId: true,
+        },
       });
 
       if (!existingProcess) {
@@ -139,6 +148,30 @@ export const PUT = withAuth(
           owner: true,
         },
       });
+
+      // Helper to send process assignment notification for changed assignments
+      const notifyIfChanged = async (newUserId: string | undefined, oldUserId: string | null, role: string) => {
+        if (newUserId && newUserId !== oldUserId && newUserId !== session.id && session.customerAccountId) {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: newUserId,
+            event: 'PROCESS_ASSIGNED',
+            title: `Process ${role} assignment`,
+            message: `You have been assigned as ${role} for process "${process.name}"`,
+            relatedEntityType: 'process',
+            relatedEntityId: process.id,
+            link: `/organization/process/${process.id}`,
+          });
+        }
+      };
+
+      // Notify changed assignments
+      await notifyIfChanged(ownerId, existingProcess.ownerId, 'Owner');
+      await notifyIfChanged(responsibleId, existingProcess.responsibleId, 'Responsible');
+      await notifyIfChanged(accountableId, existingProcess.accountableId, 'Accountable');
+      await notifyIfChanged(consultedId, existingProcess.consultedId, 'Consulted');
+      await notifyIfChanged(informedId, existingProcess.informedId, 'Informed');
 
       return NextResponse.json(process);
     } catch (error) {

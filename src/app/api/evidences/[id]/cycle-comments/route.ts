@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -83,7 +84,7 @@ export const POST = withAuth(
       // Check if evidence belongs to user's tenant
       const evidence = await prisma.evidence.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { id: true, name: true, assigneeId: true, customerAccountId: true },
       });
 
       if (!evidence) {
@@ -107,6 +108,34 @@ export const POST = withAuth(
           userName: session.name || null,
         },
       });
+
+      // Notify evidence assignee about the comment
+      if (evidence.assigneeId && evidence.assigneeId !== session.id && evidence.customerAccountId) {
+        await notificationService.notifyCommentAdded({
+          customerAccountId: evidence.customerAccountId,
+          actorId: session.id,
+          recipientId: evidence.assigneeId,
+          entityType: "Evidence",
+          entityId: evidence.id,
+          entityName: evidence.name,
+          commentPreview: comment.substring(0, 100),
+          link: `/compliance/evidence/${evidence.id}`,
+        });
+      }
+
+      // Special case: send-back action triggers additional notification
+      if (action === "sendback" && evidence.assigneeId && evidence.assigneeId !== session.id && evidence.customerAccountId) {
+        await notificationService.notifySentBack({
+          customerAccountId: evidence.customerAccountId,
+          actorId: session.id,
+          assigneeId: evidence.assigneeId,
+          entityType: "Evidence",
+          entityId: evidence.id,
+          entityName: evidence.name,
+          reason: comment,
+          link: `/compliance/evidence/${evidence.id}`,
+        });
+      }
 
       return NextResponse.json(newComment, { status: 201 });
     } catch (error) {

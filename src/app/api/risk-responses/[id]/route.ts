@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
 import { hasPermission } from "@/lib/permissions";
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -86,7 +87,7 @@ export const PUT = withAuth(
         where: { id },
         include: {
           risk: {
-            select: { departmentId: true, ownerId: true, id: true },
+            select: { departmentId: true, ownerId: true, id: true, riskId: true, name: true },
           },
         },
       });
@@ -181,6 +182,33 @@ export const PUT = withAuth(
           where: { id: existing.risk?.id },
           data: { status: "In Treatment" },
         });
+
+        // Notify risk owner that their risk response was approved
+        if (existing.risk?.ownerId && existing.risk.ownerId !== session.id && session.customerAccountId) {
+          await notificationService.notifyApprovalGranted({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            requesterId: existing.risk.ownerId,
+            entityType: 'Risk Response',
+            entityId: id,
+            entityName: `${existing.risk.riskId}: ${response.actionTitle}`,
+            link: `/risk-management/response/${existing.risk.id}`,
+          });
+        }
+      } else if (status === "Open" && existing.status === "Awaiting Approval") {
+        // Send back action - notify risk owner
+        if (existing.risk?.ownerId && existing.risk.ownerId !== session.id && session.customerAccountId) {
+          await notificationService.notifySentBack({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            assigneeId: existing.risk.ownerId,
+            entityType: 'Risk Response',
+            entityId: id,
+            entityName: `${existing.risk.riskId}: ${response.actionTitle}`,
+            reason: notes || undefined,
+            link: `/risk-management/response/${existing.risk.id}`,
+          });
+        }
       } else if (status === "Closed" && existing.status === "In-Progress") {
         // Check if all responses for this risk are closed
         const openResponses = await prisma.riskResponse.count({

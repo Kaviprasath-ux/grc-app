@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 // GET all evidences with filters - filtered by customer account and department for department roles
 export const GET = withAuth(
@@ -179,6 +180,18 @@ export const POST = withAuth(
             // Ignore duplicate errors
           }
         }
+      }
+
+      // Notify assignee if different from creator
+      if (assigneeId && assigneeId !== session?.id && session?.customerAccountId) {
+        await notificationService.notifyEvidenceAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          assigneeId: assigneeId,
+          evidenceId: evidence.id,
+          evidenceName: evidence.name,
+          controlCode: evidence.control?.controlCode ?? undefined,
+        });
       }
 
       return NextResponse.json(evidence, { status: 201 });

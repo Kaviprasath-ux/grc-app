@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -138,6 +139,33 @@ export const PUT = withAuth(
         },
         include: assetIncludes,
       });
+
+      // Notify new owner if changed and different from current user
+      const newOwnerId = ownerId !== undefined ? (ownerId || null) : existingAsset.ownerId;
+      if (newOwnerId && newOwnerId !== existingAsset.ownerId && newOwnerId !== session.id && session.customerAccountId) {
+        await notificationService.notifyAssetAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          ownerId: newOwnerId,
+          assetId: asset.id,
+          assetCode: asset.assetId,
+          assetName: asset.name,
+          role: 'owner',
+        });
+      }
+      // Notify new custodian if changed and different from current user
+      const newCustodianId = custodianId !== undefined ? (custodianId || null) : existingAsset.custodianId;
+      if (newCustodianId && newCustodianId !== existingAsset.custodianId && newCustodianId !== session.id && session.customerAccountId) {
+        await notificationService.notifyAssetAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          ownerId: newCustodianId,
+          assetId: asset.id,
+          assetCode: asset.assetId,
+          assetName: asset.name,
+          role: 'custodian',
+        });
+      }
 
       return NextResponse.json(asset);
     } catch (error) {

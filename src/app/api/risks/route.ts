@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getDataScopeFilter } from "@/lib/api-auth";
+import { notificationService } from '@/lib/notification-service';
 
 // Helper function to calculate risk rating based on score
 // Rating values matching website: Catastrophic, Very high, High, Low Risk
@@ -287,6 +288,18 @@ export const POST = withAuth(
           },
         },
       });
+
+      // Notify owner if different from creator
+      if (ownerId && ownerId !== session.id && session.customerAccountId) {
+        await notificationService.notifyRiskAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          ownerId: ownerId,
+          riskId: risk.id,
+          riskCode: risk.riskId,
+          riskName: risk.name,
+        });
+      }
 
       return NextResponse.json(risk, { status: 201 });
     } catch (error) {

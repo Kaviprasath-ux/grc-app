@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -343,6 +344,18 @@ export const PUT = withAuth(
       });
     });
 
+      // Notify new owner if owner changed and different from actor
+      if (ownerId && ownerId !== existingRisk.ownerId && ownerId !== session.id && session.customerAccountId) {
+        await notificationService.notifyRiskAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          ownerId: ownerId,
+          riskId: risk.id,
+          riskCode: risk.riskId,
+          riskName: risk.name,
+        });
+      }
+
       return NextResponse.json(risk);
     } catch (error) {
       console.error("Error updating risk:", error);
@@ -464,6 +477,20 @@ export const PATCH = withAuth(
 
         return updatedRisk;
       });
+
+      // Notify on send-back
+      if (body.responseStatus === "Sent Back" && risk.ownerId && risk.ownerId !== session.id && session.customerAccountId) {
+        await notificationService.notifySentBack({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          assigneeId: risk.ownerId,
+          entityType: 'Risk',
+          entityId: risk.id,
+          entityName: `${risk.riskId}: ${risk.name}`,
+          reason: body.responseComment,
+          link: `/risk-management/register/${risk.id}`,
+        });
+      }
 
       return NextResponse.json(risk);
     } catch (error) {

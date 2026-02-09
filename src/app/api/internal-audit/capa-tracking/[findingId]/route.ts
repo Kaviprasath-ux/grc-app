@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ findingId: string }>;
@@ -137,7 +138,36 @@ export const PATCH = withAuth(
       const updatedFinding = await prisma.internalAuditFinding.update({
         where: { id: findingId },
         data: updateData,
+        include: {
+          engagement: {
+            select: { auditId: true, auditeeId: true }
+          }
+        }
       });
+
+      // Notify when finding is sent back to auditee (Audit Head sends back for revision)
+      if (status === 'Open' && existingFinding.status === 'Under Review' && session.customerAccountId) {
+        // Get the auditee from the engagement
+        const auditeeId = updatedFinding.engagement?.auditeeId;
+        if (auditeeId && auditeeId !== session.id) {
+          await notificationService.notifySentBack({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            assigneeId: auditeeId,
+            entityType: 'Finding',
+            entityId: findingId,
+            entityName: updatedFinding.finding || `Finding #${updatedFinding.findingId}`,
+            link: `/internal-audit/capa-tracking/${findingId}`,
+          });
+        }
+      }
+
+      // Notify auditee when finding is assigned/reassigned (via engagement)
+      if (isAuditeeSubmission && session.customerAccountId) {
+        // When auditee submits, notify the Audit Head (find audit heads in the org)
+        // For now, we rely on the submission changing status to "Under Review"
+        // The Audit Head will see it in their dashboard
+      }
 
       return NextResponse.json(updatedFinding);
     } catch (error) {

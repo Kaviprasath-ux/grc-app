@@ -1,80 +1,117 @@
 /**
  * Notification Service
  *
- * Server-side service for creating and managing notifications.
- * Use this service in API routes to trigger notifications when events occur.
+ * CORE PURPOSE:
+ * The in-app inbox notification system is ONLY meant to notify users about
+ * actions that happen outside their immediate awareness.
  *
- * Example usage:
- * ```typescript
- * import { notificationService } from '@/lib/notification-service';
+ * This system does NOT replace toasters:
+ * - Toasters = immediate feedback when user performs action themselves
+ * - Inbox notifications = actions by OTHERS that user wouldn't otherwise know about
  *
- * // In an API route after creating an evidence request
- * await notificationService.create({
- *   customerAccountId: session.customerAccountId,
- *   userId: assignee.id,
- *   type: 'EVIDENCE_DUE',
- *   title: 'Evidence request assigned',
- *   message: `You have been assigned to provide evidence for control ${control.code}`,
- *   relatedEntityType: 'evidence',
- *   relatedEntityId: evidence.id,
- *   link: `/compliance/evidence/${evidence.id}`,
- * });
- * ```
+ * EVENTS THAT CREATE INBOX NOTIFICATIONS:
+ * 1. User & Account Events: Customer onboarding, user creation
+ * 2. Assignment-Based Events: When responsibility is assigned to a user
+ * 3. Interaction Events: Comments, send-backs, approvals, feedback requests
+ *
+ * EVENTS THAT DO NOT CREATE INBOX NOTIFICATIONS:
+ * - Generic entity creation (without assignment)
+ * - System/helper/background operations
+ * - When actor and receiver are the same user (self-actions)
+ * - Actions already visible to the acting user
+ *
+ * ARCHITECTURAL NOTES:
+ * - Centralized and reusable notification creation
+ * - Event-driven, not scattered across UI logic
+ * - Channel-aware: Inbox now, Email later (via NotificationChannel)
+ * - Decoupled from UI pages and widgets
  */
 
 import { prisma } from '@/lib/prisma';
 
-// Notification types - matches the constants in useNotifications hook
-export const NOTIFICATION_TYPES = {
-  // Evidence
-  EVIDENCE_DUE: 'EVIDENCE_DUE',
-  EVIDENCE_SUBMITTED: 'EVIDENCE_SUBMITTED',
-  EVIDENCE_APPROVED: 'EVIDENCE_APPROVED',
-  EVIDENCE_REJECTED: 'EVIDENCE_REJECTED',
+// ==================== NOTIFICATION CHANNELS ====================
+// Future-proofing for email notifications
 
-  // Risk
-  RISK_ASSIGNED: 'RISK_ASSIGNED',
-  RISK_STATUS_CHANGED: 'RISK_STATUS_CHANGED',
-  RISK_ASSESSMENT_DUE: 'RISK_ASSESSMENT_DUE',
-
-  // Audit
-  AUDIT_FINDING: 'AUDIT_FINDING',
-  AUDIT_ASSIGNED: 'AUDIT_ASSIGNED',
-  ENGAGEMENT_ASSIGNED: 'ENGAGEMENT_ASSIGNED',
-
-  // CAPA
-  CAPA_DUE: 'CAPA_DUE',
-  CAPA_ASSIGNED: 'CAPA_ASSIGNED',
-  CAPA_STATUS_CHANGED: 'CAPA_STATUS_CHANGED',
-
-  // Control
-  CONTROL_REVIEW_DUE: 'CONTROL_REVIEW_DUE',
-  CONTROL_ASSIGNED: 'CONTROL_ASSIGNED',
-
-  // Approval
-  APPROVAL_REQUIRED: 'APPROVAL_REQUIRED',
-  APPROVAL_GRANTED: 'APPROVAL_GRANTED',
-  APPROVAL_DENIED: 'APPROVAL_DENIED',
-
-  // System
-  SYSTEM: 'SYSTEM',
-  ANNOUNCEMENT: 'ANNOUNCEMENT',
+export const NOTIFICATION_CHANNELS = {
+  INBOX: 'inbox',
+  EMAIL: 'email',
+  // SMS: 'sms', // Future
 } as const;
 
-export type NotificationType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATION_TYPES];
+export type NotificationChannel = typeof NOTIFICATION_CHANNELS[keyof typeof NOTIFICATION_CHANNELS];
 
-export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+// ==================== NOTIFICATION EVENT TYPES ====================
+// Categorized by when they should trigger notifications
 
-export interface CreateNotificationParams {
+export const NOTIFICATION_EVENTS = {
+  // ========== USER & ACCOUNT EVENTS ==========
+  // Trigger: System/admin creates user or onboards customer
+  USER_CREATED: 'USER_CREATED',
+  CUSTOMER_ONBOARDED: 'CUSTOMER_ONBOARDED',
+
+  // ========== ASSIGNMENT EVENTS ==========
+  // Trigger: When responsibility is assigned to a user
+  // Rule: Assignment = notification. Creation alone does NOT trigger notification.
+  EVIDENCE_ASSIGNED: 'EVIDENCE_ASSIGNED',
+  CONTROL_ASSIGNED: 'CONTROL_ASSIGNED',
+  RISK_ASSIGNED: 'RISK_ASSIGNED',
+  ASSET_ASSIGNED: 'ASSET_ASSIGNED',
+  CAPA_ASSIGNED: 'CAPA_ASSIGNED',
+  ENGAGEMENT_ASSIGNED: 'ENGAGEMENT_ASSIGNED',
+  POLICY_ASSIGNED: 'POLICY_ASSIGNED',
+  PROCESS_ASSIGNED: 'PROCESS_ASSIGNED',
+
+  // ========== INTERACTION EVENTS ==========
+  // Trigger: Direct interaction requiring recipient's attention
+  COMMENT_ADDED: 'COMMENT_ADDED',
+  APPROVAL_REQUESTED: 'APPROVAL_REQUESTED',
+  APPROVAL_GRANTED: 'APPROVAL_GRANTED',
+  APPROVAL_DENIED: 'APPROVAL_DENIED',
+  SENT_BACK: 'SENT_BACK',
+  FEEDBACK_REQUESTED: 'FEEDBACK_REQUESTED',
+
+  // ========== DUE DATE REMINDERS ==========
+  // Trigger: Scheduled/system notifications for upcoming deadlines
+  EVIDENCE_DUE_REMINDER: 'EVIDENCE_DUE_REMINDER',
+  CAPA_DUE_REMINDER: 'CAPA_DUE_REMINDER',
+  REVIEW_DUE_REMINDER: 'REVIEW_DUE_REMINDER',
+
+  // ========== STATUS CHANGE EVENTS ==========
+  // Trigger: When status changes affect the assignee/owner
+  STATUS_CHANGED: 'STATUS_CHANGED',
+
+  // ========== SYSTEM EVENTS ==========
+  // Trigger: System-wide announcements
+  SYSTEM_ANNOUNCEMENT: 'SYSTEM_ANNOUNCEMENT',
+} as const;
+
+export type NotificationEvent = typeof NOTIFICATION_EVENTS[keyof typeof NOTIFICATION_EVENTS];
+
+// ==================== PRIORITY LEVELS ====================
+
+export const NOTIFICATION_PRIORITIES = {
+  LOW: 'low',
+  NORMAL: 'normal',
+  HIGH: 'high',
+  URGENT: 'urgent',
+} as const;
+
+export type NotificationPriority = typeof NOTIFICATION_PRIORITIES[keyof typeof NOTIFICATION_PRIORITIES];
+
+// ==================== INTERFACES ====================
+
+export interface NotificationPayload {
   /** Customer account ID for multi-tenant isolation */
   customerAccountId: string;
-  /** Recipient user ID */
-  userId: string;
-  /** Notification type */
-  type: NotificationType | string;
+  /** The user performing the action (actor) */
+  actorId: string;
+  /** The user receiving the notification (recipient) */
+  recipientId: string;
+  /** Notification event type */
+  event: NotificationEvent;
   /** Notification title (short, shown in header) */
   title: string;
-  /** Notification message (can be longer, shown in detail) */
+  /** Notification message (detailed, shown in dropdown) */
   message: string;
   /** Related entity type (e.g., 'evidence', 'risk', 'audit') */
   relatedEntityType?: string;
@@ -86,175 +123,546 @@ export interface CreateNotificationParams {
   priority?: NotificationPriority;
   /** Additional metadata (JSON) */
   metadata?: Record<string, unknown>;
+  /** Channels to send notification through (default: inbox only) */
+  channels?: NotificationChannel[];
 }
 
-export interface BulkCreateNotificationParams extends Omit<CreateNotificationParams, 'userId'> {
+export interface BulkNotificationPayload extends Omit<NotificationPayload, 'recipientId'> {
   /** Array of recipient user IDs */
-  userIds: string[];
+  recipientIds: string[];
 }
+
+// ==================== VALIDATION HELPERS ====================
+
+/**
+ * Validates if a notification should be created.
+ * Returns error message if invalid, null if valid.
+ */
+function validateNotification(payload: NotificationPayload): string | null {
+  // RULE: Never notify the actor about their own action
+  if (payload.actorId === payload.recipientId) {
+    return 'Self-notification prevented: actor and recipient are the same user';
+  }
+
+  // RULE: Required fields
+  if (!payload.customerAccountId) {
+    return 'Missing customerAccountId';
+  }
+  if (!payload.recipientId) {
+    return 'Missing recipientId';
+  }
+  if (!payload.event) {
+    return 'Missing event type';
+  }
+  if (!payload.title || !payload.message) {
+    return 'Missing title or message';
+  }
+
+  return null; // Valid
+}
+
+// ==================== NOTIFICATION SERVICE CLASS ====================
 
 class NotificationService {
   /**
-   * Create a single notification
+   * Create a notification through specified channels.
+   *
+   * IMPORTANT: This method validates that actor !== recipient.
+   * Self-notifications are automatically prevented.
    */
-  async create(params: CreateNotificationParams) {
-    const {
-      customerAccountId,
-      userId,
-      type,
-      title,
-      message,
-      relatedEntityType,
-      relatedEntityId,
-      link,
-      priority = 'normal',
-      metadata,
-    } = params;
+  async send(payload: NotificationPayload): Promise<{ success: boolean; error?: string; notificationId?: string }> {
+    // Validate notification
+    const validationError = validateNotification(payload);
+    if (validationError) {
+      console.log(`[NotificationService] Skipped: ${validationError}`);
+      return { success: false, error: validationError };
+    }
+
+    const channels = payload.channels || [NOTIFICATION_CHANNELS.INBOX];
 
     try {
-      const notification = await prisma.notification.create({
-        data: {
-          customerAccountId,
-          userId,
-          type,
-          title,
-          message,
-          relatedEntityType,
-          relatedEntityId,
-          link,
-          priority,
-          metadata: metadata ? JSON.stringify(metadata) : null,
-        },
-      });
+      let notificationId: string | undefined;
 
-      return notification;
+      // Process each channel
+      for (const channel of channels) {
+        switch (channel) {
+          case NOTIFICATION_CHANNELS.INBOX:
+            const notification = await this.createInboxNotification(payload);
+            notificationId = notification.id;
+            break;
+
+          case NOTIFICATION_CHANNELS.EMAIL:
+            // Future: Email channel
+            // await this.sendEmailNotification(payload);
+            console.log('[NotificationService] Email channel not yet implemented');
+            break;
+
+          default:
+            console.warn(`[NotificationService] Unknown channel: ${channel}`);
+        }
+      }
+
+      return { success: true, notificationId };
     } catch (error) {
-      console.error('Error creating notification:', error);
-      throw error;
+      console.error('[NotificationService] Error sending notification:', error);
+      return { success: false, error: 'Failed to send notification' };
     }
   }
 
   /**
-   * Create notifications for multiple users at once
+   * Send notifications to multiple recipients.
+   * Automatically filters out the actor from recipients.
    */
-  async createBulk(params: BulkCreateNotificationParams) {
-    const {
-      customerAccountId,
-      userIds,
-      type,
-      title,
-      message,
-      relatedEntityType,
-      relatedEntityId,
-      link,
-      priority = 'normal',
-      metadata,
-    } = params;
+  async sendBulk(payload: BulkNotificationPayload): Promise<{ success: boolean; count: number }> {
+    // Filter out the actor from recipients (prevent self-notification)
+    const validRecipients = payload.recipientIds.filter(id => id !== payload.actorId);
 
-    if (userIds.length === 0) {
-      return [];
+    if (validRecipients.length === 0) {
+      console.log('[NotificationService] No valid recipients after filtering actor');
+      return { success: true, count: 0 };
     }
 
-    try {
-      const notifications = await prisma.notification.createMany({
-        data: userIds.map(userId => ({
-          customerAccountId,
-          userId,
-          type,
-          title,
-          message,
-          relatedEntityType,
-          relatedEntityId,
-          link,
-          priority,
-          metadata: metadata ? JSON.stringify(metadata) : null,
-        })),
-      });
+    const channels = payload.channels || [NOTIFICATION_CHANNELS.INBOX];
+    let successCount = 0;
 
-      return notifications;
+    try {
+      for (const channel of channels) {
+        switch (channel) {
+          case NOTIFICATION_CHANNELS.INBOX:
+            const result = await prisma.notification.createMany({
+              data: validRecipients.map(recipientId => ({
+                customerAccountId: payload.customerAccountId,
+                userId: recipientId,
+                type: payload.event,
+                title: payload.title,
+                message: payload.message,
+                relatedEntityType: payload.relatedEntityType,
+                relatedEntityId: payload.relatedEntityId,
+                link: payload.link,
+                priority: payload.priority || NOTIFICATION_PRIORITIES.NORMAL,
+                metadata: payload.metadata ? JSON.stringify(payload.metadata) : null,
+              })),
+            });
+            successCount = result.count;
+            break;
+
+          case NOTIFICATION_CHANNELS.EMAIL:
+            // Future: Bulk email notifications
+            console.log('[NotificationService] Bulk email not yet implemented');
+            break;
+        }
+      }
+
+      return { success: true, count: successCount };
     } catch (error) {
-      console.error('Error creating bulk notifications:', error);
-      throw error;
+      console.error('[NotificationService] Error sending bulk notifications:', error);
+      return { success: false, count: 0 };
     }
   }
 
   /**
-   * Send notification to all users in a department
+   * Create inbox notification in database
    */
-  async notifyDepartment(
-    customerAccountId: string,
-    departmentId: string,
-    params: Omit<CreateNotificationParams, 'customerAccountId' | 'userId'>
-  ) {
+  private async createInboxNotification(payload: NotificationPayload) {
+    return prisma.notification.create({
+      data: {
+        customerAccountId: payload.customerAccountId,
+        userId: payload.recipientId,
+        type: payload.event,
+        title: payload.title,
+        message: payload.message,
+        relatedEntityType: payload.relatedEntityType,
+        relatedEntityId: payload.relatedEntityId,
+        link: payload.link,
+        priority: payload.priority || NOTIFICATION_PRIORITIES.NORMAL,
+        metadata: payload.metadata ? JSON.stringify(payload.metadata) : null,
+      },
+    });
+  }
+
+  // ==================== CONVENIENCE METHODS ====================
+  // Pre-built methods for common notification scenarios
+
+  /**
+   * Notify when evidence is assigned to a user.
+   * Rule: Only triggers if assignee is different from the actor.
+   */
+  async notifyEvidenceAssigned(params: {
+    customerAccountId: string;
+    actorId: string;
+    assigneeId: string;
+    evidenceId: string;
+    evidenceName: string;
+    controlCode?: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.assigneeId,
+      event: NOTIFICATION_EVENTS.EVIDENCE_ASSIGNED,
+      title: 'Evidence assigned to you',
+      message: params.controlCode
+        ? `You have been assigned to provide evidence for ${params.controlCode}: ${params.evidenceName}`
+        : `You have been assigned to provide evidence: ${params.evidenceName}`,
+      relatedEntityType: 'evidence',
+      relatedEntityId: params.evidenceId,
+      link: `/compliance/evidence/${params.evidenceId}`,
+      priority: NOTIFICATION_PRIORITIES.NORMAL,
+    });
+  }
+
+  /**
+   * Notify when a risk is assigned to a user.
+   */
+  async notifyRiskAssigned(params: {
+    customerAccountId: string;
+    actorId: string;
+    ownerId: string;
+    riskId: string;
+    riskCode: string;
+    riskName: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.ownerId,
+      event: NOTIFICATION_EVENTS.RISK_ASSIGNED,
+      title: 'Risk assigned to you',
+      message: `Risk ${params.riskCode}: ${params.riskName} has been assigned to you`,
+      relatedEntityType: 'risk',
+      relatedEntityId: params.riskId,
+      link: `/risk-management/register/${params.riskId}`,
+    });
+  }
+
+  /**
+   * Notify when a control is assigned to a user.
+   */
+  async notifyControlAssigned(params: {
+    customerAccountId: string;
+    actorId: string;
+    ownerId: string;
+    controlId: string;
+    controlCode: string;
+    controlName: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.ownerId,
+      event: NOTIFICATION_EVENTS.CONTROL_ASSIGNED,
+      title: 'Control assigned to you',
+      message: `Control ${params.controlCode}: ${params.controlName} has been assigned to you`,
+      relatedEntityType: 'control',
+      relatedEntityId: params.controlId,
+      link: `/compliance/control/${params.controlId}`,
+    });
+  }
+
+  /**
+   * Notify when an asset is assigned to a user.
+   */
+  async notifyAssetAssigned(params: {
+    customerAccountId: string;
+    actorId: string;
+    ownerId: string;
+    assetId: string;
+    assetCode: string;
+    assetName: string;
+    role: 'owner' | 'custodian';
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.ownerId,
+      event: NOTIFICATION_EVENTS.ASSET_ASSIGNED,
+      title: `Asset ${params.role} assignment`,
+      message: `You have been assigned as ${params.role} for asset ${params.assetCode}: ${params.assetName}`,
+      relatedEntityType: 'asset',
+      relatedEntityId: params.assetId,
+      link: `/asset-management/inventory/${params.assetId}`,
+    });
+  }
+
+  /**
+   * Notify when a CAPA is assigned to a user.
+   */
+  async notifyCAPAAssigned(params: {
+    customerAccountId: string;
+    actorId: string;
+    assigneeId: string;
+    capaId: string;
+    capaCode: string;
+    capaTitle: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.assigneeId,
+      event: NOTIFICATION_EVENTS.CAPA_ASSIGNED,
+      title: 'CAPA assigned to you',
+      message: `CAPA ${params.capaCode}: ${params.capaTitle} has been assigned to you`,
+      relatedEntityType: 'capa',
+      relatedEntityId: params.capaId,
+      link: `/internal-audit/capa-tracking/${params.capaId}`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+    });
+  }
+
+  /**
+   * Notify when an audit engagement is assigned.
+   */
+  async notifyEngagementAssigned(params: {
+    customerAccountId: string;
+    actorId: string;
+    assigneeId: string;
+    engagementId: string;
+    engagementCode: string;
+    engagementName: string;
+    role: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.assigneeId,
+      event: NOTIFICATION_EVENTS.ENGAGEMENT_ASSIGNED,
+      title: 'Audit engagement assigned',
+      message: `You have been assigned as ${params.role} for engagement ${params.engagementCode}: ${params.engagementName}`,
+      relatedEntityType: 'engagement',
+      relatedEntityId: params.engagementId,
+      link: `/internal-audit/fieldwork/${params.engagementId}`,
+    });
+  }
+
+  /**
+   * Notify when a comment is added (ALL comments trigger notification).
+   */
+  async notifyCommentAdded(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    entityType: string;
+    entityId: string;
+    entityName: string;
+    commentPreview: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.COMMENT_ADDED,
+      title: 'New comment',
+      message: `New comment on ${params.entityType} "${params.entityName}": ${params.commentPreview}`,
+      relatedEntityType: params.entityType,
+      relatedEntityId: params.entityId,
+      link: params.link,
+    });
+  }
+
+  /**
+   * Notify when approval is requested.
+   */
+  async notifyApprovalRequested(params: {
+    customerAccountId: string;
+    actorId: string;
+    approverId: string;
+    entityType: string;
+    entityId: string;
+    entityName: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.approverId,
+      event: NOTIFICATION_EVENTS.APPROVAL_REQUESTED,
+      title: 'Approval required',
+      message: `Your approval is required for ${params.entityType}: ${params.entityName}`,
+      relatedEntityType: params.entityType,
+      relatedEntityId: params.entityId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+    });
+  }
+
+  /**
+   * Notify when something is approved.
+   */
+  async notifyApprovalGranted(params: {
+    customerAccountId: string;
+    actorId: string;
+    requesterId: string;
+    entityType: string;
+    entityId: string;
+    entityName: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.requesterId,
+      event: NOTIFICATION_EVENTS.APPROVAL_GRANTED,
+      title: 'Approved',
+      message: `Your ${params.entityType} "${params.entityName}" has been approved`,
+      relatedEntityType: params.entityType,
+      relatedEntityId: params.entityId,
+      link: params.link,
+    });
+  }
+
+  /**
+   * Notify when something is denied/rejected.
+   */
+  async notifyApprovalDenied(params: {
+    customerAccountId: string;
+    actorId: string;
+    requesterId: string;
+    entityType: string;
+    entityId: string;
+    entityName: string;
+    reason?: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.requesterId,
+      event: NOTIFICATION_EVENTS.APPROVAL_DENIED,
+      title: 'Rejected',
+      message: params.reason
+        ? `Your ${params.entityType} "${params.entityName}" was rejected: ${params.reason}`
+        : `Your ${params.entityType} "${params.entityName}" was rejected`,
+      relatedEntityType: params.entityType,
+      relatedEntityId: params.entityId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+    });
+  }
+
+  /**
+   * Notify when something is sent back for revision.
+   */
+  async notifySentBack(params: {
+    customerAccountId: string;
+    actorId: string;
+    assigneeId: string;
+    entityType: string;
+    entityId: string;
+    entityName: string;
+    reason?: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.assigneeId,
+      event: NOTIFICATION_EVENTS.SENT_BACK,
+      title: 'Sent back for revision',
+      message: params.reason
+        ? `${params.entityType} "${params.entityName}" was sent back: ${params.reason}`
+        : `${params.entityType} "${params.entityName}" was sent back for revision`,
+      relatedEntityType: params.entityType,
+      relatedEntityId: params.entityId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+    });
+  }
+
+  /**
+   * Send due date reminder (system-triggered).
+   * Note: actorId should be 'system' or the system user ID.
+   */
+  async notifyDueReminder(params: {
+    customerAccountId: string;
+    recipientId: string;
+    entityType: 'evidence' | 'capa' | 'review';
+    entityId: string;
+    entityName: string;
+    dueDate: Date;
+    link: string;
+  }) {
+    const eventMap = {
+      evidence: NOTIFICATION_EVENTS.EVIDENCE_DUE_REMINDER,
+      capa: NOTIFICATION_EVENTS.CAPA_DUE_REMINDER,
+      review: NOTIFICATION_EVENTS.REVIEW_DUE_REMINDER,
+    };
+
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: 'system', // System-triggered, not a user action
+      recipientId: params.recipientId,
+      event: eventMap[params.entityType],
+      title: `${params.entityType.charAt(0).toUpperCase() + params.entityType.slice(1)} due soon`,
+      message: `${params.entityName} is due on ${params.dueDate.toLocaleDateString()}`,
+      relatedEntityType: params.entityType,
+      relatedEntityId: params.entityId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+    });
+  }
+
+  /**
+   * Notify new user about account creation.
+   */
+  async notifyUserCreated(params: {
+    customerAccountId: string;
+    actorId: string;
+    newUserId: string;
+    userName: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.newUserId,
+      event: NOTIFICATION_EVENTS.USER_CREATED,
+      title: 'Welcome to GRC Platform',
+      message: `Welcome ${params.userName}! Your account has been created successfully.`,
+      link: '/dashboard',
+    });
+  }
+
+  /**
+   * Send system announcement to all users in a customer account.
+   */
+  async sendAnnouncement(params: {
+    customerAccountId: string;
+    actorId: string;
+    title: string;
+    message: string;
+  }) {
     try {
-      // Get all users in the department
       const users = await prisma.user.findMany({
         where: {
-          customerAccountId,
-          departmentId,
+          customerAccountId: params.customerAccountId,
           isActive: true,
         },
         select: { id: true },
       });
 
       if (users.length === 0) {
-        return { count: 0 };
+        return { success: true, count: 0 };
       }
 
-      return this.createBulk({
-        customerAccountId,
-        userIds: users.map(u => u.id),
-        ...params,
+      return this.sendBulk({
+        customerAccountId: params.customerAccountId,
+        actorId: params.actorId,
+        recipientIds: users.map(u => u.id),
+        event: NOTIFICATION_EVENTS.SYSTEM_ANNOUNCEMENT,
+        title: params.title,
+        message: params.message,
       });
     } catch (error) {
-      console.error('Error notifying department:', error);
-      throw error;
+      console.error('[NotificationService] Error sending announcement:', error);
+      return { success: false, count: 0 };
     }
   }
 
-  /**
-   * Send notification to all users with a specific role
-   */
-  async notifyByRole(
-    customerAccountId: string,
-    roleName: string,
-    params: Omit<CreateNotificationParams, 'customerAccountId' | 'userId'>
-  ) {
-    try {
-      // Get all users with the specified role
-      const users = await prisma.user.findMany({
-        where: {
-          customerAccountId,
-          isActive: true,
-          userRoles: {
-            some: {
-              role: {
-                name: roleName,
-              },
-            },
-          },
-        },
-        select: { id: true },
-      });
-
-      if (users.length === 0) {
-        return { count: 0 };
-      }
-
-      return this.createBulk({
-        customerAccountId,
-        userIds: users.map(u => u.id),
-        ...params,
-      });
-    } catch (error) {
-      console.error('Error notifying by role:', error);
-      throw error;
-    }
-  }
+  // ==================== MAINTENANCE METHODS ====================
 
   /**
-   * Delete old notifications (cleanup job)
-   * @param daysOld - Delete notifications older than this many days
+   * Cleanup old read notifications.
+   * Run this as a scheduled job.
    */
   async cleanup(daysOld = 90) {
     try {
@@ -263,168 +671,15 @@ class NotificationService {
 
       const result = await prisma.notification.deleteMany({
         where: {
-          createdAt: {
-            lt: cutoffDate,
-          },
-          isRead: true, // Only delete read notifications
+          createdAt: { lt: cutoffDate },
+          isRead: true,
         },
       });
 
-      console.log(`Deleted ${result.count} old notifications`);
+      console.log(`[NotificationService] Cleaned up ${result.count} old notifications`);
       return result;
     } catch (error) {
-      console.error('Error cleaning up notifications:', error);
-      throw error;
-    }
-  }
-
-  // ==================== CONVENIENCE METHODS ====================
-
-  /**
-   * Notify when evidence is due
-   */
-  async notifyEvidenceDue(
-    customerAccountId: string,
-    userId: string,
-    evidenceId: string,
-    evidenceName: string,
-    dueDate: Date
-  ) {
-    return this.create({
-      customerAccountId,
-      userId,
-      type: NOTIFICATION_TYPES.EVIDENCE_DUE,
-      title: 'Evidence due soon',
-      message: `Evidence "${evidenceName}" is due on ${dueDate.toLocaleDateString()}`,
-      relatedEntityType: 'evidence',
-      relatedEntityId: evidenceId,
-      link: `/compliance/evidence/${evidenceId}`,
-      priority: 'high',
-    });
-  }
-
-  /**
-   * Notify when a risk is assigned
-   */
-  async notifyRiskAssigned(
-    customerAccountId: string,
-    userId: string,
-    riskId: string,
-    riskCode: string,
-    riskName: string
-  ) {
-    return this.create({
-      customerAccountId,
-      userId,
-      type: NOTIFICATION_TYPES.RISK_ASSIGNED,
-      title: 'Risk assigned to you',
-      message: `Risk ${riskCode}: ${riskName} has been assigned to you`,
-      relatedEntityType: 'risk',
-      relatedEntityId: riskId,
-      link: `/risk-management/register/${riskId}`,
-    });
-  }
-
-  /**
-   * Notify when an audit engagement is assigned
-   */
-  async notifyEngagementAssigned(
-    customerAccountId: string,
-    userId: string,
-    engagementId: string,
-    engagementCode: string,
-    engagementName: string,
-    role: string
-  ) {
-    return this.create({
-      customerAccountId,
-      userId,
-      type: NOTIFICATION_TYPES.ENGAGEMENT_ASSIGNED,
-      title: 'Audit engagement assigned',
-      message: `You have been assigned as ${role} for engagement ${engagementCode}: ${engagementName}`,
-      relatedEntityType: 'engagement',
-      relatedEntityId: engagementId,
-      link: `/internal-audit/fieldwork/${engagementId}`,
-    });
-  }
-
-  /**
-   * Notify when a CAPA is assigned
-   */
-  async notifyCAPAAssigned(
-    customerAccountId: string,
-    userId: string,
-    capaId: string,
-    capaCode: string,
-    capaTitle: string
-  ) {
-    return this.create({
-      customerAccountId,
-      userId,
-      type: NOTIFICATION_TYPES.CAPA_ASSIGNED,
-      title: 'CAPA assigned to you',
-      message: `CAPA ${capaCode}: ${capaTitle} has been assigned to you`,
-      relatedEntityType: 'capa',
-      relatedEntityId: capaId,
-      link: `/internal-audit/capa-tracking/${capaId}`,
-    });
-  }
-
-  /**
-   * Notify when approval is required
-   */
-  async notifyApprovalRequired(
-    customerAccountId: string,
-    userId: string,
-    entityType: string,
-    entityId: string,
-    entityName: string,
-    link: string
-  ) {
-    return this.create({
-      customerAccountId,
-      userId,
-      type: NOTIFICATION_TYPES.APPROVAL_REQUIRED,
-      title: 'Approval required',
-      message: `Your approval is required for ${entityType}: ${entityName}`,
-      relatedEntityType: entityType,
-      relatedEntityId: entityId,
-      link,
-      priority: 'high',
-    });
-  }
-
-  /**
-   * Send a system announcement to all users in a customer account
-   */
-  async sendAnnouncement(
-    customerAccountId: string,
-    title: string,
-    message: string
-  ) {
-    try {
-      const users = await prisma.user.findMany({
-        where: {
-          customerAccountId,
-          isActive: true,
-        },
-        select: { id: true },
-      });
-
-      if (users.length === 0) {
-        return { count: 0 };
-      }
-
-      return this.createBulk({
-        customerAccountId,
-        userIds: users.map(u => u.id),
-        type: NOTIFICATION_TYPES.ANNOUNCEMENT,
-        title,
-        message,
-        priority: 'normal',
-      });
-    } catch (error) {
-      console.error('Error sending announcement:', error);
+      console.error('[NotificationService] Cleanup error:', error);
       throw error;
     }
   }
@@ -432,3 +687,43 @@ class NotificationService {
 
 // Export singleton instance
 export const notificationService = new NotificationService();
+
+// ==================== DOCUMENTATION ====================
+/**
+ * USAGE EXAMPLES:
+ *
+ * // In an API route when assigning evidence:
+ * import { notificationService } from '@/lib/notification-service';
+ *
+ * // When updating evidence assignee
+ * if (newAssigneeId && newAssigneeId !== currentUserId) {
+ *   await notificationService.notifyEvidenceAssigned({
+ *     customerAccountId: session.customerAccountId,
+ *     actorId: session.id, // The user making the change
+ *     assigneeId: newAssigneeId, // The new assignee
+ *     evidenceId: evidence.id,
+ *     evidenceName: evidence.name,
+ *     controlCode: evidence.control?.code,
+ *   });
+ * }
+ *
+ * // When adding a comment:
+ * await notificationService.notifyCommentAdded({
+ *   customerAccountId,
+ *   actorId: session.id,
+ *   recipientId: entity.ownerId,
+ *   entityType: 'risk',
+ *   entityId: risk.id,
+ *   entityName: risk.name,
+ *   commentPreview: comment.text.substring(0, 100),
+ *   link: `/risk-management/register/${risk.id}`,
+ * });
+ *
+ * // Self-notification is automatically prevented:
+ * await notificationService.send({
+ *   actorId: 'user123',
+ *   recipientId: 'user123', // Same as actor
+ *   // ... other fields
+ * });
+ * // Result: { success: false, error: 'Self-notification prevented...' }
+ */

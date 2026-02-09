@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -120,9 +121,10 @@ export const PUT = withAuth(
       } = body;
 
       // First, verify the control belongs to the user's customer account
+      // Also fetch existing owner/assignee for notification comparison
       const existing = await prisma.control.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, ownerId: true, assigneeId: true, controlCode: true, name: true },
       });
 
       if (!existing) {
@@ -205,6 +207,29 @@ export const PUT = withAuth(
           })),
         });
       }
+    }
+
+    // Notify new owner if changed and different from actor
+    if (ownerId && ownerId !== existing.ownerId && ownerId !== session.id && session.customerAccountId) {
+      await notificationService.notifyControlAssigned({
+        customerAccountId: session.customerAccountId,
+        actorId: session.id,
+        ownerId: ownerId,
+        controlId: control.id,
+        controlCode: control.controlCode,
+        controlName: control.name,
+      });
+    }
+    // Notify new assignee if changed, different from actor, and different from owner
+    if (assigneeId && assigneeId !== existing.assigneeId && assigneeId !== session.id && assigneeId !== ownerId && session.customerAccountId) {
+      await notificationService.notifyControlAssigned({
+        customerAccountId: session.customerAccountId,
+        actorId: session.id,
+        ownerId: assigneeId,
+        controlId: control.id,
+        controlCode: control.controlCode,
+        controlName: control.name,
+      });
     }
 
       return NextResponse.json(control);

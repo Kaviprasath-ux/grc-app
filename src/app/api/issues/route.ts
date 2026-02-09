@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService, NOTIFICATION_EVENTS } from "@/lib/notification-service";
 
 // GET all issues
 export const GET = withAuth(
@@ -173,6 +174,21 @@ export const POST = withAuth(
         },
       },
       });
+
+      // Notify owner if different from creator
+      if (ownerId && ownerId !== session.id && session.customerAccountId) {
+        await notificationService.send({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          recipientId: ownerId,
+          event: NOTIFICATION_EVENTS.PROCESS_ASSIGNED || 'ISSUE_ASSIGNED',
+          title: 'Issue assigned to you',
+          message: `Issue "${issue.title}" has been assigned to you`,
+          relatedEntityType: 'issue',
+          relatedEntityId: issue.id,
+          link: `/organization/context/issues/${issue.id}`,
+        });
+      }
 
       return NextResponse.json(issue, { status: 201 });
     } catch (error) {

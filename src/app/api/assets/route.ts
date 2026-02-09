@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 // GET all assets - filtered by customer account
 export const GET = withAuth(
@@ -125,6 +126,31 @@ export const POST = withAuth(
           lifecycleStatus: true,
         },
       });
+
+      // Notify owner if different from creator
+      if (ownerId && ownerId !== session.id && session.customerAccountId) {
+        await notificationService.notifyAssetAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          ownerId: ownerId,
+          assetId: asset.id,
+          assetCode: asset.assetId,
+          assetName: asset.name,
+          role: 'owner',
+        });
+      }
+      // Notify custodian if different from creator
+      if (custodianId && custodianId !== session.id && session.customerAccountId) {
+        await notificationService.notifyAssetAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          ownerId: custodianId,
+          assetId: asset.id,
+          assetCode: asset.assetId,
+          assetName: asset.name,
+          role: 'custodian',
+        });
+      }
 
       return NextResponse.json(asset, { status: 201 });
     } catch (error) {

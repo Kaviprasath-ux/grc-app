@@ -246,78 +246,56 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
   };
 }
 
-// Notification type constants for consistency
-export const NOTIFICATION_TYPES = {
-  // Evidence
-  EVIDENCE_DUE: 'EVIDENCE_DUE',
-  EVIDENCE_SUBMITTED: 'EVIDENCE_SUBMITTED',
-  EVIDENCE_APPROVED: 'EVIDENCE_APPROVED',
-  EVIDENCE_REJECTED: 'EVIDENCE_REJECTED',
-
-  // Risk
-  RISK_ASSIGNED: 'RISK_ASSIGNED',
-  RISK_STATUS_CHANGED: 'RISK_STATUS_CHANGED',
-  RISK_ASSESSMENT_DUE: 'RISK_ASSESSMENT_DUE',
-
-  // Audit
-  AUDIT_FINDING: 'AUDIT_FINDING',
-  AUDIT_ASSIGNED: 'AUDIT_ASSIGNED',
-  ENGAGEMENT_ASSIGNED: 'ENGAGEMENT_ASSIGNED',
-
-  // CAPA
-  CAPA_DUE: 'CAPA_DUE',
-  CAPA_ASSIGNED: 'CAPA_ASSIGNED',
-  CAPA_STATUS_CHANGED: 'CAPA_STATUS_CHANGED',
-
-  // Control
-  CONTROL_REVIEW_DUE: 'CONTROL_REVIEW_DUE',
-  CONTROL_ASSIGNED: 'CONTROL_ASSIGNED',
-
-  // Approval
-  APPROVAL_REQUIRED: 'APPROVAL_REQUIRED',
-  APPROVAL_GRANTED: 'APPROVAL_GRANTED',
-  APPROVAL_DENIED: 'APPROVAL_DENIED',
-
-  // System
-  SYSTEM: 'SYSTEM',
-  ANNOUNCEMENT: 'ANNOUNCEMENT',
-} as const;
-
-export type NotificationType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATION_TYPES];
+// Re-export notification events from service for consistency
+export { NOTIFICATION_EVENTS } from '@/lib/notification-service';
 
 // Helper to get icon and color based on notification type
 export function getNotificationStyle(type: string): {
-  icon: 'clock' | 'user' | 'bell' | 'check' | 'alert' | 'info';
+  icon: 'clock' | 'user' | 'bell' | 'check' | 'alert' | 'info' | 'comment' | 'send-back';
   bgColor: string;
   textColor: string;
 } {
-  switch (type) {
-    case NOTIFICATION_TYPES.EVIDENCE_DUE:
-    case NOTIFICATION_TYPES.CAPA_DUE:
-    case NOTIFICATION_TYPES.RISK_ASSESSMENT_DUE:
-    case NOTIFICATION_TYPES.CONTROL_REVIEW_DUE:
-      return { icon: 'clock', bgColor: 'bg-amber-100', textColor: 'text-amber-600' };
-
-    case NOTIFICATION_TYPES.RISK_ASSIGNED:
-    case NOTIFICATION_TYPES.AUDIT_ASSIGNED:
-    case NOTIFICATION_TYPES.ENGAGEMENT_ASSIGNED:
-    case NOTIFICATION_TYPES.CAPA_ASSIGNED:
-    case NOTIFICATION_TYPES.CONTROL_ASSIGNED:
-      return { icon: 'user', bgColor: 'bg-blue-100', textColor: 'text-blue-600' };
-
-    case NOTIFICATION_TYPES.AUDIT_FINDING:
-    case NOTIFICATION_TYPES.APPROVAL_DENIED:
-    case NOTIFICATION_TYPES.EVIDENCE_REJECTED:
-      return { icon: 'alert', bgColor: 'bg-red-100', textColor: 'text-red-600' };
-
-    case NOTIFICATION_TYPES.APPROVAL_GRANTED:
-    case NOTIFICATION_TYPES.EVIDENCE_APPROVED:
-      return { icon: 'check', bgColor: 'bg-green-100', textColor: 'text-green-600' };
-
-    case NOTIFICATION_TYPES.APPROVAL_REQUIRED:
-      return { icon: 'bell', bgColor: 'bg-purple-100', textColor: 'text-purple-600' };
-
-    default:
-      return { icon: 'info', bgColor: 'bg-slate-100', textColor: 'text-slate-600' };
+  // Due date reminders
+  if (type.includes('DUE_REMINDER') || type.includes('_DUE')) {
+    return { icon: 'clock', bgColor: 'bg-amber-100', textColor: 'text-amber-600' };
   }
+
+  // Assignments
+  if (type.includes('_ASSIGNED')) {
+    return { icon: 'user', bgColor: 'bg-blue-100', textColor: 'text-blue-600' };
+  }
+
+  // Comments
+  if (type === 'COMMENT_ADDED') {
+    return { icon: 'comment', bgColor: 'bg-indigo-100', textColor: 'text-indigo-600' };
+  }
+
+  // Approvals
+  if (type === 'APPROVAL_REQUESTED') {
+    return { icon: 'bell', bgColor: 'bg-purple-100', textColor: 'text-purple-600' };
+  }
+  if (type === 'APPROVAL_GRANTED') {
+    return { icon: 'check', bgColor: 'bg-green-100', textColor: 'text-green-600' };
+  }
+  if (type === 'APPROVAL_DENIED') {
+    return { icon: 'alert', bgColor: 'bg-red-100', textColor: 'text-red-600' };
+  }
+
+  // Send backs
+  if (type === 'SENT_BACK') {
+    return { icon: 'send-back', bgColor: 'bg-orange-100', textColor: 'text-orange-600' };
+  }
+
+  // User/Account events
+  if (type === 'USER_CREATED' || type === 'CUSTOMER_ONBOARDED') {
+    return { icon: 'user', bgColor: 'bg-teal-100', textColor: 'text-teal-600' };
+  }
+
+  // System announcements
+  if (type === 'SYSTEM_ANNOUNCEMENT') {
+    return { icon: 'bell', bgColor: 'bg-slate-100', textColor: 'text-slate-600' };
+  }
+
+  // Default
+  return { icon: 'info', bgColor: 'bg-slate-100', textColor: 'text-slate-600' };
 }

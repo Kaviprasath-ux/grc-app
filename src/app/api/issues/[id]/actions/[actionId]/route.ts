@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuthOnly } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 // GET a specific action
 export async function GET(
@@ -96,14 +98,21 @@ export async function PUT(
 }
 
 // PATCH for status changes (resolve, resend)
-export async function PATCH(
+export const PATCH = withAuthOnly(async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; actionId: string }> }
-) {
+  context: { params: Promise<{ id: string; actionId: string }> },
+  session
+) => {
   try {
-    const { actionId } = await params;
+    const { id: issueId, actionId } = await context.params;
     const body = await request.json();
     const { action: actionType, comment, createdBy } = body;
+
+    // Fetch issue for notification context
+    const issue = await prisma.issue.findUnique({
+      where: { id: issueId },
+      select: { id: true, title: true, customerAccountId: true },
+    });
 
     if (actionType === "resolve") {
       // Mark as resolved
@@ -117,6 +126,20 @@ export async function PATCH(
           comments: true,
         },
       });
+
+      // Notify action creator that their action was approved
+      if (action.createdById && action.createdById !== session.id && issue?.customerAccountId) {
+        await notificationService.notifyApprovalGranted({
+          customerAccountId: issue.customerAccountId,
+          actorId: session.id,
+          requesterId: action.createdById,
+          entityType: 'Issue Action',
+          entityId: action.id,
+          entityName: action.actionType || 'Action',
+          link: `/organization/context/issues/${issueId}`,
+        });
+      }
+
       return NextResponse.json(action);
     }
 
@@ -129,12 +152,18 @@ export async function PATCH(
         );
       }
 
+      // Fetch existing action to get createdById before update
+      const existingAction = await prisma.issueAction.findUnique({
+        where: { id: actionId },
+        select: { createdById: true, actionType: true },
+      });
+
       // Create comment and update status
       await prisma.issueActionComment.create({
         data: {
           actionId,
           comment,
-          createdBy: createdBy || "Admin",
+          createdBy: createdBy || session.name || "Admin",
         },
       });
 
@@ -151,6 +180,20 @@ export async function PATCH(
         },
       });
 
+      // Notify action creator that their action was sent back
+      if (existingAction?.createdById && existingAction.createdById !== session.id && issue?.customerAccountId) {
+        await notificationService.notifySentBack({
+          customerAccountId: issue.customerAccountId,
+          actorId: session.id,
+          assigneeId: existingAction.createdById,
+          entityType: 'Issue Action',
+          entityId: action.id,
+          entityName: existingAction.actionType || 'Action',
+          reason: comment,
+          link: `/organization/context/issues/${issueId}`,
+        });
+      }
+
       return NextResponse.json(action);
     }
 
@@ -165,7 +208,7 @@ export async function PATCH(
       { status: 500 }
     );
   }
-}
+});
 
 // DELETE an action
 export async function DELETE(

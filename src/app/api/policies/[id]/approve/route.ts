@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -67,6 +68,19 @@ export const POST = withAuth(
           attachments: true,
         },
       });
+
+      // Notify policy assignee that their policy was approved
+      if (policy.assigneeId && policy.assigneeId !== session.id && session.customerAccountId) {
+        await notificationService.notifyApprovalGranted({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          requesterId: policy.assigneeId,
+          entityType: 'Policy',
+          entityId: policy.id,
+          entityName: policy.name,
+          link: `/compliance/governance/${policy.id}`,
+        });
+      }
 
       return NextResponse.json(policy);
     } catch (error) {

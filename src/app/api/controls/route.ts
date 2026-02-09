@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 // GET all controls with filters - filtered by customer account
 export const GET = withAuth(
@@ -178,6 +179,29 @@ export const POST = withAuth(
           assignee: true,
         },
       });
+
+      // Notify owner if different from creator
+      if (ownerId && ownerId !== session.id && session.customerAccountId) {
+        await notificationService.notifyControlAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          ownerId: ownerId,
+          controlId: control.id,
+          controlCode: control.controlCode,
+          controlName: control.name,
+        });
+      }
+      // Notify assignee if different from creator and owner
+      if (assigneeId && assigneeId !== session.id && assigneeId !== ownerId && session.customerAccountId) {
+        await notificationService.notifyControlAssigned({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          ownerId: assigneeId,
+          controlId: control.id,
+          controlCode: control.controlCode,
+          controlName: control.name,
+        });
+      }
 
       return NextResponse.json(control, { status: 201 });
     } catch (error: unknown) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -30,7 +31,7 @@ export const PUT = withAuth(
       // Verify the issue belongs to the same customer account
       const existingIssue = await prisma.issue.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, ownerId: true },
       });
 
       if (!existingIssue) {
@@ -128,6 +129,21 @@ export const PUT = withAuth(
           },
         });
       });
+
+      // Notify new owner if owner changed
+      if (ownerId && ownerId !== existingIssue.ownerId && ownerId !== session.id && session.customerAccountId) {
+        await notificationService.send({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          recipientId: ownerId,
+          event: 'ISSUE_ASSIGNED' as never, // Custom event for issues
+          title: 'Issue assigned to you',
+          message: `Issue "${issue.title}" has been assigned to you`,
+          relatedEntityType: 'issue',
+          relatedEntityId: issue.id,
+          link: `/organization/context/issues/${issue.id}`,
+        });
+      }
 
       return NextResponse.json(issue);
     } catch (error: unknown) {
