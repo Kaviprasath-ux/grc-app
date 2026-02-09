@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,14 +22,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -40,10 +31,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, CheckCircle, MessageSquare, Send, Trash2, XCircle, Home, ChevronRight, ChevronLeft } from "lucide-react";
+import { CheckCircle, MessageSquare, Send, Trash2, XCircle, Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface ExceptionComment {
   id: string;
@@ -100,21 +92,21 @@ interface Exception {
 }
 
 const statusColors: Record<string, string> = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  Approved: "bg-green-100 text-green-800",
-  Rejected: "bg-red-100 text-red-800",
-  Authorised: "bg-blue-100 text-blue-800",
-  "Submitted for Closure": "bg-purple-100 text-purple-800",
-  Overdue: "bg-orange-100 text-orange-800",
-  RiskAccepted: "bg-pink-100 text-pink-800",
-  Closed: "bg-gray-100 text-gray-800",
+  Pending: "bg-warning-light text-warning-dark",
+  Approved: "bg-success-light text-success-dark",
+  Rejected: "bg-error-light text-error-dark",
+  Authorised: "bg-info-light text-info-dark",
+  "Submitted for Closure": "bg-primary-100 text-primary-700",
+  Overdue: "bg-error-light text-error-dark",
+  RiskAccepted: "bg-risk-medium-bg text-risk-medium",
+  Closed: "bg-slate-100 text-slate-600",
 };
 
 const categoryColors: Record<string, string> = {
-  Policy: "bg-purple-100 text-purple-800",
-  Control: "bg-blue-100 text-blue-800",
-  Compliance: "bg-green-100 text-green-800",
-  Risk: "bg-orange-100 text-orange-800",
+  Policy: "bg-primary-100 text-primary-700",
+  Control: "bg-info-light text-info-dark",
+  Compliance: "bg-success-light text-success-dark",
+  Risk: "bg-risk-high-bg text-risk-high",
 };
 
 const categories = ["Policy", "Control", "Compliance", "Risk"];
@@ -441,8 +433,8 @@ export default function ExceptionDetailPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -450,66 +442,57 @@ export default function ExceptionDetailPage({
   if (!exception) {
     return (
       <div className="p-6">
-        <p className="text-gray-500">{t("Exception not found")}</p>
+        <p className="text-slate-500">{t("Exception not found")}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Back Button and Breadcrumb */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="flex items-center gap-1 text-slate-600 hover:text-slate-900"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {t("Back")}
-        </Button>
-        <nav className="flex items-center gap-1.5 text-sm">
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/compliance/exceptions" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Exceptions")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{exception.exceptionCode}</span>
-        </nav>
-      </div>
+      </nav>
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{exception.name}</h1>
-          <Badge className={statusColors[exception.status] || "bg-gray-100"}>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-slate-800">{exception.name}</h1>
+          <Badge className={statusColors[exception.status] || "bg-slate-100 text-slate-600"}>
             {exception.status}
           </Badge>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {/* Approve and Send Back buttons - visible only to Approver when status is Pending */}
           {isApprover && exception.status === "Pending" && (
             <>
               <Button
                 variant="default"
+                size="sm"
                 className="bg-green-600 hover:bg-green-700"
                 onClick={handleApprove}
                 disabled={approving}
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {approving ? t("Processing...") : t("Approve")}
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 className="border-red-500 text-red-600 hover:bg-red-50"
                 onClick={() => setSendBackDialogOpen(true)}
                 disabled={approving}
               >
-                <XCircle className="h-4 w-4 mr-2" />
+                <XCircle className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Send Back")}
               </Button>
             </>
@@ -518,26 +501,29 @@ export default function ExceptionDetailPage({
           {canResubmit && (
             <Button
               variant="default"
+              size="sm"
               className="bg-blue-600 hover:bg-blue-700"
               onClick={() => setResubmitDialogOpen(true)}
             >
-              <Send className="h-4 w-4 mr-2" />
+              <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Submit")}
             </Button>
           )}
           <Button
             variant="outline"
+            size="sm"
             onClick={() => setCommentDialogOpen(true)}
           >
-            <MessageSquare className="h-4 w-4 mr-2" />
+            <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Comments")} ({exception.comments?.length || 0})
           </Button>
           {!isReadOnly && !isApprovedStatus && (
             <Button
               variant="destructive"
+              size="sm"
               onClick={() => setDeleteDialogOpen(true)}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Delete")}
             </Button>
           )}
@@ -545,45 +531,45 @@ export default function ExceptionDetailPage({
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Exception Details Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("Exception Details")}</CardTitle>
+      <div className="space-y-6">
+        {/* Exception Details Form */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h2 className="text-base font-semibold text-slate-800">{t("Exception Details")}</h2>
             {isApprovedStatus && (
               <p className="text-sm text-green-600 mt-1">
                 {t("This exception has been approved and cannot be edited.")}
               </p>
             )}
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="px-5 py-5">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="font-medium">{t("Exception Code")}</Label>
-                <Input value={exception.exceptionCode} disabled />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Code")}</Label>
+                <Input value={exception.exceptionCode} disabled className="bg-slate-50" />
               </div>
-              <div className="space-y-2">
-                <Label className="font-medium">{t("Exception Name")}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Name")}</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
                   disabled={isReadOnly}
-                  className={isReadOnly ? "bg-gray-100" : ""}
+                  className={isReadOnly ? "bg-slate-50" : ""}
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="font-medium">{t("Category")}</Label>
-                <Input value={exception.category} disabled />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Category")}</Label>
+                <Input value={exception.category} disabled className="bg-slate-50" />
               </div>
-              <div className="space-y-2">
-                <Label className="font-medium">{t("Status")}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
                 {isReadOnly ? (
                   <Input
                     value={formData.status}
                     disabled
-                    className="bg-gray-100"
+                    className="bg-slate-50"
                   />
                 ) : (
                   <Select
@@ -592,7 +578,7 @@ export default function ExceptionDetailPage({
                       setFormData({ ...formData, status: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -605,13 +591,13 @@ export default function ExceptionDetailPage({
                   </Select>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label className="font-medium">{t("Department")}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
                 {isReadOnly ? (
                   <Input
                     value={exception.department?.name || "-"}
                     disabled
-                    className="bg-gray-100"
+                    className="bg-slate-50"
                   />
                 ) : (
                   <Select
@@ -620,7 +606,7 @@ export default function ExceptionDetailPage({
                       setFormData({ ...formData, departmentId: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -633,20 +619,27 @@ export default function ExceptionDetailPage({
                   </Select>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label className="font-medium">{t("End Date")}</Label>
-                <Input
-                  type={isReadOnly ? "text" : "date"}
-                  value={isReadOnly && formData.endDate ? new Date(formData.endDate).toLocaleDateString("en-GB") : formData.endDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endDate: e.target.value })
-                  }
-                  disabled={isReadOnly}
-                  className={isReadOnly ? "bg-gray-100" : ""}
-                />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("End Date")}</Label>
+                {isReadOnly ? (
+                  <Input
+                    value={formData.endDate ? new Date(formData.endDate).toLocaleDateString("en-GB") : "-"}
+                    disabled
+                    className="bg-slate-50"
+                  />
+                ) : (
+                  <DatePicker
+                    value={formData.endDate || undefined}
+                    onChange={(date) =>
+                      setFormData({ ...formData, endDate: date ? date.toISOString().split("T")[0] : "" })
+                    }
+                    placeholder={t("Select end date")}
+                    className="w-full"
+                  />
+                )}
               </div>
-              <div className="space-y-2 col-span-2">
-                <Label className="font-medium">{t("Reason For Exception")}</Label>
+              <div className="space-y-1.5 col-span-2">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Reason For Exception")}</Label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) =>
@@ -654,11 +647,11 @@ export default function ExceptionDetailPage({
                   }
                   rows={3}
                   disabled={isReadOnly}
-                  className={isReadOnly ? "bg-gray-100" : ""}
+                  className={`focus-visible:ring-2 focus-visible:ring-primary-500/20 focus-visible:ring-offset-0 focus-visible:border-primary-300 ${isReadOnly ? "bg-slate-50" : ""}`}
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="font-medium">{t("Requester")}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requester")}</Label>
                 <Input
                   value={
                     exception.requester?.fullName ||
@@ -670,11 +663,11 @@ export default function ExceptionDetailPage({
                     "-"
                   }
                   disabled
-                  className="bg-gray-100"
+                  className="bg-slate-50"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="font-medium">{t("Approver")}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approver")}</Label>
                 <Input
                   value={
                     exception.approver?.fullName ||
@@ -686,162 +679,159 @@ export default function ExceptionDetailPage({
                     "-"
                   }
                   disabled
-                  className="bg-gray-100"
+                  className="bg-slate-50"
                 />
               </div>
             </div>
             {!isReadOnly && (
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
+              <div className="mt-5 flex justify-end">
+                <Button size="sm" onClick={handleSave} disabled={saving}>
                   {saving ? t("Saving...") : t("Save")}
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Right Column - Category-specific Reference & Approval */}
-        <div className="space-y-6">
+        {/* Category-specific Reference & Approval */}
           {/* Category-specific Reference Card */}
           {exception.category === "Policy" && exception.policy && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("Policy Reference")}</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h2 className="text-base font-semibold text-slate-800">{t("Policy Reference")}</h2>
+              </div>
+              <div className="px-5 py-5">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="font-medium text-gray-500">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Policy Code")}
                     </Label>
-                    <p className="font-medium">{exception.policy.code}</p>
+                    <p className="text-sm font-medium text-slate-800">{exception.policy.code}</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="font-medium text-gray-500">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Policy Name")}
                     </Label>
-                    <p className="font-medium">{exception.policy.name}</p>
+                    <p className="text-sm font-medium text-slate-800">{exception.policy.name}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {exception.category === "Control" && exception.control && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("Control Reference")}</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h2 className="text-base font-semibold text-slate-800">{t("Control Reference")}</h2>
+              </div>
+              <div className="px-5 py-5">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="font-medium text-gray-500">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Control Code")}
                     </Label>
-                    <p className="font-medium">{exception.control.controlId}</p>
+                    <p className="text-sm font-medium text-slate-800">{exception.control.controlId}</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="font-medium text-gray-500">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Control Name")}
                     </Label>
-                    <p className="font-medium">{exception.control.name}</p>
+                    <p className="text-sm font-medium text-slate-800">{exception.control.name}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {exception.category === "Risk" && exception.risk && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("Risk Reference")}</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h2 className="text-base font-semibold text-slate-800">{t("Risk Reference")}</h2>
+              </div>
+              <div className="px-5 py-5">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="font-medium text-gray-500">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Risk Code")}
                     </Label>
-                    <p className="font-medium">{exception.risk.riskCode}</p>
+                    <p className="text-sm font-medium text-slate-800">{exception.risk.riskCode}</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="font-medium text-gray-500">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Risk Name")}
                     </Label>
-                    <p className="font-medium">{exception.risk.name}</p>
+                    <p className="text-sm font-medium text-slate-800">{exception.risk.name}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Approval Information Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("Approval Information")}</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h2 className="text-base font-semibold text-slate-800">{t("Approval Information")}</h2>
+            </div>
+            <div className="px-5 py-5">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">{t("Approved by")}</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approved by")}</Label>
                   <Input
                     value={formData.approvedBy || "-"}
                     disabled
-                    className="bg-gray-100"
+                    className="bg-slate-50"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">{t("Approved Date")}</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approved Date")}</Label>
                   <Input
                     value={formData.approvedDate ? new Date(formData.approvedDate).toLocaleDateString("en-GB") : "-"}
                     disabled
-                    className="bg-gray-100"
+                    className="bg-slate-50"
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Comments Summary Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{t("Recent Comments")}</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCommentDialogOpen(true)}
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  {t("Add Comment")}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="text-base font-semibold text-slate-800">{t("Recent Comments")}</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCommentDialogOpen(true)}
+              >
+                <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Add Comment")}
+              </Button>
+            </div>
+            <div className="px-5 py-5">
               {exception.comments && exception.comments.length > 0 ? (
                 <div className="space-y-3">
                   {exception.comments.slice(0, 3).map((comment) => (
                     <div
                       key={comment.id}
-                      className="p-3 bg-gray-50 rounded-lg"
+                      className="p-3 bg-slate-50 rounded-lg"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm">
+                        <span className="font-medium text-sm text-slate-800">
                           {comment.userName || t("Unknown User")}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-slate-500">
                           {new Date(comment.createdAt).toLocaleDateString(
                             "en-GB"
                           )}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700">{comment.content}</p>
+                      <p className="text-sm text-slate-600">{comment.content}</p>
                     </div>
                   ))}
                   {exception.comments.length > 3 && (
                     <Button
                       variant="link"
-                      className="w-full"
+                      className="w-full text-primary-600"
                       onClick={() => setCommentDialogOpen(true)}
                     >
                       {t("View all")} {exception.comments.length} {t("comments")}
@@ -849,32 +839,31 @@ export default function ExceptionDetailPage({
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-slate-500 text-center py-4">
                   {t("No comments yet")}
                 </p>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
       </div>
 
       {/* Comments Dialog */}
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("Comments")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Comments")}</DialogTitle>
+          </div>
+          <div className="px-6 py-4 space-y-4">
             {/* Comment List */}
             <div className="max-h-64 overflow-y-auto space-y-3">
               {exception.comments && exception.comments.length > 0 ? (
                 exception.comments.map((comment) => (
-                  <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
+                  <div key={comment.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">
+                      <span className="font-medium text-sm text-slate-800">
                         {comment.userName || t("Unknown User")}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-400">
                         {new Date(comment.createdAt).toLocaleDateString("en-GB")}{" "}
                         {new Date(comment.createdAt).toLocaleTimeString("en-GB", {
                           hour: "2-digit",
@@ -882,36 +871,36 @@ export default function ExceptionDetailPage({
                         })}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700">{comment.content}</p>
+                    <p className="text-sm text-slate-600">{comment.content}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-sm text-slate-400 text-center py-6">
                   {t("No comments yet")}
                 </p>
               )}
             </div>
+          </div>
 
-            {/* Add Comment */}
-            <div className="border-t pt-4">
-              <Label className="font-medium">{t("Add a comment")}</Label>
-              <div className="flex gap-2 mt-2">
-                <Textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder={t("Type your comment...")}
-                  rows={2}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleAddComment}
-                  disabled={!newComment.trim() || submittingComment}
-                  size="icon"
-                  className="h-auto"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+          {/* Add Comment Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Add a comment")}</Label>
+            <div className="flex items-end gap-2 mt-2">
+              <Textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder={t("Type your comment...")}
+                rows={2}
+                className="flex-1 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-primary-500/20 focus-visible:ring-offset-0 focus-visible:border-primary-300 transition-colors resize-none"
+              />
+              <Button
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || submittingComment}
+                size="icon"
+                className="h-9 w-9 rounded-lg shrink-0"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -919,32 +908,34 @@ export default function ExceptionDetailPage({
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("Confirmation")}</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
+          <AlertDialogHeader className="px-6 py-4 border-b border-slate-100">
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Confirmation")}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500">
               {t("Are you sure you want to delete this exception? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>{t("Delete")}</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Send Back Dialog */}
       <Dialog open={sendBackDialogOpen} onOpenChange={setSendBackDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("Send Back Exception")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Send Back Exception")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm text-slate-500">
               {t("Please provide a reason for sending back this exception request.")}
             </p>
-            <div className="space-y-2">
-              <Label className="font-medium">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                 {t("Comment")} <span className="text-red-500">*</span>
               </Label>
               <Textarea
@@ -952,74 +943,78 @@ export default function ExceptionDetailPage({
                 onChange={(e) => setSendBackComment(e.target.value)}
                 placeholder={t("Enter reason for sending back...")}
                 rows={4}
+                className="focus-visible:ring-2 focus-visible:ring-primary-500/20 focus-visible:ring-offset-0 focus-visible:border-primary-300"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setSendBackComment("");
-                  setSendBackDialogOpen(false);
-                }}
-              >
-                {t("Cancel")}
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleSendBack}
-                disabled={!sendBackComment.trim() || approving}
-              >
-                {approving ? t("Processing...") : t("Send Back")}
-              </Button>
-            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSendBackComment("");
+                setSendBackDialogOpen(false);
+              }}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleSendBack}
+              disabled={!sendBackComment.trim() || approving}
+            >
+              {approving ? t("Processing...") : t("Send Back")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Resubmit Dialog - for rejected exceptions */}
       <Dialog open={resubmitDialogOpen} onOpenChange={setResubmitDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("Resubmit Exception")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Resubmit Exception")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm text-slate-500">
               {t("Please provide a comment explaining the changes made before resubmitting for approval.")}
             </p>
-            <div className="space-y-2">
-              <Label className="font-medium">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                 {t("Comment")} <span className="text-red-500">*</span>
               </Label>
               <Textarea
                 value={resubmitComment}
                 onChange={(e) => setResubmitComment(e.target.value)}
                 placeholder={t("Enter your comment...")}
+                className="focus-visible:ring-2 focus-visible:ring-primary-500/20 focus-visible:ring-offset-0 focus-visible:border-primary-300"
                 rows={4}
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setResubmitComment("");
-                  setResubmitDialogOpen(false);
-                }}
-              >
-                {t("Cancel")}
-              </Button>
-              <Button
-                type="button"
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={handleResubmit}
-                disabled={!resubmitComment.trim() || resubmitting}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {resubmitting ? t("Submitting...") : t("Submit")}
-              </Button>
-            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setResubmitComment("");
+                setResubmitDialogOpen(false);
+              }}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleResubmit}
+              disabled={!resubmitComment.trim() || resubmitting}
+            >
+              <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {resubmitting ? t("Submitting...") : t("Submit")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

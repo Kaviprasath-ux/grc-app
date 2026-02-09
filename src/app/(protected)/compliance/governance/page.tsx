@@ -64,6 +64,8 @@ import {
   Link2,
   Download,
   X,
+  Search,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -701,7 +703,7 @@ export default function GovernancePage() {
   }) => {
     return (
       <div
-        className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+        className={`bg-white rounded-xl p-4 cursor-pointer transition-all ${
           isSelected
             ? "border-2 border-primary-500"
             : "border border-slate-200 hover:border-slate-300"
@@ -709,7 +711,7 @@ export default function GovernancePage() {
         onClick={onClick}
       >
         <div className="flex items-start justify-between mb-3">
-          <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+          <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
             <Icon className="h-5 w-5" />
           </div>
         </div>
@@ -744,7 +746,7 @@ export default function GovernancePage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Governance")}</span>
       </nav>
 
@@ -804,40 +806,8 @@ export default function GovernancePage() {
                 <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" onClick={() => handleStatusCardClick("Needs Review")} isSelected={statusFilter === "Needs Review"} />
               </div>
 
-              {/* Search, Filter, and Action Buttons Row */}
-              <div className="flex items-center gap-3">
-                <Input
-                  placeholder={t("Search by code, name, department, assignee, approver...")}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="max-w-md bg-white"
-                />
-                <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                  <SelectTrigger className="w-[200px] bg-white">
-                    <SelectValue placeholder={t("Integrated Framework")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                    <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-                    {frameworks.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-                  <SelectTrigger className="w-[160px] bg-white">
-                    <SelectValue placeholder={t("Status")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4} className="bg-white">
-                    <SelectItem value="all">{t("All Statuses")}</SelectItem>
-                    <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
-                    <SelectItem value="Draft">{t("Draft")}</SelectItem>
-                    <SelectItem value="Approved">{t("Approved")}</SelectItem>
-                    <SelectItem value="Published">{t("Published")}</SelectItem>
-                    <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex-1" />
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2">
                 <Button variant="outline" size="sm">
                   <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Export")}
@@ -851,79 +821,122 @@ export default function GovernancePage() {
                 </Button>
               </div>
 
-              {/* Table */}
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="relative h-8 w-8">
-                    <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-                    <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+              {/* Data Table */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {/* Toolbar */}
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100">
+                  <div className="relative max-w-xs">
+                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={t("Search by code, name, department...")}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                    <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                      <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                        <SelectValue placeholder={t("Integrated Framework")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                        <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
+                        {frameworks.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
+                      <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                        <SelectValue placeholder={t("Status")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white">
+                        <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                        <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
+                        <SelectItem value="Draft">{t("Draft")}</SelectItem>
+                        <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                        <SelectItem value="Published">{t("Published")}</SelectItem>
+                        <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <>
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-slate-100 bg-slate-50/80">
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Code")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Name")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Assignee")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Approver")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Actions")}</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Code")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Approver")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {policies.map((policy) => (
                         <TableRow
                           key={policy.id}
-                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50 transition-colors"
-                          onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                          className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                         >
-                          <TableCell className="py-3.5 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
-                          <TableCell className="py-3.5 text-sm text-slate-700 max-w-[250px] truncate" title={policy.name}>{policy.name}</TableCell>
-                          <TableCell className="py-3.5">
+                          <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{policy.code}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700 max-w-[250px] truncate" title={policy.name}>{policy.name}</TableCell>
+                          <TableCell className="py-3">
                             <Badge className={getStatusBadgeColor(policy.status)}>{t(policy.status)}</Badge>
                           </TableCell>
-                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
-                          <TableCell className="py-3.5 pr-4">
+                          <TableCell className="py-3 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3 pe-5">
                             <div className="flex gap-1">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditDialog(policy);
-                                }}
+                                className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                onClick={() => router.push(`/compliance/governance/${policy.id}`)}
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Eye className="h-3.5 w-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-semantic-error hover:bg-red-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                                className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                onClick={() => openEditDialog(policy)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                                onClick={() => {
                                   setPolicyToDelete(policy);
                                   setIsDeleteDialogOpen(true);
                                 }}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </TableCell>
                         </TableRow>
                       ))}
                       {policies.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-32 text-center">
-                            <div className="flex flex-col items-center gap-2">
-                              <FileText className="h-8 w-8 text-slate-300" />
-                              <p className="text-slate-500">{t(`No ${docType.toLowerCase()}s found`)}</p>
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={7} className="py-16 text-center">
+                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                              <FileText className="h-6 w-6 text-primary-400" />
                             </div>
+                            <p className="text-sm font-medium text-slate-600 mb-1">{t(`No ${docType.toLowerCase()}s found`)}</p>
+                            <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
                           </TableCell>
                         </TableRow>
                       )}
@@ -931,30 +944,22 @@ export default function GovernancePage() {
                   </Table>
 
                   {/* Pagination */}
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/30">
-                    <span className="text-sm text-slate-500">
+                  <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                    <span className="text-xs text-slate-500">
                       {total > 0 ? `${t("Showing")} ${startItem}-${endItem} ${t("of")} ${total}` : t(`No ${docType.toLowerCase()}s`)}
                     </span>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="h-8 w-8 disabled:opacity-40">
-                        <ChevronsLeft className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-8 w-8 disabled:opacity-40">
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-7 w-7 text-slate-400 hover:text-slate-600">
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <span className="text-sm text-slate-600 px-2">
-                        {currentPage} / {totalPages || 1}
-                      </span>
-                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-8 w-8 disabled:opacity-40">
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-7 w-7 text-slate-400 hover:text-slate-600">
                         <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} className="h-8 w-8 disabled:opacity-40">
-                        <ChevronsRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                </div>
+                </>
               )}
+              </div>
             </TabsContent>
           ))}
 
@@ -1008,39 +1013,39 @@ export default function GovernancePage() {
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-b border-slate-100 bg-slate-50/80">
-                      <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Document ID")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Document Name")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Type")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Uploaded")}</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[120px]">{t("Actions")}</TableHead>
+                    <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Document ID")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Document Name")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Uploaded")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[120px]">{t("Actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {vaultDocuments.map((doc) => (
-                      <TableRow key={doc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                        <TableCell className="py-3.5 pl-4 text-sm font-medium text-slate-900">{doc.documentId}</TableCell>
-                        <TableCell className="py-3.5 text-sm text-slate-700 max-w-[250px] truncate" title={doc.name}>{doc.name}</TableCell>
-                        <TableCell className="py-3.5">
+                      <TableRow key={doc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                        <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{doc.documentId}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700 max-w-[250px] truncate" title={doc.name}>{doc.name}</TableCell>
+                        <TableCell className="py-3">
                           <Badge variant="outline" className="text-xs">{doc.type}</Badge>
                         </TableCell>
-                        <TableCell className="py-3.5">
+                        <TableCell className="py-3">
                           <Badge className={getStatusBadgeColor(doc.status)}>{t(doc.status)}</Badge>
                         </TableCell>
-                        <TableCell className="py-3.5 text-sm text-slate-600">
+                        <TableCell className="py-3 text-sm text-slate-600">
                           {new Date(doc.uploadedAt).toLocaleDateString("en-GB", {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
                           })}
                         </TableCell>
-                        <TableCell className="py-3.5 pr-4">
+                        <TableCell className="py-3 pe-5">
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                               onClick={() => openLinkDialog(doc)}
                               title={t("Link Governance")}
                             >
@@ -1049,7 +1054,7 @@ export default function GovernancePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                               onClick={() => window.open(`/api/governance-vault/${doc.id}/download`, "_blank")}
                               title={t("Download")}
                             >
@@ -1058,24 +1063,24 @@ export default function GovernancePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                              className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                               onClick={() => handleDeleteVaultDoc(doc.id)}
                               title={t("Delete")}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
                     ))}
                     {vaultDocuments.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-32 text-center">
-                          <div className="flex flex-col items-center gap-2">
-                            <FileText className="h-8 w-8 text-slate-300" />
-                            <p className="text-slate-500">{t("No documents found")}</p>
-                            <p className="text-xs text-slate-400">{t("Upload documents to get started")}</p>
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={6} className="py-16 text-center">
+                          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                            <FileText className="h-6 w-6 text-primary-400" />
                           </div>
+                          <p className="text-sm font-medium text-slate-600 mb-1">{t("No documents found")}</p>
+                          <p className="text-xs text-slate-400">{t("Upload documents to get started")}</p>
                         </TableCell>
                       </TableRow>
                     )}
@@ -1095,28 +1100,9 @@ export default function GovernancePage() {
           </TabsList>
 
           {["Policy", "Standard", "Procedure"].map((docType) => (
-            <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
-              {/* Search and Actions Bar */}
-              <div className="flex items-center gap-3">
-                <Input
-                  placeholder={t(`Search by ${docType.toLowerCase()} name or code...`)}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="max-w-md bg-white"
-                />
-                <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                  <SelectTrigger className="w-[200px] bg-white">
-                    <SelectValue placeholder={t("Integrated Framework")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                    <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-                    {frameworks.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex-1" />
+            <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2">
                 <PermissionGate resource="compliance.governance" action="delete">
                   <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
                     <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1140,69 +1126,99 @@ export default function GovernancePage() {
                 </PermissionGate>
               </div>
 
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="relative h-8 w-8">
-                    <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-                    <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+              {/* Data Table */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {/* Toolbar */}
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100">
+                  <div className="relative max-w-xs">
+                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={t(`Search by ${docType.toLowerCase()} name or code...`)}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                    <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                      <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                        <SelectValue placeholder={t("Integrated Framework")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                        <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
+                        {frameworks.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
               ) : (
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <>
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-slate-100 bg-slate-50/80">
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Code")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Name")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Assignee")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Approver")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Actions")}</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Code")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Approver")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {policies.map((policy) => (
                         <TableRow
                           key={policy.id}
-                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50 transition-colors"
-                          onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                          className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                         >
-                          <TableCell className="py-3.5 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
-                          <TableCell className="py-3.5 text-sm text-slate-700 max-w-[250px] truncate" title={policy.name}>{policy.name}</TableCell>
-                          <TableCell className="py-3.5">
+                          <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{policy.code}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700 max-w-[250px] truncate" title={policy.name}>{policy.name}</TableCell>
+                          <TableCell className="py-3">
                             <Badge className={getStatusBadgeColor(policy.status)}>{t(policy.status)}</Badge>
                           </TableCell>
-                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3.5 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
-                          <TableCell className="py-3.5 pr-4">
+                          <TableCell className="py-3 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3 pe-5">
                             <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                onClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
                               <PermissionGate resource="compliance.governance" action="edit">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openEditDialog(policy);
-                                  }}
+                                  className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                  onClick={() => openEditDialog(policy)}
                                 >
-                                  <Pencil className="h-4 w-4" />
+                                  <Pencil className="h-3.5 w-3.5" />
                                 </Button>
                               </PermissionGate>
                               <PermissionGate resource="compliance.governance" action="delete">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error hover:bg-red-50"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
+                                  className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                                  onClick={() => {
                                     setPolicyToDelete(policy);
                                     setIsDeleteDialogOpen(true);
                                   }}
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </PermissionGate>
                             </div>
@@ -1210,42 +1226,35 @@ export default function GovernancePage() {
                         </TableRow>
                       ))}
                       {policies.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-32 text-center">
-                            <div className="flex flex-col items-center gap-2">
-                              <FileText className="h-8 w-8 text-slate-300" />
-                              <p className="text-slate-500">{t(`No ${docType.toLowerCase()}s found`)}</p>
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={7} className="py-16 text-center">
+                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                              <FileText className="h-6 w-6 text-primary-400" />
                             </div>
+                            <p className="text-sm font-medium text-slate-600 mb-1">{t(`No ${docType.toLowerCase()}s found`)}</p>
+                            <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
                           </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
 
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/30">
-                    <span className="text-sm text-slate-500">
+                  <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                    <span className="text-xs text-slate-500">
                       {total > 0 ? `${t("Showing")} ${startItem}-${endItem} ${t("of")} ${total}` : t(`No ${docType.toLowerCase()}s`)}
                     </span>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="h-8 w-8 disabled:opacity-40">
-                        <ChevronsLeft className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-8 w-8 disabled:opacity-40">
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-7 w-7 text-slate-400 hover:text-slate-600">
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <span className="text-sm text-slate-600 px-2">
-                        {currentPage} / {totalPages || 1}
-                      </span>
-                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-8 w-8 disabled:opacity-40">
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-7 w-7 text-slate-400 hover:text-slate-600">
                         <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} className="h-8 w-8 disabled:opacity-40">
-                        <ChevronsRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                </div>
+                </>
               )}
+              </div>
             </TabsContent>
           ))}
         </Tabs>
@@ -1253,9 +1262,9 @@ export default function GovernancePage() {
 
       {/* Link Governance Dialog */}
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" showCloseButton={false}>
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" showCloseButton={false}>
           <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Governance Documents")}</DialogTitle>
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Governance Documents")}</DialogTitle>
             <Button variant="ghost" size="icon" onClick={() => setIsLinkDialogOpen(false)} className="h-8 w-8 text-slate-400 hover:text-slate-600">
               <X className="h-4 w-4" />
             </Button>
@@ -1328,15 +1337,18 @@ export default function GovernancePage() {
                 </div>
               ))}
               {filteredGovernanceForLink.length === 0 && (
-                <div className="text-center py-10">
-                  <FileText className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                  <p className="text-slate-500">{t("No governance documents found")}</p>
+                <div className="py-10 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                    <FileText className="h-6 w-6 text-primary-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No governance documents found")}</p>
+                  <p className="text-xs text-slate-400">{t("Try adjusting your search")}</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/30 flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsLinkDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1352,10 +1364,10 @@ export default function GovernancePage() {
         if (!open) resetCreateDialog();
         setIsCreateDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Governance")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("New Governance")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1602,7 +1614,7 @@ export default function GovernancePage() {
             )}
           </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1663,10 +1675,10 @@ export default function GovernancePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+              <DialogTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
                 {t("Import")} {t(activeDocType)}s
               </DialogTitle>
@@ -1699,7 +1711,9 @@ export default function GovernancePage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <FileSpreadsheet className="h-10 w-10 mx-auto text-slate-300" />
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto">
+                    <FileSpreadsheet className="h-6 w-6 text-primary-400" />
+                  </div>
                   <div>
                     <p className="text-sm text-slate-600">
                       {t("Drag and drop a file here, or click to browse")}
@@ -1725,7 +1739,7 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
@@ -1746,10 +1760,10 @@ export default function GovernancePage() {
         }
         setIsEditDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit")} {t(editingPolicy?.documentType || "Governance")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit")} {t(editingPolicy?.documentType || "Governance")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1833,7 +1847,7 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               setIsEditDialogOpen(false);
               setEditingPolicy(null);

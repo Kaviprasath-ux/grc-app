@@ -3,26 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  FileText,
   Download,
-  Shield,
-  AlertTriangle,
-  CheckCircle,
-  TrendingUp,
-  FileWarning,
-  BarChart3,
-  ClipboardList,
-  Scale,
   X,
   ChevronRight,
   Home,
+  FileBarChart,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -51,96 +43,84 @@ const reportTypes = [
     id: "compliance-summary",
     title: "Compliance Summary Report",
     description: "Overall compliance status across all frameworks",
-    icon: BarChart3,
     category: "compliance",
   },
   {
     id: "control-effectiveness",
     title: "Control Effectiveness Report",
     description: "Analysis of control implementation and effectiveness",
-    icon: Shield,
     category: "compliance",
   },
   {
     id: "framework-compliance",
     title: "Framework Compliance Report",
     description: "Compliance status by framework and requirements",
-    icon: ClipboardList,
     category: "compliance",
   },
   {
     id: "risk-assessment",
     title: "Risk Assessment Report",
     description: "Risk register with ratings and mitigation status",
-    icon: AlertTriangle,
     category: "risk",
   },
   {
     id: "risk-treatment",
     title: "Risk Treatment Report",
     description: "Risk treatment plans and progress tracking",
-    icon: Scale,
     category: "risk",
   },
   {
     id: "risk-matrix",
     title: "Risk Matrix Report",
     description: "Visual risk matrix with heat map analysis",
-    icon: BarChart3,
     category: "risk",
   },
   {
     id: "evidence-collection",
     title: "Evidence Collection Report",
     description: "Status of evidence collection and gaps",
-    icon: FileText,
     category: "evidence",
   },
   {
     id: "evidence-review",
     title: "Evidence Review Report",
     description: "Evidence review status and pending items",
-    icon: CheckCircle,
     category: "evidence",
   },
   {
     id: "exception-report",
     title: "Exception Report",
     description: "All active exceptions and their justifications",
-    icon: FileWarning,
     category: "governance",
   },
   {
     id: "policy-report",
     title: "Policy Compliance Report",
     description: "Policy status and compliance tracking",
-    icon: FileText,
     category: "governance",
   },
   {
     id: "kpi-performance",
     title: "KPI Performance Report",
     description: "Key performance indicators and trends",
-    icon: TrendingUp,
     category: "kpi",
   },
   {
     id: "kpi-dashboard",
     title: "KPI Dashboard Report",
     description: "Executive KPI dashboard with metrics",
-    icon: BarChart3,
     category: "kpi",
   },
 ];
 
-// Category colors using design system
-const categoryColors: Record<string, { bg: string; icon: string }> = {
-  compliance: { bg: "bg-info-light", icon: "text-info-dark" },
-  risk: { bg: "bg-warning-light", icon: "text-warning-dark" },
-  evidence: { bg: "bg-success-light", icon: "text-success-dark" },
-  governance: { bg: "bg-primary-100", icon: "text-primary-700" },
-  kpi: { bg: "bg-info-light", icon: "text-info-dark" },
-};
+const categoryTabs = [
+  { id: "all", label: "All" },
+  { id: "compliance", label: "Compliance" },
+  { id: "risk", label: "Risk" },
+  { id: "evidence", label: "Evidence" },
+  { id: "governance", label: "Governance" },
+  { id: "kpi", label: "KPI" },
+];
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -152,6 +132,8 @@ export default function ReportsPage() {
   const [isManagementReportOpen, setIsManagementReportOpen] = useState(false);
   const [reportFormat, setReportFormat] = useState("pdf");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Management Report Parameters - matching UAT checkboxes
   const [overallCompliance, setOverallCompliance] = useState(true);
@@ -227,57 +209,14 @@ export default function ReportsPage() {
     router.push(`/compliance/reports/management?${params.toString()}`);
   };
 
-  // Group reports by category
-  const complianceReports = reportTypes.filter(
-    (r) => r.category === "compliance"
-  );
-  const riskReports = reportTypes.filter((r) => r.category === "risk");
-  const evidenceReports = reportTypes.filter((r) => r.category === "evidence");
-  const governanceReports = reportTypes.filter(
-    (r) => r.category === "governance"
-  );
-  const kpiReports = reportTypes.filter((r) => r.category === "kpi");
-
-  // Render report card
-  const renderReportCard = (
-    report: (typeof reportTypes)[0],
-    category: string
-  ) => {
-    const Icon = report.icon;
-    const colors = categoryColors[category];
-    return (
-      <div
-        key={report.id}
-        className="bg-white rounded-xl border border-slate-200 p-5"
-      >
-        <div className="flex items-start gap-4">
-          <div className={`p-3 rounded-lg ${colors.bg}`}>
-            <Icon className={`h-6 w-6 ${colors.icon}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-slate-800">
-              {t(report.title)}
-            </h3>
-            <p className="text-sm text-slate-500 mt-1">{t(report.description)}</p>
-          </div>
-        </div>
-        <div className="mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => {
-              setSelectedReport(report.id);
-              setIsGenerateDialogOpen(true);
-            }}
-          >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            {t("Generate Report")}
-          </Button>
-        </div>
-      </div>
-    );
-  };
+  // Filter reports by category and search
+  const filteredReports = reportTypes.filter((report) => {
+    const matchesCategory = activeCategory === "all" || report.category === activeCategory;
+    const matchesSearch = searchQuery === "" ||
+      report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      report.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="space-y-6">
@@ -289,7 +228,7 @@ export default function ReportsPage() {
               <Home className="h-4 w-4" />
               <span>{t("GRC")}</span>
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             <span className="text-slate-500">{t("Compliance")}</span>
           </>
         ) : (
@@ -298,126 +237,145 @@ export default function ReportsPage() {
             <span>{t("Compliance")}</span>
           </Link>
         )}
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
-        <Button size="sm" onClick={() => setIsManagementReportOpen(true)}>
-          <FileText className="h-4 w-4 mr-2" />
-          {t("Get Management Report")}
-        </Button>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
 
-      {/* Compliance Reports */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">
-          {t("Compliance Reports")}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {complianceReports.map((report) =>
-            renderReportCard(report, "compliance")
+      {/* Management Report - Featured Card */}
+      <button
+        onClick={() => setIsManagementReportOpen(true)}
+        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-5 flex items-center gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
+      >
+        <div className="p-2.5 bg-primary-100/80 rounded-lg flex-shrink-0">
+          <FileBarChart className="h-5 w-5 text-primary-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-primary-900">{t("Management Report")}</h3>
+          <p className="text-xs text-primary-600/70 mt-0.5">{t("Generate a comprehensive compliance report with charts across frameworks, controls, and governance")}</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-primary-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
+      </button>
+
+      {/* Reports Card */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Toolbar: Tabs + Search */}
+        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+          {/* Category Tabs */}
+          <div className="flex items-center gap-1">
+            {categoryTabs.map((tab) => {
+              const count = tab.id === "all"
+                ? reportTypes.length
+                : reportTypes.filter((r) => r.category === tab.id).length;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveCategory(tab.id)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                    activeCategory === tab.id
+                      ? "bg-primary-50 text-primary-700"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {t(tab.label)} <span className="ml-1 text-[10px] opacity-60">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search */}
+          <div className="relative w-56">
+            <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search reports...")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full ltr:pl-8 rtl:pr-8 ltr:pr-3 rtl:pl-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Report List */}
+        <div className="divide-y divide-slate-100">
+          {filteredReports.length > 0 ? (
+            filteredReports.map((report) => (
+              <button
+                key={report.id}
+                onClick={() => {
+                  setSelectedReport(report.id);
+                  setIsGenerateDialogOpen(true);
+                }}
+                className="group w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+              >
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium text-slate-800">{t(report.title)}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">{t(report.description)}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
+              </button>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+                <FileBarChart className="h-6 w-6 text-primary-600" />
+              </div>
+              <p className="text-sm font-medium text-slate-800">{t("No reports found")}</p>
+              <p className="text-xs text-slate-500 mt-1">{t("Try adjusting your search or filter")}</p>
+            </div>
           )}
-        </div>
-      </div>
-
-      {/* Risk Reports */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">{t("Risk Reports")}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {riskReports.map((report) => renderReportCard(report, "risk"))}
-        </div>
-      </div>
-
-      {/* Evidence Reports */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">
-          {t("Evidence Reports")}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {evidenceReports.map((report) =>
-            renderReportCard(report, "evidence")
-          )}
-        </div>
-      </div>
-
-      {/* Governance Reports */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">
-          {t("Governance Reports")}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {governanceReports.map((report) =>
-            renderReportCard(report, "governance")
-          )}
-        </div>
-      </div>
-
-      {/* KPI Reports */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">{t("KPI Reports")}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {kpiReports.map((report) => renderReportCard(report, "kpi"))}
         </div>
       </div>
 
       {/* Generate Report Dialog */}
       <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">
-                {t("Generate Report")}
-              </DialogTitle>
-            </DialogHeader>
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">
+              {t("Generate Report")}
+            </DialogTitle>
           </div>
-
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <div className="space-y-4">
-              <p className="text-sm text-slate-500">
-                {t("Configure and generate the")}{" "}
-                {t(reportTypes.find((r) => r.id === selectedReport)?.title || "")}
-              </p>
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("Report Format")}
-                </Label>
-                <Select value={reportFormat} onValueChange={setReportFormat}>
-                  <SelectTrigger className="w-full bg-white border-slate-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="pdf">{t("PDF Document")}</SelectItem>
-                    <SelectItem value="excel">{t("Excel Spreadsheet")}</SelectItem>
-                    <SelectItem value="csv">{t("CSV File")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                <h4 className="font-medium text-slate-800 mb-2">
-                  {t("Report Details")}
-                </h4>
-                <ul className="text-sm text-slate-500 space-y-1">
-                  <li>
-                    • {t("Report Type")}:{" "}
-                    {t(reportTypes.find((r) => r.id === selectedReport)?.title || "")}
-                  </li>
-                  <li>• {t("Format")}: {reportFormat.toUpperCase()}</li>
-                  <li>• {t("Data Range")}: {t("All available data")}</li>
-                </ul>
-              </div>
+          <div className="px-6 py-4 space-y-4">
+            <p className="text-sm text-slate-500">
+              {t("Configure and generate the")}{" "}
+              {t(reportTypes.find((r) => r.id === selectedReport)?.title || "")}
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {t("Report Format")}
+              </Label>
+              <Select value={reportFormat} onValueChange={setReportFormat}>
+                <SelectTrigger className="w-full bg-white border-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4}>
+                  <SelectItem value="pdf">{t("PDF Document")}</SelectItem>
+                  <SelectItem value="excel">{t("Excel Spreadsheet")}</SelectItem>
+                  <SelectItem value="csv">{t("CSV File")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+              <h4 className="font-medium text-slate-800 mb-2">
+                {t("Report Details")}
+              </h4>
+              <ul className="text-sm text-slate-500 space-y-1">
+                <li>
+                  • {t("Report Type")}:{" "}
+                  {t(reportTypes.find((r) => r.id === selectedReport)?.title || "")}
+                </li>
+                <li>• {t("Format")}: {reportFormat.toUpperCase()}</li>
+                <li>• {t("Data Range")}: {t("All available data")}</li>
+              </ul>
             </div>
           </div>
-
-          {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsGenerateDialogOpen(false)}
+              className="border-slate-200"
             >
               {t("Cancel")}
             </Button>
@@ -426,7 +384,7 @@ export default function ReportsPage() {
                 <>{t("Generating...")}</>
               ) : (
                 <>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Generate & Download")}
                 </>
               )}
@@ -440,18 +398,13 @@ export default function ReportsPage() {
         open={isManagementReportOpen}
         onOpenChange={setIsManagementReportOpen}
       >
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">
-                {t("Compliance Report Parameters")}
-              </DialogTitle>
-            </DialogHeader>
+        <DialogContent className="max-w-[700px] p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">
+              {t("Compliance Report Parameters")}
+            </DialogTitle>
           </div>
-
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="px-6 py-5">
             {/* Checkbox grid - 2 columns, 5 rows matching UAT layout */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               {/* Row 1 */}
@@ -465,7 +418,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="overallCompliance"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Overall Compliance")}
                 </label>
@@ -480,7 +433,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="frameworkCompliance"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Framework Compliance")}
                 </label>
@@ -497,7 +450,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="controlRequirementsByFramework"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Control Requirements by Framework")}
                 </label>
@@ -512,7 +465,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="controlImplementationsByFramework"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Control Implementations by Framework")}
                 </label>
@@ -529,7 +482,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="complianceRequirementsExceptions"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Compliance Requirements Exceptions")}
                 </label>
@@ -544,7 +497,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="controlExceptions"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Control Exceptions")}
                 </label>
@@ -561,7 +514,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="frameworkWithGovernanceData"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Framework along with Governance Data")}
                 </label>
@@ -576,7 +529,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="complianceIssues"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Compliance Issues")}
                 </label>
@@ -593,7 +546,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="domainBasedProgressCompliance"
-                  className="text-sm text-slate-700 cursor-pointer"
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
                   {t("Domain based Progress Compliance (Self-Assessment model)")}
                 </label>
@@ -619,7 +572,7 @@ export default function ReportsPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedFrameworkId("")}
-                      className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute ltr:right-8 rtl:left-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -628,12 +581,11 @@ export default function ReportsPage() {
               </div>
             </div>
           </div>
-
-          {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsManagementReportOpen(false)}
+              className="border-slate-200"
             >
               {t("Cancel")}
             </Button>

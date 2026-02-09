@@ -65,6 +65,8 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { EvidenceAIReview } from "@/components/evidence/EvidenceAIReview";
 
@@ -2208,13 +2210,13 @@ export default function EvidenceDetailPage() {
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
                     <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
-                      <DialogTitle className="text-lg font-semibold text-primary-700">{t("Link Control")}</DialogTitle>
+                      <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Control")}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
                       {/* Filters */}
                       <div className="grid grid-cols-3 gap-3">
                         <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
-                          <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectTrigger className="bg-slate-50 border border-slate-200 rounded-lg text-sm">
                             <SelectValue placeholder={t("Domain")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -2225,7 +2227,7 @@ export default function EvidenceDetailPage() {
                           </SelectContent>
                         </Select>
                         <Select value={controlFunctionalGroupingFilter} onValueChange={setControlFunctionalGroupingFilter}>
-                          <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectTrigger className="bg-slate-50 border border-slate-200 rounded-lg text-sm">
                             <SelectValue placeholder={t("Functional Grouping")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -2236,7 +2238,7 @@ export default function EvidenceDetailPage() {
                           </SelectContent>
                         </Select>
                         <Select value={controlFrameworkFilter} onValueChange={setControlFrameworkFilter}>
-                          <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectTrigger className="bg-slate-50 border border-slate-200 rounded-lg text-sm">
                             <SelectValue placeholder={t("Framework")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -2255,7 +2257,7 @@ export default function EvidenceDetailPage() {
                           placeholder={t("Search By Control Code , Name")}
                           value={controlSearchQuery}
                           onChange={(e) => setControlSearchQuery(e.target.value)}
-                          className="pl-10 pr-10 bg-white border-2 border-primary-200 rounded-full"
+                          className="pl-10 pr-10 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                         />
                         {controlSearchQuery && (
                           <button
@@ -2268,11 +2270,11 @@ export default function EvidenceDetailPage() {
                       </div>
 
                       {/* Control cards list */}
-                      <div className="border-2 border-primary-200 rounded-xl max-h-[350px] overflow-y-auto">
+                      <div className="border border-slate-200 rounded-lg max-h-[350px] overflow-y-auto">
                         {availableControls.map((control) => (
                           <div
                             key={control.id}
-                            className={`flex items-start gap-3 p-4 border-b-2 border-primary-100 last:border-b-0 cursor-pointer hover:bg-primary-50 transition-colors ${
+                            className={`flex items-start gap-3 p-4 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50/60 transition-colors ${
                               selectedControlIds.includes(control.id) ? "bg-primary-50" : ""
                             }`}
                             onClick={() => {
@@ -2297,10 +2299,10 @@ export default function EvidenceDetailPage() {
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
-                                <span className="font-semibold text-primary-700">
+                                <span className="font-medium text-slate-800">
                                   {control.controlCode} : {control.name}
                                 </span>
-                                <Badge className="bg-primary-600 text-white rounded-full px-3">
+                                <Badge className="bg-slate-100 text-slate-600 rounded-full px-3 text-xs font-medium">
                                   {control.entities || "Organization Wide"}
                                 </Badge>
                               </div>
@@ -2321,7 +2323,7 @@ export default function EvidenceDetailPage() {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white flex-shrink-0">
+                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                       <Button
                         onClick={handleLinkControls}
                         disabled={selectedControlIds.length === 0}
@@ -2422,21 +2424,21 @@ export default function EvidenceDetailPage() {
 
       {/* Comments Dialog */}
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("Comments")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Comments")}</DialogTitle>
+          </div>
+          <div className="px-6 py-4 space-y-4">
             {/* Comment List */}
             <div className="max-h-64 overflow-y-auto space-y-3">
               {evidence.comments && evidence.comments.length > 0 ? (
                 evidence.comments.map((comment) => (
-                  <div key={comment.id} className="p-3 bg-slate-50 rounded-lg">
+                  <div key={comment.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">
+                      <span className="font-medium text-sm text-slate-800">
                         {comment.userName || t("Unknown User")}
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-400">
                         {new Date(comment.createdAt).toLocaleDateString("en-GB")}{" "}
                         {new Date(comment.createdAt).toLocaleTimeString("en-GB", {
                           hour: "2-digit",
@@ -2444,36 +2446,36 @@ export default function EvidenceDetailPage() {
                         })}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-700">{comment.content}</p>
+                    <p className="text-sm text-slate-600">{comment.content}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-slate-500 text-center py-4">
+                <p className="text-sm text-slate-400 text-center py-6">
                   {t("No comments yet")}
                 </p>
               )}
             </div>
+          </div>
 
-            {/* Add Comment */}
-            <div className="border-t pt-4">
-              <Label className="font-medium">{t("Add a comment")}</Label>
-              <div className="flex gap-2 mt-2">
-                <Textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder={t("Type your comment...")}
-                  rows={2}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleAddComment}
-                  disabled={!newComment.trim() || submittingComment}
-                  size="icon"
-                  className="h-auto"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+          {/* Add Comment Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Add a comment")}</Label>
+            <div className="flex items-end gap-2 mt-2">
+              <Textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder={t("Type your comment...")}
+                rows={2}
+                className="flex-1 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-primary-500/20 focus-visible:ring-offset-0 focus-visible:border-primary-300 transition-colors resize-none"
+              />
+              <Button
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || submittingComment}
+                size="icon"
+                className="h-9 w-9 rounded-lg shrink-0"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -2505,28 +2507,29 @@ export default function EvidenceDetailPage() {
             setIsDraggingFile(false);
           }
         }}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{t("Add Evidence Attachment")}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+          <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Evidence Attachment")}</DialogTitle>
+            </div>
+            <div className="px-6 py-5 space-y-4">
               {/* Date Picker */}
               <div>
-                <Input
-                  type="date"
-                  value={attachmentDate}
-                  onChange={(e) => setAttachmentDate(e.target.value)}
-                  className="w-full"
-                  placeholder="dd/mm/yyyy"
-                />
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Date")}</Label>
+                <div className="mt-1.5">
+                  <DatePicker
+                    value={attachmentDate || undefined}
+                    onChange={(date) => setAttachmentDate(date ? format(date, "yyyy-MM-dd") : "")}
+                    placeholder={t("Select date")}
+                  />
+                </div>
               </div>
 
               {/* Drag and Drop Area */}
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
                   isDraggingFile
-                    ? "border-primary bg-primary/5"
-                    : "border-slate-300 hover:border-slate-400"
+                    ? "border-primary-400 bg-primary-50"
+                    : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
                 }`}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -2555,14 +2558,15 @@ export default function EvidenceDetailPage() {
                 />
                 {selectedFile ? (
                   <div className="space-y-2">
-                    <FileText className="h-10 w-10 mx-auto text-primary" />
+                    <FileText className="h-10 w-10 mx-auto text-primary-500" />
                     <p className="text-sm font-medium text-slate-800">{selectedFile.name}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-400">
                       {(selectedFile.size / 1024).toFixed(1)} KB
                     </p>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="rounded-lg text-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFile(null);
@@ -2572,27 +2576,27 @@ export default function EvidenceDetailPage() {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-slate-500">{t("Drag and drop or select file.")}</p>
+                  <p className="text-sm text-slate-400">{t("Drag and drop or select file.")}</p>
                 )}
               </div>
+            </div>
 
-              {/* Submit Button */}
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleUploadAttachment}
-                  disabled={!selectedFile || uploading}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  {uploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      {t("Submitting...")}
-                    </>
-                  ) : (
-                    t("Submit")
-                  )}
-                </Button>
-              </div>
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+              <Button
+                onClick={handleUploadAttachment}
+                disabled={!selectedFile || uploading}
+                className="rounded-lg"
+              >
+                {uploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    {t("Submitting...")}
+                  </>
+                ) : (
+                  t("Submit")
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -2629,23 +2633,25 @@ export default function EvidenceDetailPage() {
           setArtifactSearchQuery("");
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("Link Artifacts")}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
+        <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Artifacts")}</DialogTitle>
+          </div>
+          <div className="px-6 py-4 space-y-4">
             {/* Search input */}
             <div className="relative">
-              <Input
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
                 placeholder={t("Search by Artifact Code or Name...")}
                 value={artifactSearchQuery}
                 onChange={(e) => setArtifactSearchQuery(e.target.value)}
-                className="w-full"
+                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-8 rtl:pl-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
               {artifactSearchQuery && (
                 <button
                   onClick={() => setArtifactSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -2653,7 +2659,7 @@ export default function EvidenceDetailPage() {
             </div>
 
             {/* Artifacts list */}
-            <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+            <div className="border border-slate-200 rounded-lg max-h-[400px] overflow-y-auto">
               {(() => {
                 // Filter out already linked artifacts
                 const linkedArtifactIds = evidence?.linkedArtifacts?.map(la => la.artifact.id) || [];
@@ -2670,10 +2676,15 @@ export default function EvidenceDetailPage() {
 
                 if (filteredArtifacts.length === 0) {
                   return (
-                    <div className="p-4 text-center text-slate-500">
-                      {artifactSearchQuery.trim()
-                        ? t("No artifacts found matching your search")
-                        : t("No available artifacts to link")}
+                    <div className="py-10 text-center">
+                      <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center mx-auto mb-2">
+                        <FileText className="h-5 w-5 text-slate-300" />
+                      </div>
+                      <p className="text-sm text-slate-400">
+                        {artifactSearchQuery.trim()
+                          ? t("No artifacts found matching your search")
+                          : t("No available artifacts to link")}
+                      </p>
                     </div>
                   );
                 }
@@ -2681,8 +2692,8 @@ export default function EvidenceDetailPage() {
                 return filteredArtifacts.map((artifact) => (
                   <div
                     key={artifact.id}
-                    className={`flex items-start gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-slate-50/60 ${
-                      selectedArtifactIds.includes(artifact.id) ? "bg-primary-50" : ""
+                    className={`flex items-start gap-3 px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer transition-colors ${
+                      selectedArtifactIds.includes(artifact.id) ? "bg-primary-50/60" : "hover:bg-slate-50/60"
                     }`}
                     onClick={() => {
                       setSelectedArtifactIds((prev) =>
@@ -2692,7 +2703,7 @@ export default function EvidenceDetailPage() {
                       );
                     }}
                   >
-                    <div onClick={(e) => e.stopPropagation()}>
+                    <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedArtifactIds.includes(artifact.id)}
                         onCheckedChange={() => {
@@ -2704,51 +2715,53 @@ export default function EvidenceDetailPage() {
                         }}
                       />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-primary-600" />
-                        <span className="font-medium">{artifact.artifactCode}</span>
-                        <span className="text-slate-600">: {artifact.name}</span>
+                        <FileText className="h-4 w-4 text-primary-500 shrink-0" />
+                        <span className="text-sm font-medium text-slate-800">{artifact.artifactCode}</span>
                       </div>
-                      <p className="text-sm text-slate-500 mt-1">{artifact.fileName}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">{artifact.fileName}</p>
                     </div>
                   </div>
                 ));
               })()}
             </div>
 
-            <p className="text-sm text-slate-600">
+            <p className="text-xs text-slate-500">
               {selectedArtifactIds.length} {t("artifact(s) selected")}
             </p>
+          </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setLinkArtifactsDialogOpen(false);
-                  setSelectedArtifactIds([]);
-                  setArtifactSearchQuery("");
-                }}
-              >
-                {t("Cancel")}
-              </Button>
-              <Button
-                onClick={handleLinkArtifacts}
-                disabled={selectedArtifactIds.length === 0 || linkingArtifacts}
-              >
-                {linkingArtifacts ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t("Linking...")}
-                  </>
-                ) : (
-                  <>
-                    <Link2 className="h-4 w-4 mr-2" />
-                    {t("Link Artifacts")}
-                  </>
-                )}
-              </Button>
-            </div>
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button
+              variant="outline"
+              className="rounded-lg"
+              onClick={() => {
+                setLinkArtifactsDialogOpen(false);
+                setSelectedArtifactIds([]);
+                setArtifactSearchQuery("");
+              }}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleLinkArtifacts}
+              disabled={selectedArtifactIds.length === 0 || linkingArtifacts}
+              className="rounded-lg"
+            >
+              {linkingArtifacts ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t("Linking...")}
+                </>
+              ) : (
+                <>
+                  <Link2 className="h-4 w-4 mr-2" />
+                  {t("Link Artifacts")}
+                </>
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

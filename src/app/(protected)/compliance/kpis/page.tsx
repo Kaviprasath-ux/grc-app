@@ -6,7 +6,6 @@ import { useSession } from "next-auth/react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -26,11 +25,9 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  ClipboardList,
-  Building2,
+  Eye,
   Home,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -134,13 +131,24 @@ export default function KPIsPage() {
     return Math.round((count / statusCounts.total) * 100 * 10) / 10;
   };
 
+  // Pagination
+  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(filteredKpis.length / itemsPerPage);
+  const paginatedKpis = filteredKpis.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-        </div>
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -155,7 +163,7 @@ export default function KPIsPage() {
               <Home className="h-4 w-4" />
               <span>{t("GRC")}</span>
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             <span className="text-slate-500">{t("Compliance")}</span>
           </>
         ) : (
@@ -164,7 +172,7 @@ export default function KPIsPage() {
             <span>{t("Compliance")}</span>
           </Link>
         )}
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("KPIs")}</span>
       </nav>
 
@@ -177,13 +185,7 @@ export default function KPIsPage() {
       <div className="grid grid-cols-2 gap-6">
         {/* Status Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
-              <ClipboardList className="h-5 w-5" />
-            </div>
-            <h3 className="text-sm font-medium text-slate-500">{t("Status")}</h3>
-            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
-          </div>
+          <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Status")}</h3>
           {isCustomerAdmin ? (
             <div className="h-[200px]">
               {statusCounts.total > 0 ? (
@@ -277,13 +279,7 @@ export default function KPIsPage() {
 
         {/* Department Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <h3 className="text-sm font-medium text-slate-500">{t("Department")}</h3>
-            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
-          </div>
+          <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Department")}</h3>
           {isCustomerAdmin ? (
             <div className="h-[200px]">
               {statusCounts.total > 0 ? (
@@ -365,58 +361,67 @@ export default function KPIsPage() {
         </div>
       </div>
 
-      {/* Search and Filter Row */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder={t("Search by code, objective or description...")}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm h-9 border-slate-200 bg-white"
-        />
-        <Select
-          value={statusFilter || "all"}
-          onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
-        >
-          <SelectTrigger className="w-[180px] h-9 bg-white border-slate-200">
-            <SelectValue placeholder={t("All Statuses")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">{t("All Statuses")}</SelectItem>
-            {statuses.map((s) => (
-              <SelectItem key={s} value={s}>
-                {t(s)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-      </div>
-
       {/* KPI Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search and Filter Toolbar */}
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search by code, objective or description...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+          <div className="ltr:ml-auto rtl:mr-auto">
+            <Select
+              value={statusFilter || "all"}
+              onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
+            >
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("All Statuses")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                {statuses.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {t(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <Table className="min-w-[930px]">
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4 w-[100px]">{t("Code")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[180px]">{t("KPI Objective")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[200px]">{t("KPI Description")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[120px]">{t("Expected Score")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[110px]">{t("Review Date")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[90px]">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[130px]">{t("Department")}</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Code")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Expected Score")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review Date")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredKpis.length === 0 ? (
+            {paginatedKpis.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
-                  <BarChart3 className="h-10 w-10 mx-auto mb-2 text-slate-300" />
-                  <p className="text-sm text-slate-500">{t("No KPIs found")}</p>
-                  <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search or filter")}</p>
+                <TableCell colSpan={8} className="text-center py-12">
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+                      <BarChart3 className="h-6 w-6 text-primary-600" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-800">{t("No KPIs found")}</p>
+                    <p className="text-xs text-slate-500 mt-1">{t("Try adjusting your search or filter")}</p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
-              filteredKpis.map((kpi) => {
+              paginatedKpis.map((kpi) => {
                 const displayCode = kpi.evidence?.evidenceCode || kpi.code;
                 const displayDepartment =
                   kpi.department?.name || kpi.evidence?.department?.name || "-";
@@ -425,22 +430,21 @@ export default function KPIsPage() {
                 return (
                   <TableRow
                     key={kpi.id}
-                    className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
-                    onClick={() => router.push(`/compliance/kpis/${kpi.id}`)}
+                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                   >
-                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">
+                    <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">
                       {displayCode}
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       <span className="line-clamp-1">{kpi.objective || "-"}</span>
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       <span className="line-clamp-1">{kpi.description || "-"}</span>
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {kpi.expectedScore ?? "-"}
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {displayReviewDate
                         ? new Date(displayReviewDate).toLocaleDateString("en-GB", {
                             day: "2-digit",
@@ -449,13 +453,25 @@ export default function KPIsPage() {
                           })
                         : "-"}
                     </TableCell>
-                    <TableCell className="py-4 text-sm">
+                    <TableCell className="py-3 text-sm">
                       <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
                         {t(kpi.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700 pr-4">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {displayDepartment}
+                    </TableCell>
+                    <TableCell className="py-3 pr-5">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                          onClick={() => router.push(`/compliance/kpis/${kpi.id}`)}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -465,24 +481,30 @@ export default function KPIsPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <span className="text-sm text-slate-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
             {filteredKpis.length > 0
-              ? `${t("Showing")} 1 ${t("to")} ${filteredKpis.length} ${t("of")} ${filteredKpis.length}`
+              ? `${t("Showing")} ${(currentPage - 1) * itemsPerPage + 1} ${t("to")} ${Math.min(currentPage * itemsPerPage, filteredKpis.length)} ${t("of")} ${filteredKpis.length}`
               : t("No KPIs")}
           </span>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">
-              <ChevronsLeft className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+            >
+              <ChevronLeft className="h-4 w-4 ltr:rotate-0 rtl:rotate-180" />
             </Button>
-            <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">
-              <ChevronsRight className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+            >
+              <ChevronRight className="h-4 w-4 ltr:rotate-0 rtl:rotate-180" />
             </Button>
           </div>
         </div>

@@ -51,12 +51,12 @@ export function DatePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-normal",
+            "w-full justify-start ltr:text-left rtl:text-right font-normal",
             !dateValue && "text-slate-500",
             className
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+          <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
           {dateValue ? format(dateValue, "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>

@@ -56,8 +56,6 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Check,
   Home,
   Upload,
@@ -268,7 +266,7 @@ export default function EvidencePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
 
   // Reference data
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -856,7 +854,7 @@ export default function EvidencePage() {
               return (
                 <div
                   key={statusItem.status}
-                  className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                  className={`bg-white rounded-xl p-4 cursor-pointer transition-all ${
                     selectedStatus === statusItem.status
                       ? "border-2 border-primary-500"
                       : "border border-slate-200 hover:border-slate-300"
@@ -871,7 +869,7 @@ export default function EvidencePage() {
                   }}
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                    <div className="p-2 rounded-lg bg-primary-50 text-primary-500">
                       {icon}
                     </div>
                   </div>
@@ -888,6 +886,35 @@ export default function EvidencePage() {
             })}
           </div>
 
+          {/* Action Buttons - Above Card */}
+          <div className="flex items-center justify-end gap-2">
+            <PermissionGate resource="compliance.evidence" action="create">
+              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
+              </Button>
+            </PermissionGate>
+            <PermissionGate resource="compliance.evidence" action="delete">
+              <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+                <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Delete All")}
+              </Button>
+            </PermissionGate>
+            {isCustomerAdmin ? (
+              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("New Evidence")}
+              </Button>
+            ) : (
+              <PermissionGate resource="compliance.evidence" action="create">
+                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("New Evidence")}
+                </Button>
+              </PermissionGate>
+            )}
+          </div>
+
           {/* Table */}
           {loading ? (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -899,64 +926,41 @@ export default function EvidencePage() {
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search & Filter Toolbar */}
               <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                <div className="relative max-w-xs">
+                <div className="relative">
                   <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
+                  <input
+                    type="text"
                     placeholder={t("Search by name, domain or assignee...")}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
-                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
-                    <SelectValue placeholder={t("Department")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                    <SelectItem value="all">{t("All Departments")}</SelectItem>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
-                    <SelectValue placeholder={t("Framework")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                    <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-                    {frameworks.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex-1" />
-                <PermissionGate resource="compliance.evidence" action="create">
-                  <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                    <Download className="h-4 w-4 me-2" />
-                    {t("Import")}
-                  </Button>
-                </PermissionGate>
-                <PermissionGate resource="compliance.evidence" action="delete">
-                  <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-                    <Trash2 className="h-4 w-4 me-2" />
-                    {t("Delete All")}
-                  </Button>
-                </PermissionGate>
-                {isCustomerAdmin ? (
-                  <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                    <Plus className="h-4 w-4 me-2" />
-                    {t("New Evidence")}
-                  </Button>
-                ) : (
-                  <PermissionGate resource="compliance.evidence" action="create">
-                    <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                      <Plus className="h-4 w-4 me-2" />
-                      {t("New Evidence")}
-                    </Button>
-                  </PermissionGate>
-                )}
+                <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-3">
+                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                    <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                      <SelectValue placeholder={t("Department")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      <SelectItem value="all">{t("All Departments")}</SelectItem>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                    <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                      <SelectValue placeholder={t("Framework")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                      {frameworks.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <Table>
@@ -968,33 +972,51 @@ export default function EvidencePage() {
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Issue Identified By")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Department")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {evidences.map((evidence) => (
                     <TableRow
                       key={evidence.id}
-                      className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
-                      onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                     >
                       <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{evidence.evidenceCode}</TableCell>
                       <TableCell className="py-3.5 text-sm text-slate-600">{evidence.name}</TableCell>
                       <TableCell className="py-3.5 text-sm text-slate-600">{evidence.domain || "-"}</TableCell>
                       <TableCell className="py-3.5">
-                        <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
+                        <Badge className={statusColors[evidence.status] || "bg-slate-100 text-slate-600"}>
                           {t(evidence.status)}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3.5 text-sm text-slate-600">{evidence.issueIdentifiedBy || "-"}</TableCell>
                       <TableCell className="py-3.5 text-sm text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
-                      <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{evidence.department?.name || "-"}</TableCell>
+                      <TableCell className="py-3.5 text-sm text-slate-600">{evidence.department?.name || "-"}</TableCell>
+                      <TableCell className="py-3.5 pe-5">
+                        <div className="flex items-center gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                            onClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {evidences.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
-                        {t("No evidence records found.")}
+                      <TableCell colSpan={8} className="py-0">
+                        <div className="py-16 text-center">
+                          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                            <FileText className="h-6 w-6 text-primary-400" />
+                          </div>
+                          <p className="text-sm font-medium text-slate-600 mb-1">{t("No evidence records found")}</p>
+                          <p className="text-xs text-slate-400">{t("Create a new evidence record to get started")}</p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}
@@ -1064,7 +1086,7 @@ export default function EvidencePage() {
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
               artifactDragging
                 ? "border-primary-500 bg-primary-50"
-                : "border-slate-300 hover:border-slate-400 bg-slate-50"
+                : "border-slate-200 hover:border-slate-300 bg-white"
             }`}
             onDragOver={handleArtifactDragOver}
             onDragLeave={handleArtifactDragLeave}
@@ -1077,7 +1099,9 @@ export default function EvidencePage() {
               className="hidden"
               onChange={handleArtifactFileChange}
             />
-            <Upload className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+              <Upload className="h-6 w-6 text-primary-400" />
+            </div>
             <p className="text-slate-600 mb-2">
               {t("Drag and drop files here, or")}{" "}
               <button
@@ -1099,8 +1123,12 @@ export default function EvidencePage() {
             </div>
             <div className="divide-y divide-slate-100">
               {artifacts.length === 0 ? (
-                <div className="p-8 text-center text-sm text-slate-500">
-                  {t("No artifacts uploaded yet")}
+                <div className="py-16 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                    <File className="h-6 w-6 text-primary-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No artifacts uploaded yet")}</p>
+                  <p className="text-xs text-slate-400">{t("Upload files above to get started")}</p>
                 </div>
               ) : (
                 artifacts.map((artifact) => (
@@ -1157,11 +1185,11 @@ export default function EvidencePage() {
         if (!open) resetCreateForm();
         setCreateDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Evidence")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("New Evidence")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1173,15 +1201,15 @@ export default function EvidencePage() {
                 <div key={step} className="flex items-center">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     step === createStep
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-primary-500 text-white"
                       : step < createStep
-                      ? "bg-green-500 text-white"
-                      : "bg-muted text-slate-400"
+                      ? "bg-primary-500 text-white"
+                      : "bg-slate-100 text-slate-400"
                   }`}>
                     {step < createStep ? <Check className="h-4 w-4" /> : step}
                   </div>
                   {step < 3 && (
-                    <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-muted"}`} />
+                    <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-primary-500" : "bg-slate-200"}`} />
                   )}
                 </div>
               ))}
@@ -1192,7 +1220,7 @@ export default function EvidencePage() {
               <div className="space-y-4">
                 
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Evidence Requirement")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Evidence Requirement")} *</Label>
                   <Input
                     value={createForm.name}
                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
@@ -1201,7 +1229,7 @@ export default function EvidencePage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Recurrence")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")} *</Label>
                   <Select value={createForm.recurrence} onValueChange={(v) => setCreateForm({ ...createForm, recurrence: v })}>
                     <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder={t("Select recurrence")} />
@@ -1214,7 +1242,7 @@ export default function EvidencePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Department")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")} *</Label>
                   <Select value={createForm.departmentId} onValueChange={(v) => setCreateForm({ ...createForm, departmentId: v, assigneeId: "" })}>
                     <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder={t("Select department")} />
@@ -1227,7 +1255,7 @@ export default function EvidencePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Assignee")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assignee")} *</Label>
                   <Select
                     value={createForm.assigneeId}
                     onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })}
@@ -1254,7 +1282,7 @@ export default function EvidencePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
                   <Textarea
                     value={createForm.description}
                     onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
@@ -1315,25 +1343,25 @@ export default function EvidencePage() {
                 <div className="bg-white rounded-xl border border-slate-200 max-h-[300px] overflow-y-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                        <TableHead className="w-[50px] py-4 pl-4"></TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Code")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Name")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="w-[50px] py-3 ps-4"></TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Control Code")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Control Name")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredControls.map((control) => (
-                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                          <TableCell className="py-4 pl-4">
+                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                          <TableCell className="py-3 ps-4">
                             <Checkbox
                               checked={selectedControlIds.includes(control.id)}
                               onCheckedChange={() => toggleControlSelection(control.id)}
                             />
                           </TableCell>
-                          <TableCell className="py-4 text-sm font-medium text-slate-900">{control.controlCode}</TableCell>
-                          <TableCell className="py-4 text-sm text-slate-700">{control.name}</TableCell>
-                          <TableCell className="py-4 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm font-medium text-slate-800">{control.controlCode}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{control.name}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{control.domain?.name || "-"}</TableCell>
                         </TableRow>
                       ))}
                       {filteredControls.length === 0 && (
@@ -1356,31 +1384,31 @@ export default function EvidencePage() {
 
                 <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
-                    <Label className="text-slate-500 text-sm">{t("Evidence Name")}</Label>
+                    <Label className="text-xs text-slate-500">{t("Evidence Name")}</Label>
                     <p className="font-medium text-slate-900">{createForm.name}</p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">{t("Recurrence")}</Label>
+                    <Label className="text-xs text-slate-500">{t("Recurrence")}</Label>
                     <p className="font-medium text-slate-900">{createForm.recurrence}</p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">{t("Department")}</Label>
+                    <Label className="text-xs text-slate-500">{t("Department")}</Label>
                     <p className="font-medium text-slate-900">
                       {getCustomerScopedDepartments().find((d) => d.id === createForm.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">{t("Assignee")}</Label>
+                    <Label className="text-xs text-slate-500">{t("Assignee")}</Label>
                     <p className="font-medium text-slate-900">
                       {getCustomerScopedUsers().find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">{t("Linked Controls")}</Label>
+                    <Label className="text-xs text-slate-500">{t("Linked Controls")}</Label>
                     <p className="font-medium text-slate-900">{selectedControlIds.length} {t("controls")}</p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">{t("Description")}</Label>
+                    <Label className="text-xs text-slate-500">{t("Description")}</Label>
                     <p className="font-medium text-slate-900">{createForm.description || "-"}</p>
                   </div>
                 </div>
@@ -1448,11 +1476,11 @@ export default function EvidencePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden">
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+              <DialogTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
                 {t("Import Evidence")}
               </DialogTitle>
@@ -1486,7 +1514,9 @@ export default function EvidencePage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <FileSpreadsheet className="h-10 w-10 mx-auto text-slate-300" />
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto">
+                    <FileSpreadsheet className="h-6 w-6 text-primary-400" />
+                  </div>
                   <div>
                     <p className="text-sm text-slate-600">
                       {t("Drag and drop a file here, or click to browse")}
@@ -1532,62 +1562,71 @@ export default function EvidencePage() {
         }
         setLinkEvidenceDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[80vh] flex flex-col">
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[80vh] flex flex-col">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-primary">
-              {t("Select Evidence")}
-            </DialogTitle>
+          <div className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">
+                {t("Select Evidence")}
+              </DialogTitle>
+            </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {/* Search */}
             <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder={t("Search by Evidence Code , Name")}
+                placeholder={t("Search by Evidence Code, Name")}
                 value={linkEvidenceSearchTerm}
                 onChange={(e) => setLinkEvidenceSearchTerm(e.target.value)}
-                className="pl-10 border-primary"
+                className="ltr:pl-9 rtl:pr-9 bg-slate-50 border-slate-200"
               />
             </div>
 
             {/* Evidence List */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {filteredEvidencesForLink.map((evidence) => {
                 const isSelected = selectedEvidenceIdsForLink.includes(evidence.id);
                 return (
                   <div
                     key={evidence.id}
                     onClick={() => toggleEvidenceForLink(evidence.id)}
-                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                       isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-primary/30 hover:border-primary/50"
+                        ? "border-primary-300 bg-primary-50/50"
+                        : "border-slate-100 hover:border-slate-200 hover:bg-slate-50/60"
                     }`}
                   >
                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                      isSelected ? "bg-primary border-primary" : "border-slate-300"
+                      isSelected ? "bg-primary-500 border-primary-500" : "border-slate-300"
                     }`}>
                       {isSelected && <Check className="h-3 w-3 text-white" />}
                     </div>
-                    <span className="text-sm text-primary font-medium">
+                    <span className="text-sm font-medium text-slate-700">
                       {evidence.evidenceCode} : {evidence.name}
                     </span>
                   </div>
                 );
               })}
               {filteredEvidencesForLink.length === 0 && (
-                <div className="text-center py-8 text-slate-500">
-                  {t("No evidences found")}
+                <div className="py-12 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                    <FileText className="h-6 w-6 text-primary-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No evidences found")}</p>
+                  <p className="text-xs text-slate-400">{t("Try adjusting your search")}</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 flex justify-end flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => setLinkEvidenceDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
             <Button onClick={handleLinkEvidences}>
               {t("Link Evidences")}
             </Button>

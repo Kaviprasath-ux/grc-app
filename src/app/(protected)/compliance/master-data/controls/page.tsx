@@ -34,7 +34,7 @@ import {
 import {
   Table,
   TableBody,
-  
+
   TableCell,
   TableHead,
   TableHeader,
@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  ArrowLeft,
   Plus,
   Pencil,
   Trash2,
@@ -51,8 +50,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Check,
   Home,
 } from "lucide-react";
@@ -544,10 +541,22 @@ export default function ControlsMasterDataPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-slate-500">{t("Master Data")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Controls")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -561,43 +570,28 @@ export default function ControlsMasterDataPage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Master Data")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Controls")}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
 
-      {/* Search and Actions - same row */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search controls...")}
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
-            className="pl-10 w-[300px] bg-white border-slate-200"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            {t("Import")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            {t("Export")}
-          </Button>
-          <Dialog
+      {/* Action Buttons above the card */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Import")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
+        <Dialog
           open={createDialogOpen}
           onOpenChange={(open) => {
             setCreateDialogOpen(open);
@@ -608,15 +602,15 @@ export default function ControlsMasterDataPage() {
         >
           <DialogTrigger asChild>
             <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Control")}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
             {/* Sticky Header */}
-            <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">
+                <DialogTitle className="text-base font-semibold text-slate-800">
                   {t("Control Details")} - {t("Step")} {wizardStep} {t("of")} 3
                 </DialogTitle>
               </DialogHeader>
@@ -638,7 +632,7 @@ export default function ControlsMasterDataPage() {
                     {step < wizardStep ? <Check className="h-4 w-4" /> : step}
                   </div>
                   <span
-                    className={`ml-2 text-sm ${
+                    className={`ltr:ml-2 rtl:mr-2 text-sm ${
                       step === wizardStep
                         ? "font-semibold text-slate-800"
                         : "text-slate-500"
@@ -902,7 +896,7 @@ export default function ControlsMasterDataPage() {
             </div>
 
             {/* Sticky Footer */}
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               {wizardStep > 1 && (
                 <Button
                   variant="outline"
@@ -939,33 +933,49 @@ export default function ControlsMasterDataPage() {
             </div>
           </DialogContent>
         </Dialog>
-        </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search toolbar inside the card */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search controls...")}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">
+            <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">
                 {t("Control Name")}
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
                 {t("Control Domain")}
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
                 {t("Control Code")}
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 max-w-[200px]">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 max-w-[200px]">
                 {t("Description")}
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
                 {t("Function Grouping")}
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
                 {t("Status")}
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">
                 {t("Action")}
               </TableHead>
             </TableRow>
@@ -979,8 +989,8 @@ export default function ControlsMasterDataPage() {
               </TableRow>
             ) : (
               controls.map((control) => (
-                <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4 max-w-[200px] truncate">
+                <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5 max-w-[200px] truncate">
                     {control.name}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
@@ -1005,23 +1015,23 @@ export default function ControlsMasterDataPage() {
                       {control.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-3 text-sm pr-4">
-                    <div className="flex gap-1">
+                  <TableCell className="py-3 text-sm pe-5">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditDialog(control)}
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => openDeleteDialog(control)}
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -1032,51 +1042,16 @@ export default function ControlsMasterDataPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <p className="text-sm text-slate-500">
-            {total > 0
-              ? `${t("Showing")} ${startItem} ${t("to")} ${endItem} ${t("of")} ${total}`
-              : t("No controls")}
-          </p>
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
+            {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No controls")}
+          </span>
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={page === 1}
-              onClick={() => setPage(1)}
-              className="h-8 w-8"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-              className="h-8 w-8"
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" onClick={() => setPage(page - 1)} disabled={page === 1}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-slate-600 px-2">
-              {t("Page")} {page} {t("of")} {totalPages || 1}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-              className="h-8 w-8"
-            >
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" onClick={() => setPage(page + 1)} disabled={page >= totalPages}>
               <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={page >= totalPages}
-              onClick={() => setPage(totalPages)}
-              className="h-8 w-8"
-            >
-              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -1085,9 +1060,9 @@ export default function ControlsMasterDataPage() {
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">
+              <DialogTitle className="text-base font-semibold text-slate-800">
                 {t("Edit Control")}
               </DialogTitle>
             </DialogHeader>
@@ -1448,7 +1423,7 @@ export default function ControlsMasterDataPage() {
             </div>
           </div>
 
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1471,9 +1446,9 @@ export default function ControlsMasterDataPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
+          <AlertDialogHeader className="px-6 py-4">
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">
               {t("Delete Control")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
@@ -1481,7 +1456,7 @@ export default function ControlsMasterDataPage() {
               {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+          <AlertDialogFooter className="px-6 py-4 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
@@ -1507,9 +1482,9 @@ export default function ControlsMasterDataPage() {
         }}
       >
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">
+              <DialogTitle className="text-base font-semibold text-slate-800">
                 {t("Import Controls")}
               </DialogTitle>
             </DialogHeader>
@@ -1550,12 +1525,12 @@ export default function ControlsMasterDataPage() {
             </div>
           </div>
 
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}
             </Button>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 size="sm"
