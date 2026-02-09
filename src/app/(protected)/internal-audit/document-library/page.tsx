@@ -612,7 +612,7 @@ export default function DocumentLibraryPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-slate-100">
+        <TabsList className="">
           <TabsTrigger value="smart-search">{t("Smart Search")}</TabsTrigger>
           <TabsTrigger value="policies">{t("Company's Policies and Procedures")}</TabsTrigger>
           <TabsTrigger value="regulations">{t("Standard Regulations")}</TabsTrigger>

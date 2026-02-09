@@ -378,31 +378,31 @@ export default function InternalAuditDashboard() {
     switch (drillDown.type) {
       case 'risks':
         return (
-          <div className="max-h-[60vh] overflow-auto">
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="max-h-[60vh] overflow-x-auto overflow-y-auto">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden min-w-full">
               <Table>
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Risk ID")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Severity")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5 whitespace-nowrap">{t("Risk ID")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Description")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Department")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Category")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Severity")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 whitespace-nowrap">{t("Action")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {drillDownData.data.map((risk: Record<string, unknown>) => (
                     <TableRow key={risk.id as string} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{risk.riskId as string}</TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate" title={risk.riskDescription as string}>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5 whitespace-nowrap">{risk.riskId as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[180px] truncate" title={risk.riskDescription as string}>
                         {risk.riskDescription as string}
                       </TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700">{risk.department as string}</TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700">{risk.category as string}</TableCell>
-                      <TableCell className="py-3"><SeverityBadge severity={risk.riskLevel as string} /></TableCell>
-                      <TableCell className="py-3"><StatusBadge status={risk.status as string} /></TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.department as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.category as string}</TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><SeverityBadge severity={risk.riskLevel as string} /></TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge status={risk.status as string} /></TableCell>
                       <TableCell className="py-3 pr-5">
                         <Button
                           variant="ghost"
@@ -428,31 +428,31 @@ export default function InternalAuditDashboard() {
 
       case 'audits':
         return (
-          <div className="max-h-[60vh] overflow-auto">
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="max-h-[60vh] overflow-x-auto overflow-y-auto">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden min-w-full">
               <Table>
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Audit ID")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5 whitespace-nowrap">{t("Audit ID")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Department")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Type")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Auditor")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 whitespace-nowrap">{t("Action")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {drillDownData.data.map((audit: Record<string, unknown>) => (
                     <TableRow key={audit.id as string} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{audit.auditId as string}</TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate" title={audit.engagementTitle as string}>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5 whitespace-nowrap">{audit.auditId as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[180px] truncate" title={audit.engagementTitle as string}>
                         {audit.engagementTitle as string}
                       </TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700">{audit.department as string}</TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700">{audit.auditType as string}</TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700">{audit.auditor as string}</TableCell>
-                      <TableCell className="py-3"><StatusBadge status={audit.status as string} /></TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{audit.department as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{audit.auditType as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{audit.auditor as string}</TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge status={audit.status as string} /></TableCell>
                       <TableCell className="py-3 pr-5">
                         <Button
                           variant="ghost"
@@ -478,39 +478,39 @@ export default function InternalAuditDashboard() {
 
       case 'capa':
         return (
-          <div className="max-h-[60vh] overflow-auto">
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="max-h-[60vh] overflow-x-auto overflow-y-auto">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden min-w-full">
               <Table>
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("CAPA ID")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Finding")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Severity")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Responsible")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Target Date")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5 whitespace-nowrap">{t("CAPA ID")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Finding")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Severity")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Responsible")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Target Date")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 whitespace-nowrap">{t("Action")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {drillDownData.data.map((capa: Record<string, unknown>) => (
                     <TableRow key={capa.id as string} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{capa.capaId as string}</TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700 max-w-[150px] truncate" title={capa.title as string}>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5 whitespace-nowrap">{capa.capaId as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[140px] truncate" title={capa.title as string}>
                         {capa.title as string}
                       </TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700 max-w-[150px] truncate" title={capa.finding as string}>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[140px] truncate" title={capa.finding as string}>
                         {capa.finding as string}
                       </TableCell>
-                      <TableCell className="py-3"><SeverityBadge severity={capa.severity as string} /></TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700">{capa.responsiblePerson as string}</TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700">
+                      <TableCell className="py-3 whitespace-nowrap"><SeverityBadge severity={capa.severity as string} /></TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{capa.responsiblePerson as string}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">
                         {capa.targetDate
                           ? new Date(capa.targetDate as string).toLocaleDateString()
                           : 'N/A'}
                       </TableCell>
-                      <TableCell className="py-3"><StatusBadge status={capa.status as string} /></TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge status={capa.status as string} /></TableCell>
                       <TableCell className="py-3 pr-5">
                         <Button
                           variant="ghost"
@@ -553,49 +553,59 @@ export default function InternalAuditDashboard() {
         if (!auditDetail) return <div className="text-center py-12 text-slate-500">{t("No data available")}</div>;
 
         return (
-          <div className="max-h-[60vh] overflow-auto space-y-6">
+          <div className="max-h-[60vh] overflow-y-auto space-y-6">
             {/* Audit Info */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3">
               <div className="space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-500">{t("Audit ID")}:</span>
-                  <span className="text-sm font-medium text-slate-800">{auditDetail.auditId || 'N/A'}</span>
+                <div className="flex items-start gap-2">
+                  <FileText className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-sm text-slate-500">{t("Audit ID")}:</span>
+                    <span className="text-sm font-medium text-slate-800">{auditDetail.auditId || 'N/A'}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-500">{t("Department")}:</span>
-                  <span className="text-sm font-medium text-slate-800">{auditDetail.department || 'N/A'}</span>
+                <div className="flex items-start gap-2">
+                  <Building2 className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-sm text-slate-500">{t("Department")}:</span>
+                    <span className="text-sm font-medium text-slate-800">{auditDetail.department || 'N/A'}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-500">{t("Type")}:</span>
-                  <span className="text-sm font-medium text-slate-800">{auditDetail.auditType || 'N/A'}</span>
+                <div className="flex items-start gap-2">
+                  <Shield className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-sm text-slate-500">{t("Type")}:</span>
+                    <span className="text-sm font-medium text-slate-800">{auditDetail.auditType || 'N/A'}</span>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-500">{t("Status")}:</span>
-                  <StatusBadge status={auditDetail.status || ''} />
+                <div className="flex items-start gap-2">
+                  <Activity className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-sm text-slate-500">{t("Status")}:</span>
+                    <StatusBadge status={auditDetail.status || ''} />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-500">{t("Duration")}:</span>
-                  <span className="text-sm font-medium text-slate-800">
-                    {auditDetail.startDate
-                      ? new Date(auditDetail.startDate).toLocaleDateString()
-                      : 'N/A'} - {auditDetail.endDate
-                      ? new Date(auditDetail.endDate).toLocaleDateString()
-                      : 'N/A'}
-                  </span>
+                <div className="flex items-start gap-2">
+                  <Calendar className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-sm text-slate-500">{t("Duration")}:</span>
+                    <span className="text-sm font-medium text-slate-800">
+                      {auditDetail.startDate
+                        ? new Date(auditDetail.startDate).toLocaleDateString()
+                        : 'N/A'} - {auditDetail.endDate
+                        ? new Date(auditDetail.endDate).toLocaleDateString()
+                        : 'N/A'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-500">{t("Auditor")}:</span>
-                  <span className="text-sm font-medium text-slate-800">
-                    {auditDetail.auditor?.name || t("Unassigned")}
-                  </span>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-sm text-slate-500">{t("Auditor")}:</span>
+                    <span className="text-sm font-medium text-slate-800">
+                      {auditDetail.auditor?.name || t("Unassigned")}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -746,16 +756,16 @@ export default function InternalAuditDashboard() {
 
       {/* Drill-down Dialog */}
       <Dialog open={drillDown.open} onOpenChange={(open) => !open && closeDrillDown()}>
-        <DialogContent className="max-w-4xl p-0 gap-0">
-          <DialogHeader className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[85vh] flex flex-col">
+          <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-slate-800">
               {drillDown.title}
             </DialogTitle>
-            <DialogDescription className="text-sm text-slate-500">
+            <DialogDescription className="text-sm text-slate-500 mt-1">
               {t("Click on any row to view more details")}
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 py-5">
+          <div className="px-6 py-5 flex-1 overflow-hidden">
             {renderDrillDownContent()}
           </div>
         </DialogContent>

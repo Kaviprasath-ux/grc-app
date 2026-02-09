@@ -15,10 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -36,8 +37,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  ChevronDown,
-  ChevronUp,
   FileText,
   Download,
   Eye,
@@ -55,6 +54,7 @@ import {
   Check,
   AlertCircle,
   HelpCircle,
+  Sparkles,
 } from "lucide-react";
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
@@ -200,14 +200,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const isCompleted = engagement?.status === "Completed";
   const isReadOnly = isViewMode || isCompleted;
 
-  // Collapsible section states
-  const [engagementDetailsOpen, setEngagementDetailsOpen] = useState(true);
-  const [workpapersOpen, setWorkpapersOpen] = useState(false);
-  const [aiWorkpapersOpen, setAiWorkpapersOpen] = useState(false);
-  const [taskListOpen, setTaskListOpen] = useState(false);
-  const [evidenceRequestOpen, setEvidenceRequestOpen] = useState(false);
-  const [otherDocsOpen, setOtherDocsOpen] = useState(false);
-  const [findingsOpen, setFindingsOpen] = useState(false);
+  // Tab navigation state
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Data states
   const [workpapers, setWorkpapers] = useState<Workpaper[]>([]);
@@ -232,6 +226,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [addFindingDialogOpen, setAddFindingDialogOpen] = useState(false);
   const [addFullFindingDialogOpen, setAddFullFindingDialogOpen] = useState(false);
   const [savingFullFinding, setSavingFullFinding] = useState(false);
+  const [findingStep, setFindingStep] = useState(1); // Multi-step wizard state (1, 2, or 3)
   const [addingTask, setAddingTask] = useState(false);
   const [savingTask, setSavingTask] = useState<string | null>(null);
   const [uploadingTaskDocument, setUploadingTaskDocument] = useState<string | null>(null);
@@ -240,6 +235,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [deleteFindingDialogOpen, setDeleteFindingDialogOpen] = useState(false);
   const [findingToDelete, setFindingToDelete] = useState<Finding | null>(null);
   const [deletingFinding, setDeletingFinding] = useState(false);
+
+  // Finding Detail Modal states
+  const [findingDetailDialogOpen, setFindingDetailDialogOpen] = useState(false);
+  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
+  const [findingDetailMode, setFindingDetailMode] = useState<"view" | "edit">("view");
 
   // Other Documents states
   const [newDocumentDialogOpen, setNewDocumentDialogOpen] = useState(false);
@@ -338,13 +338,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       setOtherDocuments([]);
       setFindings([]);
       setLoading(true);
-      setEngagementDetailsOpen(true);
-      setWorkpapersOpen(false);
-      setAiWorkpapersOpen(false);
-      setTaskListOpen(false);
-      setEvidenceRequestOpen(false);
-      setOtherDocsOpen(false);
-      setFindingsOpen(false);
+      setActiveTab("overview"); // Reset to overview tab when opening
     }
   }, [open, engagementId]);
 
@@ -760,21 +754,6 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     } catch (error) { console.error("Error marking engagement as completed:", error); toast.error(t("Failed to mark engagement as completed")); } finally { setMarkingComplete(false); }
   };
 
-  const CollapsibleSection = ({ title, isOpen, onToggle, children, headerAction }: { title: string; isOpen: boolean; onToggle: () => void; children: React.ReactNode; headerAction?: React.ReactNode; }) => (
-    <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100">
-          <CollapsibleTrigger className="flex-1 flex items-center justify-between rounded -mx-2 -my-1 px-2 py-1">
-            <span className="text-slate-800 font-semibold text-sm">{title}</span>
-            <div className="flex items-center gap-2">{isOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}</div>
-          </CollapsibleTrigger>
-          {headerAction && <div className="ltr:ml-2 rtl:mr-2 z-10">{headerAction}</div>}
-        </div>
-        <CollapsibleContent><div className="p-4">{children}</div></CollapsibleContent>
-      </div>
-    </Collapsible>
-  );
-
   const renderJsonList = (field: string) => {
     try {
       const items = JSON.parse(field);
@@ -786,404 +765,497 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     <>
       {/* Main Detail Dialog */}
       <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-        <DialogContent className="sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[95vw] md:max-w-[850px] lg:max-w-[800px] p-0 gap-0 h-[95vh] flex flex-col">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0 pr-14">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">
-                {engagement ? `${engagement.engagementTitle} (${engagement.auditId})` : t("Fieldwork Details")}
+              <DialogTitle className="text-lg font-semibold text-slate-800 text-center flex items-center justify-center gap-3">
+                <span>{engagement ? `${engagement.engagementTitle} (${engagement.auditId})` : t("Fieldwork Details")}</span>
+                {engagement && engagement.status === "Completed" && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-700">
+                    <Check className="h-3.5 w-3.5" />
+                    {t("Completed")}
+                  </span>
+                )}
               </DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Body */}
-          <div className="overflow-y-auto flex-1 p-6 space-y-6">
+          <div className="overflow-y-auto flex-1">
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
               </div>
             ) : !engagement ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">{t("Engagement not found")}</div>
+              <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 mx-6">{t("Engagement not found")}</div>
             ) : (
               <>
-                {/* Status Badge */}
-                {isCompleted && (
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md text-sm text-emerald-700">
-                    <Check className="h-4 w-4" />
-                    <span>{t("Completed")}</span>
-                  </div>
-                )}
+                {/* Tabs Interface */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="w-full justify-start border-b border-slate-200 bg-white px-6 rounded-none h-auto p-0">
+                    <TabsTrigger
+                      value="overview"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                    >
+                      {t("Overview")}
+                    </TabsTrigger>
+                    {!isAuditeeOnly && (
+                      <>
+                        <TabsTrigger
+                          value="workpapers"
+                          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                        >
+                          {t("Workpapers")}
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="tasks"
+                          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                        >
+                          {t("Tasks")}
+                        </TabsTrigger>
+                      </>
+                    )}
+                    <TabsTrigger
+                      value="evidence"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                    >
+                      {t("Evidence")}
+                    </TabsTrigger>
+                    {!isAuditeeOnly && (
+                      <TabsTrigger
+                        value="documents"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                      >
+                        {t("Documents")}
+                      </TabsTrigger>
+                    )}
+                    <TabsTrigger
+                      value="findings"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                    >
+                      {t("Findings")}
+                    </TabsTrigger>
+                  </TabsList>
 
-                {/* 1. Engagement Details */}
-                <CollapsibleSection
-                  title={`${t("Engagement Details")} : ${engagement.auditId} - ${engagement.engagementTitle}`}
-                  isOpen={engagementDetailsOpen}
-                  onToggle={() => setEngagementDetailsOpen(!engagementDetailsOpen)}
-                  headerAction={
-                    <div className="flex items-center gap-2">
-                      {!isAuditeeOnly && (
-                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setCommentsDialogOpen(true); }}>{t("Comments")}</Button>
-                      )}
-                      {engagement.status !== "Completed" && !isAuditeeOnly && (
-                        <Button size="sm" className="bg-primary-600 hover:bg-primary-700 text-white" onClick={(e) => { e.stopPropagation(); handleMarkAsCompleted(); }} disabled={markingComplete || isReadOnly}>
-                          {markingComplete ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Marking...")}</>) : t("Mark as Completed")}
-                        </Button>
-                      )}
-                    </div>
-                  }
-                >
-                  <div className="grid grid-cols-3 gap-6 p-4 bg-white rounded-lg border">
-                    <div><Label className="text-slate-700 font-medium">{t("Engagement ID")}</Label><p className="mt-1">{engagement.auditId}</p></div>
-                    <div><Label className="text-slate-700 font-medium">{t("Title")}</Label><p className="mt-1">{engagement.engagementTitle}</p></div>
-                    <div><Label className="text-slate-700 font-medium">{t("Auditor")}</Label><p className="mt-1">{getAuditorName()}</p></div>
-                    <div><Label className="text-slate-700 font-medium">{t("Timeline")}</Label><p className="mt-1">{formatDate(engagement.startDate)} {t("to")} {formatDate(engagement.endDate)}</p></div>
-                    <div><Label className="text-slate-700 font-medium">{t("Status")}</Label><p className="mt-1">{engagement.status}</p></div>
-                    <div><Label className="text-slate-700 font-medium">{t("Department")}</Label><p className="mt-1">{engagement.department?.name || "-"}</p></div>
-                  </div>
-                </CollapsibleSection>
-
-                {/* 2. Workpapers - Hidden for auditees */}
-                {!isAuditeeOnly && (
-                  <CollapsibleSection title={t("Workpapers")} isOpen={workpapersOpen} onToggle={() => setWorkpapersOpen(!workpapersOpen)}>
-                    <div className="space-y-4">
-                      {isAuditHead && (
-                        <div className="flex justify-end">
-                          <Button size="sm" onClick={() => { setUploadCategory("workpapers"); setUploadDialogOpen(true); }} disabled={isReadOnly}>
-                            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Upload Workpaper")}
-                          </Button>
+                  {/* Tab Content Container */}
+                  <div className="min-h-[500px]">
+                    {/* Tab 1: Overview - Engagement Details */}
+                    <TabsContent value="overview" className="mt-0 px-6 pt-6 space-y-6">
+                      <div className="mb-6">
+                        <h2 className="text-xl font-semibold text-slate-900 mb-2">{t("Engagement Details")}</h2>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium text-primary-700">{engagement.auditId}</span>
+                          <span className="text-slate-400">•</span>
+                          <span className="text-slate-600">{engagement.engagementTitle}</span>
                         </div>
-                      )}
-                      {workpapers.length > 0 ? (
-                        <div className="space-y-2">
-                          {workpapers.map((wp) => (
-                            <div key={wp.id} className="flex items-center gap-4 p-3 bg-white rounded border">
-                              <FileSpreadsheet className="h-8 w-8 text-green-600 flex-shrink-0" />
-                              <a href={`/api${wp.filePath}`} target="_blank" rel="noopener noreferrer" className="text-slate-700 hover:underline font-medium flex-grow">{wp.fileName}</a>
-                              <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" title={t("View")} onClick={() => window.open(`/api${wp.filePath}`, "_blank")}><Eye className="h-5 w-5 text-slate-600" /></Button>
-                                <Button variant="ghost" size="icon" title={t("Download")} onClick={() => { const link = document.createElement("a"); link.href = `/api${wp.filePath}`; link.download = wp.fileName; link.click(); }}><Download className="h-5 w-5 text-slate-600" /></Button>
-                                {isAuditHead && (
-                                  <Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setWorkpaperToDelete(wp); setDeleteWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-5 w-5 text-red-500" /></Button>
-                                )}
-                              </div>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl border border-slate-200/80 p-6">
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Engagement ID")}</Label>
+                            <p className="text-sm font-medium text-slate-900">{engagement.auditId}</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Title")}</Label>
+                            <p className="text-sm font-medium text-slate-900">{engagement.engagementTitle}</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Auditor")}</Label>
+                            <p className="text-sm font-medium text-slate-900">{getAuditorName()}</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Timeline")}</Label>
+                            <p className="text-sm font-medium text-slate-900">{formatDate(engagement.startDate)} {t("to")} {formatDate(engagement.endDate)}</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Status")}</Label>
+                            <p className="text-sm font-medium text-slate-900">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
+                                engagement.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
+                                engagement.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                'bg-slate-100 text-slate-800'
+                              }`}>
+                                {engagement.status}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Department")}</Label>
+                            <p className="text-sm font-medium text-slate-900">{engagement.department?.name || "-"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    {/* Tab 2: Workpapers (combines regular + AI workpapers) - Hidden for auditees */}
+                    {!isAuditeeOnly && (
+                      <TabsContent value="workpapers" className="mt-0 px-6 pt-6 space-y-8">
+                        {/* Regular Workpapers */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-slate-800">{t("Workpapers")}</h3>
+                            {isAuditHead && (
+                              <Button size="sm" onClick={() => { setUploadCategory("workpapers"); setUploadDialogOpen(true); }} disabled={isReadOnly}>
+                                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Upload Workpaper")}
+                              </Button>
+                            )}
+                          </div>
+                          {workpapers.length > 0 ? (
+                            <div className="space-y-2">
+                              {workpapers.map((wp) => (
+                                <div key={wp.id} className="flex items-center gap-4 p-3 bg-white rounded border">
+                                  <FileSpreadsheet className="h-8 w-8 text-green-600 flex-shrink-0" />
+                                  <a href={`/api${wp.filePath}`} target="_blank" rel="noopener noreferrer" className="text-slate-700 hover:underline font-medium flex-grow">{wp.fileName}</a>
+                                  <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" title={t("View")} onClick={() => window.open(`/api${wp.filePath}`, "_blank")}><Eye className="h-5 w-5 text-slate-600" /></Button>
+                                    <Button variant="ghost" size="icon" title={t("Download")} onClick={() => { const link = document.createElement("a"); link.href = `/api${wp.filePath}`; link.download = wp.fileName; link.click(); }}><Download className="h-5 w-5 text-slate-600" /></Button>
+                                    {isAuditHead && (
+                                      <Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setWorkpaperToDelete(wp); setDeleteWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-5 w-5 text-red-500" /></Button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          ) : (
+                            <div className="text-center py-8 text-slate-500">{t("No workpapers uploaded yet")}</div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="text-center py-8 text-slate-500">{t("No workpapers uploaded yet")}</div>
-                      )}
-                    </div>
-                  </CollapsibleSection>
-                )}
 
-                {/* 3. AI-Generated Workpapers - Hidden for auditees */}
-                {!isAuditeeOnly && (
-                  <CollapsibleSection title={t("AI-Generated Workpapers")} isOpen={aiWorkpapersOpen} onToggle={() => setAiWorkpapersOpen(!aiWorkpapersOpen)}>
-                    <div className="space-y-4">
-                      {isAuditHead && (
-                        <div className="flex justify-end">
-                          <Button size="sm" onClick={handleGenerateAIWorkpapers} disabled={generatingWorkpapers || isReadOnly}>
-                            {generatingWorkpapers ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Generating...")}</>) : (<><FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Generate Workpaper with AI")}</>)}
+                        {/* AI-Generated Workpapers */}
+                        <div className="space-y-4 pt-6 border-t border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="h-5 w-5 text-primary-600" />
+                              <h3 className="text-lg font-semibold text-slate-800">{t("AI-Generated Workpapers")}</h3>
+                            </div>
+                            {isAuditHead && (
+                              <Button size="sm" onClick={handleGenerateAIWorkpapers} disabled={generatingWorkpapers || isReadOnly}>
+                                {generatingWorkpapers ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Generating...")}</>) : (<><FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Generate Workpaper with AI")}</>)}
+                              </Button>
+                            )}
+                          </div>
+                          {aiWorkpapers.length > 0 ? (
+                            <div className="bg-white border rounded-lg overflow-hidden">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="bg-slate-50 border-b">
+                                    <TableHead className="text-slate-700 font-semibold w-[200px]">{t("Task")}</TableHead>
+                                    <TableHead className="text-slate-700 font-semibold w-[180px]">{t("Evidences")}</TableHead>
+                                    <TableHead className="text-slate-700 font-semibold w-[250px]">{t("Steps")}</TableHead>
+                                    <TableHead className="text-slate-700 font-semibold w-[120px]">{t("Question Checklist")}</TableHead>
+                                    <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Comments")}</TableHead>
+                                    {isAuditHead && <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Action")}</TableHead>}
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {aiWorkpapers.map((wp) => (
+                                    <TableRow key={wp.id} className="border-b hover:bg-slate-50">
+                                      <TableCell className="align-top py-4">
+                                        <div className="space-y-3">
+                                          <p className="text-slate-800">{wp.task}</p>
+                                          <div><span className="text-slate-700 font-medium block mb-1">{t("Executed")}</span><Checkbox checked={wp.executed} onCheckedChange={() => handleToggleExecuted(wp.id, wp.executed)} /></div>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.evidences)}</div></TableCell>
+                                      <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.steps)}</div></TableCell>
+                                      <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.questionChecklist)}</div></TableCell>
+                                      <TableCell className="align-top py-4 text-center">{wp.comments || "-"}</TableCell>
+                                      {isAuditHead && (
+                                        <TableCell className="align-top py-4">
+                                          <div className="flex items-center gap-1">
+                                            <Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenEditAIWorkpaper(wp)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button>
+                                            <Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setSelectedAIWorkpaper(wp); setDeleteAIWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                          </div>
+                                        </TableCell>
+                                      )}
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-slate-500">{t("No AI-generated workpapers available")}</div>
+                          )}
+                        </div>
+                      </TabsContent>
+                    )}
+
+                    {/* Tab 3: Tasks - Hidden for auditees */}
+                    {!isAuditeeOnly && (
+                      <TabsContent value="tasks" className="mt-0 px-6 pt-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-slate-800">{t("Audit Engagement Task List")}</h3>
+                          <Button size="sm" onClick={handleAddTask} disabled={addingTask || isReadOnly}>
+                            {addingTask ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}{t("Add Task")}
                           </Button>
                         </div>
-                      )}
-                      {aiWorkpapers.length > 0 ? (
                         <div className="bg-white border rounded-lg overflow-hidden">
                           <Table>
                             <TableHeader>
-                              <TableRow className="bg-slate-50 border-b">
-                                <TableHead className="text-slate-700 font-semibold w-[200px]">{t("Task")}</TableHead>
-                                <TableHead className="text-slate-700 font-semibold w-[180px]">{t("Evidences")}</TableHead>
-                                <TableHead className="text-slate-700 font-semibold w-[250px]">{t("Steps")}</TableHead>
-                                <TableHead className="text-slate-700 font-semibold w-[120px]">{t("Question Checklist")}</TableHead>
-                                <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Comments")}</TableHead>
-                                {isAuditHead && <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Action")}</TableHead>}
+                              <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                                <TableHead className="text-xs font-semibold text-slate-600 w-[80px]">{t("Ref No")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Task")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600 w-[200px]">{t("Document")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600 w-[100px] text-center">{t("Executed")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Comments")}</TableHead>
+                                {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[100px]">{t("Action")}</TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {aiWorkpapers.map((wp) => (
-                                <TableRow key={wp.id} className="border-b hover:bg-slate-50">
-                                  <TableCell className="align-top py-4">
-                                    <div className="space-y-3">
-                                      <p className="text-slate-800">{wp.task}</p>
-                                      <div><span className="text-slate-700 font-medium block mb-1">{t("Executed")}</span><Checkbox checked={wp.executed} onCheckedChange={() => handleToggleExecuted(wp.id, wp.executed)} /></div>
-                                    </div>
+                              {taskList.length > 0 ? taskList.map((task) => (
+                                <TableRow key={task.id} className="hover:bg-slate-50">
+                                  <TableCell><Input value={task.refNo} readOnly className="w-16 bg-slate-50 text-center" /></TableCell>
+                                  <TableCell><Input value={task.task} onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)} onBlur={(e) => handleUpdateTask(task.id, "task", e.target.value)} placeholder={t("Enter task description")} className="border-slate-300" /></TableCell>
+                                  <TableCell>
+                                    {task.document ? (
+                                      <div className="flex items-center gap-2">
+                                        <a href={`/api${task.document}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm truncate max-w-[120px]" title={task.documentName || t("Document")}>{task.documentName || t("View")}</a>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click(); }}><Upload className="h-3 w-3" /></Button>
+                                      </div>
+                                    ) : (
+                                      <Button variant="outline" size="sm" className="text-xs" disabled={uploadingTaskDocument === task.id || isReadOnly} onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click(); }}>
+                                        {uploadingTaskDocument === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Upload className="h-3 w-3 mr-1" />{t("Upload")}</>}
+                                      </Button>
+                                    )}
                                   </TableCell>
-                                  <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.evidences)}</div></TableCell>
-                                  <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.steps)}</div></TableCell>
-                                  <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.questionChecklist)}</div></TableCell>
-                                  <TableCell className="align-top py-4 text-center">{wp.comments || "-"}</TableCell>
+                                  <TableCell className="text-center"><Checkbox checked={task.executed} onCheckedChange={(checked) => handleUpdateTask(task.id, "executed", checked === true)} /></TableCell>
+                                  <TableCell><Input value={task.comments} onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)} onBlur={(e) => handleUpdateTask(task.id, "comments", e.target.value)} placeholder={t("Enter comments")} className="border-slate-300" /></TableCell>
                                   {isAuditHead && (
-                                    <TableCell className="align-top py-4">
+                                    <TableCell>
                                       <div className="flex items-center gap-1">
-                                        <Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenEditAIWorkpaper(wp)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button>
-                                        <Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setSelectedAIWorkpaper(wp); setDeleteAIWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleSaveTask(task)} disabled={savingTask === task.id || isReadOnly} title={t("Save task")}>{savingTask === task.id ? <Loader2 className="h-4 w-4 animate-spin text-green-600" /> : <Save className="h-4 w-4 text-green-600" />}</Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(task.id)} title={t("Delete task")} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                                       </div>
                                     </TableCell>
                                   )}
                                 </TableRow>
-                              ))}
+                              )) : (
+                                <TableRow><TableCell colSpan={isAuditHead ? 6 : 5} className="text-center py-8 text-slate-500">{t("No tasks found. Click \"Add Task\" to create one.")}</TableCell></TableRow>
+                              )}
                             </TableBody>
                           </Table>
                         </div>
-                      ) : (
-                        <div className="text-center py-8 text-slate-500">{t("No AI-generated workpapers available")}</div>
-                      )}
-                    </div>
-                  </CollapsibleSection>
-                )}
+                      </TabsContent>
+                    )}
 
-                {/* 4. Task List - Hidden for auditees */}
-                {!isAuditeeOnly && (
-                  <CollapsibleSection title={t("Audit Engagement Task List")} isOpen={taskListOpen} onToggle={() => setTaskListOpen(!taskListOpen)}>
-                    <div className="space-y-4">
-                      <div className="flex justify-end">
-                        <Button size="sm" onClick={handleAddTask} disabled={addingTask || isReadOnly}>
-                          {addingTask ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}{t("Add Task")}
-                        </Button>
-                      </div>
-                      <div className="bg-white border rounded-lg overflow-hidden">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                              <TableHead className="text-xs font-semibold text-slate-600 w-[80px]">{t("Ref No")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Task")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600 w-[200px]">{t("Document")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600 w-[100px] text-center">{t("Executed")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Comments")}</TableHead>
-                              {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[100px]">{t("Action")}</TableHead>}
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {taskList.length > 0 ? taskList.map((task) => (
-                              <TableRow key={task.id} className="hover:bg-slate-50">
-                                <TableCell><Input value={task.refNo} readOnly className="w-16 bg-slate-50 text-center" /></TableCell>
-                                <TableCell><Input value={task.task} onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)} onBlur={(e) => handleUpdateTask(task.id, "task", e.target.value)} placeholder={t("Enter task description")} className="border-slate-300" /></TableCell>
-                                <TableCell>
-                                  {task.document ? (
-                                    <div className="flex items-center gap-2">
-                                      <a href={`/api${task.document}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm truncate max-w-[120px]" title={task.documentName || t("Document")}>{task.documentName || t("View")}</a>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click(); }}><Upload className="h-3 w-3" /></Button>
-                                    </div>
-                                  ) : (
-                                    <Button variant="outline" size="sm" className="text-xs" disabled={uploadingTaskDocument === task.id || isReadOnly} onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click(); }}>
-                                      {uploadingTaskDocument === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Upload className="h-3 w-3 mr-1" />{t("Upload")}</>}
-                                    </Button>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center"><Checkbox checked={task.executed} onCheckedChange={(checked) => handleUpdateTask(task.id, "executed", checked === true)} /></TableCell>
-                                <TableCell><Input value={task.comments} onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)} onBlur={(e) => handleUpdateTask(task.id, "comments", e.target.value)} placeholder={t("Enter comments")} className="border-slate-300" /></TableCell>
-                                {isAuditHead && (
-                                  <TableCell>
-                                    <div className="flex items-center gap-1">
-                                      <Button variant="ghost" size="icon" onClick={() => handleSaveTask(task)} disabled={savingTask === task.id || isReadOnly} title={t("Save task")}>{savingTask === task.id ? <Loader2 className="h-4 w-4 animate-spin text-green-600" /> : <Save className="h-4 w-4 text-green-600" />}</Button>
-                                      <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(task.id)} title={t("Delete task")} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button>
-                                    </div>
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            )) : (
-                              <TableRow><TableCell colSpan={isAuditHead ? 6 : 5} className="text-center py-8 text-slate-500">{t("No tasks found. Click \"Add Task\" to create one.")}</TableCell></TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </CollapsibleSection>
-                )}
-
-                {/* 5. Evidence Requests - Visible for all */}
-                <CollapsibleSection title={t("Evidence Request")} isOpen={evidenceRequestOpen} onToggle={() => setEvidenceRequestOpen(!evidenceRequestOpen)}>
-                  <div className="space-y-4">
-                    {!isAuditeeOnly && (
-                      <div className="flex justify-between items-center">
-                        <div>
-                          {isAuditHead && selectedEvidenceIds.length > 0 && (
-                            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleAIReview} disabled={generatingAIReview || isReadOnly}>
+                    {/* Tab 4: Evidence Requests - Visible for all */}
+                    <TabsContent value="evidence" className="mt-0 px-6 pt-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold text-slate-800">{t("Evidence Request")}</h3>
+                          {!isAuditeeOnly && isAuditHead && selectedEvidenceIds.length > 0 && (
+                            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 ltr:ml-3 rtl:mr-3" onClick={handleAIReview} disabled={generatingAIReview || isReadOnly}>
                               {generatingAIReview ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Generating...")}</>) : (<><MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("AI Review")} ({selectedEvidenceIds.length})</>)}
                             </Button>
                           )}
                         </div>
-                        {isAuditHead && (
+                        {!isAuditeeOnly && isAuditHead && (
                           <Button size="sm" onClick={() => setAddEvidenceDialogOpen(true)} disabled={isReadOnly}>
                             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Evidence Request")}
                           </Button>
                         )}
                       </div>
-                    )}
-                    {isAuditeeOnly ? (
-                      filteredEvidenceRequests.length > 0 ? (
-                        <div className="space-y-4">
-                          {filteredEvidenceRequests.map((er) => (
-                            <div key={er.id} className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                              <div className="flex items-start gap-4">
-                                <div className="pt-1"><Checkbox checked={selectedEvidenceIds.includes(er.id)} onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)} className="border-primary-600 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white" /></div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1"><span className="text-slate-700 font-semibold">{t("Title")} : {er.title}</span><span className="text-slate-400">|</span><span className="text-slate-700 font-semibold">{t("Sample Size")} : {er.numberOfSamples || "-"}</span></div>
-                                  <p className="text-slate-500 text-sm">{t("Description")}: {er.description || "-"}</p>
-                                  {er.attachments && er.attachments.length > 0 && (<div className="mt-2 flex items-center gap-2 text-sm text-green-600"><FileText className="h-4 w-4" /><span>{er.attachments.length} {t("file(s) uploaded")}</span></div>)}
-                                </div>
-                                <div className="flex-shrink-0 w-[280px]">
-                                  <div className="flex items-center gap-2 mb-1"><MessageSquare className="h-4 w-4 text-slate-500" /><span className="text-sm font-medium text-slate-700">{t("AI Review")}</span></div>
-                                  {(er.aiReviewStatus || er.aiReviewComment) ? (
-                                    <div className="flex items-start gap-2"><div className="flex-shrink-0 mt-0.5">{getAIReviewStatusIcon(er.aiReviewStatus)}</div><div className="min-w-0 flex-1">{er.aiReviewStatus && <span className="text-xs font-medium text-slate-600 block mb-0.5 capitalize">{er.aiReviewStatus}</span>}{er.aiReviewComment && <p className="text-xs text-slate-600 line-clamp-3">{er.aiReviewComment}</p>}</div></div>
-                                  ) : (<><div className="flex items-center gap-1 mb-1"><div className="w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center"><span className="text-white text-xs">⏳</span></div><span className="text-sm text-yellow-600 font-medium">{er.status === 'Submitted' ? t('Awaiting Review') : t('Pending')}</span></div><p className="text-xs text-amber-600 line-clamp-2">{er.status === 'Pending' ? t('Waiting for document upload and review.') : er.status === 'Submitted' ? t('Document submitted. Awaiting AI review.') : t('Awaiting review.')}</p></>)}
-                                </div>
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                  <Button variant="ghost" size="icon" title={t("View Details")} onClick={() => handleOpenViewEvidence(er, false)} className="h-8 w-8"><Eye className="h-5 w-5 text-slate-700" /></Button>
-                                  <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)} className="h-8 w-8"><Paperclip className="h-5 w-5 text-slate-700" /></Button>
-                                </div>
-                              </div>
-                              {er.status === 'Pending' && (
-                                <div className="flex justify-end mt-4">
-                                  <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setAuditeeClariEvidence(er); setRespondDialogOpen(true); }}>{t("Submit Response")}</Button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
-                    ) : (
-                      filteredEvidenceRequests.length > 0 ? (
-                        <div className="bg-white border rounded-lg overflow-hidden">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                                {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[50px]"><Checkbox checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0} onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)} className="border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-700" /></TableHead>}
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {filteredEvidenceRequests.map((er) => (
-                                <TableRow key={er.id} className="hover:bg-slate-50">
-                                  {isAuditHead && <TableCell><Checkbox checked={selectedEvidenceIds.includes(er.id)} onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)} /></TableCell>}
-                                  <TableCell className="font-medium">{er.title}</TableCell>
-                                  <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
-                                  <TableCell>{er.auditee || "-"}</TableCell>
-                                  <TableCell>{er.numberOfSamples || "-"}</TableCell>
-                                  <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' : er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' : er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-100 text-slate-800'}`}>{er.status}</span></TableCell>
-                                  <TableCell>
-                                    {(er.aiReviewStatus || er.aiReviewComment) ? (
-                                      <div className="flex items-start gap-2 max-w-[280px]"><div className="flex-shrink-0 mt-0.5">{getAIReviewStatusIcon(er.aiReviewStatus)}</div><div className="min-w-0 flex-1">{er.aiReviewStatus && <span className="text-xs font-medium text-slate-600 block mb-0.5 capitalize">{er.aiReviewStatus}</span>}{er.aiReviewComment && <p className="text-xs text-slate-600 line-clamp-3">{er.aiReviewComment}</p>}</div></div>
-                                    ) : <span className="text-sm text-slate-400">-</span>}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-1">
-                                      <Button variant="ghost" size="icon" title={t("View")} onClick={() => handleOpenViewEvidence(er, false)}><Eye className="h-4 w-4 text-slate-600" /></Button>
-                                      {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)}><Upload className="h-4 w-4 text-green-600" /></Button>}
-                                      {isAuditHead && (<><Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenViewEvidence(er, true)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setEvidenceToDelete(er); setDeleteEvidenceDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      ) : <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
-                    )}
-                  </div>
-                </CollapsibleSection>
-
-                {/* 6. Other Documents - Hidden for auditees */}
-                {!isAuditeeOnly && (
-                  <CollapsibleSection title={t("Other Documents")} isOpen={otherDocsOpen} onToggle={() => setOtherDocsOpen(!otherDocsOpen)}>
-                    <div className="space-y-4">
-                      <div className="flex justify-end">
-                        <Button size="sm" onClick={() => { setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentDialogOpen(true); }} disabled={isReadOnly}>
-                          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Upload Document")}
-                        </Button>
-                      </div>
-                      {otherDocuments.length > 0 ? (
-                        <div className="bg-white border rounded-lg overflow-hidden">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Document Type")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("File")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Uploaded")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {otherDocuments.map((doc) => (
-                                <TableRow key={doc.id} className="hover:bg-slate-50">
-                                  <TableCell className="font-medium">{doc.title || doc.fileName}</TableCell>
-                                  <TableCell>{doc.documentType || "-"}</TableCell>
-                                  <TableCell className="max-w-[200px] truncate">{doc.description || "-"}</TableCell>
-                                  <TableCell><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary-600" /><span className="text-sm">{doc.fileName}</span><span className="text-xs text-slate-400">({formatFileSize(doc.fileSize)})</span></div></TableCell>
-                                  <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-1">
-                                      <Button variant="ghost" size="icon" title={t("View")} onClick={() => handleOpenViewDocument(doc, false)}><Eye className="h-4 w-4 text-slate-600" /></Button>
-                                      {isAuditHead && (<><Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenViewDocument(doc, true)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setDocumentToDelete(doc); setDeleteDocumentDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      ) : <div className="text-center py-8 text-slate-500">{t("No other documents uploaded yet")}</div>}
-                    </div>
-                  </CollapsibleSection>
-                )}
-
-                {/* 7. Findings - Visible for all */}
-                <CollapsibleSection title={t("Findings")} isOpen={findingsOpen} onToggle={() => setFindingsOpen(!findingsOpen)}>
-                  <div className="space-y-4">
-                    {!isAuditeeOnly && (
-                      <div className="flex justify-end">
-                        <Button size="sm" onClick={() => setAddFullFindingDialogOpen(true)} disabled={isReadOnly}><Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Finding")}</Button>
-                      </div>
-                    )}
-                    {findings.length > 0 ? (
-                      <div className="bg-white border rounded-lg overflow-hidden">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Finding ID")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Responsible Person")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Target Date")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
-                              <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {findings.map((finding) => (
-                              <TableRow key={finding.id} className="hover:bg-slate-50">
-                                <TableCell className="font-medium">{finding.findingId || '-'}</TableCell>
-                                <TableCell className="max-w-[200px] truncate">{finding.title}</TableCell>
-                                <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${finding.severity === 'Critical' ? 'bg-red-100 text-red-800' : finding.severity === 'High' ? 'bg-orange-100 text-orange-800' : finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800'}`}>{finding.severity}</span></TableCell>
-                                <TableCell>{finding.responsiblePerson || '-'}</TableCell>
-                                <TableCell>{formatDate(finding.targetDate || null)}</TableCell>
-                                <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' : finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{finding.status}</span></TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}`)} title={t("View")}><Eye className="h-4 w-4 text-slate-600" /></Button>
-                                    {isAuditHead && (<><Button variant="ghost" size="icon" onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}?edit=true`)} title={t("Edit")} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" onClick={() => { setFindingToDelete(finding); setDeleteFindingDialogOpen(true); }} title={t("Delete")} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
+                      {isAuditeeOnly ? (
+                        filteredEvidenceRequests.length > 0 ? (
+                          <div className="space-y-4">
+                            {filteredEvidenceRequests.map((er) => (
+                              <div key={er.id} className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="pt-1"><Checkbox checked={selectedEvidenceIds.includes(er.id)} onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)} className="border-primary-600 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white" /></div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1"><span className="text-slate-700 font-semibold">{t("Title")} : {er.title}</span><span className="text-slate-400">|</span><span className="text-slate-700 font-semibold">{t("Sample Size")} : {er.numberOfSamples || "-"}</span></div>
+                                    <p className="text-slate-500 text-sm">{t("Description")}: {er.description || "-"}</p>
+                                    {er.attachments && er.attachments.length > 0 && (<div className="mt-2 flex items-center gap-2 text-sm text-green-600"><FileText className="h-4 w-4" /><span>{er.attachments.length} {t("file(s) uploaded")}</span></div>)}
                                   </div>
-                                </TableCell>
-                              </TableRow>
+                                  <div className="flex-shrink-0 w-[280px]">
+                                    <div className="flex items-center gap-2 mb-1"><MessageSquare className="h-4 w-4 text-slate-500" /><span className="text-sm font-medium text-slate-700">{t("AI Review")}</span></div>
+                                    {(er.aiReviewStatus || er.aiReviewComment) ? (
+                                      <div className="flex items-start gap-2"><div className="flex-shrink-0 mt-0.5">{getAIReviewStatusIcon(er.aiReviewStatus)}</div><div className="min-w-0 flex-1">{er.aiReviewStatus && <span className="text-xs font-medium text-slate-600 block mb-0.5 capitalize">{er.aiReviewStatus}</span>}{er.aiReviewComment && <p className="text-xs text-slate-600 line-clamp-3">{er.aiReviewComment}</p>}</div></div>
+                                    ) : (<><div className="flex items-center gap-1 mb-1"><div className="w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center"><span className="text-white text-xs">⏳</span></div><span className="text-sm text-yellow-600 font-medium">{er.status === 'Submitted' ? t('Awaiting Review') : t('Pending')}</span></div><p className="text-xs text-amber-600 line-clamp-2">{er.status === 'Pending' ? t('Waiting for document upload and review.') : er.status === 'Submitted' ? t('Document submitted. Awaiting AI review.') : t('Awaiting review.')}</p></>)}
+                                  </div>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <Button variant="ghost" size="icon" title={t("View Details")} onClick={() => handleOpenViewEvidence(er, false)} className="h-8 w-8"><Eye className="h-5 w-5 text-slate-700" /></Button>
+                                    <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)} className="h-8 w-8"><Paperclip className="h-5 w-5 text-slate-700" /></Button>
+                                  </div>
+                                </div>
+                                {er.status === 'Pending' && (
+                                  <div className="flex justify-end mt-4">
+                                    <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setAuditeeClariEvidence(er); setRespondDialogOpen(true); }}>{t("Submit Response")}</Button>
+                                  </div>
+                                )}
+                              </div>
                             ))}
-                          </TableBody>
-                        </Table>
+                          </div>
+                        ) : <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
+                      ) : (
+                        filteredEvidenceRequests.length > 0 ? (
+                          <div className="bg-white border rounded-lg overflow-hidden">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                                  {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[50px]"><Checkbox checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0} onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)} className="border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-700" /></TableHead>}
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {filteredEvidenceRequests.map((er) => (
+                                  <TableRow key={er.id} className="hover:bg-slate-50">
+                                    {isAuditHead && <TableCell><Checkbox checked={selectedEvidenceIds.includes(er.id)} onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)} /></TableCell>}
+                                    <TableCell className="font-medium">{er.title}</TableCell>
+                                    <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
+                                    <TableCell>{er.auditee || "-"}</TableCell>
+                                    <TableCell>{er.numberOfSamples || "-"}</TableCell>
+                                    <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' : er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' : er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-100 text-slate-800'}`}>{er.status}</span></TableCell>
+                                    <TableCell>
+                                      {(er.aiReviewStatus || er.aiReviewComment) ? (
+                                        <div className="flex items-start gap-2 max-w-[280px]"><div className="flex-shrink-0 mt-0.5">{getAIReviewStatusIcon(er.aiReviewStatus)}</div><div className="min-w-0 flex-1">{er.aiReviewStatus && <span className="text-xs font-medium text-slate-600 block mb-0.5 capitalize">{er.aiReviewStatus}</span>}{er.aiReviewComment && <p className="text-xs text-slate-600 line-clamp-3">{er.aiReviewComment}</p>}</div></div>
+                                      ) : <span className="text-sm text-slate-400">-</span>}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-1">
+                                        <Button variant="ghost" size="icon" title={t("View")} onClick={() => handleOpenViewEvidence(er, false)}><Eye className="h-4 w-4 text-slate-600" /></Button>
+                                        {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)}><Upload className="h-4 w-4 text-green-600" /></Button>}
+                                        {isAuditHead && (<><Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenViewEvidence(er, true)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setEvidenceToDelete(er); setDeleteEvidenceDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
+                      )}
+                    </TabsContent>
+
+                    {/* Tab 5: Other Documents - Hidden for auditees */}
+                    {!isAuditeeOnly && (
+                      <TabsContent value="documents" className="mt-0 px-6 pt-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-slate-800">{t("Other Documents")}</h3>
+                          <Button size="sm" onClick={() => { setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentDialogOpen(true); }} disabled={isReadOnly}>
+                            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Upload Document")}
+                          </Button>
+                        </div>
+                        {otherDocuments.length > 0 ? (
+                          <div className="bg-white border rounded-lg overflow-hidden">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Document Type")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("File")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Uploaded")}</TableHead>
+                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {otherDocuments.map((doc) => (
+                                  <TableRow key={doc.id} className="hover:bg-slate-50">
+                                    <TableCell className="font-medium">{doc.title || doc.fileName}</TableCell>
+                                    <TableCell>{doc.documentType || "-"}</TableCell>
+                                    <TableCell className="max-w-[200px] truncate">{doc.description || "-"}</TableCell>
+                                    <TableCell><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary-600" /><span className="text-sm">{doc.fileName}</span><span className="text-xs text-slate-400">({formatFileSize(doc.fileSize)})</span></div></TableCell>
+                                    <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-1">
+                                        <Button variant="ghost" size="icon" title={t("View")} onClick={() => handleOpenViewDocument(doc, false)}><Eye className="h-4 w-4 text-slate-600" /></Button>
+                                        {isAuditHead && (<><Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenViewDocument(doc, true)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setDocumentToDelete(doc); setDeleteDocumentDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : <div className="text-center py-8 text-slate-500">{t("No other documents uploaded yet")}</div>}
+                      </TabsContent>
+                    )}
+
+                    {/* Tab 6: Findings - Visible for all */}
+                    <TabsContent value="findings" className="mt-0 px-6 pt-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-slate-800">{t("Findings")}</h3>
+                        {!isAuditeeOnly && (
+                          <Button size="sm" onClick={() => setAddFullFindingDialogOpen(true)} disabled={isReadOnly}><Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Finding")}</Button>
+                        )}
                       </div>
-                    ) : <div className="text-center py-8 text-slate-500">{t("No findings recorded yet")}</div>}
+                      {findings.length > 0 ? (
+                        <div className="bg-white border rounded-lg overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Finding ID")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Responsible Person")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Target Date")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                                <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {findings.map((finding) => (
+                                <TableRow key={finding.id} className="hover:bg-slate-50">
+                                  <TableCell className="font-medium">{finding.findingId || '-'}</TableCell>
+                                  <TableCell className="max-w-[200px] truncate">{finding.title}</TableCell>
+                                  <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${finding.severity === 'Critical' ? 'bg-red-100 text-red-800' : finding.severity === 'High' ? 'bg-orange-100 text-orange-800' : finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800'}`}>{finding.severity}</span></TableCell>
+                                  <TableCell>{finding.responsiblePerson || '-'}</TableCell>
+                                  <TableCell>{formatDate(finding.targetDate || null)}</TableCell>
+                                  <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' : finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{finding.status}</span></TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-1">
+                                      <Button variant="ghost" size="icon" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("view"); setFindingDetailDialogOpen(true); }} title={t("View")}><Eye className="h-4 w-4 text-slate-600" /></Button>
+                                      {isAuditHead && (<><Button variant="ghost" size="icon" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("edit"); setFindingDetailDialogOpen(true); }} title={t("Edit")} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" onClick={() => { setFindingToDelete(finding); setDeleteFindingDialogOpen(true); }} title={t("Delete")} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : <div className="text-center py-8 text-slate-500">{t("No findings recorded yet")}</div>}
+                    </TabsContent>
                   </div>
-                </CollapsibleSection>
+                </Tabs>
               </>
             )}
           </div>
+
+          {/* Fixed Footer with Action Buttons */}
+          {!loading && engagement && (
+            <div className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-slate-50/80 flex items-center justify-end gap-3">
+              {!isAuditeeOnly && (
+                <Button variant="outline" onClick={() => setCommentsDialogOpen(true)}>
+                  <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Comments")}
+                </Button>
+              )}
+              {engagement.status !== "Completed" && !isAuditeeOnly && (
+                <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={handleMarkAsCompleted} disabled={markingComplete || isReadOnly}>
+                  {markingComplete ? (
+                    <>
+                      <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                      {t("Marking...")}
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                      {t("Mark as Completed")}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1230,29 +1302,295 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
       {/* Add Full Finding Dialog */}
       <Dialog open={addFullFindingDialogOpen} onOpenChange={setAddFullFindingDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Finding")}</DialogTitle></DialogHeader></div>
-          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Finding Title")} <span className="text-red-500">*</span></Label><Input value={fullFinding.findingTitle} onChange={(e) => setFullFinding({ ...fullFinding, findingTitle: e.target.value })} placeholder={t("Enter finding title")} className="bg-white" /></div>
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Severity")}</Label><Select value={fullFinding.severity} onValueChange={(value) => setFullFinding({ ...fullFinding, severity: value })}><SelectTrigger className="bg-white"><SelectValue placeholder={t("Select severity")} /></SelectTrigger><SelectContent><SelectItem value="Low">{t("Low")}</SelectItem><SelectItem value="Medium">{t("Medium")}</SelectItem><SelectItem value="High">{t("High")}</SelectItem><SelectItem value="Critical">{t("Critical")}</SelectItem></SelectContent></Select></div>
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Criteria (What should be)")}</Label><Textarea value={fullFinding.criteria} onChange={(e) => setFullFinding({ ...fullFinding, criteria: e.target.value })} placeholder={t("Enter criteria")} rows={3} className="bg-white" /></div>
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Condition (What is)")}</Label><Textarea value={fullFinding.condition} onChange={(e) => setFullFinding({ ...fullFinding, condition: e.target.value })} placeholder={t("Enter condition")} rows={3} className="bg-white" /></div>
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Cause (Why it happened)")}</Label><Textarea value={fullFinding.cause} onChange={(e) => setFullFinding({ ...fullFinding, cause: e.target.value })} placeholder={t("Enter cause")} rows={3} className="bg-white" /></div>
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Effect (The consequence)")}</Label><Textarea value={fullFinding.effect} onChange={(e) => setFullFinding({ ...fullFinding, effect: e.target.value })} placeholder={t("Enter effect")} rows={3} className="bg-white" /></div>
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Recommendation")}</Label><Textarea value={fullFinding.recommendation} onChange={(e) => setFullFinding({ ...fullFinding, recommendation: e.target.value })} placeholder={t("Enter recommendation")} rows={3} className="bg-white" /></div>
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-              <Label className="text-end text-slate-500 pt-2">{t("Upload Attachment")}</Label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2"><Button type="button" variant="outline" size="sm" onClick={() => findingAttachmentInputRef.current?.click()}><Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Choose Files")}</Button><input type="file" ref={findingAttachmentInputRef} onChange={(e) => { if (e.target.files) { setFindingAttachments(prev => [...prev, ...Array.from(e.target.files!)]); e.target.value = ""; } }} className="hidden" multiple /></div>
-                {findingAttachments.length > 0 && (<div className="space-y-1">{findingAttachments.map((file, index) => (<div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded border text-sm"><span className="truncate flex-1">{file.name}</span><Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFindingAttachments(prev => prev.filter((_, i) => i !== index))}><X className="h-4 w-4 text-red-500" /></Button></div>))}</div>)}
+        <DialogContent className="sm:max-w-[800px] flex flex-col p-0 gap-0 h-[95vh]">
+          {/* Header */}
+          <div className="px-6 py-5 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-slate-50 to-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-slate-900">{t("Add Finding")}</DialogTitle>
+              <p className="text-sm text-slate-600 mt-1">{t("Document audit findings with details and corrective actions")}</p>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="px-6 py-6 space-y-8 overflow-y-auto flex-1">
+            {/* Basic Information Section */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 pb-2">
+                <div className="h-1 w-1 rounded-full bg-primary-600"></div>
+                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Basic Information")}</h3>
+              </div>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t("Finding Title")} <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    value={fullFinding.findingTitle}
+                    onChange={(e) => setFullFinding({ ...fullFinding, findingTitle: e.target.value })}
+                    placeholder={t("Enter a descriptive title for this finding")}
+                    className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">{t("Severity")}</Label>
+                  <Select value={fullFinding.severity} onValueChange={(value) => setFullFinding({ ...fullFinding, severity: value })}>
+                    <SelectTrigger className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200">
+                      <SelectValue placeholder={t("Select severity level")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          {t("Low")}
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Medium">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                          {t("Medium")}
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="High">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                          {t("High")}
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Critical">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                          {t("Critical")}
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-            <div className="pt-2 border-t border-slate-100"><h3 className="text-sm font-semibold text-slate-800">{t("Corrective & Preventive Actions (CAPA)")}</h3></div>
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Responsible Person")}</Label><Select value={fullFinding.responsiblePersonId} onValueChange={(value) => setFullFinding({ ...fullFinding, responsiblePersonId: value })}><SelectTrigger className="bg-white"><SelectValue placeholder={t("Select person")} /></SelectTrigger><SelectContent>{auditees.map((user) => (<SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>))}</SelectContent></Select></div>
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Status")}</Label><Select value={fullFinding.status} onValueChange={(value) => setFullFinding({ ...fullFinding, status: value })}><SelectTrigger className="bg-white"><SelectValue placeholder={t("Select status")} /></SelectTrigger><SelectContent><SelectItem value="Open">{t("Open")}</SelectItem><SelectItem value="Under Review">{t("Under Review")}</SelectItem><SelectItem value="Closed">{t("Closed")}</SelectItem></SelectContent></Select></div>
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Target Closure Date")}</Label><DatePicker value={fullFinding.targetClosureDate} onChange={(date) => setFullFinding({ ...fullFinding, targetClosureDate: date ? date.toISOString().split('T')[0] : "" })} placeholder={t("Select date")} /></div>
+
+            {/* 4Cs Analysis Section */}
+            <div className="space-y-5 pt-4 border-t border-slate-200">
+              <div className="flex items-center gap-2 pb-2">
+                <div className="h-1 w-1 rounded-full bg-primary-600"></div>
+                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Finding Analysis (4Cs)")}</h3>
+              </div>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">1</span>
+                    {t("Criteria (What should be)")}
+                  </Label>
+                  <Textarea
+                    value={fullFinding.criteria}
+                    onChange={(e) => setFullFinding({ ...fullFinding, criteria: e.target.value })}
+                    placeholder={t("Describe the standard, policy, or expected condition")}
+                    rows={3}
+                    className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">2</span>
+                    {t("Condition (What is)")}
+                  </Label>
+                  <Textarea
+                    value={fullFinding.condition}
+                    onChange={(e) => setFullFinding({ ...fullFinding, condition: e.target.value })}
+                    placeholder={t("Describe the actual situation observed")}
+                    rows={3}
+                    className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">3</span>
+                    {t("Cause (Why it happened)")}
+                  </Label>
+                  <Textarea
+                    value={fullFinding.cause}
+                    onChange={(e) => setFullFinding({ ...fullFinding, cause: e.target.value })}
+                    placeholder={t("Identify the root cause of the finding")}
+                    rows={3}
+                    className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-700 text-xs font-bold">4</span>
+                    {t("Effect (The consequence)")}
+                  </Label>
+                  <Textarea
+                    value={fullFinding.effect}
+                    onChange={(e) => setFullFinding({ ...fullFinding, effect: e.target.value })}
+                    placeholder={t("Describe the impact or potential consequences")}
+                    rows={3}
+                    className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">{t("Recommendation")}</Label>
+                  <Textarea
+                    value={fullFinding.recommendation}
+                    onChange={(e) => setFullFinding({ ...fullFinding, recommendation: e.target.value })}
+                    placeholder={t("Provide recommendations to address the finding")}
+                    rows={3}
+                    className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Attachments Section */}
+            <div className="space-y-4 pt-4 border-t border-slate-200">
+              <div className="flex items-center gap-2 pb-2">
+                <div className="h-1 w-1 rounded-full bg-primary-600"></div>
+                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Attachments")}</h3>
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => findingAttachmentInputRef.current?.click()}
+                  className="border-dashed border-2 h-auto py-3 w-full hover:bg-slate-50"
+                >
+                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Choose Files")}
+                </Button>
+                <input
+                  type="file"
+                  ref={findingAttachmentInputRef}
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      setFindingAttachments((prev) => [...prev, ...Array.from(e.target.files!)]);
+                      e.target.value = "";
+                    }
+                  }}
+                  className="hidden"
+                  multiple
+                />
+
+                {findingAttachments.length > 0 && (
+                  <div className="space-y-2">
+                    {findingAttachments.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
+                            <FileText className="h-4 w-4 text-primary-600" />
+                          </div>
+                          <span className="text-sm font-medium text-slate-700 truncate">{file.name}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
+                          onClick={() => setFindingAttachments((prev) => prev.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* CAPA Section */}
+            <div className="space-y-5 pt-4 border-t border-slate-200">
+              <div className="flex items-center gap-2 pb-2">
+                <div className="h-1 w-1 rounded-full bg-primary-600"></div>
+                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                  {t("Corrective & Preventive Actions (CAPA)")}
+                </h3>
+              </div>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">{t("Responsible Person")}</Label>
+                  <Select
+                    value={fullFinding.responsiblePersonId}
+                    onValueChange={(value) => setFullFinding({ ...fullFinding, responsiblePersonId: value })}
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200">
+                      <SelectValue placeholder={t("Select responsible person")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {auditees.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.fullName}
+                          {user.department?.name && (
+                            <span className="text-slate-500 text-xs ml-2">({user.department.name})</span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                  <Select value={fullFinding.status} onValueChange={(value) => setFullFinding({ ...fullFinding, status: value })}>
+                    <SelectTrigger className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200">
+                      <SelectValue placeholder={t("Select status")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Open">{t("Open")}</SelectItem>
+                      <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
+                      <SelectItem value="Closed">{t("Closed")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">{t("Target Closure Date")}</Label>
+                  <DatePicker
+                    value={fullFinding.targetClosureDate}
+                    onChange={(date) =>
+                      setFullFinding({ ...fullFinding, targetClosureDate: date ? date.toISOString().split("T")[0] : "" })
+                    }
+                    placeholder={t("Select target closure date")}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => setAddFullFindingDialogOpen(false)}>{t("Cancel")}</Button><Button size="sm" onClick={handleAddFullFinding} disabled={savingFullFinding || isReadOnly}>{savingFullFinding ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save")}</Button></div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg flex justify-end gap-3 flex-shrink-0">
+            <Button variant="outline" onClick={() => setAddFullFindingDialogOpen(false)} className="px-5">
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleAddFullFinding}
+              disabled={savingFullFinding || isReadOnly}
+              className="bg-primary-600 hover:bg-primary-700 px-5"
+            >
+              {savingFullFinding ? (
+                <>
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Saving...")}
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Save Finding")}
+                </>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1477,6 +1815,29 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             </div>
           </div>
           <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setAttachmentDialogOpen(false); setEvidenceForAttachment(null); setUploadedFiles([]); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleUploadAttachment} disabled={uploadingAttachment || isReadOnly}>{uploadingAttachment ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Uploading...")}</>) : t("Upload")}</Button></div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Finding Detail Modal */}
+      <Dialog open={findingDetailDialogOpen} onOpenChange={(open) => { if (!open) { setFindingDetailDialogOpen(false); setSelectedFindingId(null); } }}>
+        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {findingDetailMode === "edit" ? t("Edit Finding") : t("View Finding")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6 overflow-y-auto flex-1">
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" onClick={() => { setFindingDetailDialogOpen(false); setSelectedFindingId(null); }}>
+              {t("Close")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

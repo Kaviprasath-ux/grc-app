@@ -606,7 +606,7 @@ export default function ReportsPage() {
               >
                 {generating ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                     {t("Generating...")}
                   </>
                 ) : (
@@ -622,69 +622,14 @@ export default function ReportsPage() {
       <Dialog open={reportDialogOpen} onOpenChange={(open) => { if (!open) closeReportModal(); }}>
         <DialogContent className="sm:max-w-[900px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100 pr-14">
-            <DialogHeader className="mb-0">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <DialogTitle className="text-lg font-semibold text-slate-800 truncate">
-                    {report ? report.title : t("Audit Report")}
-                  </DialogTitle>
-                  {report && (
-                    <p className="text-sm text-slate-500 mt-0.5">{report.reportCode}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                  {report && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleDownloadReport}
-                    >
-                      <Download className="h-4 w-4 mr-1.5" />
-                      {t("Download")}
-                    </Button>
-                  )}
-                  {report && (isAuditHead || isAuditManager) && (
-                    <>
-                      {!isEditing ? (
-                        <Button
-                          size="sm"
-                          className="bg-primary-600 hover:bg-primary-700"
-                          onClick={() => setIsEditing(true)}
-                        >
-                          <Pencil className="h-4 w-4 mr-1.5" />
-                          {t("Edit")}
-                        </Button>
-                      ) : (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCancelEdit}
-                          >
-                            {t("Cancel")}
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="bg-primary-600 hover:bg-primary-700"
-                            onClick={handleSaveReport}
-                            disabled={saving}
-                          >
-                            {saving ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                                {t("Saving...")}
-                              </>
-                            ) : (
-                              t("Save")
-                            )}
-                          </Button>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {report ? report.title : t("Audit Report")}
+              </DialogTitle>
+              {report && (
+                <p className="text-sm text-slate-500 mt-0.5">{report.reportCode}</p>
+              )}
             </DialogHeader>
           </div>
 
@@ -1037,6 +982,55 @@ export default function ReportsPage() {
               <div className="flex items-center justify-center h-48">
                 <p className="text-sm text-slate-500">{t("Report not found")}</p>
               </div>
+            )}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end items-center gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+            {report && (
+              <Button
+                variant="outline"
+                onClick={handleDownloadReport}
+              >
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Download")}
+              </Button>
+            )}
+            {report && (isAuditHead || isAuditManager) && (
+              <>
+                {!isEditing ? (
+                  <Button
+                    className="bg-primary-600 hover:bg-primary-700"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Edit")}
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleCancelEdit}
+                    >
+                      {t("Cancel")}
+                    </Button>
+                    <Button
+                      className="bg-primary-600 hover:bg-primary-700"
+                      onClick={handleSaveReport}
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                          {t("Saving...")}
+                        </>
+                      ) : (
+                        t("Save")
+                      )}
+                    </Button>
+                  </>
+                )}
+              </>
             )}
           </div>
         </DialogContent>

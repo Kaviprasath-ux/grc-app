@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,10 +37,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -55,8 +55,6 @@ import {
   Loader2,
   Home,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -172,7 +170,6 @@ const emptyFormData: EngagementFormData = {
 };
 
 export default function AuditPlanningPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const { t } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
@@ -198,6 +195,12 @@ export default function AuditPlanningPage() {
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
 
+  // Report preview modal
+  const [reportPreviewOpen, setReportPreviewOpen] = useState(false);
+  const [reportStats, setReportStats] = useState({ riskCount: 0, findingCount: 0, auditHeadName: '' });
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [downloadingReport, setDownloadingReport] = useState(false);
+
   // Add/Edit Engagement dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -221,11 +224,6 @@ export default function AuditPlanningPage() {
   const [workpaperFiles, setWorkpaperFiles] = useState<UploadedFile[]>([]);
   const [isDragOverAttach, setIsDragOverAttach] = useState(false);
   const [isDragOverWorkpaper, setIsDragOverWorkpaper] = useState(false);
-
-  // Collapsible sections
-  const [observationOpen, setObservationOpen] = useState(false);
-  const [procedureOpen, setProcedureOpen] = useState(false);
-  const [policiesOpen, setPoliciesOpen] = useState(false);
 
   const isAuditHead = session?.user?.roles?.includes("AuditHead");
 
@@ -352,9 +350,6 @@ export default function AuditPlanningPage() {
     setHistoricalRisks([]);
     setAttachedFiles([]);
     setWorkpaperFiles([]);
-    setObservationOpen(false);
-    setProcedureOpen(false);
-    setPoliciesOpen(false);
   };
 
   const openAddDialog = async () => {
@@ -664,7 +659,7 @@ export default function AuditPlanningPage() {
     setReportDialogOpen(true);
   };
 
-  const handleShowReport = () => {
+  const handleShowReport = async () => {
     if (!reportFilterType) {
       toast.error(t("Please select a filter type"));
       return;
@@ -689,17 +684,67 @@ export default function AuditPlanningPage() {
     }
 
     setReportDialogOpen(false);
+    setLoadingStats(true);
+    setReportPreviewOpen(true);
 
-    if (reportFilterType === "Year") {
-      router.push(`/internal-audit/audit-planning/report-preview?filterType=Year&year=${reportYear}`);
-    } else {
-      router.push(`/internal-audit/audit-planning/report-preview?filterType=DateRange&startDate=${reportStartDate}&endDate=${reportEndDate}`);
+    // Fetch report stats
+    try {
+      let url = `/api/internal-audit/audit-plan/stats?`;
+      if (reportFilterType === "DateRange") {
+        url += `filterType=DateRange&startDate=${reportStartDate}&endDate=${reportEndDate}`;
+      } else {
+        url += `year=${reportYear}`;
+      }
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setReportStats({ riskCount: data.riskCount, findingCount: data.findingCount, auditHeadName: data.auditHeadName || '' });
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    setDownloadingReport(true);
+    try {
+      let url = `/api/internal-audit/audit-plan/download?`;
+      let filename = "";
+      if (reportFilterType === "DateRange" && reportStartDate && reportEndDate) {
+        url += `filterType=DateRange&startDate=${reportStartDate}&endDate=${reportEndDate}`;
+        filename = `Annual_Audit_Plan_${reportStartDate}_to_${reportEndDate}.pdf`;
+      } else {
+        url += `year=${reportYear}`;
+        filename = `Annual_Audit_Plan_${reportYear}.pdf`;
+      }
+      const response = await fetch(url);
+      if (response.ok) {
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+        toast.success(t("Report downloaded successfully"));
+      } else {
+        toast.error(t("Failed to download report"));
+      }
+    } catch (error) {
+      console.error("Failed to download report:", error);
+      toast.error(t("Failed to download report"));
+    } finally {
+      setDownloadingReport(false);
     }
   };
 
   // Render the engagement form content (shared between Add and Edit dialogs)
   const renderEngagementFormContent = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Engagement Title */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700">
@@ -794,17 +839,18 @@ export default function AuditPlanningPage() {
       {/* Historical Risks */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700">{t("Historical Risks (For reference, last year)")}</Label>
-        <div className="border rounded-lg p-3 min-h-[50px] bg-slate-50">
+        <div className="border border-slate-200 rounded-xl px-4 py-3 min-h-[60px] bg-slate-50/50">
           {historicalRisks.length > 0 ? (
-            <ul className="space-y-1">
+            <ul className="space-y-2">
               {historicalRisks.map((risk) => (
-                <li key={risk.id} className="text-sm text-slate-600">
-                  {risk.riskId} - {risk.riskName} ({risk.riskLevel || t("N/A")})
+                <li key={risk.id} className="text-sm text-slate-600 flex items-start gap-2">
+                  <span className="text-slate-400 mt-0.5">•</span>
+                  <span className="flex-1">{risk.riskId} - {risk.riskName} ({risk.riskLevel || t("N/A")})</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-slate-400 text-center text-sm">{t("No items found")}</p>
+            <p className="text-slate-400 text-center text-sm py-2">{t("No items found")}</p>
           )}
         </div>
       </div>
@@ -971,15 +1017,21 @@ export default function AuditPlanningPage() {
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700">{t("Attach File")}</Label>
         <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-            isDragOverAttach ? "border-primary-500 bg-primary-50" : "border-slate-300"
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+            isDragOverAttach ? "border-primary-500 bg-primary-50/50" : "border-slate-200 bg-slate-50/30 hover:bg-slate-50/60"
           }`}
           onDragOver={(e) => { e.preventDefault(); setIsDragOverAttach(true); }}
           onDragLeave={() => setIsDragOverAttach(false)}
           onDrop={(e) => handleFileDrop(e, "attach")}
           onClick={() => attachFileRef.current?.click()}
         >
-          <p className="text-slate-500 text-sm">{t("Drag and drop or select file.")}</p>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-slate-500" />
+            </div>
+            <p className="text-sm text-slate-600 font-medium">{t("Drag and drop or select file.")}</p>
+            <p className="text-xs text-slate-400">{t("Upload supporting documents")}</p>
+          </div>
           <input
             ref={attachFileRef}
             type="file"
@@ -989,15 +1041,19 @@ export default function AuditPlanningPage() {
           />
         </div>
         {attachedFiles.length > 0 && (
-          <div className="space-y-2 mt-2">
+          <div className="space-y-2 mt-3">
             {attachedFiles.map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm">{file.name}</span>
-                  <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
+              <div key={file.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                    <FileText className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{file.name}</p>
+                    <p className="text-xs text-slate-400">{formatFileSize(file.size)}</p>
+                  </div>
                 </div>
-                <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(file.id, "attach")}>
+                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 text-slate-400 hover:text-red-600" onClick={() => removeFile(file.id, "attach")}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -1010,15 +1066,21 @@ export default function AuditPlanningPage() {
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700">{t("Upload Workpaper")}</Label>
         <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-            isDragOverWorkpaper ? "border-primary-500 bg-primary-50" : "border-slate-300"
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+            isDragOverWorkpaper ? "border-primary-500 bg-primary-50/50" : "border-slate-200 bg-slate-50/30 hover:bg-slate-50/60"
           }`}
           onDragOver={(e) => { e.preventDefault(); setIsDragOverWorkpaper(true); }}
           onDragLeave={() => setIsDragOverWorkpaper(false)}
           onDrop={(e) => handleFileDrop(e, "workpaper")}
           onClick={() => workpaperRef.current?.click()}
         >
-          <p className="text-slate-500 text-sm">{t("Drag and drop or select file.")}</p>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-slate-500" />
+            </div>
+            <p className="text-sm text-slate-600 font-medium">{t("Drag and drop or select file.")}</p>
+            <p className="text-xs text-slate-400">{t("Upload audit workpapers")}</p>
+          </div>
           <input
             ref={workpaperRef}
             type="file"
@@ -1028,15 +1090,19 @@ export default function AuditPlanningPage() {
           />
         </div>
         {workpaperFiles.length > 0 && (
-          <div className="space-y-2 mt-2">
+          <div className="space-y-2 mt-3">
             {workpaperFiles.map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm">{file.name}</span>
-                  <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
+              <div key={file.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                    <FileText className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{file.name}</p>
+                    <p className="text-xs text-slate-400">{formatFileSize(file.size)}</p>
+                  </div>
                 </div>
-                <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(file.id, "workpaper")}>
+                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 text-slate-400 hover:text-red-600" onClick={() => removeFile(file.id, "workpaper")}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -1045,153 +1111,235 @@ export default function AuditPlanningPage() {
         )}
       </div>
 
-      {/* Initial Audit Observation - Collapsible */}
-      <Collapsible open={observationOpen} onOpenChange={setObservationOpen}>
-        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-          <span className="text-slate-700 font-medium text-sm">{t("Initial Audit Observation")}</span>
-          {observationOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
-        </CollapsibleTrigger>
-        <CollapsibleContent className="p-3 border border-t-0 rounded-b-lg bg-white">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700">{t("Auditor's Initial Observation")}</Label>
-            <Textarea
-              value={engagementForm.initialObservation}
-              onChange={(e) => setEngagementForm({ ...engagementForm, initialObservation: e.target.value })}
-              rows={3}
-              className="w-full bg-white resize-none"
-            />
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+      {/* Additional Details - Tabs */}
+      <div>
+        <Tabs defaultValue="observation" className="w-full">
+          <TabsList className="w-full justify-start bg-white border-b border-slate-200 rounded-none h-auto p-0">
+            <TabsTrigger value="observation" className="data-[state=active]:bg-white data-[state=active]:border-b-0.5 data-[state=active]:border-primary-600">
+              {t("Observation")}
+            </TabsTrigger>
+            <TabsTrigger value="procedure" className="data-[state=active]:bg-white data-[state=active]:border-b-0.5 data-[state=active]:border-primary-600">
+              {t("Testing Procedure")}
+            </TabsTrigger>
+            <TabsTrigger value="policies" className="data-[state=active]:bg-white data-[state=active]:border-b-0.5 data-[state=active]:border-primary-600">
+              {t("Policies & Procedures")}
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Audit Testing Procedure - Collapsible */}
-      <Collapsible open={procedureOpen} onOpenChange={setProcedureOpen}>
-        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-          <span className="text-slate-700 font-medium text-sm">{t("Audit Testing Procedure")}</span>
-          {procedureOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
-        </CollapsibleTrigger>
-        <CollapsibleContent className="p-3 border border-t-0 rounded-b-lg bg-white">
-          <div className="flex justify-end mb-3">
-            <Button type="button" size="sm" onClick={addTaskRow} className="bg-primary-600 hover:bg-primary-700">
-              <Plus className="h-3 w-3 mr-1" />
-              {t("Add Task Row")}
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="text-left text-slate-600">
-                  <th className="p-2 border-b font-medium">{t("Task")}</th>
-                  <th className="p-2 border-b w-12 font-medium">{t("Done")}</th>
-                  <th className="p-2 border-b w-20 font-medium">{t("Planned Hours")}</th>
-                  <th className="p-2 border-b w-20 font-medium">{t("Actual Hours")}</th>
-                  <th className="p-2 border-b w-32 font-medium">{t("Auditor")}</th>
-                  <th className="p-2 border-b font-medium">{t("Comments")}</th>
-                  <th className="p-2 border-b w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((task) => (
-                  <tr key={task.id}>
-                    <td className="p-1 border-b">
-                      <Input
-                        value={task.task}
-                        onChange={(e) => updateTask(task.id, "task", e.target.value)}
-                        className="border-slate-200 h-8 text-sm"
-                      />
-                    </td>
-                    <td className="p-1 border-b text-center">
-                      <Checkbox
-                        checked={task.done}
-                        onCheckedChange={(checked) => updateTask(task.id, "done", !!checked)}
-                      />
-                    </td>
-                    <td className="p-1 border-b">
-                      <Input
-                        type="number"
-                        value={task.plannedHours}
-                        onChange={(e) => updateTask(task.id, "plannedHours", e.target.value)}
-                        className="border-slate-200 h-8 text-sm"
-                      />
-                    </td>
-                    <td className="p-1 border-b">
-                      <Input
-                        type="number"
-                        value={task.actualHours}
-                        onChange={(e) => updateTask(task.id, "actualHours", e.target.value)}
-                        className="border-slate-200 h-8 text-sm"
-                      />
-                    </td>
-                    <td className="p-1 border-b">
-                      <Select
-                        value={task.auditorId}
-                        onValueChange={(value) => updateTask(task.id, "auditorId", value)}
-                      >
-                        <SelectTrigger className="border-slate-200 h-8 text-sm">
-                          <SelectValue placeholder={t("Select")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {auditors.map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.fullName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-1 border-b">
-                      <Input
-                        value={task.comments}
-                        onChange={(e) => updateTask(task.id, "comments", e.target.value)}
-                        className="border-slate-200 h-8 text-sm"
-                      />
-                    </td>
-                    <td className="p-1 border-b">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeTask(task.id)}
-                        className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                <tr className="font-medium text-sm">
-                  <td className="p-2"></td>
-                  <td className="p-2"></td>
-                  <td className="p-2 text-slate-700">{t("Total")}: {calculateTotalHours("plannedHours")}</td>
-                  <td className="p-2 text-slate-700">{t("Total")}: {calculateTotalHours("actualHours")}</td>
-                  <td className="p-2"></td>
-                  <td className="p-2"></td>
-                  <td className="p-2"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+          <TabsContent value="observation" className="mt-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Auditor's Initial Observation")}</Label>
+              <Textarea
+                value={engagementForm.initialObservation}
+                onChange={(e) => setEngagementForm({ ...engagementForm, initialObservation: e.target.value })}
+                rows={5}
+                className="w-full bg-white resize-none border-slate-200 focus:border-primary-300 focus:ring-primary-200"
+                placeholder={t("Enter initial observations from the auditor")}
+              />
+            </div>
+          </TabsContent>
 
-      {/* Related Policies & Procedures - Collapsible */}
-      <Collapsible open={policiesOpen} onOpenChange={setPoliciesOpen}>
-        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-          <span className="text-slate-700 font-medium text-sm">{t("Related Policies & Procedures")}</span>
-          {policiesOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
-        </CollapsibleTrigger>
-        <CollapsibleContent className="p-3 border border-t-0 rounded-b-lg bg-white">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700">{t("Related Policies / Procedures")}</Label>
-            <Textarea
-              value={engagementForm.relatedPolicies}
-              onChange={(e) => setEngagementForm({ ...engagementForm, relatedPolicies: e.target.value })}
-              rows={3}
-              className="w-full bg-white resize-none"
-            />
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+          <TabsContent value="procedure" className="mt-6">
+            <div className="space-y-4">
+              {/* Header Section */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">{t("Testing Procedure Tasks")}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t("Define tasks and assign auditors for this engagement")}</p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={addTaskRow}
+                  className="bg-primary-600 hover:bg-primary-700"
+                >
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Add Task")}
+                </Button>
+              </div>
+
+              {/* Tasks List */}
+              {tasks.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50/30">
+                  <p className="text-sm text-slate-500">{t("No tasks added yet")}</p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Click 'Add Task' to begin")}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {tasks.map((task, index) => (
+                    <div
+                      key={task.id}
+                      className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+                    >
+                      <div className="space-y-3">
+                        {/* Task Header - Task Description */}
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center mt-1">
+                            <span className="text-xs font-semibold text-slate-600">{index + 1}</span>
+                          </div>
+                          <div className="flex-1">
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                              {t("Task Description")}
+                            </Label>
+                            <Input
+                              value={task.task}
+                              onChange={(e) => updateTask(task.id, "task", e.target.value)}
+                              className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200"
+                              placeholder={t("Enter task description")}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTask(task.id)}
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {/* Task Details Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 ltr:pl-10 rtl:pr-10">
+                          {/* Status */}
+                          <div className="md:col-span-3">
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                              {t("Status")}
+                            </Label>
+                            <div className="flex items-center gap-2 h-10 px-3 border border-slate-200 rounded-md bg-slate-50/50">
+                              <Checkbox
+                                checked={task.done}
+                                onCheckedChange={(checked) => updateTask(task.id, "done", !!checked)}
+                                id={`task-done-${task.id}`}
+                              />
+                              <label
+                                htmlFor={`task-done-${task.id}`}
+                                className="text-sm cursor-pointer select-none"
+                              >
+                                {task.done ? (
+                                  <span className="text-green-600 font-medium">{t("Done")}</span>
+                                ) : (
+                                  <span className="text-slate-500">{t("Pending")}</span>
+                                )}
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Planned Hours */}
+                          <div className="md:col-span-2">
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                              {t("Planned (hrs)")}
+                            </Label>
+                            <Input
+                              type="number"
+                              value={task.plannedHours}
+                              onChange={(e) => updateTask(task.id, "plannedHours", e.target.value)}
+                              className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200 text-center"
+                              placeholder="0"
+                              min="0"
+                              step="0.5"
+                            />
+                          </div>
+
+                          {/* Actual Hours */}
+                          <div className="md:col-span-2">
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                              {t("Actual (hrs)")}
+                            </Label>
+                            <Input
+                              type="number"
+                              value={task.actualHours}
+                              onChange={(e) => updateTask(task.id, "actualHours", e.target.value)}
+                              className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200 text-center"
+                              placeholder="0"
+                              min="0"
+                              step="0.5"
+                            />
+                          </div>
+
+                          {/* Auditor */}
+                          <div className="md:col-span-5">
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                              {t("Assigned Auditor")}
+                            </Label>
+                            <Select
+                              value={task.auditorId}
+                              onValueChange={(value) => updateTask(task.id, "auditorId", value)}
+                            >
+                              <SelectTrigger className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200">
+                                <SelectValue placeholder={t("Select auditor")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {auditors.map((user) => (
+                                  <SelectItem key={user.id} value={user.id}>
+                                    {user.fullName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Comments */}
+                          <div className="md:col-span-12">
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                              {t("Comments")}
+                            </Label>
+                            <Input
+                              value={task.comments}
+                              onChange={(e) => updateTask(task.id, "comments", e.target.value)}
+                              className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200"
+                              placeholder={t("Add notes or comments for this task")}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Totals Summary */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-slate-700">
+                        {t("Total Hours")}
+                      </span>
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500">{t("Planned")}:</span>
+                          <div className="bg-white border border-slate-200 rounded-md px-3 py-1.5 min-w-[60px] text-center">
+                            <span className="text-sm font-bold text-slate-800">
+                              {calculateTotalHours("plannedHours")}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500">{t("Actual")}:</span>
+                          <div className="bg-white border border-slate-200 rounded-md px-3 py-1.5 min-w-[60px] text-center">
+                            <span className="text-sm font-bold text-slate-800">
+                              {calculateTotalHours("actualHours")}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="policies" className="mt-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Related Policies / Procedures")}</Label>
+              <Textarea
+                value={engagementForm.relatedPolicies}
+                onChange={(e) => setEngagementForm({ ...engagementForm, relatedPolicies: e.target.value })}
+                rows={5}
+                className="w-full bg-white resize-none border-slate-200 focus:border-primary-300 focus:ring-primary-200"
+                placeholder={t("List relevant policies and procedures for this audit")}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 
@@ -1548,6 +1696,160 @@ export default function AuditPlanningPage() {
               className="bg-primary-600 hover:bg-primary-700"
             >
               {saving ? t("Saving...") : t("Update")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Preview Modal */}
+      <Dialog open={reportPreviewOpen} onOpenChange={setReportPreviewOpen}>
+        <DialogContent className="sm:max-w-[900px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {t("Annual Audit Plan Report")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-6">
+              {/* Document Metadata */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Document Type")} :</span>
+                  <span className="text-primary-600">{t("Annual plan report")}</span>
+                </div>
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Document Reference")} :</span>
+                  <span className="text-primary-600">
+                    {reportFilterType === "DateRange" && reportStartDate && reportEndDate
+                      ? `MOF-IAD-${reportStartDate}-${reportEndDate}`
+                      : `MOF-IAD-${reportYear}`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Responsible Department")} :</span>
+                  <span className="text-slate-700">{t("Internal Audit Department")}</span>
+                </div>
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Document Description")} :</span>
+                  <span className="text-slate-700">{t("This document includes the objectives and scope of the engagement, the audit team, completion timeline, execution phases, and reporting procedures.")}</span>
+                </div>
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Purpose")} :</span>
+                  <span className="text-slate-700">{t("To use the form for documenting the planning of the internal audit engagement.")}</span>
+                </div>
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Scope of Application")} :</span>
+                  <span className="text-slate-700">{t("Internal Audit Department")}</span>
+                </div>
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Related Policies")} :</span>
+                  <div className="text-slate-700">
+                    <p>• {t("Internal Audit Charter")}</p>
+                    <p>• {t("Internal Audit Methodology")}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Related Procedures")} :</span>
+                  <span className="text-slate-700">{t("None")}</span>
+                </div>
+                <div className="grid grid-cols-[200px_1fr] gap-2">
+                  <span className="font-semibold text-slate-700">{t("Reference Documents")} :</span>
+                  <div className="text-slate-700">
+                    <p>• {t("International Standards for the Professional Practice of Internal Auditing (IIA)")}</p>
+                    <p>• {t("Supplementary Guidance issued by the Institute of Internal Auditors (IIA)")}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Engagement Overview */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900">{t("Engagement Overview")}</h3>
+                <p className="text-slate-700">
+                  {t("The independent review of the internal controls established by the department, assessing their adequacy and effectiveness against the objectives they aim to achieve, and ensuring compliance with laws, regulations, policies, and procedures related to the relevant control systems, etc")}
+                </p>
+                <ul className="list-disc list-inside text-slate-700 space-y-1">
+                  <li>{t("Independent review of the internal control system and its adequacy and effectiveness.")}</li>
+                  <li>{t("Verify compliance with laws, regulations, policies, and procedures.")}</li>
+                  <li>{t("Review the procedures and policies implemented in the department.")}</li>
+                  <li>{t("Follow up on the implementation of previous internal audit recommendations.")}</li>
+                </ul>
+              </div>
+
+              {/* Audit Scope */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900">{t("Audit Scope")}</h3>
+                <p className="text-slate-700">{t("Financial year")} {reportFilterType === "DateRange" && reportStartDate ? reportStartDate.split("-")[0] : reportYear}</p>
+              </div>
+
+              {/* Initial Risks */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900">{t("Initial Risks and Observations from Preliminary Document Review")}</h3>
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-700 w-40">{t("Count of Risk")}:</span>
+                    <span className="text-primary-600 font-medium">
+                      {loadingStats ? <Loader2 className="h-4 w-4 animate-spin inline" /> : reportStats.riskCount}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-700 w-40">{t("Count of Findings")}:</span>
+                    <span className="text-primary-600 font-medium">
+                      {loadingStats ? <Loader2 className="h-4 w-4 animate-spin inline" /> : reportStats.findingCount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Audit Procedures and Tests */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900">{t("Audit Procedures and Tests")}</h3>
+                <p className="text-slate-700">{t("The team shall adhere to the following")}:</p>
+                <ol className="list-decimal list-inside text-slate-700 space-y-1">
+                  <li>{t("Prepare and update the audit program and comply with it")}</li>
+                  <li>{t("Use audit methods such as data analysis, document review, and sampling audit")}</li>
+                  <li>{t("Follow up on previous audit results")}</li>
+                </ol>
+              </div>
+
+              {/* Approvals */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-slate-900">{t("Approvals")}</h3>
+                <div className="space-y-1">
+                  <p className="text-slate-700">{t("Job Title")} : {t("Audit Head")}</p>
+                  <p className="text-slate-700">
+                    {t("Name")} : {loadingStats ? <Loader2 className="h-4 w-4 animate-spin inline" /> : (reportStats.auditHeadName || '-')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" onClick={() => setReportPreviewOpen(false)}>
+              {t("Close")}
+            </Button>
+            <Button
+              onClick={handleDownloadReport}
+              disabled={downloadingReport}
+              className="bg-primary-600 hover:bg-primary-700"
+            >
+              {downloadingReport ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t("Downloading...")}
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  {t("Download Report")}
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>
