@@ -519,6 +519,7 @@ CREATE TABLE "ProcessAttachment" (
 -- CreateTable
 CREATE TABLE "BIACategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
@@ -532,6 +533,7 @@ CREATE TABLE "BIACategory" (
 -- CreateTable
 CREATE TABLE "BIARating" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
     "label" TEXT NOT NULL,
     "score" INTEGER NOT NULL DEFAULT 0,
     "description" TEXT,
@@ -547,6 +549,7 @@ CREATE TABLE "BIARating" (
 -- CreateTable
 CREATE TABLE "BIAScoringConfig" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
     "calculationType" TEXT NOT NULL DEFAULT 'High of all',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -558,6 +561,7 @@ CREATE TABLE "BIAScoringConfig" (
 -- CreateTable
 CREATE TABLE "BIAScoringRange" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
     "label" TEXT NOT NULL,
     "lowValue" INTEGER NOT NULL DEFAULT 0,
     "highValue" INTEGER,
@@ -573,6 +577,7 @@ CREATE TABLE "BIAScoringRange" (
 -- CreateTable
 CREATE TABLE "BCPLabel" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "hours" INTEGER NOT NULL DEFAULT 0,
@@ -2342,16 +2347,31 @@ CREATE INDEX "Process_customerAccountId_idx" ON "Process"("customerAccountId");
 CREATE UNIQUE INDEX "Process_customerAccountId_processCode_key" ON "Process"("customerAccountId", "processCode");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BIACategory_name_key" ON "BIACategory"("name");
+CREATE INDEX "BIACategory_customerAccountId_idx" ON "BIACategory"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BIARating_label_key" ON "BIARating"("label");
+CREATE UNIQUE INDEX "BIACategory_customerAccountId_name_key" ON "BIACategory"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BIAScoringRange_label_calculationType_key" ON "BIAScoringRange"("label", "calculationType");
+CREATE INDEX "BIARating_customerAccountId_idx" ON "BIARating"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BCPLabel_name_key" ON "BCPLabel"("name");
+CREATE UNIQUE INDEX "BIARating_customerAccountId_label_key" ON "BIARating"("customerAccountId", "label");
+
+-- CreateIndex
+CREATE INDEX "BIAScoringConfig_customerAccountId_idx" ON "BIAScoringConfig"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "BIAScoringRange_customerAccountId_idx" ON "BIAScoringRange"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BIAScoringRange_customerAccountId_label_calculationType_key" ON "BIAScoringRange"("customerAccountId", "label", "calculationType");
+
+-- CreateIndex
+CREATE INDEX "BCPLabel_customerAccountId_idx" ON "BCPLabel"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BCPLabel_customerAccountId_name_key" ON "BCPLabel"("customerAccountId", "name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ProcessBIA_processId_key" ON "ProcessBIA"("processId");
@@ -3066,6 +3086,21 @@ ALTER TABLE "Process" ADD CONSTRAINT "Process_informedId_fkey" FOREIGN KEY ("inf
 
 -- AddForeignKey
 ALTER TABLE "ProcessAttachment" ADD CONSTRAINT "ProcessAttachment_processId_fkey" FOREIGN KEY ("processId") REFERENCES "Process"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BIACategory" ADD CONSTRAINT "BIACategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BIARating" ADD CONSTRAINT "BIARating_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BIAScoringConfig" ADD CONSTRAINT "BIAScoringConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BIAScoringRange" ADD CONSTRAINT "BIAScoringRange_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BCPLabel" ADD CONSTRAINT "BCPLabel_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ProcessBIA" ADD CONSTRAINT "ProcessBIA_processId_fkey" FOREIGN KEY ("processId") REFERENCES "Process"("id") ON DELETE CASCADE ON UPDATE CASCADE;

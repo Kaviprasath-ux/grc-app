@@ -105,6 +105,12 @@ model CustomerAccount {
   // Notification relations
   notifications              Notification[]
   notificationPreferences    NotificationPreference[]
+  // BIA Settings relations (tenant-specific)
+  biaCategories              BIACategory[]
+  biaRatings                 BIARating[]
+  biaScoringConfigs          BIAScoringConfig[]
+  biaScoringRanges           BIAScoringRange[]
+  bcpLabels                  BCPLabel[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -820,63 +826,90 @@ model ProcessAttachment {
 
 // BIA Impact Categories (Financial, Reputational, Regulatory, Safety, Operational)
 model BIACategory {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?
+  sortOrder         Int             @default(0)
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // BIA Rating Methodology (defines the rating levels and their scores)
 model BIARating {
-  id          String   @id @default(cuid())
-  label       String   @unique // High, Medium, Low
-  score       Int      @default(0) // Score value for calculations
-  description String?  // Description of what this rating means
-  color       String?  // Color code for UI display
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  label             String          // High, Medium, Low
+  score             Int             @default(0) // Score value for calculations
+  description       String?         // Description of what this rating means
+  color             String?         // Color code for UI display
+  sortOrder         Int             @default(0)
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, label])
+  @@index([customerAccountId])
 }
 
 // BIA Scoring Configuration (High of All, Addition of All, Product of All)
 model BIAScoringConfig {
-  id              String   @id @default(cuid())
-  calculationType String   @default("High of all") // High of all, Addition of all, Product of all
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  calculationType   String          @default("High of all") // High of all, Addition of all, Product of all
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
 }
 
 // BIA Scoring Ranges (defines criticality levels based on scores)
 model BIAScoringRange {
-  id              String   @id @default(cuid())
-  label           String   // Critical, High, Medium, Low
-  lowValue        Int      @default(0)
-  highValue       Int?
-  color           String?  // Color code for UI display
-  calculationType String   @default("High of all") // Links to the scoring config
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  label             String          // Critical, High, Medium, Low
+  lowValue          Int             @default(0)
+  highValue         Int?
+  color             String?         // Color code for UI display
+  calculationType   String          @default("High of all") // Links to the scoring config
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  @@unique([label, calculationType])
+  @@unique([customerAccountId, label, calculationType])
+  @@index([customerAccountId])
 }
 
 // BCP Labels (Business Continuity Planning labels for RTO/RPO)
 model BCPLabel {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  type        String   // RTO, RPO
-  hours       Int      @default(0) // Value in hours
-  description String?
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  name              String
+  type              String          // RTO, RPO
+  hours             Int             @default(0) // Value in hours
+  description       String?
+  sortOrder         Int             @default(0)
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Process BIA Assessment (stores the BIA assessment for each process)
