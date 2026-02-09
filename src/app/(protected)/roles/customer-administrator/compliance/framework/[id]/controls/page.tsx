@@ -5,25 +5,19 @@ import { useRouter, useParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ChevronLeft,
   ChevronRight,
   Search,
-  Settings2,
   Home,
+  FileText,
+  Eye,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import Link from "next/link";
@@ -64,7 +58,7 @@ interface FrameworkData {
   requirements: Requirement[];
 }
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 
 export default function ControlsByFrameworkPage() {
   const router = useRouter();
@@ -72,28 +66,18 @@ export default function ControlsByFrameworkPage() {
   const frameworkId = params.id as string;
   const { t } = useLanguage();
 
-  // All controls extracted from framework (de-duplicated)
   const [allControls, setAllControls] = useState<Control[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const [sortField, setSortField] = useState<string>("name");
+  const [sortField, setSortField] = useState<string>("controlCode");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [groupingFilter, setGroupingFilter] = useState("all");
+  const [domainFilter, setDomainFilter] = useState("all");
 
-  // Framework info
   const [framework, setFramework] = useState<{ id: string; name: string; status: string } | null>(null);
 
-  // Column visibility
-  const [visibleColumns, setVisibleColumns] = useState({
-    controlName: true,
-    controlCode: true,
-    functionalGrouping: true,
-    status: true,
-    assignee: true,
-    domain: true,
-  });
-
-  // Step 0 & 1 & 2 & 3: Fetch framework with requirements and extract+deduplicate controls
   useEffect(() => {
     if (!frameworkId) {
       setLoading(false);
@@ -103,10 +87,6 @@ export default function ControlsByFrameworkPage() {
     const fetchFrameworkAndExtractControls = async () => {
       try {
         setLoading(true);
-
-        // Step 1: Fetch Framework with all Requirements and their linked Controls
-        // Using existing API: GET /api/frameworks/[id]
-        // This returns: { requirements: [{ controls: [{ control: {...} }] }] }
         const response = await fetch(`/api/frameworks/${frameworkId}`);
 
         if (!response.ok) {
@@ -116,12 +96,8 @@ export default function ControlsByFrameworkPage() {
         }
 
         const frameworkData: FrameworkData = await response.json();
-
-        // Store framework info including status for access control
         setFramework({ id: frameworkData.id, name: frameworkData.name, status: (frameworkData as { status?: string }).status || "Subscribed" });
 
-        // Step 2: Extract Controls from all Requirements
-        // Data path: framework.requirements[].controls[].control
         const controlsMap = new Map<string, Control>();
 
         if (frameworkData.requirements && Array.isArray(frameworkData.requirements)) {
@@ -129,8 +105,6 @@ export default function ControlsByFrameworkPage() {
             if (requirement.controls && Array.isArray(requirement.controls)) {
               for (const reqControl of requirement.controls) {
                 if (reqControl.control && reqControl.control.id) {
-                  // Step 3: De-duplicate by control ID
-                  // If control already exists in map, skip (first occurrence wins)
                   if (!controlsMap.has(reqControl.control.id)) {
                     controlsMap.set(reqControl.control.id, reqControl.control);
                   }
@@ -140,10 +114,8 @@ export default function ControlsByFrameworkPage() {
           }
         }
 
-        // Convert map to array
         const uniqueControls = Array.from(controlsMap.values());
         setAllControls(uniqueControls);
-
       } catch (error) {
         console.error("Error fetching framework data:", error);
       } finally {
@@ -154,21 +126,40 @@ export default function ControlsByFrameworkPage() {
     fetchFrameworkAndExtractControls();
   }, [frameworkId]);
 
-  // Step 4: Apply client-side search filter
-  const filteredControls = useMemo(() => {
-    if (!search.trim()) {
-      return allControls;
-    }
-
-    const searchLower = search.toLowerCase().trim();
-    return allControls.filter((control) => {
-      const matchesCode = control.controlCode?.toLowerCase().includes(searchLower);
-      const matchesName = control.name?.toLowerCase().includes(searchLower);
-      return matchesCode || matchesName;
+  // Unique domains and groupings for filter dropdowns
+  const uniqueDomains = useMemo(() => {
+    const domains = new Map<string, string>();
+    allControls.forEach(c => {
+      if (c.domain?.id && c.domain?.name) domains.set(c.domain.id, c.domain.name);
     });
-  }, [allControls, search]);
+    return Array.from(domains.entries()).map(([id, name]) => ({ id, name }));
+  }, [allControls]);
 
-  // Apply sorting
+  const uniqueGroupings = useMemo(() => {
+    const groupings = new Set<string>();
+    allControls.forEach(c => {
+      if (c.functionalGrouping) groupings.add(c.functionalGrouping);
+    });
+    return Array.from(groupings).sort();
+  }, [allControls]);
+
+  // Filtered controls
+  const filteredControls = useMemo(() => {
+    return allControls.filter((control) => {
+      if (search.trim()) {
+        const searchLower = search.toLowerCase().trim();
+        const matchesCode = control.controlCode?.toLowerCase().includes(searchLower);
+        const matchesName = control.name?.toLowerCase().includes(searchLower);
+        if (!matchesCode && !matchesName) return false;
+      }
+      if (statusFilter !== "all" && control.status !== statusFilter) return false;
+      if (groupingFilter !== "all" && control.functionalGrouping !== groupingFilter) return false;
+      if (domainFilter !== "all" && control.domain?.id !== domainFilter) return false;
+      return true;
+    });
+  }, [allControls, search, statusFilter, groupingFilter, domainFilter]);
+
+  // Sorted controls
   const sortedControls = useMemo(() => {
     return [...filteredControls].sort((a, b) => {
       let aValue = "";
@@ -196,8 +187,8 @@ export default function ControlsByFrameworkPage() {
           bValue = b.domain?.name || "";
           break;
         default:
-          aValue = a.name || "";
-          bValue = b.name || "";
+          aValue = a.controlCode || "";
+          bValue = b.controlCode || "";
       }
 
       if (sortDirection === "asc") {
@@ -207,16 +198,12 @@ export default function ControlsByFrameworkPage() {
     });
   }, [filteredControls, sortField, sortDirection]);
 
-  // Client-side pagination
+  // Pagination
   const total = sortedControls.length;
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
   const startIndex = currentPage * ITEMS_PER_PAGE;
   const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, total);
   const paginatedControls = sortedControls.slice(startIndex, endIndex);
-
-  const handleSearch = () => {
-    setCurrentPage(0); // Reset to first page on search
-  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -227,10 +214,41 @@ export default function ControlsByFrameworkPage() {
     }
   };
 
-  // Helper to get assignee display name
   const getAssigneeName = (control: Control): string => {
     if (!control.assignee) return "-";
     return control.assignee.fullName || control.assignee.userName || "-";
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "Compliant":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "Partial Compliant":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      case "Non Compliant":
+        return "bg-red-50 text-red-700 border-red-200";
+      default:
+        return "bg-slate-50 text-slate-600 border-slate-200";
+    }
+  };
+
+  const getGroupingBadge = (grouping: string) => {
+    switch (grouping) {
+      case "Govern":
+        return "bg-purple-50 text-purple-700";
+      case "Identify":
+        return "bg-blue-50 text-blue-700";
+      case "Protect":
+        return "bg-green-50 text-green-700";
+      case "Detect":
+        return "bg-amber-50 text-amber-700";
+      case "Respond":
+        return "bg-orange-50 text-orange-700";
+      case "Recover":
+        return "bg-teal-50 text-teal-700";
+      default:
+        return "bg-slate-50 text-slate-600";
+    }
   };
 
   // Block access to not-subscribed frameworks
@@ -251,182 +269,214 @@ export default function ControlsByFrameworkPage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Integrated Frameworks")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Controls")}</span>
       </nav>
 
       {/* Page Header */}
       <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
 
-      {/* Data Table */}
+      {/* Controls Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative max-w-xs">
+          {/* Search */}
+          <div className="relative">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder={t("Search by control code or name...")}
+              placeholder={t("Search controls...")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setCurrentPage(0);
               }}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <div className="flex items-center gap-2 ml-auto">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
-                  <Settings2 className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuCheckboxItem
-                  checked={visibleColumns.controlName}
-                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlName: checked })}
-                >
-                  {t("Control Name")}
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={visibleColumns.controlCode}
-                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlCode: checked })}
-                >
-                  {t("Control Code")}
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={visibleColumns.functionalGrouping}
-                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, functionalGrouping: checked })}
-                >
-                  {t("Functional Grouping")}
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={visibleColumns.status}
-                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, status: checked })}
-                >
-                  {t("Status")}
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={visibleColumns.assignee}
-                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, assignee: checked })}
-                >
-                  {t("Assignee")}
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={visibleColumns.domain}
-                  onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, domain: checked })}
-                >
-                  {t("Domain Name")}
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+
+          <div className="ltr:ml-auto rtl:mr-auto"></div>
+
+          {/* Filters */}
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(0); }}>
+            <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectValue placeholder={t("Status")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("All Statuses")}</SelectItem>
+              <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
+              <SelectItem value="Partial Compliant">{t("Partial Compliant")}</SelectItem>
+              <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={groupingFilter} onValueChange={(v) => { setGroupingFilter(v); setCurrentPage(0); }}>
+            <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectValue placeholder={t("Grouping")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("All Groupings")}</SelectItem>
+              {uniqueGroupings.map(g => (
+                <SelectItem key={g} value={g}>{t(g)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {uniqueDomains.length > 0 && (
+            <Select value={domainFilter} onValueChange={(v) => { setDomainFilter(v); setCurrentPage(0); }}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("Domain")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Domains")}</SelectItem>
+                {uniqueDomains.map(d => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50 border-b border-slate-100">
-              {visibleColumns.controlName && (
-                <TableHead
-                  className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5 cursor-pointer select-none"
-                  onClick={() => handleSort("name")}
-                >
-                  {t("Control Name")}
-                </TableHead>
-              )}
-              {visibleColumns.controlCode && (
-                <TableHead
-                  className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none"
-                  onClick={() => handleSort("controlCode")}
-                >
-                  {t("Control Code")}
-                </TableHead>
-              )}
-              {visibleColumns.functionalGrouping && (
-                <TableHead
-                  className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none"
-                  onClick={() => handleSort("functionalGrouping")}
-                >
-                  {t("Functional Grouping")}
-                </TableHead>
-              )}
-              {visibleColumns.status && (
-                <TableHead
-                  className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none"
-                  onClick={() => handleSort("status")}
-                >
-                  {t("Status")}
-                </TableHead>
-              )}
-              {visibleColumns.assignee && (
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assignee")}</TableHead>
-              )}
-              {visibleColumns.domain && (
-                <TableHead
-                  className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5 cursor-pointer select-none"
-                  onClick={() => handleSort("domain")}
-                >
-                  {t("Domain Name")}
-                </TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
-                  <div className="flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+
+        {/* Table Header */}
+        <div className="grid grid-cols-[1fr_120px_140px_130px_140px_140px_50px] gap-0 bg-slate-50 border-b border-slate-100 px-5 py-3">
+          <span
+            className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-slate-700 transition-colors"
+            onClick={() => handleSort("name")}
+          >
+            {t("Control Name")} {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+          </span>
+          <span
+            className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-slate-700 transition-colors"
+            onClick={() => handleSort("controlCode")}
+          >
+            {t("Code")} {sortField === "controlCode" && (sortDirection === "asc" ? "↑" : "↓")}
+          </span>
+          <span
+            className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-slate-700 transition-colors"
+            onClick={() => handleSort("functionalGrouping")}
+          >
+            {t("Grouping")} {sortField === "functionalGrouping" && (sortDirection === "asc" ? "↑" : "↓")}
+          </span>
+          <span
+            className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-slate-700 transition-colors"
+            onClick={() => handleSort("status")}
+          >
+            {t("Status")} {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
+          </span>
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            {t("Assignee")}
+          </span>
+          <span
+            className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-slate-700 transition-colors"
+            onClick={() => handleSort("domain")}
+          >
+            {t("Domain")} {sortField === "domain" && (sortDirection === "asc" ? "↑" : "↓")}
+          </span>
+          <span></span>
+        </div>
+
+        {/* Table Body */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+        ) : paginatedControls.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+              <FileText className="h-6 w-6 text-primary-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 mb-1">
+              {search || statusFilter !== "all" || groupingFilter !== "all" || domainFilter !== "all"
+                ? t("No controls match your filters")
+                : t("No controls linked yet")}
+            </p>
+            <p className="text-xs text-slate-400">
+              {search || statusFilter !== "all" || groupingFilter !== "all" || domainFilter !== "all"
+                ? t("Try adjusting your search or filters")
+                : t("Link controls to requirements in the framework to see them here")}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {paginatedControls.map((control) => (
+              <div
+                key={control.id}
+                className="grid grid-cols-[1fr_120px_140px_130px_140px_140px_50px] gap-0 items-center px-5 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer group"
+                onClick={() => router.push(`/compliance/control/${control.id}`)}
+              >
+                {/* Control Name */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-md bg-primary-50 flex items-center justify-center shrink-0">
+                    <FileText className="h-3.5 w-3.5 text-primary-500" />
                   </div>
-                </TableCell>
-              </TableRow>
-            ) : paginatedControls.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-sm text-slate-500">
-                  {t("No controls found for this framework.")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedControls.map((control) => (
-                <TableRow
-                  key={control.id}
-                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
-                  onDoubleClick={() => router.push(`/compliance/control/${control.id}`)}
-                >
-                  {visibleColumns.controlName && (
-                    <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{control.name}</TableCell>
+                  <span className="text-sm font-medium text-slate-800 truncate">{control.name}</span>
+                </div>
+
+                {/* Code */}
+                <span className="text-sm font-mono text-primary-600 font-medium">{control.controlCode}</span>
+
+                {/* Functional Grouping */}
+                <div>
+                  {control.functionalGrouping ? (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${getGroupingBadge(control.functionalGrouping)}`}>
+                      {t(control.functionalGrouping)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400">-</span>
                   )}
-                  {visibleColumns.controlCode && (
-                    <TableCell className="py-3 text-sm text-slate-700">{control.controlCode}</TableCell>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${getStatusBadge(control.status)}`}>
+                    {t(control.status || "Not Set")}
+                  </span>
+                </div>
+
+                {/* Assignee */}
+                <div className="flex items-center gap-2 min-w-0">
+                  {control.assignee ? (
+                    <>
+                      <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-medium text-slate-500">
+                          {(control.assignee.fullName || control.assignee.userName || "?").charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-sm text-slate-700 truncate">{getAssigneeName(control)}</span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-slate-400">-</span>
                   )}
-                  {visibleColumns.functionalGrouping && (
-                    <TableCell className="py-3 text-sm text-slate-700">{control.functionalGrouping || "-"}</TableCell>
-                  )}
-                  {visibleColumns.status && (
-                    <TableCell className="py-3 text-sm text-slate-700">{control.status}</TableCell>
-                  )}
-                  {visibleColumns.assignee && (
-                    <TableCell className="py-3 text-sm text-slate-700">{getAssigneeName(control)}</TableCell>
-                  )}
-                  {visibleColumns.domain && (
-                    <TableCell className="py-3 pr-5 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
-                  )}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                </div>
+
+                {/* Domain */}
+                <span className="text-sm text-slate-600 truncate">{control.domain?.name || "-"}</span>
+
+                {/* View Action */}
+                <div className="flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50 opacity-0 group-hover:opacity-100 transition-all"
+                    onClick={(e) => { e.stopPropagation(); router.push(`/compliance/control/${control.id}`); }}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
             {total > 0
-              ? `${startIndex + 1} ${t("to")} ${endIndex} ${t("of")} ${total}`
+              ? t("Showing {start} to {end} of {total}").replace("{start}", String(startIndex + 1)).replace("{end}", String(endIndex)).replace("{total}", String(total))
               : t("No controls")}
           </span>
           <div className="flex items-center gap-1">

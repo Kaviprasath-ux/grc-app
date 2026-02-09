@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, use, useRef } from "react";
+import { useEffect, useState, use, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -21,12 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
   Table,
   TableBody,
   TableCell,
@@ -36,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import {
   ChevronLeft,
+  ChevronDown,
   Plus,
   Download,
   Edit2,
@@ -44,6 +40,13 @@ import {
   ChevronRight,
   Home,
   Search,
+  X,
+  FileText,
+  Unlink,
+  Clock,
+  User,
+  Shield,
+  Settings,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Unauthorized } from "@/components/ui/unauthorized";
@@ -767,6 +770,10 @@ export default function CustomerAdminFrameworkDetailPage({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("requirements");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [openCatIds, setOpenCatIds] = useState<string[]>([]);
+  const [expandedReqId, setExpandedReqId] = useState<string | null>(null);
 
   // Dialogs
   const [isAddRequirementOpen, setIsAddRequirementOpen] = useState(false);
@@ -817,9 +824,16 @@ export default function CustomerAdminFrameworkDetailPage({
     endDate: "",
   });
 
-  // SOA Pagination
-  const [soaPage, setSoaPage] = useState(0);
-  const SOA_PAGE_SIZE = 20;
+  // SOA state
+  const [soaExpandedCats, setSoaExpandedCats] = useState<string[]>([]);
+  const [soaSearch, setSoaSearch] = useState("");
+  const [soaStatusFilter, setSoaStatusFilter] = useState("all");
+
+  // Audit Logs state
+  const [auditLogSearch, setAuditLogSearch] = useState("");
+  const [auditLogActionFilter, setAuditLogActionFilter] = useState("all");
+  const [auditLogPage, setAuditLogPage] = useState(1);
+  const AUDIT_LOG_PAGE_SIZE = 10;
 
   useEffect(() => {
     fetchFramework();
@@ -1205,11 +1219,11 @@ export default function CustomerAdminFrameworkDetailPage({
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Integrated Frameworks")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Framework Details")}</span>
         </nav>
 
@@ -1258,14 +1272,153 @@ export default function CustomerAdminFrameworkDetailPage({
     : dummyRequirements;
   const filteredHierarchy = filterRequirements(requirementHierarchy);
 
-  // SOA data - use flattened dummy data if no API requirements
-  const flatRequirements = hasApiRequirements
-    ? requirementsToUse
-    : flattenRequirements(dummyRequirements);
-  const soaTotalPages = Math.ceil(flatRequirements.length / SOA_PAGE_SIZE);
-  const soaStartIndex = soaPage * SOA_PAGE_SIZE;
-  const soaEndIndex = Math.min(soaStartIndex + SOA_PAGE_SIZE, flatRequirements.length);
-  const soaRequirements = flatRequirements.slice(soaStartIndex, soaEndIndex);
+  // Categories filtered by category dropdown
+  const categoriesAll = selectedCategoryId === "all"
+    ? filteredHierarchy
+    : filteredHierarchy.filter(c => c.id === selectedCategoryId);
+
+  // Apply status filter to requirements within categories
+  const categoriesToDisplay = statusFilter === "all"
+    ? categoriesAll
+    : categoriesAll.map(cat => ({
+        ...cat,
+        children: cat.children?.filter(r => r.controlCompliance === statusFilter),
+      })).filter(cat => (cat.children?.length || 0) > 0);
+
+  // Accordion helpers
+  const toggleCategory = (catId: string) => {
+    setOpenCatIds(prev =>
+      prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
+    );
+  };
+
+  const effectiveOpenCatIds = openCatIds.length === 0 && categoriesToDisplay.length > 0 && !searchTerm
+    ? [categoriesToDisplay[0].id]
+    : openCatIds;
+
+  const displayOpenCatIds = searchTerm
+    ? categoriesToDisplay.map(c => c.id)
+    : effectiveOpenCatIds;
+
+  // SOA data - grouped by category with search/filter
+  const soaHierarchy = hasApiRequirements
+    ? buildHierarchy(requirementsToUse)
+    : dummyRequirements;
+
+  // Apply SOA search and status filter, keep category grouping for separator rows
+  const soaCategories = soaHierarchy.map(cat => {
+    const filtered = (cat.children || []).filter(req => {
+      const matchesSearch = !soaSearch ||
+        req.name.toLowerCase().includes(soaSearch.toLowerCase()) ||
+        req.code.toLowerCase().includes(soaSearch.toLowerCase());
+      const matchesStatus = soaStatusFilter === "all" || req.controlCompliance === soaStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+    return { ...cat, children: filtered };
+  }).filter(cat => (cat.children || []).length > 0);
+
+  const soaTotalRequirements = soaCategories.reduce((sum, cat) => sum + (cat.children?.length || 0), 0);
+
+  // Expand all categories by default when no user interaction yet
+  const soaEffectiveExpanded = soaExpandedCats.length === 0 && soaCategories.length > 0
+    ? soaCategories.map(c => c.id)
+    : soaExpandedCats;
+
+  const toggleSoaCat = (catId: string) => {
+    setSoaExpandedCats(prev => {
+      // If using default (all expanded), initialize with all then toggle
+      const current = prev.length === 0 ? soaCategories.map(c => c.id) : prev;
+      return current.includes(catId)
+        ? current.filter(id => id !== catId)
+        : [...current, catId];
+    });
+  };
+
+  // Audit Logs - dummy data
+  const dummyAuditLogs = [
+    { id: "1", user: "BTS Customer Admin", action: "Updated", target: "Requirement 4.2 - Applicability", detail: "Changed from 'No' to 'Yes'", timestamp: "2026-02-09T14:32:00Z", category: "SOA" },
+    { id: "2", user: "BTS Customer Admin", action: "Updated", target: "Requirement 6.1 - Implementation Status", detail: "Changed from 'No' to 'Ongoing'", timestamp: "2026-02-09T14:28:00Z", category: "SOA" },
+    { id: "3", user: "Abhishek Kumar", action: "Linked", target: "Control AC-001 to Requirement 5.1", detail: "Access Control Policy linked", timestamp: "2026-02-09T13:45:00Z", category: "Control" },
+    { id: "4", user: "BTS Customer Admin", action: "Created", target: "Exception EXC-003", detail: "New exception for Requirement 7.4", timestamp: "2026-02-09T11:20:00Z", category: "Exception" },
+    { id: "5", user: "Abhishek Kumar", action: "Updated", target: "Requirement 9.1 - Compliance Status", detail: "Changed from 'Non Compliant' to 'Partial Compliant'", timestamp: "2026-02-08T16:55:00Z", category: "SOA" },
+    { id: "6", user: "BTS Customer Admin", action: "Created", target: "Requirement 10.2", detail: "Nonconformity and corrective action added", timestamp: "2026-02-08T15:30:00Z", category: "Requirement" },
+    { id: "7", user: "Abhishek Kumar", action: "Unlinked", target: "Control SC-005 from Requirement 8.2", detail: "Security Configuration removed", timestamp: "2026-02-08T14:10:00Z", category: "Control" },
+    { id: "8", user: "BTS Customer Admin", action: "Updated", target: "Requirement 7.5.2 - Justification", detail: "Added justification text", timestamp: "2026-02-08T11:45:00Z", category: "SOA" },
+    { id: "9", user: "Abhishek Kumar", action: "Approved", target: "Exception EXC-001", detail: "Exception approved for Requirement 4.1", timestamp: "2026-02-07T17:20:00Z", category: "Exception" },
+    { id: "10", user: "BTS Customer Admin", action: "Updated", target: "Framework Status", detail: "Changed from 'Draft' to 'Active'", timestamp: "2026-02-07T15:00:00Z", category: "Framework" },
+    { id: "11", user: "Abhishek Kumar", action: "Linked", target: "Control RM-003 to Requirement 6.1.2", detail: "Risk Management control linked", timestamp: "2026-02-07T13:30:00Z", category: "Control" },
+    { id: "12", user: "BTS Customer Admin", action: "Created", target: "Requirement 6.3", detail: "Planning of changes added", timestamp: "2026-02-07T10:15:00Z", category: "Requirement" },
+    { id: "13", user: "Abhishek Kumar", action: "Updated", target: "Requirement 5.3 - Implementation Status", detail: "Changed from 'Yes' to 'No'", timestamp: "2026-02-06T16:40:00Z", category: "SOA" },
+    { id: "14", user: "BTS Customer Admin", action: "Deleted", target: "Exception EXC-002", detail: "Expired exception removed", timestamp: "2026-02-06T14:25:00Z", category: "Exception" },
+    { id: "15", user: "Abhishek Kumar", action: "Created", target: "Exception EXC-002", detail: "Temporary exception for Requirement 5.3", timestamp: "2026-02-06T11:00:00Z", category: "Exception" },
+    { id: "16", user: "BTS Customer Admin", action: "Updated", target: "Requirement 8.1 - Applicability", detail: "Changed from 'No' to 'Yes'", timestamp: "2026-02-05T15:50:00Z", category: "SOA" },
+    { id: "17", user: "Abhishek Kumar", action: "Linked", target: "Control IA-002 to Requirement 9.2", detail: "Internal Audit control linked", timestamp: "2026-02-05T13:20:00Z", category: "Control" },
+    { id: "18", user: "BTS Customer Admin", action: "Updated", target: "Framework Description", detail: "Updated framework scope description", timestamp: "2026-02-05T10:45:00Z", category: "Framework" },
+  ];
+
+  const filteredAuditLogs = dummyAuditLogs.filter(log => {
+    const matchesSearch = !auditLogSearch ||
+      log.user.toLowerCase().includes(auditLogSearch.toLowerCase()) ||
+      log.target.toLowerCase().includes(auditLogSearch.toLowerCase()) ||
+      log.detail.toLowerCase().includes(auditLogSearch.toLowerCase());
+    const matchesAction = auditLogActionFilter === "all" || log.action === auditLogActionFilter;
+    return matchesSearch && matchesAction;
+  });
+
+  const auditLogTotalPages = Math.ceil(filteredAuditLogs.length / AUDIT_LOG_PAGE_SIZE);
+  const paginatedAuditLogs = filteredAuditLogs.slice(
+    (auditLogPage - 1) * AUDIT_LOG_PAGE_SIZE,
+    auditLogPage * AUDIT_LOG_PAGE_SIZE
+  );
+
+  const formatAuditDate = (isoString: string) => {
+    const date = new Date(isoString);
+    const day = date.getDate().toString().padStart(2, "0");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const h = hours % 12 || 12;
+    return `${day} ${month} ${year}, ${h}:${minutes} ${ampm}`;
+  };
+
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case "Created":
+        return "bg-green-50 text-green-700";
+      case "Updated":
+        return "bg-blue-50 text-blue-700";
+      case "Deleted":
+        return "bg-red-50 text-red-700";
+      case "Linked":
+        return "bg-purple-50 text-purple-700";
+      case "Unlinked":
+        return "bg-orange-50 text-orange-700";
+      case "Approved":
+        return "bg-emerald-50 text-emerald-700";
+      default:
+        return "bg-slate-50 text-slate-700";
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case "SOA":
+        return <FileText className="h-4 w-4" />;
+      case "Control":
+        return <Shield className="h-4 w-4" />;
+      case "Exception":
+        return <AlertTriangle className="h-4 w-4" />;
+      case "Requirement":
+        return <FileText className="h-4 w-4" />;
+      case "Framework":
+        return <Settings className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -1275,16 +1428,18 @@ export default function CustomerAdminFrameworkDetailPage({
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Integrated Frameworks")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{framework.name}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{framework.name}</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{framework.name}</h1>
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -1296,312 +1451,557 @@ export default function CustomerAdminFrameworkDetailPage({
 
         {/* Requirements Tab */}
         <TabsContent value="requirements" className="mt-6">
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-              <div className="relative max-w-xs">
-                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder={t("Search by requirement code, name, control code...")}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
-                />
-              </div>
-              <div className="flex items-center gap-2 ml-auto">
-                <Button variant="outline" size="sm" onClick={handleExportRequirements} className="h-9 text-sm">
-                  <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
-                  {t("Export")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 text-sm"
-                  onClick={() => setIsUpdateRequirementOpen(true)}
-                >
-                  <Edit2 className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
-                  {t("Update")}
-                </Button>
-                <Button size="sm" className="h-9 text-sm" onClick={() => setIsAddRequirementOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
-                  {t("New Requirement")}
-                </Button>
-              </div>
+          {/* Action bar + Filters */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="relative max-w-xs">
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder={t("Search requirements...")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              />
             </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-200">
+                <SelectValue placeholder={t("Status")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
+                <SelectItem value="Partial Compliant">{t("Partial Compliant")}</SelectItem>
+                <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+              <SelectTrigger className="w-[180px] h-9 text-sm bg-white border-slate-200">
+                <SelectValue placeholder={t("Category")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Categories")}</SelectItem>
+                {filteredHierarchy.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.code} - {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2 ltr:ml-auto rtl:mr-auto">
+              <Button variant="outline" size="sm" onClick={handleExportRequirements}>
+                <Download className="h-4 w-4 me-2" />
+                {t("Export")}
+              </Button>
+              <Button size="sm" onClick={() => setIsAddRequirementOpen(true)}>
+                <Plus className="h-4 w-4 me-2" />
+                {t("New Requirement")}
+              </Button>
+            </div>
+          </div>
 
-            {/* Requirements Accordion */}
-            <Accordion type="multiple" className="w-full">
-              {filteredHierarchy.map((category) => (
-                <AccordionItem key={category.id} value={category.id} className="border-b border-slate-100 last:border-0">
-                  <AccordionTrigger className="px-5 py-3.5 hover:no-underline hover:bg-slate-50/60 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-800">{category.name}</span>
-                      <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                        {category.children?.length || 0} {t("items")}
+          {categoriesToDisplay.length > 0 || searchTerm || selectedCategoryId !== "all" || statusFilter !== "all" ? (
+            <div className="space-y-3">
+              {categoriesToDisplay.map((cat) => {
+                const isOpen = displayOpenCatIds.includes(cat.id);
+                const allChildren = categoriesAll.find(c => c.id === cat.id)?.children || [];
+                const compliantCount = allChildren.filter(r => r.controlCompliance === "Compliant").length;
+                const partialCount = allChildren.filter(r => r.controlCompliance === "Partial Compliant").length;
+                const nonCompCount = allChildren.length - compliantCount - partialCount;
+                const totalCount = allChildren.length;
+                const progressPercent = totalCount > 0 ? Math.round((compliantCount / totalCount) * 100) : 0;
+                const accentColor = progressPercent >= 75 ? '#22c55e' : progressPercent >= 40 ? '#f59e0b' : '#ef4444';
+                const displayChildren = cat.children || [];
+
+                return (
+                  <div
+                    key={cat.id}
+                    className="bg-white rounded-xl border border-slate-200 overflow-hidden"
+                  >
+                    {/* Category Header */}
+                    <button
+                      onClick={() => toggleCategory(cat.id)}
+                      className={`w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-slate-50/80 ${isOpen ? "border-b border-slate-100" : ""}`}
+                    >
+                      <ChevronRight className={`h-4 w-4 text-slate-400 shrink-0 transition-transform ${isOpen ? "rotate-90" : "ltr:rotate-0 rtl:rotate-180"}`} />
+                      <span className="text-sm font-semibold text-slate-800 flex-1">
+                        {cat.code}. {cat.name}
                       </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-5 pb-4">
-                    <Accordion type="multiple" className="w-full">
-                      {category.children?.map((requirement) => (
-                        <AccordionItem
-                          key={requirement.id}
-                          value={requirement.id}
-                          className="border-b border-slate-100 last:border-0"
-                        >
-                          <AccordionTrigger className="py-3 hover:no-underline text-sm text-slate-700">
-                            <span>
-                              {requirement.code} - {requirement.name}
+                      <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
+                        {totalCount}
+                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-slate-500 font-medium">{compliantCount}/{totalCount}</span>
+                        <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${progressPercent}%`, backgroundColor: accentColor }}
+                          />
+                        </div>
+                      </div>
+                      {/* Collapsed compliance summary */}
+                      {!isOpen && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {compliantCount > 0 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-600">
+                              {compliantCount} {t("Compliant")}
                             </span>
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-4 pb-4">
-                            {/* Requirement Description */}
-                            <div className="flex items-start justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
-                              <p className="text-sm text-slate-600 flex-1">
-                                {requirement.description || t("No description")}
-                              </p>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50 shrink-0 ltr:ml-3 rtl:mr-3"
-                                onClick={() => handleOpenUpdateRequirement(requirement)}
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
+                          )}
+                          {partialCount > 0 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600">
+                              {partialCount} {t("Partial")}
+                            </span>
+                          )}
+                          {nonCompCount > 0 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-600">
+                              {nonCompCount} {t("Non Compliant")}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
 
-                            {/* Actions */}
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 text-xs"
-                                onClick={() => {
-                                  setSelectedRequirement(requirement);
-                                  setIsAddExceptionOpen(true);
-                                }}
-                              >
-                                <AlertTriangle className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
-                                {t("Add Exception")}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 text-xs"
-                                onClick={() => {
-                                  setSelectedRequirement(requirement);
-                                  setIsLinkControlsOpen(true);
-                                }}
-                              >
-                                <Link2 className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
-                                {t("Link Controls")}
-                              </Button>
-                            </div>
+                    {/* Expanded: Requirement Rows */}
+                    {isOpen && (
+                      <div className="divide-y divide-slate-100">
+                        {displayChildren.map((req) => {
+                          const isExpanded = expandedReqId === req.id;
+                          const controlCount = req.controls?.length || 0;
 
-                            {/* Linked Controls Table */}
-                            {requirement.controls &&
-                              requirement.controls.length > 0 && (
-                                <div className="mt-4">
-                                  <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                                    {t("Linked Controls")}
-                                  </h4>
-                                  <div className="border border-slate-200 rounded-lg overflow-hidden">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow className="bg-slate-50 border-b border-slate-100">
-                                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-4">{t("Control Code")}</TableHead>
-                                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Control Name")}</TableHead>
-                                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
-                                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-4">{t("Action")}</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {requirement.controls.map((rc) => (
-                                          <TableRow key={rc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                                            <TableCell className="py-3 pl-4 text-sm font-medium text-slate-800">
-                                              {rc.control.controlCode}
-                                            </TableCell>
-                                            <TableCell className="py-3 text-sm text-slate-700">
-                                              {rc.control.name}
-                                            </TableCell>
-                                            <TableCell className="py-3">
-                                              <span
-                                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                  rc.control.status === "Compliant"
-                                                    ? "bg-green-50 text-green-700"
-                                                    : rc.control.status ===
-                                                      "Partial Compliant"
-                                                    ? "bg-amber-50 text-amber-700"
-                                                    : "bg-red-50 text-red-700"
-                                                }`}
-                                              >
-                                                {rc.control.status}
-                                              </span>
-                                            </TableCell>
-                                            <TableCell className="py-3 pr-4">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 text-xs text-slate-500 hover:text-semantic-error hover:bg-red-50"
-                                                onClick={() =>
-                                                  handleUnlinkControl(
-                                                    requirement.id,
-                                                    rc.control.id
-                                                  )
-                                                }
-                                              >
-                                                {t("Unlink")}
-                                              </Button>
-                                            </TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
+                          return (
+                            <div key={req.id} className={isExpanded ? "bg-primary-50/15" : ""}>
+                              {/* Requirement Row */}
+                              <div
+                                className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-slate-50/60 transition-colors"
+                                onClick={() => setExpandedReqId(isExpanded ? null : req.id)}
+                              >
+                                {/* Status dot */}
+                                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                  req.controlCompliance === "Compliant" ? "bg-green-500" :
+                                  req.controlCompliance === "Partial Compliant" ? "bg-amber-500" :
+                                  "bg-red-500"
+                                }`} />
+
+                                {/* Code */}
+                                <span className="text-sm font-bold text-primary-600 shrink-0">{req.code}</span>
+
+                                {/* Name */}
+                                <span className="text-sm text-slate-700 flex-1 truncate">{req.name}</span>
+
+                                {/* Implementation status */}
+                                <span className={`text-[11px] font-medium shrink-0 ${
+                                  req.implementationStatus === "Yes" ? "text-green-600" :
+                                  req.implementationStatus === "Ongoing" ? "text-amber-600" :
+                                  req.implementationStatus === "No" ? "text-red-600" :
+                                  "text-slate-400"
+                                }`}>
+                                  {t(req.implementationStatus || "-")}
+                                </span>
+
+                                {/* Control count */}
+                                <span className="flex items-center gap-1 text-xs text-slate-400 shrink-0">
+                                  <Link2 className="h-3 w-3" />
+                                  {controlCount}
+                                </span>
+
+                                {/* Chevron */}
+                                <ChevronDown className={`h-4 w-4 text-slate-400 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                              </div>
+
+                              {/* Expanded Detail */}
+                              {isExpanded && (
+                                <div className="px-5 pb-4 ltr:pl-[52px] rtl:pr-[52px]">
+                                  <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                                    {/* Description */}
+                                    {req.description && (
+                                      <div className="px-4 py-3 border-b border-slate-100">
+                                        <p className="text-sm text-slate-600 leading-relaxed">{req.description}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Metadata + Actions */}
+                                    <div className="px-4 py-3 border-b border-slate-100">
+                                      <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-slate-500">{t("Applicability")}</span>
+                                          <span className="text-xs font-medium text-slate-700">{t(req.applicability || "-")}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-slate-500">{t("Implementation")}</span>
+                                          <span className={`text-xs font-medium ${
+                                            req.implementationStatus === "Yes" ? "text-green-600" :
+                                            req.implementationStatus === "Ongoing" ? "text-amber-600" :
+                                            req.implementationStatus === "No" ? "text-red-600" :
+                                            "text-slate-600"
+                                          }`}>{t(req.implementationStatus || "-")}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-slate-500">{t("Type")}</span>
+                                          <span className="text-xs font-medium text-slate-700">{t(req.requirementType)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs text-slate-500">{t("Compliance")}</span>
+                                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                            req.controlCompliance === "Compliant" ? "bg-green-50 text-green-700" :
+                                            req.controlCompliance === "Partial Compliant" ? "bg-amber-50 text-amber-700" :
+                                            "bg-red-50 text-red-700"
+                                          }`}>
+                                            {t(req.controlCompliance || "Non Compliant")}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-end gap-2 mt-3">
+                                        <Button variant="outline" size="sm" className="h-7 text-xs text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700" onClick={(e) => { e.stopPropagation(); setSelectedRequirement(req); setIsAddExceptionOpen(true); }}>
+                                          <AlertTriangle className="h-3 w-3 me-1.5" />
+                                          {t("Add Exception")}
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleOpenUpdateRequirement(req); }}>
+                                          <Edit2 className="h-3 w-3 me-1.5" />
+                                          {t("Edit")}
+                                        </Button>
+                                      </div>
+                                    </div>
+
+                                    {/* Linked Controls */}
+                                    <div className="px-4 py-3">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                          {t("Linked Controls")}
+                                          <span className="ltr:ml-1.5 rtl:mr-1.5 text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                                            {controlCount}
+                                          </span>
+                                        </span>
+                                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setSelectedRequirement(req); setIsLinkControlsOpen(true); }}>
+                                          <Plus className="h-3 w-3 me-1" />
+                                          {t("Link")}
+                                        </Button>
+                                      </div>
+                                      {controlCount === 0 ? (
+                                        <div className="py-4 text-center">
+                                          <Link2 className="h-5 w-5 text-slate-300 mx-auto mb-1.5" />
+                                          <p className="text-xs text-slate-400">{t("No controls linked yet")}</p>
+                                        </div>
+                                      ) : (
+                                        <div className="rounded-lg border border-slate-200 overflow-hidden divide-y divide-slate-100">
+                                          {req.controls!.map((rc) => (
+                                            <div key={rc.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors group">
+                                              <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-6 h-6 rounded-md bg-primary-50 flex items-center justify-center shrink-0">
+                                                  <FileText className="h-3 w-3 text-primary-500" />
+                                                </div>
+                                                <span className="text-sm font-medium text-slate-700">{rc.control.controlCode}</span>
+                                                <span className="text-xs text-slate-400 truncate">{rc.control.name}</span>
+                                              </div>
+                                              <div className="flex items-center gap-2 shrink-0">
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                                  rc.control.status === "Compliant" ? "bg-green-50 text-green-600" :
+                                                  rc.control.status === "Partial Compliant" ? "bg-amber-50 text-amber-600" :
+                                                  "bg-red-50 text-red-600"
+                                                }`}>
+                                                  {rc.control.status}
+                                                </span>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-6 w-6 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                  onClick={(e) => { e.stopPropagation(); handleUnlinkControl(req.id, rc.controlId); }}
+                                                  title={t("Unlink control")}
+                                                >
+                                                  <Unlink className="h-3 w-3" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               )}
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
+                            </div>
+                          );
+                        })}
+
+                        {displayChildren.length === 0 && (
+                          <div className="px-5 py-6 text-center">
+                            <p className="text-xs text-slate-400">{t("No requirements match your filters.")}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {categoriesToDisplay.length === 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 px-5 py-12 text-center text-sm text-slate-400">
+                  {t("No requirements match your search.")}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Empty State */
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-6 w-6 text-primary-500" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Requirements")}</h3>
+              <p className="text-sm text-slate-500 mb-6">{t("Add your first requirement to get started.")}</p>
+              <Button size="sm" onClick={() => setIsAddRequirementOpen(true)}>
+                <Plus className="h-4 w-4 me-2" />
+                {t("New Requirement")}
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* SOA Tab */}
         <TabsContent value="soa" className="mt-6">
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-              <h3 className="text-base font-semibold text-slate-800">{t("Statement of Applicability")}</h3>
-              <div className="flex items-center gap-2 ml-auto">
-                <Button variant="outline" size="sm" className="h-9 text-sm">
-                  <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
-                  {t("Download Report")}
-                </Button>
-                <Button size="sm" className="h-9 text-sm">{t("Save")}</Button>
-              </div>
+          {/* Top bar: count, search, filter, actions */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <span className="text-sm text-slate-500">{soaTotalRequirements} {t("requirements")}</span>
+            <div className="relative ltr:ml-auto rtl:mr-auto">
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder={t("Search requirements...")}
+                value={soaSearch}
+                onChange={(e) => setSoaSearch(e.target.value)}
+                className="w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              />
             </div>
+            <Select value={soaStatusFilter} onValueChange={(v) => setSoaStatusFilter(v)}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-200">
+                <SelectValue placeholder={t("All Statuses")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
+                <SelectItem value="Partial Compliant">{t("Partial Compliant")}</SelectItem>
+                <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 me-2" />
+              {t("Download Report")}
+            </Button>
+            <Button size="sm">{t("Save")}</Button>
+          </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 border-b border-slate-100">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Code")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Applicability")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Justification")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Implementation Status")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Control Compliance")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {soaRequirements.map((req) => (
-                  <TableRow key={req.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{req.code}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700 max-w-xs truncate">
-                      {req.name}
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <Select
-                        value={req.applicability || ""}
-                        onValueChange={(value) =>
-                          handleSOAUpdate(req.id, "applicability", value)
-                        }
-                      >
-                        <SelectTrigger className="w-24 h-8 text-sm bg-white border-slate-300">
-                          <SelectValue placeholder="-" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <Input
-                        className="w-40 h-8 text-sm bg-white border-slate-300"
-                        value={req.justification || ""}
-                        onChange={(e) =>
-                          handleSOAUpdate(req.id, "justification", e.target.value)
-                        }
-                        placeholder={t("Enter justification")}
-                      />
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <Select
-                        value={req.implementationStatus || ""}
-                        onValueChange={(value) =>
-                          handleSOAUpdate(req.id, "implementationStatus", value)
-                        }
-                      >
-                        <SelectTrigger className="w-28 h-8 text-sm bg-white border-slate-300">
-                          <SelectValue placeholder="-" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                          <SelectItem value="Ongoing">Ongoing</SelectItem>
-                          <SelectItem value="N/A">N/A</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="py-3 pr-5">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          req.controlCompliance === "Compliant"
-                            ? "bg-green-50 text-green-700"
-                            : req.controlCompliance === "Partial Compliant"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-red-50 text-red-700"
-                        }`}
-                      >
-                        {req.controlCompliance || "Non Compliant"}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          {/* Accordion Cards - one per category */}
+          <div className="space-y-4">
+            {soaCategories.map((cat) => {
+              const isExpanded = soaEffectiveExpanded.includes(cat.id);
+              const requirements = cat.children || [];
+              return (
+                <div key={cat.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  {/* Card Header - clickable */}
+                  <button
+                    onClick={() => toggleSoaCat(cat.id)}
+                    className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/60 transition-colors"
+                  >
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? "" : "ltr:-rotate-90 rtl:rotate-90"}`} />
+                    <span className="text-sm font-semibold text-slate-800">{cat.name}</span>
+                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                      {requirements.length}
+                    </span>
+                  </button>
 
-            {/* Pagination */}
-            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-              <div className="text-xs text-slate-500">
-                {flatRequirements.length > 0
-                  ? `${t("Showing")} ${soaStartIndex + 1} ${t("to")} ${soaEndIndex} ${t("of")} ${flatRequirements.length}`
-                  : t("No requirements")}
+                  {/* Expanded content */}
+                  {isExpanded && (
+                    <>
+                      {/* Column Headers */}
+                      <div className="grid grid-cols-[70px_1fr_100px_1fr_120px_120px] gap-4 px-5 py-2.5 bg-slate-50 border-t border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        <span>{t("Code")}</span>
+                        <span>{t("Requirement")}</span>
+                        <span>{t("Applicable")}</span>
+                        <span>{t("Justification")}</span>
+                        <span>{t("Impl. Status")}</span>
+                        <span>{t("Compliance")}</span>
+                      </div>
+
+                      {/* Requirement rows */}
+                      <div className="divide-y divide-slate-100">
+                        {requirements.map((req) => (
+                          <div key={req.id} className="grid grid-cols-[70px_1fr_100px_1fr_120px_120px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors">
+                            <span className="text-sm font-medium text-slate-800">{req.code}</span>
+                            <span className="text-sm text-slate-700 leading-snug">{req.name}</span>
+                            <Select
+                              value={req.applicability || ""}
+                              onValueChange={(value) => handleSOAUpdate(req.id, "applicability", value)}
+                            >
+                              <SelectTrigger className="h-8 text-sm bg-white border-slate-200 w-full">
+                                <SelectValue placeholder="-" />
+                              </SelectTrigger>
+                              <SelectContent position="popper" sideOffset={4}>
+                                <SelectItem value="Yes">{t("Yes")}</SelectItem>
+                                <SelectItem value="No">{t("No")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <input
+                              type="text"
+                              className="h-8 px-3 text-sm bg-slate-50 border border-slate-200 rounded-md w-full placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                              value={req.justification || ""}
+                              onChange={(e) => handleSOAUpdate(req.id, "justification", e.target.value)}
+                              placeholder={t("Enter justification...")}
+                            />
+                            <Select
+                              value={req.implementationStatus || ""}
+                              onValueChange={(value) => handleSOAUpdate(req.id, "implementationStatus", value)}
+                            >
+                              <SelectTrigger className="h-8 text-sm bg-white border-slate-200 w-full">
+                                <SelectValue placeholder="-" />
+                              </SelectTrigger>
+                              <SelectContent position="popper" sideOffset={4}>
+                                <SelectItem value="Yes">{t("Yes")}</SelectItem>
+                                <SelectItem value="No">{t("No")}</SelectItem>
+                                <SelectItem value="Ongoing">{t("Ongoing")}</SelectItem>
+                                <SelectItem value="N/A">{t("N/A")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <div>
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  req.controlCompliance === "Compliant"
+                                    ? "bg-green-50 text-green-700"
+                                    : req.controlCompliance === "Partial Compliant"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-red-50 text-red-700"
+                                }`}
+                              >
+                                {req.controlCompliance || "Non Compliant"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Empty state when no categories match */}
+            {soaCategories.length === 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                <p className="text-sm text-slate-400">{t("No requirements match your search.")}</p>
               </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                  onClick={() => setSoaPage(soaPage - 1)}
-                  disabled={soaPage === 0}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                  onClick={() => setSoaPage(soaPage + 1)}
-                  disabled={soaPage >= soaTotalPages - 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            )}
           </div>
         </TabsContent>
 
         {/* Audit Logs Tab */}
         <TabsContent value="audit-logs" className="mt-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-            <p className="text-sm text-slate-500">{t("Audit logs will be displayed here.")}</p>
+          {/* Top bar: search, filter, export */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="relative">
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder={t("Search logs...")}
+                value={auditLogSearch}
+                onChange={(e) => { setAuditLogSearch(e.target.value); setAuditLogPage(1); }}
+                className="w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              />
+            </div>
+            <div className="ltr:ml-auto rtl:mr-auto"></div>
+            <Select value={auditLogActionFilter} onValueChange={(v) => { setAuditLogActionFilter(v); setAuditLogPage(1); }}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-200">
+                <SelectValue placeholder={t("All Actions")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Actions")}</SelectItem>
+                <SelectItem value="Created">{t("Created")}</SelectItem>
+                <SelectItem value="Updated">{t("Updated")}</SelectItem>
+                <SelectItem value="Deleted">{t("Deleted")}</SelectItem>
+                <SelectItem value="Linked">{t("Linked")}</SelectItem>
+                <SelectItem value="Unlinked">{t("Unlinked")}</SelectItem>
+                <SelectItem value="Approved">{t("Approved")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 me-2" />
+              {t("Export")}
+            </Button>
+          </div>
+
+          {/* Audit Log Table */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Column Headers */}
+            <div className="grid grid-cols-[180px_100px_1fr_1fr_170px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <span>{t("User")}</span>
+              <span>{t("Action")}</span>
+              <span>{t("Target")}</span>
+              <span>{t("Details")}</span>
+              <span>{t("Date & Time")}</span>
+            </div>
+
+            {/* Log rows */}
+            <div className="divide-y divide-slate-100">
+              {paginatedAuditLogs.map((log) => (
+                <div key={log.id} className="grid grid-cols-[180px_100px_1fr_1fr_170px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors">
+                  {/* User */}
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-7 w-7 rounded-full bg-primary-50 flex items-center justify-center shrink-0">
+                      <User className="h-3.5 w-3.5 text-primary-600" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-800 truncate">{log.user}</span>
+                  </div>
+                  {/* Action badge */}
+                  <div>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getActionBadge(log.action)}`}>
+                      {t(log.action)}
+                    </span>
+                  </div>
+                  {/* Target */}
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center shrink-0 text-slate-400">
+                      {getCategoryIcon(log.category)}
+                    </div>
+                    <span className="text-sm text-slate-700 truncate">{log.target}</span>
+                  </div>
+                  {/* Details */}
+                  <span className="text-sm text-slate-500 truncate">{log.detail}</span>
+                  {/* Timestamp */}
+                  <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                    <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <span>{formatAuditDate(log.timestamp)}</span>
+                  </div>
+                </div>
+              ))}
+              {paginatedAuditLogs.length === 0 && (
+                <div className="px-5 py-12 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                    <Clock className="h-6 w-6 text-slate-400" />
+                  </div>
+                  <p className="text-sm text-slate-500">{t("No audit logs match your search.")}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {filteredAuditLogs.length > 0 && (
+              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  {t("Showing")} {((auditLogPage - 1) * AUDIT_LOG_PAGE_SIZE) + 1} {t("to")} {Math.min(auditLogPage * AUDIT_LOG_PAGE_SIZE, filteredAuditLogs.length)} {t("of")} {filteredAuditLogs.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setAuditLogPage(p => Math.max(1, p - 1))}
+                    disabled={auditLogPage === 1}
+                    className="h-7 w-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setAuditLogPage(p => Math.min(auditLogTotalPages, p + 1))}
+                    disabled={auditLogPage === auditLogTotalPages}
+                    className="h-7 w-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
@@ -1861,8 +2261,8 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Add Exception Dialog */}
       <Dialog open={isAddExceptionOpen} onOpenChange={setIsAddExceptionOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Sticky Header */}
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Exception")}</DialogTitle>
@@ -1871,36 +2271,41 @@ export default function CustomerAdminFrameworkDetailPage({
 
           {/* Scrollable Content */}
           <div className="px-6 py-6 space-y-5 overflow-y-auto flex-1">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Exception Code")}</Label>
-                <Input disabled value={t("Auto-generated")} className="mt-1.5 bg-slate-50" />
+            {/* Context Info - Read-only summary */}
+            <div className="rounded-lg bg-slate-50 border border-slate-100 p-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">{t("Exception Code")}</span>
+                  <p className="text-sm font-medium text-slate-500 italic mt-0.5">{t("Auto-generated")}</p>
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">{t("Category")}</span>
+                  <p className="text-sm font-medium text-slate-700 mt-0.5">{t("Compliance")}</p>
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">{t("Framework")}</span>
+                  <p className="text-sm font-medium text-slate-700 mt-0.5">{framework.name}</p>
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">{t("Requirement")}</span>
+                  <p className="text-sm font-medium text-slate-700 mt-0.5">{selectedRequirement?.code || "-"}</p>
+                </div>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Exception Name")}</Label>
-                <Input
-                  value={newException.name}
-                  onChange={(e) =>
-                    setNewException({ ...newException, name: e.target.value })
-                  }
-                  className="mt-1.5 bg-white"
-                />
-              </div>
             </div>
 
+            {/* Editable Fields */}
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
-              <Input disabled value={t("Compliance")} className="mt-1.5 bg-slate-50" />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Framework")}</Label>
-              <Input disabled value={framework.name} className="mt-1.5 bg-slate-50" />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
-              <Input disabled value={selectedRequirement?.code || ""} className="mt-1.5 bg-slate-50" />
+              <Label className="text-sm font-medium text-slate-700">
+                {t("Exception Name")} <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={newException.name}
+                onChange={(e) =>
+                  setNewException({ ...newException, name: e.target.value })
+                }
+                placeholder={t("Enter exception name")}
+                className="mt-1.5 bg-white"
+              />
             </div>
 
             <div>
@@ -1913,49 +2318,51 @@ export default function CustomerAdminFrameworkDetailPage({
                     description: e.target.value,
                   })
                 }
-                className="mt-1.5 bg-white"
+                placeholder={t("Provide justification for this exception")}
+                className="mt-1.5 bg-white min-h-[100px]"
               />
             </div>
 
-            <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
-              <Select
-                value={newException.status}
-                onValueChange={(value) =>
-                  setNewException({ ...newException, status: value })
-                }
-              >
-                <SelectTrigger className="mt-1.5 bg-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="Pending">{t("Pending")}</SelectItem>
-                  <SelectItem value="Approved">{t("Approved")}</SelectItem>
-                  <SelectItem value="Authorised">{t("Authorised")}</SelectItem>
-                  <SelectItem value="Submitted for Closure">
-                    {t("Submitted for Closure")}
-                  </SelectItem>
-                  <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
-                  <SelectItem value="RiskAccepted">{t("Risk Accepted")}</SelectItem>
-                  <SelectItem value="Closed">{t("Closed")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-slate-700">{t("End Date")}</Label>
-              <Input
-                type="date"
-                value={newException.endDate}
-                onChange={(e) =>
-                  setNewException({ ...newException, endDate: e.target.value })
-                }
-                className="mt-1.5 bg-white"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                <Select
+                  value={newException.status}
+                  onValueChange={(value) =>
+                    setNewException({ ...newException, status: value })
+                  }
+                >
+                  <SelectTrigger className="mt-1.5 bg-white w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Pending">{t("Pending")}</SelectItem>
+                    <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                    <SelectItem value="Authorised">{t("Authorised")}</SelectItem>
+                    <SelectItem value="Submitted for Closure">
+                      {t("Submitted for Closure")}
+                    </SelectItem>
+                    <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
+                    <SelectItem value="RiskAccepted">{t("Risk Accepted")}</SelectItem>
+                    <SelectItem value="Closed">{t("Closed")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("End Date")}</Label>
+                <DatePicker
+                  value={newException.endDate}
+                  onChange={(date) =>
+                    setNewException({ ...newException, endDate: date ? date.toISOString().split("T")[0] : "" })
+                  }
+                  placeholder={t("Select date")}
+                  className="mt-1.5 bg-white"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Sticky Footer */}
+          {/* Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"

@@ -799,18 +799,16 @@ export default function CustomerAdminFrameworkPage() {
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Integrated Frameworks")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-            </div>
-            <p className="text-sm text-slate-500 font-medium">{t("Loading frameworks...")}</p>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
         </div>
       </div>
@@ -825,35 +823,34 @@ export default function CustomerAdminFrameworkPage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Integrated Frameworks")}</span>
       </nav>
 
-      {/* Page Title */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
-
-      {/* Action Buttons */}
-      {!isReviewerRole && (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            onClick={openAICreateDialog}
-            variant="outline"
-            size="sm"
-            className="h-9 bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-          >
-            <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("New Framework (AI)")}
-          </Button>
-          <Button
-            onClick={openCreateDialog}
-            size="sm"
-            className="h-9"
-          >
-            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("New Framework")}
-          </Button>
-        </div>
-      )}
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
+        {!isReviewerRole && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={openAICreateDialog}
+              variant="outline"
+              size="sm"
+              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+            >
+              <Sparkles className="h-4 w-4 me-2" />
+              {t("New Framework (AI)")}
+            </Button>
+            <Button
+              onClick={openCreateDialog}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 me-2" />
+              {t("New Framework")}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Card Container */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -866,13 +863,13 @@ export default function CustomerAdminFrameworkPage() {
               placeholder={t("Search frameworks...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 ms-auto">
             {!isReviewerRole && (
               <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
-                <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("Subscription")} />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -883,7 +880,7 @@ export default function CustomerAdminFrameworkPage() {
               </Select>
             )}
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Types")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -910,128 +907,129 @@ export default function CustomerAdminFrameworkPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {currentFrameworks.map((framework) => {
                 const isLocked = framework.status !== "Subscribed";
+                const typeBadge = framework.type === "Regulation" ? "bg-purple-50 text-purple-700 border-purple-200" : framework.type === "Standard" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-blue-50 text-blue-700 border-blue-200";
                 return (
                   <div
                     key={framework.id}
-                    className={`rounded-lg border border-slate-200 p-4 transition-all ${isLocked ? "opacity-60 cursor-not-allowed bg-slate-50/50" : "cursor-pointer hover:border-slate-300 hover:shadow-sm bg-white"}`}
-                    onClick={() => handleFrameworkClick(framework)}
+                    className={`rounded-xl border overflow-hidden ${isLocked ? "opacity-50 border-slate-200 bg-slate-50/30" : "border-slate-200 bg-white"}`}
                   >
-                    {/* Framework Name + Type Badge + Lock */}
-                    <div className="flex items-start justify-between mb-1">
-                      <h4 className="text-sm font-semibold text-slate-800 truncate flex-1 leading-tight">
-                        {framework.name}
-                      </h4>
-                      {isLocked && (
-                        <div className="flex items-center gap-1.5 ltr:ml-2 rtl:mr-2 flex-shrink-0">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 px-2 text-[11px]"
-                            onClick={(e) => handleSubscribe(framework.id, e)}
-                            disabled={subscribingId === framework.id}
+                    {/* Header: Name + Type + Lock */}
+                    <div className="px-4 pt-4 pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4
+                            className={`text-sm font-semibold text-slate-800 leading-snug line-clamp-2 ${!isLocked ? "cursor-pointer hover:text-primary-600 transition-colors" : ""}`}
+                            onClick={() => {
+                              if (isLocked || !framework.id) return;
+                              router.push(`/roles/customer-administrator/compliance/framework/${framework.id}`);
+                            }}
                           >
-                            {subscribingId === framework.id ? (
-                              <>
-                                <Loader2 className="h-3 w-3 ltr:mr-1 rtl:ml-1 animate-spin" />
-                                {t("Subscribing...")}
-                              </>
-                            ) : (
-                              t("Subscribe")
-                            )}
-                          </Button>
-                          <Lock className="h-4 w-4 text-slate-400" />
+                            {framework.name}
+                          </h4>
+                          {framework.type && (
+                            <span className={`inline-flex mt-1.5 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${typeBadge}`}>
+                              {framework.type}
+                            </span>
+                          )}
                         </div>
-                      )}
+                        {isLocked && (
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-[11px]"
+                              onClick={(e) => handleSubscribe(framework.id, e)}
+                              disabled={subscribingId === framework.id}
+                            >
+                              {subscribingId === framework.id ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 me-1 animate-spin" />
+                                  {t("Subscribing...")}
+                                </>
+                              ) : (
+                                t("Subscribe")
+                              )}
+                            </Button>
+                            <Lock className="h-3.5 w-3.5 text-slate-400" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {/* Type Badge */}
-                    {framework.type && (
-                      <span className="inline-block text-[11px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mb-3">
-                        {framework.type}
-                      </span>
-                    )}
 
-                    {/* Compliance Circle - Smaller */}
-                    <div className="flex justify-center mb-3">
+                    {/* Navigable Rows */}
+                    <div className="border-t border-slate-100">
+                      {/* Controls Row */}
                       <div
-                        className={`relative w-[88px] h-[88px] ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isLocked) return;
-                          if (!framework.id) {
-                            console.error("Framework ID is missing:", framework);
-                            return;
-                          }
+                        className={`flex items-center gap-3 px-4 py-3 border-b border-slate-100 ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-slate-50 transition-colors"}`}
+                        onClick={() => {
+                          if (isLocked || !framework.id) return;
                           router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
                         }}
-                        title={isLocked ? t("Framework not subscribed") : t("Click to view controls")}
                       >
-                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                          <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" strokeWidth="8" />
-                          <circle
-                            cx="50" cy="50" r="40" fill="none" stroke="#22c55e" strokeWidth="8"
-                            strokeLinecap="round"
-                            strokeDasharray={`${framework.compliancePercentage * 2.51} 251`}
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-base font-bold text-slate-800">
-                            {framework.compliancePercentage.toFixed(1)}%
-                          </span>
-                          <span className="text-[10px] text-slate-500">{t("Compliance")}</span>
+                        <div className="relative w-10 h-10 flex-shrink-0">
+                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+                            <circle
+                              cx="50" cy="50" r="40" fill="none" stroke="#22c55e" strokeWidth="10"
+                              strokeLinecap="round"
+                              strokeDasharray={`${framework.compliancePercentage * 2.51} 251`}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[9px] font-bold text-slate-800">{framework.compliancePercentage.toFixed(0)}%</span>
+                          </div>
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-medium text-slate-700">{t("Controls")}</span>
+                          <p className="text-[11px] text-slate-400">{t("Compliance")}</p>
+                        </div>
+                        {!isLocked && <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 ltr:rotate-0 rtl:rotate-180" />}
                       </div>
-                    </div>
 
-                    {/* Policy and Evidence Progress Bars */}
-                    <div className="space-y-2.5">
+                      {/* Policies Row */}
                       <div
-                        className={`flex items-center gap-2 p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-slate-50"}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isLocked) return;
-                          if (!framework.id) {
-                            console.error("Framework ID is missing:", framework);
-                            return;
-                          }
+                        className={`flex items-center gap-3 px-4 py-3 border-b border-slate-100 ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-slate-50 transition-colors"}`}
+                        onClick={() => {
+                          if (isLocked || !framework.id) return;
                           router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
                         }}
-                        title={isLocked ? t("Framework not subscribed") : t("Click to view policies")}
                       >
-                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary-500 rounded-full transition-all"
-                            style={{ width: `${framework.policyPercentage}%` }}
-                          />
+                        <div className="w-10 flex-shrink-0 flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary-600">{framework.policyPercentage.toFixed(0)}%</span>
                         </div>
-                        <div className="text-right min-w-[72px]">
-                          <span className="text-xs font-medium text-slate-700">{framework.policyPercentage.toFixed(1)}%</span>
-                          <span className="text-[11px] text-slate-400 ltr:ml-1 rtl:mr-1">{t("Policy")}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-medium text-slate-700">{t("Policies")}</span>
+                          <div className="mt-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary-500 rounded-full transition-all"
+                              style={{ width: `${framework.policyPercentage}%` }}
+                            />
+                          </div>
                         </div>
+                        {!isLocked && <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 ltr:rotate-0 rtl:rotate-180" />}
                       </div>
 
+                      {/* Evidence Row */}
                       <div
-                        className={`flex items-center gap-2 p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-slate-50"}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isLocked) return;
-                          if (!framework.id) {
-                            console.error("Framework ID is missing:", framework);
-                            return;
-                          }
+                        className={`flex items-center gap-3 px-4 py-3 ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-slate-50 transition-colors"}`}
+                        onClick={() => {
+                          if (isLocked || !framework.id) return;
                           router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
                         }}
-                        title={isLocked ? t("Framework not subscribed") : t("Click to view evidence")}
                       >
-                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-amber-500 rounded-full transition-all"
-                            style={{ width: `${framework.evidencePercentage}%` }}
-                          />
+                        <div className="w-10 flex-shrink-0 flex items-center justify-center">
+                          <span className="text-sm font-bold text-amber-600">{framework.evidencePercentage.toFixed(0)}%</span>
                         </div>
-                        <div className="text-right min-w-[72px]">
-                          <span className="text-xs font-medium text-slate-700">{framework.evidencePercentage.toFixed(1)}%</span>
-                          <span className="text-[11px] text-slate-400 ltr:ml-1 rtl:mr-1">{t("Evidence")}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-medium text-slate-700">{t("Evidence")}</span>
+                          <div className="mt-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-amber-500 rounded-full transition-all"
+                              style={{ width: `${framework.evidencePercentage}%` }}
+                            />
+                          </div>
                         </div>
+                        {!isLocked && <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 ltr:rotate-0 rtl:rotate-180" />}
                       </div>
                     </div>
                   </div>
@@ -1222,7 +1220,7 @@ export default function CustomerAdminFrameworkPage() {
             >
               {isAISubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />
+                  <Loader2 className="h-4 w-4 animate-spin me-2" />
                   {aiJobStatus === "submitting"
                     ? t("Submitting...")
                     : aiJobStatus === "queued" || aiJobStatus === "processing"
@@ -1374,7 +1372,7 @@ export default function CustomerAdminFrameworkPage() {
                 size="sm"
                 onClick={handleDownloadTemplate}
               >
-                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t("Download Sample Template")}
               </Button>
               <span className="text-xs text-slate-500">
@@ -1510,12 +1508,12 @@ export default function CustomerAdminFrameworkPage() {
             >
               {isImporting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent ltr:mr-2 rtl:ml-2" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent me-2" />
                   {t("Importing...")}
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  <Upload className="h-4 w-4 me-2" />
                   {t("Import")}
                 </>
               )}

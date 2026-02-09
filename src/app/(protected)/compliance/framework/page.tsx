@@ -613,7 +613,7 @@ export default function FrameworkOverviewPage() {
                 <Home className="h-4 w-4" />
                 <span>{t("GRC")}</span>
               </Link>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
               <span className="text-slate-500">{t("Compliance")}</span>
             </>
           ) : (
@@ -622,7 +622,7 @@ export default function FrameworkOverviewPage() {
               <span>{t("Compliance")}</span>
             </Link>
           )}
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Integrated Frameworks")}</span>
         </nav>
         <div className="flex items-center justify-between">
@@ -630,7 +630,7 @@ export default function FrameworkOverviewPage() {
         </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
-            <p className="text-slate-400">{t("Loading...")}</p>
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
         </div>
       </div>
@@ -647,7 +647,7 @@ export default function FrameworkOverviewPage() {
               <Home className="h-4 w-4" />
               <span>{t("GRC")}</span>
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             <span className="text-slate-500">{t("Compliance")}</span>
           </>
         ) : (
@@ -656,45 +656,13 @@ export default function FrameworkOverviewPage() {
             <span>{t("Compliance")}</span>
           </Link>
         )}
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Integrated Frameworks")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
-        {!isReviewerRole && (
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => openCreateDialog(true)}
-              variant="outline"
-              size="sm"
-              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              {t("New Framework (AI)")}
-            </Button>
-            <Button
-              onClick={() => openCreateDialog(false)}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {t("New Framework")}
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h3 className="text-base font-semibold text-slate-800">{t("Integrated Frameworks")}</h3>
-          {sortedFrameworks.length > 0 && (
-            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-              {sortedFrameworks.length}
-            </span>
-          )}
-        </div>
         {!isReviewerRole && (
           <div className="flex items-center gap-2">
             <Button
@@ -796,9 +764,9 @@ export default function FrameworkOverviewPage() {
                             e.stopPropagation();
                             openEditDialog(framework);
                           }}
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -807,9 +775,9 @@ export default function FrameworkOverviewPage() {
                             e.stopPropagation();
                             openDeleteDialog(framework);
                           }}
-                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -1013,7 +981,7 @@ export default function FrameworkOverviewPage() {
             >
               {isAISubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="h-4 w-4 animate-spin me-2" />
                   {aiJobStatus === "submitting"
                     ? t("Submitting...")
                     : aiJobStatus === "queued" || aiJobStatus === "processing"
@@ -1057,7 +1025,7 @@ export default function FrameworkOverviewPage() {
                   size="sm"
                   onClick={handleDownloadTemplate}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 me-2" />
                   {t("Download Sample Template")}
                 </Button>
                 <span className="text-sm text-slate-500">
@@ -1194,12 +1162,12 @@ export default function FrameworkOverviewPage() {
             >
               {isImporting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent me-2" />
                   {t("Importing...")}
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 me-2" />
                   {t("Import")}
                 </>
               )}

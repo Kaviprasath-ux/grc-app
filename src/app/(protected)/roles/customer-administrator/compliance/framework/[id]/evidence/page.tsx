@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Search,
   Home,
+  FileText,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import Link from "next/link";
@@ -81,11 +82,11 @@ interface EvidencesApiResponse {
 }
 
 const statusColors: Record<string, string> = {
-  "Not Uploaded": "bg-gray-100 text-gray-800",
-  Draft: "bg-yellow-100 text-yellow-800",
-  Validated: "bg-blue-100 text-blue-800",
-  Published: "bg-green-100 text-green-800",
-  "Need Attention": "bg-red-100 text-red-800",
+  "Not Uploaded": "bg-slate-100 text-slate-600",
+  Draft: "bg-warning-light text-warning-dark",
+  Validated: "bg-info-light text-info-dark",
+  Published: "bg-success-light text-success-dark",
+  "Need Attention": "bg-error-light text-error-dark",
 };
 
 const ITEMS_PER_PAGE = 20;
@@ -278,55 +279,69 @@ export default function EvidenceByFrameworkPage() {
 
         {/* Table */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center h-64">
             <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50 border-b border-slate-100">
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Evidence Code")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Evidence Name")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Domain")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assignee")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Department")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedEvidences.map((evidence) => (
-                <TableRow
-                  key={evidence.id}
-                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
-                  onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
-                >
-                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{evidence.evidenceCode}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{evidence.name}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
-                  <TableCell className="py-3">
-                    <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
-                      {evidence.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
-                  <TableCell className="py-3 pr-5 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Evidence Code")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Evidence Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Department")}</TableHead>
                 </TableRow>
-              ))}
-              {paginatedEvidences.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-sm text-slate-500">
-                    {t("No evidence records found for this framework")}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {paginatedEvidences.map((evidence) => (
+                  <TableRow
+                    key={evidence.id}
+                    className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
+                    onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                  >
+                    <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{evidence.evidenceCode}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{evidence.name}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{evidence.domain || "-"}</TableCell>
+                    <TableCell className="py-3.5">
+                      <Badge className={statusColors[evidence.status] || "bg-slate-100 text-slate-600"}>
+                        {t(evidence.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{evidence.department?.name || "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {paginatedEvidences.length === 0 && (
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <FileText className="h-6 w-6 text-primary-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-1">
+                  {searchTerm
+                    ? t("No evidence matches your search")
+                    : t("No evidence records found for this framework")}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {searchTerm
+                    ? t("Try adjusting your search")
+                    : t("Link evidence to controls in the framework to see them here")}
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
-            {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No evidence")}
+            {total > 0
+              ? t("Showing {start} to {end} of {total}").replace("{start}", String(startItem)).replace("{end}", String(endItem)).replace("{total}", String(total))
+              : t("No evidence")}
           </span>
           <div className="flex items-center gap-1">
             <Button

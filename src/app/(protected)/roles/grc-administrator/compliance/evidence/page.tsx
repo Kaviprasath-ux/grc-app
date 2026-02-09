@@ -50,10 +50,9 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Check,
   Home,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -454,15 +453,15 @@ export default function GRCAdminEvidencePage() {
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-slate-500">{t("Compliance")}</span>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Evidence")}</span>
         </nav>
         <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
-            <p className="text-sm text-slate-500">{t("Loading...")}</p>
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
         </div>
       </div>
@@ -482,9 +481,9 @@ export default function GRCAdminEvidencePage() {
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-slate-500">{t("Compliance")}</span>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Evidence")}</span>
       </nav>
 
@@ -502,19 +501,19 @@ export default function GRCAdminEvidencePage() {
         <div className="flex items-center gap-2">
           <PermissionGate resource="compliance.evidence" action="delete">
             <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-              <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              <Trash2 className="h-4 w-4 me-2" />
               {t("Delete All")}
             </Button>
           </PermissionGate>
           <PermissionGate resource="compliance.evidence" action="create">
             <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-              <FileSpreadsheet className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              <FileSpreadsheet className="h-4 w-4 me-2" />
               {t("Import")}
             </Button>
           </PermissionGate>
           <PermissionGate resource="compliance.evidence" action="create">
             <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t("New Evidence")}
             </Button>
           </PermissionGate>
@@ -525,15 +524,18 @@ export default function GRCAdminEvidencePage() {
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search & Filters */}
         <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <Input
-            placeholder={t("Search by name, domain or assignee...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="w-[300px] h-9 bg-white border-slate-200"
-          />
+          <div className="relative max-w-xs">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder={t("Search by name, domain or assignee...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
           <Select value={customerFilter} onValueChange={setCustomerFilter}>
-            <SelectTrigger className="w-[180px] h-9 bg-white border-slate-200">
+            <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
               <SelectValue placeholder={t("All Customers")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -544,11 +546,11 @@ export default function GRCAdminEvidencePage() {
             </SelectContent>
           </Select>
           <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-            <SelectTrigger className="w-[200px] h-9 bg-white border-slate-200">
-              <SelectValue placeholder={t("Integrated Framework")} />
+            <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectValue placeholder={t("Framework")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-              <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
+              <SelectItem value="all">{t("All Frameworks")}</SelectItem>
               {frameworks.map((f) => (
                 <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
               ))}
@@ -559,13 +561,13 @@ export default function GRCAdminEvidencePage() {
         <Table>
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Evidence Code")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Evidence Code")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Evidence Name")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Customer")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Department Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Department")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -585,24 +587,24 @@ export default function GRCAdminEvidencePage() {
               evidences.map((evidence) => (
                 <TableRow
                   key={evidence.id}
-                  className="border-b border-slate-100 last:border-0 cursor-pointer"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
                   onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
                 >
-                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{evidence.name}</TableCell>
-                  <TableCell className="py-3">
+                  <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{evidence.evidenceCode}</TableCell>
+                  <TableCell className="py-3.5 text-sm text-slate-600">{evidence.name}</TableCell>
+                  <TableCell className="py-3.5">
                     <Badge variant="outline" className="text-xs">
                       {evidence.customerAccount?.name || "-"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
-                  <TableCell className="py-3">
-                    <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
-                      {evidence.status}
+                  <TableCell className="py-3.5 text-sm text-slate-600">{evidence.domain || "-"}</TableCell>
+                  <TableCell className="py-3.5">
+                    <Badge className={statusColors[evidence.status] || "bg-slate-100 text-slate-600"}>
+                      {t(evidence.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
-                  <TableCell className="py-3 pr-5 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3.5 text-sm text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{evidence.department?.name || "-"}</TableCell>
                 </TableRow>
               ))
             )}
@@ -612,44 +614,28 @@ export default function GRCAdminEvidencePage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
-            {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No evidence")}
+            {total > 0
+              ? t("Showing {start} to {end} of {total}").replace("{start}", String(startItem)).replace("{end}", String(endItem)).replace("{total}", String(total))
+              : t("No evidence")}
           </span>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
               className="h-7 w-7 text-slate-400 hover:text-slate-600"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
-            >
-              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>

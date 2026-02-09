@@ -5,19 +5,11 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
   ChevronLeft,
   ChevronRight,
   Search,
   Home,
+  FileText,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import Link from "next/link";
@@ -80,6 +72,25 @@ interface ControlDetail {
 const ITEMS_PER_PAGE = 20;
 const BATCH_SIZE = 5; // Concurrent API calls limit
 
+// TODO: Remove dummy data after preview approval
+const DUMMY_POLICIES: Policy[] = [
+  { id: "1", code: "POL-001", name: "Information Security Policy", version: "2.0", documentType: "Policy", status: "Published", department: { id: "1", name: "IT Security" }, assignee: { id: "1", fullName: "Sarah Ahmed" }, approver: { id: "2", fullName: "Mohammed Ali" } },
+  { id: "2", code: "POL-002", name: "Data Protection & Privacy Policy", version: "1.5", documentType: "Policy", status: "Approved", department: { id: "2", name: "Legal" }, assignee: { id: "3", fullName: "Fatima Hassan" }, approver: { id: "4", fullName: "Omar Khan" } },
+  { id: "3", code: "POL-003", name: "Acceptable Use Policy", version: "3.0", documentType: "Policy", status: "Draft", department: { id: "1", name: "IT Security" }, assignee: { id: "5", fullName: "Ahmad Rashid" }, approver: { id: "2", fullName: "Mohammed Ali" } },
+  { id: "4", code: "POL-004", name: "Access Control Policy", version: "1.0", documentType: "Policy", status: "Needs Review", department: { id: "3", name: "Operations" }, assignee: { id: "6", fullName: "Layla Ibrahim" }, approver: { id: "7", fullName: "Khalid Nasser" } },
+  { id: "5", code: "POL-005", name: "Business Continuity Policy", version: "2.1", documentType: "Policy", status: "Published", department: { id: "3", name: "Operations" }, assignee: { id: "8", fullName: "Nora Saeed" }, approver: { id: "7", fullName: "Khalid Nasser" } },
+  { id: "6", code: "POL-006", name: "Incident Response Policy", version: "1.0", documentType: "Policy", status: "Pending Approval", department: { id: "1", name: "IT Security" }, assignee: { id: "1", fullName: "Sarah Ahmed" }, approver: { id: "2", fullName: "Mohammed Ali" } },
+  { id: "7", code: "POL-007", name: "Risk Management Policy", version: "1.2", documentType: "Policy", status: "Not Uploaded", department: { id: "4", name: "Risk Management" }, assignee: { id: "9", fullName: "Yusuf Malik" }, approver: { id: "10", fullName: "Aisha Rahman" } },
+  { id: "10", code: "STD-001", name: "Password & Authentication Standard", version: "2.0", documentType: "Standard", status: "Published", department: { id: "1", name: "IT Security" }, assignee: { id: "1", fullName: "Sarah Ahmed" }, approver: { id: "2", fullName: "Mohammed Ali" } },
+  { id: "11", code: "STD-002", name: "Encryption Standard", version: "1.0", documentType: "Standard", status: "Approved", department: { id: "1", name: "IT Security" }, assignee: { id: "5", fullName: "Ahmad Rashid" }, approver: { id: "2", fullName: "Mohammed Ali" } },
+  { id: "12", code: "STD-003", name: "Network Security Standard", version: "1.5", documentType: "Standard", status: "Draft", department: { id: "5", name: "Network Ops" }, assignee: { id: "11", fullName: "Hassan Jamal" }, approver: { id: "7", fullName: "Khalid Nasser" } },
+  { id: "13", code: "STD-004", name: "Cloud Security Standard", version: "1.0", documentType: "Standard", status: "Pending Approval", department: { id: "1", name: "IT Security" }, assignee: { id: "3", fullName: "Fatima Hassan" }, approver: { id: "10", fullName: "Aisha Rahman" } },
+  { id: "20", code: "PRC-001", name: "Change Management Procedure", version: "3.0", documentType: "Procedure", status: "Published", department: { id: "3", name: "Operations" }, assignee: { id: "8", fullName: "Nora Saeed" }, approver: { id: "7", fullName: "Khalid Nasser" } },
+  { id: "21", code: "PRC-002", name: "Incident Handling Procedure", version: "2.0", documentType: "Procedure", status: "Approved", department: { id: "1", name: "IT Security" }, assignee: { id: "1", fullName: "Sarah Ahmed" }, approver: { id: "2", fullName: "Mohammed Ali" } },
+  { id: "22", code: "PRC-003", name: "Backup & Recovery Procedure", version: "1.0", documentType: "Procedure", status: "Needs Review", department: { id: "3", name: "Operations" }, assignee: { id: "6", fullName: "Layla Ibrahim" }, approver: { id: "7", fullName: "Khalid Nasser" } },
+  { id: "23", code: "PRC-004", name: "User Access Review Procedure", version: "1.5", documentType: "Procedure", status: "Published", department: { id: "1", name: "IT Security" }, assignee: { id: "5", fullName: "Ahmad Rashid" }, approver: { id: "2", fullName: "Mohammed Ali" } },
+];
+
 export default function PoliciesByFrameworkPage() {
   const router = useRouter();
   const params = useParams();
@@ -138,7 +149,8 @@ export default function PoliciesByFrameworkPage() {
         const controlIds = Array.from(controlIdsSet);
 
         if (controlIds.length === 0) {
-          setAllPolicies([]);
+          // TODO: Remove dummy data fallback after preview approval
+          setAllPolicies(DUMMY_POLICIES);
           setLoading(false);
           return;
         }
@@ -184,7 +196,8 @@ export default function PoliciesByFrameworkPage() {
 
         // Convert map to array
         const uniquePolicies = Array.from(policiesMap.values());
-        setAllPolicies(uniquePolicies);
+        // TODO: Remove dummy data fallback after preview approval
+        setAllPolicies(uniquePolicies.length > 0 ? uniquePolicies : DUMMY_POLICIES);
 
       } catch (error) {
         console.error("Error fetching framework data:", error);
@@ -228,15 +241,15 @@ export default function PoliciesByFrameworkPage() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Published": return "bg-green-100 text-green-800";
-      case "Approved": return "bg-blue-100 text-blue-800";
-      case "Draft": return "bg-yellow-100 text-yellow-800";
-      case "Needs Review": return "bg-orange-100 text-orange-800";
-      case "Not Uploaded": return "bg-gray-100 text-gray-800";
-      case "Pending Approval": return "bg-purple-100 text-purple-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Published": return "bg-green-50 text-green-700 border-green-200";
+      case "Approved": return "bg-blue-50 text-blue-700 border-blue-200";
+      case "Draft": return "bg-yellow-50 text-yellow-700 border-yellow-200";
+      case "Needs Review": return "bg-orange-50 text-orange-700 border-orange-200";
+      case "Not Uploaded": return "bg-slate-50 text-slate-600 border-slate-200";
+      case "Pending Approval": return "bg-purple-50 text-purple-700 border-purple-200";
+      default: return "bg-slate-50 text-slate-600 border-slate-200";
     }
   };
 
@@ -261,7 +274,7 @@ export default function PoliciesByFrameworkPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
@@ -293,7 +306,7 @@ export default function PoliciesByFrameworkPage() {
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Toolbar */}
               <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                <div className="relative max-w-xs">
+                <div className="relative">
                   <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
@@ -304,56 +317,105 @@ export default function PoliciesByFrameworkPage() {
                       setCurrentPage(1);
                     }}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>
 
-              {/* Table */}
+              {/* Table Header */}
+              <div className="grid grid-cols-[100px_1fr_130px_140px_140px_140px] gap-0 bg-slate-50 border-b border-slate-100 px-5 py-2.5">
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Code")}</span>
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Name")}</span>
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</span>
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assignee")}</span>
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approver")}</span>
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</span>
+              </div>
+
+              {/* Table Body */}
               {loading ? (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-16">
                   <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
                 </div>
+              ) : paginatedPolicies.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                    <FileText className="h-6 w-6 text-primary-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">
+                    {search
+                      ? t("No items match your search")
+                      : t("No items found for this framework")}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {search
+                      ? t("Try adjusting your search term")
+                      : t("Items will appear here once linked to this framework")}
+                  </p>
+                </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50 border-b border-slate-100">
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Code")}</TableHead>
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Name")}</TableHead>
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assignee")}</TableHead>
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approver")}</TableHead>
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Department")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedPolicies.map((policy) => (
-                      <TableRow
-                        key={policy.id}
-                        className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
-                        onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
-                      >
-                        <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{policy.code}</TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{policy.name}</TableCell>
-                        <TableCell className="py-3">
-                          <Badge className={getStatusBadgeColor(policy.status)}>
-                            {policy.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
-                        <TableCell className="py-3 pr-5 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
-                      </TableRow>
-                    ))}
-                    {paginatedPolicies.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-12 text-sm text-slate-500">
-                          {t("No items found for this framework")}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                <div className="divide-y divide-slate-100">
+                  {paginatedPolicies.map((policy) => (
+                    <div
+                      key={policy.id}
+                      className="grid grid-cols-[100px_1fr_130px_140px_140px_140px] gap-0 items-center px-5 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer group"
+                      onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                    >
+                      {/* Code */}
+                      <span className="text-sm font-mono text-primary-600 font-medium">{policy.code}</span>
+
+                      {/* Name */}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-md bg-primary-50 flex items-center justify-center shrink-0">
+                          <FileText className="h-3.5 w-3.5 text-primary-500" />
+                        </div>
+                        <span className="text-sm font-medium text-slate-800 truncate">{policy.name}</span>
+                      </div>
+
+                      {/* Status */}
+                      <div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${getStatusBadge(policy.status)}`}>
+                          {t(policy.status)}
+                        </span>
+                      </div>
+
+                      {/* Assignee */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        {policy.assignee ? (
+                          <>
+                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                              <span className="text-[10px] font-medium text-slate-500">
+                                {policy.assignee.fullName.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <span className="text-sm text-slate-700 truncate">{policy.assignee.fullName}</span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
+                      </div>
+
+                      {/* Approver */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        {policy.approver ? (
+                          <>
+                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                              <span className="text-[10px] font-medium text-slate-500">
+                                {policy.approver.fullName.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <span className="text-sm text-slate-700 truncate">{policy.approver.fullName}</span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
+                      </div>
+
+                      {/* Department */}
+                      <span className="text-sm text-slate-600 truncate">{policy.department?.name || "-"}</span>
+                    </div>
+                  ))}
+                </div>
               )}
 
               {/* Pagination */}

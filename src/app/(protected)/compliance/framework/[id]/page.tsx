@@ -35,7 +35,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ArrowLeft,
   Plus,
   Download,
   Upload,
@@ -44,8 +43,6 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Home,
 } from "lucide-react";
 import Link from "next/link";
@@ -1514,11 +1511,11 @@ export default function FrameworkDetailPage({
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Frameworks")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{framework.name}</span>
       </nav>
 
@@ -1548,7 +1545,7 @@ export default function FrameworkDetailPage({
             />
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExportRequirements}>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
               <Button
@@ -1556,11 +1553,11 @@ export default function FrameworkDetailPage({
                 size="sm"
                 onClick={() => setIsImportOpen(true)}
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
               <Button size="sm" onClick={() => setIsAddRequirementOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 {t("New Requirement")}
               </Button>
             </div>
@@ -1616,7 +1613,7 @@ export default function FrameworkDetailPage({
                                   setIsAddExceptionOpen(true);
                                 }}
                               >
-                                <AlertTriangle className="h-4 w-4 mr-2" />
+                                <AlertTriangle className="h-4 w-4 me-2" />
                                 {t("Add Exception")}
                               </Button>
                               <Button
@@ -1627,7 +1624,7 @@ export default function FrameworkDetailPage({
                                   setIsLinkControlsOpen(true);
                                 }}
                               >
-                                <Link2 className="h-4 w-4 mr-2" />
+                                <Link2 className="h-4 w-4 me-2" />
                                 {t("Link Controls")}
                               </Button>
                             </div>
@@ -1751,27 +1748,18 @@ export default function FrameworkDetailPage({
               </TableBody>
             </Table>
 
-            {/* Pagination inside card */}
-            <div className="flex items-center justify-between p-4 border-t border-slate-100">
-              <div className="text-xs text-slate-500">
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+              <span className="text-xs text-slate-500">
                 {flatRequirements.length > 0
-                  ? `${t("Showing")} ${soaStartIndex + 1} ${t("to")} ${soaEndIndex} ${t("of")} ${flatRequirements.length}`
+                  ? t("Showing {start} to {end} of {total}").replace("{start}", String(soaStartIndex + 1)).replace("{end}", String(soaEndIndex)).replace("{total}", String(flatRequirements.length))
                   : t("No requirements")}
-              </div>
+              </span>
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setSoaPage(0)}
-                  disabled={soaPage === 0}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
                   onClick={() => setSoaPage(soaPage - 1)}
                   disabled={soaPage === 0}
                 >
@@ -1780,20 +1768,11 @@ export default function FrameworkDetailPage({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
                   onClick={() => setSoaPage(soaPage + 1)}
                   disabled={soaPage >= soaTotalPages - 1}
                 >
                   <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setSoaPage(soaTotalPages - 1)}
-                  disabled={soaPage >= soaTotalPages - 1}
-                >
-                  <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -1805,7 +1784,7 @@ export default function FrameworkDetailPage({
               variant="outline"
               onClick={handleDownloadSOAReport}
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               {t("Download Report")}
             </Button>
             <Button
@@ -1934,7 +1913,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsAddRequirementOpen(false)}
@@ -2056,7 +2035,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2173,7 +2152,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2242,13 +2221,13 @@ export default function FrameworkDetailPage({
               onClick={handleDownloadTemplate}
               className="w-full"
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               {t("Download Template")}
             </Button>
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2419,7 +2398,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsUpdateRequirementOpen(false)}

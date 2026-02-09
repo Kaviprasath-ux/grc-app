@@ -66,19 +66,20 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Upload,
   Trash2,
   ArrowUpDown,
   Settings2,
   Download,
-  ArrowLeft,
   Home,
+  Search,
   Layers,
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  FileText,
+  Eye,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -135,7 +136,7 @@ interface CurrentUser {
 
 const FUNCTIONAL_GROUPINGS = ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"];
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 
 function ControlListPageContent() {
   const router = useRouter();
@@ -282,12 +283,12 @@ function ControlListPageContent() {
 
         // Calculate Functional Grouping data for donut chart
         const groupingColors: Record<string, string> = {
-          "Govern": "#3b82f6",
-          "Identify": "#f97316",
-          "Protect": "#22c55e",
-          "Detect": "#ef4444",
-          "Respond": "#a855f7",
-          "Recover": "#78350f",
+          "Govern": "#4F46E5",
+          "Identify": "#F59E0B",
+          "Protect": "#10B981",
+          "Detect": "#EF4444",
+          "Respond": "#8B5CF6",
+          "Recover": "#78716C",
         };
         const groupingCounts: Record<string, number> = {};
         allControls.forEach((c: Control) => {
@@ -607,6 +608,19 @@ function ControlListPageContent() {
     });
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "Compliant":
+        return "bg-success-light text-success-dark border-green-200";
+      case "Partial Compliant":
+        return "bg-warning-light text-warning-dark border-amber-200";
+      case "Non Compliant":
+        return "bg-error-light text-error-dark border-red-200";
+      default:
+        return "bg-slate-100 text-slate-600 border-slate-200";
+    }
+  };
+
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
@@ -632,7 +646,7 @@ function ControlListPageContent() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Controls")}</span>
       </nav>
 
@@ -643,41 +657,41 @@ function ControlListPageContent() {
 
       {/* Status Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-xl p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Layers className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.total}</div>
-          <div className="text-sm font-medium text-slate-500">{t("Total Controls")}</div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</div>
+          <div className="mt-1 text-sm font-medium text-slate-500">{t("Total Controls")}</div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-xl p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <AlertTriangle className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.nonCompliant}</div>
-          <div className="text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.nonCompliant}</div>
+          <div className="mt-1 text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-xl p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.compliant}</div>
-          <div className="text-sm font-medium text-slate-500">{t("Compliant")}</div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.compliant}</div>
+          <div className="mt-1 text-sm font-medium text-slate-500">{t("Compliant")}</div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-xl p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <XCircle className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.notApplicable}</div>
-          <div className="text-sm font-medium text-slate-500">{t("Not Applicable")}</div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.notApplicable}</div>
+          <div className="mt-1 text-sm font-medium text-slate-500">{t("Not Applicable")}</div>
         </div>
       </div>
 
@@ -825,253 +839,207 @@ function ControlListPageContent() {
             </div>
           </div>
 
-          {/* Toolbar */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder={t("Search by control code or name...")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="w-[300px] bg-white"
-              />
-              <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
-                <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder={t("Integrated Framework")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-                  {frameworks.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-[160px] bg-white">
-                  <SelectValue placeholder={t("Department")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">{t("All Departments")}</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-                <SelectTrigger className="w-[160px] bg-white">
-                  <SelectValue placeholder={t("Assignee")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">{t("All Assignees")}</SelectItem>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <PermissionGate resource="compliance.controls" action="delete">
-                <Button
-                  size="sm"
-                  onClick={() => setIsDeleteAllDialogOpen(true)}
-                  variant="outline"
-                  className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t("Delete All")}
-                </Button>
-              </PermissionGate>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2">
+            <PermissionGate resource="compliance.controls" action="delete">
+              <Button
+                size="sm"
+                onClick={() => setIsDeleteAllDialogOpen(true)}
+                variant="outline"
+                className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Delete All")}
+              </Button>
+            </PermissionGate>
+            <PermissionGate resource="compliance.controls" action="create">
+              <Button size="sm" onClick={handleImport} variant="outline">
+                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
+              </Button>
+            </PermissionGate>
+            {isCustomerAdmin ? (
+              <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("New Control")}
+              </Button>
+            ) : (
               <PermissionGate resource="compliance.controls" action="create">
-                <Button size="sm" onClick={handleImport} variant="outline">
-                  <Upload className="h-4 w-4 mr-2" />
-                  {t("Import")}
-                </Button>
-              </PermissionGate>
-              {/* Show New Control button for Customer Admin or users with create permission */}
-              {isCustomerAdmin ? (
                 <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("New Control")}
                 </Button>
-              ) : (
-                <PermissionGate resource="compliance.controls" action="create">
-                  <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t("New Control")}
-                  </Button>
-                </PermissionGate>
-              )}
-            </div>
+              </PermissionGate>
+            )}
           </div>
 
           {/* Data Table */}
-          <div className="bg-white rounded-xl border border-slate-200">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+              <div className="relative">
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={t("Search by control code or name...")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="w-64 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                />
+              </div>
+              <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-3">
+                <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
+                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Integrated Framework")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                    {frameworks.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Department")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("All Departments")}</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Assignee")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("All Assignees")}</SelectItem>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+            <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               {visibleColumns.controlName && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 pl-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5 cursor-pointer select-none"
                   onClick={() => handleSort("name")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Control Name")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Control Name")}
                 </TableHead>
               )}
               {visibleColumns.controlCode && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 cursor-pointer select-none"
                   onClick={() => handleSort("controlCode")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Control Code")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Control Code")}
                 </TableHead>
               )}
               {visibleColumns.functionalGrouping && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 cursor-pointer select-none"
                   onClick={() => handleSort("functionalGrouping")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Functional Grouping")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Functional Grouping")}
                 </TableHead>
               )}
               {visibleColumns.status && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 cursor-pointer select-none"
                   onClick={() => handleSort("status")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Status")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Status")}
                 </TableHead>
               )}
               {visibleColumns.assignee && (
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Assignee")}</TableHead>
               )}
               {visibleColumns.domain && (
                 <TableHead
-                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 cursor-pointer select-none"
                   onClick={() => handleSort("domain")}
                 >
-                  <div className="flex items-center gap-2">
-                    {t("Domain Name")}
-                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  </div>
+                  {t("Domain Name")}
                 </TableHead>
               )}
-              <TableHead className="w-[50px] py-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Settings2 className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white w-48">
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.controlName}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlName: checked })}
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-sm"
-                    >
-                      {t("Control Name")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.controlCode}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlCode: checked })}
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-sm"
-                    >
-                      {t("Control Code")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.functionalGrouping}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, functionalGrouping: checked })}
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-sm"
-                    >
-                      {t("Functional Grouping")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.status}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, status: checked })}
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-sm"
-                    >
-                      {t("Status")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.assignee}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, assignee: checked })}
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-sm"
-                    >
-                      {t("Assignee")}
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={visibleColumns.domain}
-                      onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, domain: checked })}
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-sm"
-                    >
-                      {t("Domain Name")}
-                    </DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableHead>
+              <TableHead className="h-auto py-3 pe-5 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-64 text-center">
                   <div className="flex items-center justify-center">
-                    <div className="relative h-6 w-6">
-                      <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-                      <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-                    </div>
+                    <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
                   </div>
                 </TableCell>
               </TableRow>
             ) : sortedControls.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-slate-500">
-                  {t("No controls found.")}
+                <TableCell colSpan={7} className="py-16 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                    <FileText className="h-6 w-6 text-primary-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">
+                    {search || integratedFrameworkFilter !== "all" || departmentFilter !== "all" || assigneeFilter !== "all"
+                      ? t("No controls match your filters")
+                      : t("No controls found")}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {search || integratedFrameworkFilter !== "all" || departmentFilter !== "all" || assigneeFilter !== "all"
+                      ? t("Try adjusting your search or filters")
+                      : t("Create a new control to get started")}
+                  </p>
                 </TableCell>
               </TableRow>
             ) : (
               sortedControls.map((control) => (
                 <TableRow
                   key={control.id}
-                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
-                  onDoubleClick={() => router.push(`/compliance/control/${control.id}`)}
+                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                 >
                   {visibleColumns.controlName && (
-                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{control.name}</TableCell>
+                    <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{control.name}</TableCell>
                   )}
                   {visibleColumns.controlCode && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.controlCode}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{control.controlCode}</TableCell>
                   )}
                   {visibleColumns.functionalGrouping && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.functionalGrouping || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{control.functionalGrouping || "-"}</TableCell>
                   )}
                   {visibleColumns.status && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.status}</TableCell>
+                    <TableCell className="py-3.5">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(control.status)}`}>
+                        {t(control.status || "Not Set")}
+                      </span>
+                    </TableCell>
                   )}
                   {visibleColumns.assignee && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{control.assignee?.fullName || "-"}</TableCell>
                   )}
                   {visibleColumns.domain && (
-                    <TableCell className="py-4 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{control.domain?.name || "-"}</TableCell>
                   )}
-                  <TableCell className="py-4"></TableCell>
+                  <TableCell className="py-3.5 pe-5">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => router.push(`/compliance/control/${control.id}`)}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -1079,28 +1047,19 @@ function ControlListPageContent() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <span className="text-sm text-slate-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
             {total > 0
-              ? `${startIndex + 1} ${t("to")} ${endIndex} ${t("of")} ${total}`
+              ? t("Showing {start} to {end} of {total}").replace("{start}", String(startIndex + 1)).replace("{end}", String(endIndex)).replace("{total}", String(total))
               : t("No controls")}
           </span>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setCurrentPage(0)}
-              disabled={currentPage === 0}
-              className="h-8 w-8"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 0}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -1109,63 +1068,75 @@ function ControlListPageContent() {
               size="icon"
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage >= totalPages - 1}
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(totalPages - 1)}
-              disabled={currentPage >= totalPages - 1}
-              className="h-8 w-8"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-            </div>
           </div>
+        </div>
           </div>
 
           
 
       {/* Create Control Dialog - 3 Step Wizard */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateDialogOpen(false); setCreateStep(1); } }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Control")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Control")}</DialogTitle>
             </DialogHeader>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5">
-            {/* Step Indicator */}
-            <div className="flex items-center justify-center gap-2 pb-4">
-              {[1, 2, 3].map((step) => (
-                <div key={step} className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step === createStep
-                      ? "bg-primary text-primary-foreground"
-                      : step < createStep
-                      ? "bg-green-500 text-white"
-                      : "bg-slate-100 text-slate-400"
-                  }`}>
-                    {step}
+          {/* Step Progress */}
+          <div className="flex-shrink-0 flex items-start justify-center py-5 px-6 border-b border-slate-100">
+            {[
+              { id: 1, name: t("Information") },
+              { id: 2, name: t("Assignment") },
+              { id: 3, name: t("Review") },
+            ].map((step, index) => (
+              <div key={step.id} className="flex items-start">
+                <div className="flex flex-col items-center w-24">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                      createStep > step.id
+                        ? "bg-success text-white"
+                        : createStep === step.id
+                        ? "bg-primary-600 text-white"
+                        : "bg-slate-100 text-slate-400 border border-slate-200"
+                    }`}
+                  >
+                    {createStep > step.id ? <Check className="h-4 w-4" /> : step.id}
                   </div>
-                  {step < 3 && (
-                    <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-slate-100"}`} />
-                  )}
+                  <span
+                    className={`mt-2 text-xs font-medium text-center ${
+                      createStep >= step.id ? "text-slate-700" : "text-slate-400"
+                    }`}
+                  >
+                    {step.name}
+                  </span>
                 </div>
-              ))}
-            </div>
+                {index < 2 && (
+                  <div
+                    className={`w-8 h-0.5 mt-[18px] -mx-3 transition-colors ${
+                      createStep > step.id ? "bg-success" : "bg-slate-200"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
 
-            <div className="space-y-4">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="space-y-5">
               {/* Step 1: Control Information */}
               {createStep === 1 && (
-                <div className="space-y-4">
+                <div className="space-y-5">
+                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Control Information")}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")} <span className="text-red-500">*</span></Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")} <span className="text-error">*</span></Label>
                       <div className="flex items-center gap-2 mt-1.5">
                         <Select value={newControl.domainId} onValueChange={(v) => setNewControl({ ...newControl, domainId: v })}>
                           <SelectTrigger className="bg-white flex-1">
@@ -1233,7 +1204,8 @@ function ControlListPageContent() {
 
               {/* Step 2: Assignments & Details */}
               {createStep === 2 && (
-                <div className="space-y-4">
+                <div className="space-y-5">
+                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Assignment Details")}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
@@ -1281,36 +1253,38 @@ function ControlListPageContent() {
 
               {/* Step 3: Review */}
               {createStep === 3 && (
-                <div className="space-y-4">
-                  <h4 className="font-semibold">{t("Review Information")}</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-slate-400">{t("Domain")}:</span>
-                      <p className="font-medium">{domains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">{t("Control Name")}:</span>
-                      <p className="font-medium">{newControl.name || "-"}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-slate-400">{t("Description")}:</span>
-                      <p className="font-medium">{newControl.description || "-"}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-slate-400">{t("Control Question")}:</span>
-                      <p className="font-medium">{newControl.controlQuestion || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">{t("Functional Grouping")}:</span>
-                      <p className="font-medium">{newControl.functionalGrouping ? t(newControl.functionalGrouping) : "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">{t("Department")}:</span>
-                      <p className="font-medium">{getCustomerScopedDepartments().find(d => d.id === newControl.departmentId)?.name || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">{t("Assignee")}:</span>
-                      <p className="font-medium">{getCustomerScopedUsers().find(u => u.id === newControl.assigneeId)?.fullName || "-"}</p>
+                <div className="space-y-5">
+                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Review Information")}</h3>
+                  <div className="rounded-lg border border-slate-200 overflow-hidden">
+                    <div className="grid grid-cols-2">
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Domain")}</span>
+                        <p className="text-sm font-medium text-slate-800 mt-0.5">{domains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
+                      </div>
+                      <div className="px-4 py-3 border-b border-slate-100 ltr:border-l rtl:border-r border-slate-100">
+                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Control Name")}</span>
+                        <p className="text-sm font-medium text-slate-800 mt-0.5">{newControl.name || "-"}</p>
+                      </div>
+                      <div className="px-4 py-3 border-b border-slate-100 col-span-2">
+                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Description")}</span>
+                        <p className="text-sm font-medium text-slate-800 mt-0.5">{newControl.description || "-"}</p>
+                      </div>
+                      <div className="px-4 py-3 border-b border-slate-100 col-span-2">
+                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Control Question")}</span>
+                        <p className="text-sm font-medium text-slate-800 mt-0.5">{newControl.controlQuestion || "-"}</p>
+                      </div>
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Functional Grouping")}</span>
+                        <p className="text-sm font-medium text-slate-800 mt-0.5">{newControl.functionalGrouping ? t(newControl.functionalGrouping) : "-"}</p>
+                      </div>
+                      <div className="px-4 py-3 border-b border-slate-100 ltr:border-l rtl:border-r border-slate-100">
+                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Department")}</span>
+                        <p className="text-sm font-medium text-slate-800 mt-0.5">{getCustomerScopedDepartments().find(d => d.id === newControl.departmentId)?.name || "-"}</p>
+                      </div>
+                      <div className="px-4 py-3">
+                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Assignee")}</span>
+                        <p className="text-sm font-medium text-slate-800 mt-0.5">{getCustomerScopedUsers().find(u => u.id === newControl.assigneeId)?.fullName || "-"}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1318,12 +1292,16 @@ function ControlListPageContent() {
             </div>
           </div>
 
-          {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <span className="text-xs font-medium text-slate-400 me-auto">
+              {t("Step")} {createStep} {t("of")} 3
+            </span>
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else setIsCreateDialogOpen(false);
             }}>
+              {createStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
               {createStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             <Button onClick={() => {
@@ -1331,6 +1309,7 @@ function ControlListPageContent() {
               else handleCreateControl();
             }}>
               {createStep === 3 ? t("Create") : t("Next")}
+              {createStep < 3 && <ChevronRight className="h-4 w-4 ms-1" />}
             </Button>
           </div>
         </DialogContent>
@@ -1391,7 +1370,7 @@ function ControlListPageContent() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               {t("Download Template")}
@@ -1467,7 +1446,7 @@ function ControlListPageContent() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsCreateDomainDialogOpen(false);
               setNewDomain({ code: "", name: "" });

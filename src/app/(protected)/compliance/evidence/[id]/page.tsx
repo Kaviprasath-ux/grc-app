@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -198,11 +197,15 @@ interface ControlDomain {
 }
 
 const statusColors: Record<string, string> = {
-  "Not Uploaded": "!bg-gray-500 !text-white border-gray-500",
-  Draft: "!bg-yellow-500 !text-white border-yellow-500",
-  Validated: "!bg-blue-500 !text-white border-blue-500",
-  Published: "!bg-green-600 !text-white border-green-600",
-  "Need Attention": "!bg-red-600 !text-white border-red-600",
+  "Not Uploaded": "bg-slate-100 text-slate-600",
+  Pending: "bg-amber-50 text-amber-700",
+  Submitted: "bg-blue-50 text-blue-700",
+  Draft: "bg-warning-light text-warning-dark",
+  Validated: "bg-info-light text-info-dark",
+  Approved: "bg-emerald-50 text-emerald-700",
+  Published: "bg-success-light text-success-dark",
+  "Need Attention": "bg-error-light text-error-dark",
+  Overdue: "bg-red-50 text-red-700",
 };
 
 const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
@@ -1254,7 +1257,7 @@ export default function EvidenceDetailPage() {
   if (!evidence) {
     return (
       <div className="p-6">
-        <div className="text-center text-gray-500">{t("Evidence not found")}</div>
+        <div className="text-center text-slate-500">{t("Evidence not found")}</div>
       </div>
     );
   }
@@ -1271,12 +1274,12 @@ export default function EvidenceDetailPage() {
             variant="ghost"
             size="sm"
             onClick={() => router.push("/compliance/evidence")}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-slate-600 hover:text-slate-900"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <span className="text-gray-300">|</span>
-          <h1 className="text-xl font-semibold text-blue-700">
+          <span className="text-slate-300">|</span>
+          <h1 className="text-xl font-semibold text-primary-700">
             {evidence.domain || t("Evidence Details")}
           </h1>
         </div>
@@ -1285,12 +1288,12 @@ export default function EvidenceDetailPage() {
         <div className="flex gap-2">
           {evidence.frameworks && evidence.frameworks.length > 0 ? (
             evidence.frameworks.map((fw) => (
-              <Badge key={fw.id} className="bg-blue-900 text-white hover:bg-blue-800">
+              <Badge key={fw.id} className="bg-primary-700 text-white hover:bg-primary-600">
                 {fw.name}
               </Badge>
             ))
           ) : evidence.framework ? (
-            <Badge className="bg-blue-900 text-white hover:bg-blue-800">
+            <Badge className="bg-primary-700 text-white hover:bg-primary-600">
               {evidence.framework.name}
             </Badge>
           ) : null}
@@ -1299,22 +1302,22 @@ export default function EvidenceDetailPage() {
         {/* Evidence Details Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-blue-700">{t("Evidence Details")}</h2>
-            <Button variant="ghost" size="icon" className="text-blue-700">
+            <h2 className="text-lg font-semibold text-primary-700">{t("Evidence Details")}</h2>
+            <Button variant="ghost" size="icon" className="text-primary-700">
               <Eye className="h-5 w-5" />
             </Button>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-slate-50 rounded-xl border border-slate-200 p-6">
             <div className="grid grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-6">
                 <div>
-                  <Label className="text-blue-700 font-medium">{t("Requirement")}</Label>
-                  <p className="mt-1 text-gray-900">{evidence.name}</p>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
+                  <p className="mt-1 text-slate-800">{evidence.name}</p>
                 </div>
                 <div>
-                  <Label className="text-blue-700 font-medium">{t("Recurrence")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</Label>
                   <Select
                     value={evidence.recurrence || ""}
                     onValueChange={(value) => handleRecurrenceChange(value || null)}
@@ -1336,11 +1339,11 @@ export default function EvidenceDetailPage() {
               {/* Right Column */}
               <div className="space-y-6">
                 <div>
-                  <Label className="text-blue-700 font-medium">{t("Artifact")}</Label>
-                  <p className="mt-1 text-gray-900">{evidence.description || "-"}</p>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Artifact")}</Label>
+                  <p className="mt-1 text-slate-800">{evidence.description || "-"}</p>
                 </div>
                 <div>
-                  <Label className="text-blue-700 font-medium">{t("Review date")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review date")}</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <Input
                       type="date"
@@ -1363,8 +1366,8 @@ export default function EvidenceDetailPage() {
               onClick={() => setActiveTab("artifacts")}
               className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${
                 activeTab === "artifacts"
-                  ? "bg-blue-700 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "bg-primary-700 text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               {t("Linked Artifact")}
@@ -1373,8 +1376,8 @@ export default function EvidenceDetailPage() {
               onClick={() => setActiveTab("controls")}
               className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${
                 activeTab === "controls"
-                  ? "bg-blue-700 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "bg-primary-700 text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               {t("Linked Controls")}
@@ -1382,34 +1385,34 @@ export default function EvidenceDetailPage() {
           </div>
 
           {/* Tab Content */}
-          <div className="bg-gray-50 rounded-b-lg rounded-tr-lg p-6">
+          <div className="bg-slate-50 rounded-b-lg rounded-tr-lg p-6">
             {activeTab === "controls" && (
               <div>
-                <h3 className="text-lg font-semibold text-blue-700 mb-4">{t("Controls")}</h3>
+                <h3 className="text-lg font-semibold text-primary-700 mb-4">{t("Controls")}</h3>
                 <div className="space-y-3">
                   {evidence.evidenceControls?.map((ec) => (
                     <div
                       key={ec.id}
-                      className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-300 hover:shadow-sm transition-all"
+                      className="bg-white border border-slate-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-sm transition-all"
                       onClick={() => router.push(`/compliance/control/${ec.control.id}`)}
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-blue-700 font-medium hover:underline">
+                          <p className="text-primary-700 font-medium hover:underline">
                             {ec.control.controlCode} : {ec.control.name}
                           </p>
                           {ec.control.description && (
-                            <p className="text-gray-600 text-sm mt-1">{ec.control.description}</p>
+                            <p className="text-slate-600 text-sm mt-1">{ec.control.description}</p>
                           )}
                         </div>
-                        <Badge className="bg-blue-700 text-white hover:bg-blue-600">
+                        <Badge className="bg-primary-700 text-white hover:bg-primary-600">
                           {ec.control.entities || t("Organization Wide")}
                         </Badge>
                       </div>
                     </div>
                   ))}
                   {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-slate-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>{t("No controls linked to this evidence")}</p>
                     </div>
@@ -1420,21 +1423,21 @@ export default function EvidenceDetailPage() {
 
             {activeTab === "artifacts" && (
               <div>
-                <h3 className="text-lg font-semibold text-blue-700 mb-4">{t("Artifacts")}</h3>
+                <h3 className="text-lg font-semibold text-primary-700 mb-4">{t("Artifacts")}</h3>
                 <div className="space-y-3">
                   {evidence.linkedArtifacts?.map((la) => (
                     <div
                       key={la.id}
-                      className="bg-white border border-gray-200 rounded-lg p-4"
+                      className="bg-white border border-slate-200 rounded-lg p-4"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <FileText className="h-8 w-8 text-blue-600" />
+                          <FileText className="h-8 w-8 text-primary-600" />
                           <div>
                             <p className="font-medium">
                               {la.artifact.artifactCode} : {la.artifact.name}
                             </p>
-                            <p className="text-sm text-gray-500">{la.artifact.fileName}</p>
+                            <p className="text-sm text-slate-500">{la.artifact.fileName}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1449,7 +1452,7 @@ export default function EvidenceDetailPage() {
                     </div>
                   ))}
                   {(!evidence.linkedArtifacts || evidence.linkedArtifacts.length === 0) && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-slate-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>{t("No artifacts linked to this evidence")}</p>
                     </div>
@@ -1472,19 +1475,19 @@ export default function EvidenceDetailPage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/evidence" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Evidence")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{evidence.evidenceCode}</span>
       </nav>
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{evidence.name}</h1>
-          <Badge className={statusColors[evidence.status] || "bg-gray-500 text-white"}>
+          <h1 className="text-2xl font-bold text-slate-800">{evidence.name}</h1>
+          <Badge className={statusColors[evidence.status] || "bg-slate-100 text-slate-600"}>
             {t(evidence.status)}
           </Badge>
         </div>
@@ -1498,46 +1501,46 @@ export default function EvidenceDetailPage() {
           </Button>
         </div>
       </div>
-      <p className="text-gray-600">{evidence.evidenceCode}</p>
+      <p className="text-slate-500">{evidence.evidenceCode}</p>
 
       {/* Status Workflow Steps */}
-      <div className="flex items-center justify-center gap-4 py-4 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-center gap-4 py-4 bg-slate-50 rounded-xl border border-slate-200">
         {/* Upload Step */}
         <div className="flex items-center gap-2">
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              currentStep >= 0 ? "bg-green-500 text-white" : "bg-gray-200 text-gray-400"
+              currentStep >= 0 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
             }`}
           >
             {currentStep > 0 ? <Check className="h-6 w-6" /> : <Upload className="h-5 w-5" />}
           </div>
-          <span className={`text-sm ${currentStep >= 0 ? "text-gray-900" : "text-gray-400"}`}>{t("Upload")}</span>
+          <span className={`text-sm ${currentStep >= 0 ? "text-slate-800" : "text-slate-400"}`}>{t("Upload")}</span>
         </div>
-        <div className={`w-24 h-0.5 ${currentStep >= 1 ? "bg-green-500" : "bg-gray-300"}`} />
+        <div className={`w-24 h-0.5 ${currentStep >= 1 ? "bg-primary-600" : "bg-slate-300"}`} />
 
         {/* Draft Step */}
         <div className="flex items-center gap-2">
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              currentStep >= 1 ? "bg-green-500 text-white" : "bg-gray-200 text-gray-400"
+              currentStep >= 1 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
             }`}
           >
             {currentStep > 1 ? <Check className="h-6 w-6" /> : <FileText className="h-5 w-5" />}
           </div>
-          <span className={`text-sm ${currentStep >= 1 ? "text-gray-900" : "text-gray-400"}`}>{t("Draft")}</span>
+          <span className={`text-sm ${currentStep >= 1 ? "text-slate-800" : "text-slate-400"}`}>{t("Draft")}</span>
         </div>
-        <div className={`w-24 h-0.5 ${currentStep >= 2 ? "bg-green-500" : "bg-gray-300"}`} />
+        <div className={`w-24 h-0.5 ${currentStep >= 2 ? "bg-primary-600" : "bg-slate-300"}`} />
 
         {/* Publish Step */}
         <div className="flex items-center gap-2">
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              currentStep >= 2 ? "bg-green-500 text-white" : "bg-gray-200 text-gray-400"
+              currentStep >= 2 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
             }`}
           >
             {currentStep >= 2 ? <Check className="h-6 w-6" /> : <span className="text-lg font-medium">3</span>}
           </div>
-          <span className={`text-sm ${currentStep >= 2 ? "text-gray-900" : "text-gray-400"}`}>{t("Publish")}</span>
+          <span className={`text-sm ${currentStep >= 2 ? "text-slate-800" : "text-slate-400"}`}>{t("Publish")}</span>
         </div>
       </div>
 
@@ -1566,9 +1569,9 @@ export default function EvidenceDetailPage() {
           <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-                  <Layers className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-700">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors">
+                  <Layers className="h-4 w-4 text-primary-600" />
+                  <span className="text-sm font-medium text-primary-700">
                     {t("Linked Frameworks:")} {frameworkCount}
                   </span>
                 </div>
@@ -1591,33 +1594,33 @@ export default function EvidenceDetailPage() {
       {/* Main Content - Single Column Layout */}
       <div className="space-y-6">
         {/* Evidence Details */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>{t("Evidence Details")}</CardTitle>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">{t("Evidence Details")}</h3>
               <Button variant="ghost" size="icon">
                 <Eye className="h-4 w-4" />
               </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+            <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-medium">{t("Requirement")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
                   <p>{evidence.name}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-medium">{t("Description")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
                   <p>{evidence.description || "-"}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-medium">{t("Department")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
                   <Select
                     value={evidence.departmentId || ""}
                     onValueChange={(value) => handleInlineUpdate("departmentId", value || null)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -1631,7 +1634,7 @@ export default function EvidenceDetailPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="font-medium">{t("Assigned to")}</Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assigned to")}</Label>
                     <Dialog open={editAssigneeOpen} onOpenChange={setEditAssigneeOpen}>
                       <DialogTrigger asChild>
                         <Button variant="link" size="sm">
@@ -1672,12 +1675,12 @@ export default function EvidenceDetailPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-medium">{t("Recurrence")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</Label>
                   <Select
                     value={evidence.recurrence || ""}
                     onValueChange={(value) => handleRecurrenceChange(value || null)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -1690,7 +1693,7 @@ export default function EvidenceDetailPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-medium">{t("Review Date")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review Date")}</Label>
                   <Input
                     type="date"
                     value={evidence.reviewDate?.split("T")[0] || ""}
@@ -1706,24 +1709,24 @@ export default function EvidenceDetailPage() {
                   onCheckedChange={(checked) => handleInlineUpdate("kpiRequired", !!checked)}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* KPI Details - Show if KPI Required */}
           {evidence.kpiRequired && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{t("KPI Details")}</CardTitle>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">{t("KPI Details")}</h3>
                 {!kpiEditMode && evidence.kpis && evidence.kpis.length > 0 && (
                   <Button variant="outline" size="sm" onClick={() => setKpiEditMode(true)}>
                     {t("Edit")}
                   </Button>
                 )}
-              </CardHeader>
-              <CardContent className="space-y-4">
+              </div>
+              <div className="p-5 space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label className="font-medium">{t("KPI Objective")} <span className="text-red-500">*</span></Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")} <span className="text-red-500">*</span></Label>
                     <Textarea
                       placeholder={t("Enter Objective")}
                       value={kpiForm.kpiObjective}
@@ -1733,7 +1736,7 @@ export default function EvidenceDetailPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-medium">{t("KPI Data Source")} <span className="text-red-500">*</span></Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Data Source")} <span className="text-red-500">*</span></Label>
                     <Textarea
                       placeholder={t("Enter Data Source")}
                       value={kpiForm.kpiDataSource}
@@ -1743,7 +1746,7 @@ export default function EvidenceDetailPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-medium">{t("KPI Expected Score (%)")} <span className="text-red-500">*</span></Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Expected Score (%)")} <span className="text-red-500">*</span></Label>
                     <Input
                       type="number"
                       placeholder={t("Enter expected score")}
@@ -1755,7 +1758,7 @@ export default function EvidenceDetailPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label className="font-medium">{t("KPI Description")}</Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")}</Label>
                     <Textarea
                       placeholder={t("Enter Description")}
                       value={kpiForm.kpiDescription}
@@ -1765,7 +1768,7 @@ export default function EvidenceDetailPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-medium">{t("KPI Calculation Formula")} <span className="text-red-500">*</span></Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Calculation Formula")} <span className="text-red-500">*</span></Label>
                     <Textarea
                       placeholder={t("Enter the KPI Calculation Formula")}
                       value={kpiForm.kpiCalculationFormula}
@@ -1777,7 +1780,7 @@ export default function EvidenceDetailPage() {
                   {/* KPI Actual Score - visible when KPI Expected Score AND Description are not empty */}
                   {kpiForm.kpiExpectedScore && kpiForm.kpiDescription && (
                     <div className="space-y-2">
-                      <Label className="font-medium">{t("KPI Actual Score")} <span className="text-red-500">*</span></Label>
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Actual Score")} <span className="text-red-500">*</span></Label>
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
@@ -1841,25 +1844,25 @@ export default function EvidenceDetailPage() {
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Published Section */}
           {evidence.status === "Published" && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{t("Published")}</CardTitle>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">{t("Published")}</h3>
                 <Button variant="outline" onClick={handleUnpublish}>
                   {t("Unpublish")}
                 </Button>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div className="p-5">
                 <div className="space-y-2">
                   {evidence.attachments?.map((att) => (
                     <div key={att.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-slate-500">
                           {t("Published On:")} {new Date(att.uploadedAt).toLocaleString()}
                         </p>
                         <p className="font-medium">{att.fileName}</p>
@@ -1871,17 +1874,17 @@ export default function EvidenceDetailPage() {
                     </div>
                   ))}
                   {(!evidence.attachments || evidence.attachments.length === 0) && (
-                    <p className="text-gray-500 text-center py-4">{t("No published files")}</p>
+                    <p className="text-slate-500 text-center py-4">{t("No published files")}</p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
         {/* Attachments Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t("Attachments")}</CardTitle>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <h3 className="text-base font-semibold text-slate-800">{t("Attachments")}</h3>
             <div className="flex gap-2">
               {isCustomerAdmin ? (
                 <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
@@ -1906,8 +1909,8 @@ export default function EvidenceDetailPage() {
                 {t("Link Artifacts")}
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             {/* Period Buttons with Validation Status Tags - Based on recurrence for ALL roles */}
             <div className="flex flex-wrap gap-2 mb-4">
               {getPeriodsForRecurrence(evidence.recurrence).map((period) => {
@@ -1966,14 +1969,14 @@ export default function EvidenceDetailPage() {
 
             {/* Approval Workflow Buttons */}
             {selectedMonth && (
-              <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-slate-50 rounded-lg">
                 {/* Submit for Approval - DepartmentContributor only */}
                 {isDepartmentContributor && getSelectedCycleStatus().status === "none" && (
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={handleSubmitForApproval}
-                    className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                    className="border-primary-500 text-primary-600 hover:bg-primary-50"
                   >
                     <Send className="h-4 w-4 mr-1" />
                     {t("Submit for Approval")}
@@ -2028,7 +2031,7 @@ export default function EvidenceDetailPage() {
                   </span>
                 )}
                 {getSelectedCycleStatus().status === "none" && !isDepartmentContributor && (
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-slate-500">
                     {t("Awaiting submission from Department Contributor")}
                   </span>
                 )}
@@ -2041,10 +2044,10 @@ export default function EvidenceDetailPage() {
               {filteredAttachments.map((att) => (
                 <div
                   key={att.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50/60"
                 >
                   <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
+                    <FileText className="h-5 w-5 text-primary-600" />
                     <span className="text-sm">{att.fileName}</span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -2067,13 +2070,13 @@ export default function EvidenceDetailPage() {
               {filteredLinkedArtifacts.map((la) => (
                 <div
                   key={`artifact-${la.id}`}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 border-purple-200 bg-purple-50/30"
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50/60 border-purple-200 bg-purple-50/30"
                 >
                   <div className="flex items-center gap-2">
                     <Link2 className="h-5 w-5 text-purple-600" />
                     <div>
                       <span className="text-sm font-medium">{la.artifact.artifactCode} : {la.artifact.name}</span>
-                      <p className="text-xs text-gray-500">{la.artifact.fileName}</p>
+                      <p className="text-xs text-slate-500">{la.artifact.fileName}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -2099,19 +2102,19 @@ export default function EvidenceDetailPage() {
                 </div>
               ))}
               {filteredAttachments.length === 0 && filteredLinkedArtifacts.length === 0 && (
-                <p className="text-center text-gray-500 text-sm py-4">
+                <p className="text-center text-slate-500 text-sm py-4">
                   {selectedMonth ? `${t("No attachments for")} ${selectedMonth}` : t("No attachments")}
                 </p>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Recent Comments Card */}
-        <Card>
-          <CardHeader>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100">
             <div className="flex items-center justify-between">
-              <CardTitle>{t("Recent Comments")}</CardTitle>
+              <h3 className="text-base font-semibold text-slate-800">{t("Recent Comments")}</h3>
               <Button
                 variant="outline"
                 size="sm"
@@ -2121,26 +2124,26 @@ export default function EvidenceDetailPage() {
                 {t("Add Comment")}
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             {evidence.comments && evidence.comments.length > 0 ? (
               <div className="space-y-3">
                 {evidence.comments.slice(0, 3).map((comment) => (
                   <div
                     key={comment.id}
-                    className="p-3 bg-gray-50 rounded-lg"
+                    className="p-3 bg-slate-50 rounded-lg"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-sm">
                         {comment.userName || t("Unknown User")}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         {new Date(comment.createdAt).toLocaleDateString(
                           "en-GB"
                         )}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700">{comment.content}</p>
+                    <p className="text-sm text-slate-700">{comment.content}</p>
                   </div>
                 ))}
                 {evidence.comments.length > 3 && (
@@ -2154,12 +2157,12 @@ export default function EvidenceDetailPage() {
                 )}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-4">
+              <p className="text-slate-500 text-center py-4">
                 {t("No comments yet")}
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Linked Section - Tabs: Linked Controls / Linked Artifacts */}
         <div>
@@ -2168,8 +2171,8 @@ export default function EvidenceDetailPage() {
               onClick={() => setActiveTab("controls")}
               className={`px-4 py-2 ${
                 activeTab === "controls"
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-500"
+                  ? "border-b-2 border-primary-600 text-primary-600"
+                  : "text-slate-500"
               }`}
             >
               {t("Linked Controls")}
@@ -2178,8 +2181,8 @@ export default function EvidenceDetailPage() {
               onClick={() => setActiveTab("artifacts")}
               className={`px-4 py-2 ${
                 activeTab === "artifacts"
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-gray-500"
+                  ? "border-b-2 border-primary-600 text-primary-600"
+                  : "text-slate-500"
               }`}
             >
               {t("Linked Artifacts")}
@@ -2187,9 +2190,9 @@ export default function EvidenceDetailPage() {
           </div>
 
           {activeTab === "controls" && (
-            <Card className="mt-4">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{t("Controls")}</CardTitle>
+            <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">{t("Controls")}</h3>
                 <Dialog open={linkControlsOpen} onOpenChange={(open) => {
                       setLinkControlsOpen(open);
                       if (!open) {
@@ -2329,22 +2332,22 @@ export default function EvidenceDetailPage() {
                     </div>
                   </DialogContent>
                 </Dialog>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div className="p-5">
                 <div className="space-y-2">
                   {evidence.evidenceControls?.map((ec) => (
                     <div
                       key={ec.id}
-                      className="flex items-start justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer hover:border-blue-300 transition-all"
+                      className="flex items-start justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50/60 cursor-pointer hover:border-primary-300 transition-all"
                       onClick={() => router.push(`/compliance/control/${ec.control.id}`)}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-blue-700 hover:underline">{ec.control.controlCode}</span>
+                          <span className="font-medium text-primary-700 hover:underline">{ec.control.controlCode}</span>
                           <span>: {ec.control.name}</span>
                         </div>
                         {ec.control.description && (
-                          <p className="text-sm text-gray-500 mt-1">{ec.control.description}</p>
+                          <p className="text-sm text-slate-500 mt-1">{ec.control.description}</p>
                         )}
                         <Badge variant="secondary" className="mt-2">
                           {ec.control.entities}
@@ -2363,35 +2366,35 @@ export default function EvidenceDetailPage() {
                     </div>
                   ))}
                   {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-slate-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>{t("No controls linked to this evidence")}</p>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {activeTab === "artifacts" && (
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>{t("Linked Artifacts")}</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-3 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">{t("Linked Artifacts")}</h3>
+              </div>
+              <div className="p-5">
                 <div className="space-y-2">
                   {evidence.linkedArtifacts?.map((la) => (
                     <div
                       key={la.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50/60"
                     >
                       <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-blue-600" />
+                        <FileText className="h-8 w-8 text-primary-600" />
                         <div>
                           <p className="font-medium">
                             {la.artifact.artifactCode} : {la.artifact.name}
                           </p>
-                          <p className="text-sm text-gray-500">{la.artifact.fileName}</p>
+                          <p className="text-sm text-slate-500">{la.artifact.fileName}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2405,14 +2408,14 @@ export default function EvidenceDetailPage() {
                     </div>
                   ))}
                   {(!evidence.linkedArtifacts || evidence.linkedArtifacts.length === 0) && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-slate-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>{t("No artifacts linked to this evidence")}</p>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -2428,12 +2431,12 @@ export default function EvidenceDetailPage() {
             <div className="max-h-64 overflow-y-auto space-y-3">
               {evidence.comments && evidence.comments.length > 0 ? (
                 evidence.comments.map((comment) => (
-                  <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
+                  <div key={comment.id} className="p-3 bg-slate-50 rounded-lg">
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-sm">
                         {comment.userName || t("Unknown User")}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         {new Date(comment.createdAt).toLocaleDateString("en-GB")}{" "}
                         {new Date(comment.createdAt).toLocaleTimeString("en-GB", {
                           hour: "2-digit",
@@ -2441,11 +2444,11 @@ export default function EvidenceDetailPage() {
                         })}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700">{comment.content}</p>
+                    <p className="text-sm text-slate-700">{comment.content}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-slate-500 text-center py-4">
                   {t("No comments yet")}
                 </p>
               )}
@@ -2523,7 +2526,7 @@ export default function EvidenceDetailPage() {
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
                   isDraggingFile
                     ? "border-primary bg-primary/5"
-                    : "border-gray-300 hover:border-gray-400"
+                    : "border-slate-300 hover:border-slate-400"
                 }`}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -2553,8 +2556,8 @@ export default function EvidenceDetailPage() {
                 {selectedFile ? (
                   <div className="space-y-2">
                     <FileText className="h-10 w-10 mx-auto text-primary" />
-                    <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium text-slate-800">{selectedFile.name}</p>
+                    <p className="text-xs text-slate-500">
                       {(selectedFile.size / 1024).toFixed(1)} KB
                     </p>
                     <Button
@@ -2569,7 +2572,7 @@ export default function EvidenceDetailPage() {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-gray-500">{t("Drag and drop or select file.")}</p>
+                  <p className="text-slate-500">{t("Drag and drop or select file.")}</p>
                 )}
               </div>
 
@@ -2642,7 +2645,7 @@ export default function EvidenceDetailPage() {
               {artifactSearchQuery && (
                 <button
                   onClick={() => setArtifactSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -2667,7 +2670,7 @@ export default function EvidenceDetailPage() {
 
                 if (filteredArtifacts.length === 0) {
                   return (
-                    <div className="p-4 text-center text-gray-500">
+                    <div className="p-4 text-center text-slate-500">
                       {artifactSearchQuery.trim()
                         ? t("No artifacts found matching your search")
                         : t("No available artifacts to link")}
@@ -2678,8 +2681,8 @@ export default function EvidenceDetailPage() {
                 return filteredArtifacts.map((artifact) => (
                   <div
                     key={artifact.id}
-                    className={`flex items-start gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
-                      selectedArtifactIds.includes(artifact.id) ? "bg-blue-50" : ""
+                    className={`flex items-start gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-slate-50/60 ${
+                      selectedArtifactIds.includes(artifact.id) ? "bg-primary-50" : ""
                     }`}
                     onClick={() => {
                       setSelectedArtifactIds((prev) =>
@@ -2703,18 +2706,18 @@ export default function EvidenceDetailPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-blue-600" />
+                        <FileText className="h-5 w-5 text-primary-600" />
                         <span className="font-medium">{artifact.artifactCode}</span>
-                        <span className="text-gray-600">: {artifact.name}</span>
+                        <span className="text-slate-600">: {artifact.name}</span>
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">{artifact.fileName}</p>
+                      <p className="text-sm text-slate-500 mt-1">{artifact.fileName}</p>
                     </div>
                   </div>
                 ));
               })()}
             </div>
 
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-slate-600">
               {selectedArtifactIds.length} {t("artifact(s) selected")}
             </p>
 

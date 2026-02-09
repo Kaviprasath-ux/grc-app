@@ -2,7 +2,6 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -31,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X, Home, ChevronRight } from "lucide-react";
+import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X, Home, ChevronRight, Search, Eye } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -336,85 +335,102 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case "Compliant": return "bg-green-100 text-green-800";
-      case "Non Compliant": return "bg-red-100 text-red-800";
-      case "Not Applicable": return "bg-gray-100 text-gray-800";
-      case "Partial Compliant": return "bg-yellow-100 text-yellow-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Compliant": return "bg-success-light text-success-dark";
+      case "Non Compliant": return "bg-error-light text-error-dark";
+      case "Not Applicable": return "bg-slate-100 text-slate-600";
+      case "Partial Compliant": return "bg-warning-light text-warning-dark";
+      default: return "bg-slate-100 text-slate-600";
     }
   };
 
   const getRiskRatingColor = (rating: string) => {
     switch (rating) {
-      case "Catastrophic": return "bg-purple-100 text-purple-800";
-      case "Very High": return "bg-red-100 text-red-800";
-      case "High": return "bg-orange-100 text-orange-800";
-      case "Medium": return "bg-yellow-100 text-yellow-800";
-      case "Low": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Catastrophic": return "bg-error-light text-error-dark";
+      case "Very High": return "bg-error-light text-error-dark";
+      case "High": return "bg-warning-light text-warning-dark";
+      case "Medium": return "bg-warning-light text-warning-dark";
+      case "Low": return "bg-success-light text-success-dark";
+      default: return "bg-slate-100 text-slate-600";
     }
   };
 
   if (loading) {
-    return <div className="p-6">{t("Loading...")}</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      </div>
+    );
   }
 
   if (!control) {
-    return <div className="p-6">{t("Control not found")}</div>;
+    return <div className="space-y-6">{t("Control not found")}</div>;
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/control" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Controls")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{control.controlCode}</span>
       </nav>
 
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{control.name}</h1>
-          <Badge className={getStatusBadgeColor(control.status)}>{control.status}</Badge>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">{control.name}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm text-slate-500">{control.controlCode}</span>
+            <Badge className={getStatusBadgeColor(control.status)}>{t(control.status)}</Badge>
+          </div>
         </div>
-        <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
-          <Edit className="h-4 w-4 mr-2" />
+        <Button onClick={() => setIsEditDialogOpen(true)}>
+          <Edit className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Edit Control")}
         </Button>
       </div>
-      <p className="text-slate-400">{control.controlCode}</p>
 
-      {/* Control Details Card with Inline Editable Fields */}
-      <Card className="shadow-none">
-        <CardHeader>
-          <CardTitle>{t("Control Details")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Control Details */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-5 py-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
             <div>
-              <Label className="text-slate-400">{t("Domain")}</Label>
-              <p className="font-medium">{control.domain?.name || "-"}</p>
+              <p className="text-xs text-slate-400 mb-0.5">{t("Domain")}</p>
+              <p className="text-sm font-medium text-slate-800">{control.domain?.name || "-"}</p>
             </div>
             <div>
-              <Label className="text-slate-400">{t("Framework")}</Label>
-              <p className="font-medium">{control.framework?.name || "-"}</p>
+              <p className="text-xs text-slate-400 mb-0.5">{t("Framework")}</p>
+              <p className="text-sm font-medium text-slate-800">{control.framework?.name || "-"}</p>
             </div>
-            {/* Inline Editable Department */}
             <div>
-              <Label className="text-slate-400">{t("Department")}</Label>
+              <p className="text-xs text-slate-400 mb-0.5">{t("Owner")}</p>
+              <p className="text-sm font-medium text-slate-800">{control.owner?.fullName || "-"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-0.5">{t("Functional Grouping")}</p>
+              <p className="text-sm font-medium text-slate-800">{control.functionalGrouping || "-"}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-100" />
+
+        <div className="px-5 py-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            <div>
+              <p className="text-xs text-slate-400 mb-1">{t("Department")}</p>
               <Select value={inlineDepartmentId} onValueChange={handleInlineDepartmentChange}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="h-8 text-sm bg-white border-slate-200">
                   <SelectValue placeholder={t("Select department")} />
                 </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
+                <SelectContent>
                   {departments.map((d) => (
                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
@@ -422,21 +438,12 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <div>
-              <Label className="text-slate-400">{t("Functional Grouping")}</Label>
-              <p className="font-medium">{control.functionalGrouping || "-"}</p>
-            </div>
-            <div>
-              <Label className="text-slate-400">{t("Owner")}</Label>
-              <p className="font-medium">{control.owner?.fullName || "-"}</p>
-            </div>
-            {/* Inline Editable Assignee */}
-            <div>
-              <Label className="text-slate-400">{t("Assigned To")}</Label>
+              <p className="text-xs text-slate-400 mb-1">{t("Assigned To")}</p>
               <Select value={inlineAssigneeId} onValueChange={handleInlineAssigneeChange}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="h-8 text-sm bg-white border-slate-200">
                   <SelectValue placeholder={t("Select assignee")} />
                 </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
+                <SelectContent>
                   {users.map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                   ))}
@@ -444,117 +451,132 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <div>
-              <Label className="text-slate-400">{t("Entities")}</Label>
-              <p className="font-medium">{control.entities || t("Organization Wide")}</p>
+              <p className="text-xs text-slate-400 mb-0.5">{t("Entities")}</p>
+              <p className="text-sm font-medium text-slate-800">{control.entities || t("Organization Wide")}</p>
             </div>
             <div>
-              <Label className="text-slate-400">{t("Scope")}</Label>
-              <p className="font-medium">{control.scope || "-"}</p>
+              <p className="text-xs text-slate-400 mb-0.5">{t("Scope")}</p>
+              <p className="text-sm font-medium text-slate-800">{control.scope || "-"}</p>
             </div>
           </div>
+        </div>
 
-          {/* Not Applicable Checkbox */}
-          <div className="mt-4 flex items-center space-x-2">
+        <div className="border-t border-slate-100" />
+
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-slate-400">{t("Risk")}</p>
+            <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={() => setIsRiskDialogOpen(true)}>
+              <Plus className="h-3 w-3 ltr:mr-1 rtl:ml-1" />
+              {t("Add")}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {control.controlRisks?.map((cr) => (
+              <Badge
+                key={cr.risk.id}
+                variant="outline"
+                className="flex items-center gap-1 text-xs"
+              >
+                {cr.risk.riskId} - {cr.risk.name}
+                <button
+                  onClick={() => handleRemoveRisk(cr.risk.id)}
+                  className="ltr:ml-1 rtl:mr-1 hover:text-semantic-error"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            {(!control.controlRisks || control.controlRisks.length === 0) && (
+              <span className="text-sm text-slate-400">{t("No risks linked")}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-4">
             <Checkbox
               id="notApplicable"
               checked={inlineNotApplicable}
               onCheckedChange={(checked) => handleNotApplicableChange(checked as boolean)}
             />
-            <Label htmlFor="notApplicable" className="cursor-pointer">{t("Not Applicable")}</Label>
+            <label htmlFor="notApplicable" className="text-sm text-slate-600 cursor-pointer">{t("Not Applicable")}</label>
           </div>
+        </div>
 
-          {/* Risk Multi-Select with + Button */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-slate-400">{t("Risk")}</Label>
-              <Button variant="outline" size="sm" onClick={() => setIsRiskDialogOpen(true)}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {control.controlRisks?.map((cr) => (
-                <Badge
-                  key={cr.risk.id}
-                  variant="outline"
-                  className="flex items-center gap-1"
-                >
-                  {cr.risk.riskId} - {cr.risk.name}
-                  <button
-                    onClick={() => handleRemoveRisk(cr.risk.id)}
-                    className="ml-1 hover:text-red-500"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-              {(!control.controlRisks || control.controlRisks.length === 0) && (
-                <span className="text-slate-400 text-sm">{t("No risks linked")}</span>
-              )}
-            </div>
-          </div>
+        {(control.description || control.controlQuestion) && (
+          <>
+            <div className="border-t border-slate-100" />
 
-          {control.description && (
-            <div className="mt-4">
-              <Label className="text-slate-400">{t("Description")}</Label>
-              <p className="mt-1">{control.description}</p>
+            <div className="px-5 py-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {control.description && (
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">{t("Description")}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{control.description}</p>
+                  </div>
+                )}
+                {control.controlQuestion && (
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">{t("Control Question")}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{control.controlQuestion}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          {control.controlQuestion && (
-            <div className="mt-4">
-              <Label className="text-slate-400">{t("Control Question")}</Label>
-              <p className="mt-1">{control.controlQuestion}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </>
+        )}
+      </div>
 
       {/* Tabs for related entities */}
-      <Card className="shadow-none">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0">
-            <TabsTrigger value="requirements" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              <Link2 className="h-4 w-4 mr-2" />
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-0">
+          <TabsList className="px-5 pt-3">
+            <TabsTrigger value="requirements" className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
               {t("Linked Requirement")} ({control.requirements?.length || 0})
             </TabsTrigger>
-            <TabsTrigger value="governance" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              <FileText className="h-4 w-4 mr-2" />
+            <TabsTrigger value="governance" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
               {t("Governance")} ({control.policyControls?.length || 0})
             </TabsTrigger>
-            <TabsTrigger value="evidence" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              <ClipboardCheck className="h-4 w-4 mr-2" />
+            <TabsTrigger value="evidence" className="flex items-center gap-2">
+              <ClipboardCheck className="h-4 w-4" />
               {t("Evidence")} ({(control.evidences?.length || 0) + (control.evidenceControls?.length || 0)})
             </TabsTrigger>
-            <TabsTrigger value="exceptions" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              <AlertTriangle className="h-4 w-4 mr-2" />
+            <TabsTrigger value="exceptions" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
               {t("Exception")} ({control.exceptions?.length || 0})
             </TabsTrigger>
-            <TabsTrigger value="risks" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              <Shield className="h-4 w-4 mr-2" />
+            <TabsTrigger value="risks" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
               {t("Risk")} ({control.controlRisks?.length || 0})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="requirements" className="p-4">
+          <TabsContent value="requirements" className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("Code")}</TableHead>
-                  <TableHead>{t("Name")}</TableHead>
-                  <TableHead>{t("Framework")}</TableHead>
+                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Code")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 pe-5">{t("Framework")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {control.requirements?.map((rc) => (
-                  <TableRow key={rc.requirement.id}>
-                    <TableCell>{rc.requirement.code}</TableCell>
-                    <TableCell>{rc.requirement.name}</TableCell>
-                    <TableCell>{rc.requirement.framework?.name || "-"}</TableCell>
+                  <TableRow key={rc.requirement.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{rc.requirement.code}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{rc.requirement.name}</TableCell>
+                    <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{rc.requirement.framework?.name || "-"}</TableCell>
                   </TableRow>
                 ))}
                 {(!control.requirements || control.requirements.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-slate-400">
-                      {t("No linked requirements")}
+                    <TableCell colSpan={3} className="py-12">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-2">
+                          <Link2 className="h-5 w-5 text-primary-400" />
+                        </div>
+                        <p className="text-sm text-slate-500">{t("No linked requirements")}</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -562,31 +584,36 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </Table>
           </TabsContent>
 
-          <TabsContent value="governance" className="p-4">
+          <TabsContent value="governance" className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("Code")}</TableHead>
-                  <TableHead>{t("Name")}</TableHead>
-                  <TableHead>{t("Type")}</TableHead>
-                  <TableHead>{t("Status")}</TableHead>
+                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Code")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Type")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 pe-5">{t("Status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {control.policyControls?.map((pc) => (
-                  <TableRow key={pc.policy.id}>
-                    <TableCell>{pc.policy.code}</TableCell>
-                    <TableCell>{pc.policy.name}</TableCell>
-                    <TableCell>{pc.policy.documentType}</TableCell>
-                    <TableCell>
+                  <TableRow key={pc.policy.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{pc.policy.code}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{pc.policy.name}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{pc.policy.documentType}</TableCell>
+                    <TableCell className="py-3.5 pe-5">
                       <Badge variant="outline">{pc.policy.status}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}
                 {(!control.policyControls || control.policyControls.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-slate-400">
-                      {t("No linked policies")}
+                    <TableCell colSpan={4} className="py-12">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-2">
+                          <FileText className="h-5 w-5 text-primary-400" />
+                        </div>
+                        <p className="text-sm text-slate-500">{t("No linked policies")}</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -594,46 +621,62 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </Table>
           </TabsContent>
 
-          <TabsContent value="evidence" className="p-4">
+          <TabsContent value="evidence" className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("Evidence Code")}</TableHead>
-                  <TableHead>{t("Name")}</TableHead>
-                  <TableHead>{t("Status")}</TableHead>
-                  <TableHead>{t("Assignee")}</TableHead>
-                  <TableHead>{t("Due Date")}</TableHead>
+                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Evidence Code")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Assignee")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Due Date")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 pe-5 text-end">{t("Actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {/* Direct evidence links */}
                 {control.evidences?.map((e) => (
-                  <TableRow key={e.id} className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/compliance/evidence/${e.id}`)}>
-                    <TableCell>{e.evidenceCode}</TableCell>
-                    <TableCell>{e.name}</TableCell>
-                    <TableCell>
+                  <TableRow key={e.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{e.evidenceCode}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{e.name}</TableCell>
+                    <TableCell className="py-3.5">
                       <Badge variant="outline">{e.status}</Badge>
                     </TableCell>
-                    <TableCell>{e.assignee?.fullName || "-"}</TableCell>
-                    <TableCell>{e.dueDate ? new Date(e.dueDate).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{e.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{e.dueDate ? new Date(e.dueDate).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell className="py-3.5 pe-5 text-end">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => router.push(`/compliance/evidence/${e.id}`)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {/* Evidence linked via junction table (EvidenceControl) */}
                 {control.evidenceControls?.map((ec) => (
-                  <TableRow key={ec.id} className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/compliance/evidence/${ec.evidence.id}`)}>
-                    <TableCell>{ec.evidence.evidenceCode}</TableCell>
-                    <TableCell>{ec.evidence.name}</TableCell>
-                    <TableCell>
+                  <TableRow key={ec.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{ec.evidence.evidenceCode}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{ec.evidence.name}</TableCell>
+                    <TableCell className="py-3.5">
                       <Badge variant="outline">{ec.evidence.status}</Badge>
                     </TableCell>
-                    <TableCell>{ec.evidence.assignee?.fullName || "-"}</TableCell>
-                    <TableCell>{ec.evidence.dueDate ? new Date(ec.evidence.dueDate).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{ec.evidence.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{ec.evidence.dueDate ? new Date(ec.evidence.dueDate).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell className="py-3.5 pe-5 text-end">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => router.push(`/compliance/evidence/${ec.evidence.id}`)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {((!control.evidences || control.evidences.length === 0) && (!control.evidenceControls || control.evidenceControls.length === 0)) && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-slate-400">
-                      {t("No linked evidences")}
+                    <TableCell colSpan={6} className="py-12">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-2">
+                          <ClipboardCheck className="h-5 w-5 text-primary-400" />
+                        </div>
+                        <p className="text-sm text-slate-500">{t("No linked evidences")}</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -641,33 +684,38 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </Table>
           </TabsContent>
 
-          <TabsContent value="exceptions" className="p-4">
+          <TabsContent value="exceptions" className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("Exception Code")}</TableHead>
-                  <TableHead>{t("Name")}</TableHead>
-                  <TableHead>{t("Category")}</TableHead>
-                  <TableHead>{t("Status")}</TableHead>
-                  <TableHead>{t("End Date")}</TableHead>
+                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Exception Code")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Category")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 pe-5">{t("End Date")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {control.exceptions?.map((ex) => (
-                  <TableRow key={ex.id}>
-                    <TableCell>{ex.exceptionCode}</TableCell>
-                    <TableCell>{ex.name}</TableCell>
-                    <TableCell>{ex.category}</TableCell>
-                    <TableCell>
+                  <TableRow key={ex.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{ex.exceptionCode}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{ex.name}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{ex.category}</TableCell>
+                    <TableCell className="py-3.5">
                       <Badge variant="outline">{ex.status}</Badge>
                     </TableCell>
-                    <TableCell>{ex.endDate ? new Date(ex.endDate).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{ex.endDate ? new Date(ex.endDate).toLocaleDateString() : "-"}</TableCell>
                   </TableRow>
                 ))}
                 {(!control.exceptions || control.exceptions.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-slate-400">
-                      {t("No linked exceptions")}
+                    <TableCell colSpan={5} className="py-12">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-2">
+                          <AlertTriangle className="h-5 w-5 text-primary-400" />
+                        </div>
+                        <p className="text-sm text-slate-500">{t("No linked exceptions")}</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -675,37 +723,42 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </Table>
           </TabsContent>
 
-          <TabsContent value="risks" className="p-4">
+          <TabsContent value="risks" className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("Risk ID")}</TableHead>
-                  <TableHead>{t("Name")}</TableHead>
-                  <TableHead>{t("Risk Rating")}</TableHead>
-                  <TableHead>{t("Status")}</TableHead>
-                  <TableHead>{t("Owner")}</TableHead>
+                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Risk ID")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Risk Rating")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 pe-5">{t("Owner")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {control.controlRisks?.map((cr) => (
-                  <TableRow key={cr.risk.id}>
-                    <TableCell>{cr.risk.riskId}</TableCell>
-                    <TableCell>{cr.risk.name}</TableCell>
-                    <TableCell>
+                  <TableRow key={cr.risk.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{cr.risk.riskId}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{cr.risk.name}</TableCell>
+                    <TableCell className="py-3.5">
                       <Badge className={getRiskRatingColor(cr.risk.riskRating)}>
                         {cr.risk.riskRating}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3.5">
                       <Badge variant="outline">{cr.risk.status}</Badge>
                     </TableCell>
-                    <TableCell>{cr.risk.owner?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{cr.risk.owner?.fullName || "-"}</TableCell>
                   </TableRow>
                 ))}
                 {(!control.controlRisks || control.controlRisks.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-slate-400">
-                      {t("No linked risks")}
+                    <TableCell colSpan={5} className="py-12">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-2">
+                          <Shield className="h-5 w-5 text-primary-400" />
+                        </div>
+                        <p className="text-sm text-slate-500">{t("No linked risks")}</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -713,253 +766,325 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </Table>
           </TabsContent>
         </Tabs>
-      </Card>
+      </div>
 
       {/* Edit Dialog with All Fields */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle>{t("Edit Control")}</DialogTitle>
+          <div className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Control")}</DialogTitle>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Control Name */}
-            <div>
-              <Label>{t("Control Name")} *</Label>
-              <Input
-                value={editData.name || ""}
-                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-              />
+          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+            {/* Basic Information */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Control Name")} *</Label>
+                <Input
+                  value={editData.name || ""}
+                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Control Code")}</Label>
+                <Input
+                  value={editData.controlCode || ""}
+                  onChange={(e) => setEditData({ ...editData, controlCode: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
             </div>
 
-            {/* Control Code (Editable) */}
-            <div>
-              <Label>{t("Control Code")}</Label>
-              <Input
-                value={editData.controlCode || ""}
-                onChange={(e) => setEditData({ ...editData, controlCode: e.target.value })}
-              />
-            </div>
-
-            {/* Description */}
-            <div className="col-span-2">
-              <Label>{t("Description")}</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500">{t("Description")}</Label>
               <Textarea
                 value={editData.description || ""}
                 onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                 rows={3}
+                className="text-sm resize-none"
               />
             </div>
 
-            {/* Control Question */}
-            <div className="col-span-2">
-              <Label>{t("Control Question")}</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500">{t("Control Question")}</Label>
               <Textarea
                 value={editData.controlQuestion || ""}
                 onChange={(e) => setEditData({ ...editData, controlQuestion: e.target.value })}
                 rows={3}
+                className="text-sm resize-none"
               />
             </div>
 
-            {/* Functional Grouping (Radio Buttons) */}
-            <div className="col-span-2">
-              <Label>{t("Functional Grouping")}</Label>
-              <RadioGroup
-                value={editData.functionalGrouping || ""}
-                onValueChange={(v) => setEditData({ ...editData, functionalGrouping: v })}
-                className="grid grid-cols-6 gap-2 mt-2"
-              >
-                {FUNCTIONAL_GROUPINGS.map((g) => (
-                  <div key={g} className="flex items-center space-x-2">
-                    <RadioGroupItem value={g} id={`edit-fg-${g}`} />
-                    <Label htmlFor={`edit-fg-${g}`} className="cursor-pointer text-sm">{t(g)}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
+            <div className="border-t border-slate-100" />
+
+            {/* Classification */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs font-medium text-slate-500">{t("Domain")}</Label>
+                <Select
+                  value={editData.domainId || control.domain?.id || ""}
+                  onValueChange={(v) => setEditData({ ...editData, domainId: v })}
+                >
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue placeholder={t("Select domain")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
+                    {domains.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs font-medium text-slate-500">{t("Scope")}</Label>
+                <Select value={editData.scope || ""} onValueChange={(v) => setEditData({ ...editData, scope: v })}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue placeholder={t("Select scope")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
+                    {SCOPE_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{t(s)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs font-medium text-slate-500">{t("Relative Control Weighting")}</Label>
+                <Input
+                  type="number"
+                  value={editData.relativeControlWeighting || ""}
+                  onChange={(e) => setEditData({ ...editData, relativeControlWeighting: parseInt(e.target.value) || undefined })}
+                  className="w-full h-9 text-sm"
+                />
+              </div>
             </div>
 
-            {/* Entities (Radio Buttons) */}
-            <div>
-              <Label>{t("Entities")}</Label>
-              <RadioGroup
-                value={editData.entities || "Organization Wide"}
-                onValueChange={(v) => setEditData({ ...editData, entities: v })}
-                className="mt-2"
-              >
-                {ENTITIES_OPTIONS.map((e) => (
-                  <div key={e} className="flex items-center space-x-2">
-                    <RadioGroupItem value={e} id={`edit-entity-${e}`} />
-                    <Label htmlFor={`edit-entity-${e}`} className="cursor-pointer">{t(e)}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500">{t("Functional Grouping")}</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {FUNCTIONAL_GROUPINGS.map((g) => {
+                  const isSelected = editData.functionalGrouping === g;
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setEditData({ ...editData, functionalGrouping: g })}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                        isSelected
+                          ? "bg-primary-50 border-primary-300 text-primary-700"
+                          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                      }`}
+                    >
+                      {t(g)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Status (Radio Buttons) */}
-            <div>
-              <Label>{t("Status")}</Label>
-              <RadioGroup
-                value={editData.status || ""}
-                onValueChange={(v) => setEditData({ ...editData, status: v })}
-                className="mt-2 space-y-1"
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <div key={s} className="flex items-center space-x-2">
-                    <RadioGroupItem value={s} id={`edit-status-${s}`} />
-                    <Label htmlFor={`edit-status-${s}`} className="cursor-pointer text-sm">{t(s)}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            {/* Is Control List (Radio Buttons) */}
-            <div>
-              <Label>{t("Is Control List")}</Label>
-              <RadioGroup
-                value={editData.isControlList ? "yes" : "no"}
-                onValueChange={(v) => setEditData({ ...editData, isControlList: v === "yes" })}
-                className="flex gap-4 mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="yes" id="edit-isCL-yes" />
-                  <Label htmlFor="edit-isCL-yes" className="cursor-pointer">{t("Yes")}</Label>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs font-medium text-slate-500">{t("Status")}</Label>
+                <Select value={editData.status || ""} onValueChange={(v) => setEditData({ ...editData, status: v })}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue placeholder={t("Select status")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
+                    {STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{t(s)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs font-medium text-slate-500">{t("Entities")}</Label>
+                <Select
+                  value={editData.entities || "Organization Wide"}
+                  onValueChange={(v) => setEditData({ ...editData, entities: v })}
+                >
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue placeholder={t("Select entity")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
+                    {ENTITIES_OPTIONS.map((e) => (
+                      <SelectItem key={e} value={e}>{t(e)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Is Control List")}</Label>
+                <div className="flex items-center gap-3 h-9">
+                  {["yes", "no"].map((v) => {
+                    const isSelected = editData.isControlList ? v === "yes" : v === "no";
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setEditData({ ...editData, isControlList: v === "yes" })}
+                        className={`px-4 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                          isSelected
+                            ? "bg-primary-50 border-primary-300 text-primary-700"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {t(v === "yes" ? "Yes" : "No")}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no" id="edit-isCL-no" />
-                  <Label htmlFor="edit-isCL-no" className="cursor-pointer">{t("No")}</Label>
-                </div>
-              </RadioGroup>
+              </div>
             </div>
 
-            {/* Relative Control Weighting */}
-            <div>
-              <Label>{t("Relative Control Weighting")}</Label>
-              <Input
-                type="number"
-                value={editData.relativeControlWeighting || ""}
-                onChange={(e) => setEditData({ ...editData, relativeControlWeighting: parseInt(e.target.value) || undefined })}
-              />
-            </div>
+            <div className="border-t border-slate-100" />
 
             {/* CMM Maturity Level Fields */}
-            <div className="col-span-2">
-              <h3 className="font-semibold mb-2 mt-4">{t("CMM Maturity Level Descriptions")}</h3>
-            </div>
-            <div className="col-span-2">
-              <Label>{t("Level 0 - Not Performed")}</Label>
-              <Textarea
-                value={editData.notPerformed || ""}
-                onChange={(e) => setEditData({ ...editData, notPerformed: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>{t("Level 1 - Performed Informally")}</Label>
-              <Textarea
-                value={editData.performedInformally || ""}
-                onChange={(e) => setEditData({ ...editData, performedInformally: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>{t("Level 2 - Planned and Tracked")}</Label>
-              <Textarea
-                value={editData.plannedAndTracked || ""}
-                onChange={(e) => setEditData({ ...editData, plannedAndTracked: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>{t("Level 3 - Well Defined")}</Label>
-              <Textarea
-                value={editData.wellDefined || ""}
-                onChange={(e) => setEditData({ ...editData, wellDefined: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>{t("Level 4 - Quantitatively Controlled")}</Label>
-              <Textarea
-                value={editData.quantitativelyControlled || ""}
-                onChange={(e) => setEditData({ ...editData, quantitativelyControlled: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>{t("Level 5 - Continuously Improving")}</Label>
-              <Textarea
-                value={editData.continuouslyImproving || ""}
-                onChange={(e) => setEditData({ ...editData, continuouslyImproving: e.target.value })}
-                rows={2}
-              />
-            </div>
-
-            {/* Scope */}
             <div>
-              <Label>{t("Scope")}</Label>
-              <Select value={editData.scope || ""} onValueChange={(v) => setEditData({ ...editData, scope: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("Select scope")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
-                  {SCOPE_OPTIONS.map((s) => (
-                    <SelectItem key={s} value={s}>{t(s)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">{t("CMM Maturity Level Descriptions")}</p>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500">{t("Level 0 - Not Performed")}</Label>
+                  <Textarea
+                    value={editData.notPerformed || ""}
+                    onChange={(e) => setEditData({ ...editData, notPerformed: e.target.value })}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500">{t("Level 1 - Performed Informally")}</Label>
+                  <Textarea
+                    value={editData.performedInformally || ""}
+                    onChange={(e) => setEditData({ ...editData, performedInformally: e.target.value })}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500">{t("Level 2 - Planned and Tracked")}</Label>
+                  <Textarea
+                    value={editData.plannedAndTracked || ""}
+                    onChange={(e) => setEditData({ ...editData, plannedAndTracked: e.target.value })}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500">{t("Level 3 - Well Defined")}</Label>
+                  <Textarea
+                    value={editData.wellDefined || ""}
+                    onChange={(e) => setEditData({ ...editData, wellDefined: e.target.value })}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500">{t("Level 4 - Quantitatively Controlled")}</Label>
+                  <Textarea
+                    value={editData.quantitativelyControlled || ""}
+                    onChange={(e) => setEditData({ ...editData, quantitativelyControlled: e.target.value })}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-500">{t("Level 5 - Continuously Improving")}</Label>
+                  <Textarea
+                    value={editData.continuouslyImproving || ""}
+                    onChange={(e) => setEditData({ ...editData, continuouslyImproving: e.target.value })}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Domain */}
-            <div>
-              <Label>{t("Domain")}</Label>
-              <Select
-                value={editData.domainId || control.domain?.id || ""}
-                onValueChange={(v) => setEditData({ ...editData, domainId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("Select domain")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
-                  {domains.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="border-t border-slate-100" />
 
-            {/* Requirement Multi-Select */}
-            <div className="col-span-2">
-              <Label>{t("Requirement")}</Label>
-              <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto">
-                {allRequirements.map((req) => (
-                  <div key={req.id} className="flex items-center space-x-2 py-1">
-                    <Checkbox
-                      id={`req-${req.id}`}
-                      checked={editData.requirementIds?.includes(req.id) || false}
-                      onCheckedChange={(checked) => {
-                        const currentIds = editData.requirementIds || [];
-                        if (checked) {
-                          setEditData({ ...editData, requirementIds: [...currentIds, req.id] });
-                        } else {
-                          setEditData({ ...editData, requirementIds: currentIds.filter(id => id !== req.id) });
-                        }
-                      }}
-                    />
-                    <Label htmlFor={`req-${req.id}`} className="cursor-pointer text-sm">
-                      {req.code} - {req.name}
-                    </Label>
-                  </div>
-                ))}
-                {allRequirements.length === 0 && (
-                  <p className="text-slate-400 text-sm">{t("No requirements available")}</p>
-                )}
+            {/* Requirement Multi-Select - Chip Tags */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500">{t("Requirement")}</Label>
+              {/* Selected requirements as removable chips */}
+              {editData.requirementIds && editData.requirementIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {editData.requirementIds.map((reqId) => {
+                    const req = allRequirements.find(r => r.id === reqId);
+                    if (!req) return null;
+                    return (
+                      <span
+                        key={reqId}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200"
+                      >
+                        {req.code}
+                        <button
+                          type="button"
+                          onClick={() => setEditData({ ...editData, requirementIds: editData.requirementIds?.filter(id => id !== reqId) || [] })}
+                          className="ml-0.5 hover:text-primary-900 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Searchable checkbox list */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="relative px-3 py-2 bg-slate-50 border-b border-slate-100">
+                  <Search className="absolute ltr:left-5 rtl:right-5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t("Search requirements...")}
+                    className="w-full ltr:pl-6 rtl:pr-6 text-sm bg-transparent placeholder:text-slate-400 focus:outline-none"
+                    onChange={(e) => {
+                      const list = e.target.closest('.border')?.querySelector('[data-req-list]');
+                      if (list) {
+                        const search = e.target.value.toLowerCase();
+                        list.querySelectorAll('[data-req-item]').forEach((item: Element) => {
+                          const text = item.textContent?.toLowerCase() || '';
+                          (item as HTMLElement).style.display = text.includes(search) ? '' : 'none';
+                        });
+                      }
+                    }}
+                  />
+                </div>
+                <div className="max-h-36 overflow-y-auto" data-req-list>
+                  {allRequirements.map((req) => {
+                    const isChecked = editData.requirementIds?.includes(req.id) || false;
+                    return (
+                      <div
+                        key={req.id}
+                        data-req-item
+                        className={`flex items-center gap-2.5 py-2 px-3 cursor-pointer transition-colors border-b border-slate-50 last:border-0 ${
+                          isChecked ? "bg-primary-50/40" : "hover:bg-slate-50"
+                        }`}
+                        onClick={() => {
+                          const currentIds = editData.requirementIds || [];
+                          if (currentIds.includes(req.id)) {
+                            setEditData({ ...editData, requirementIds: currentIds.filter(id => id !== req.id) });
+                          } else {
+                            setEditData({ ...editData, requirementIds: [...currentIds, req.id] });
+                          }
+                        }}
+                      >
+                        <Checkbox
+                          checked={isChecked}
+                          className="pointer-events-none shrink-0"
+                        />
+                        <span className="text-sm text-slate-700">{req.code} - {req.name}</span>
+                      </div>
+                    );
+                  })}
+                  {allRequirements.length === 0 && (
+                    <p className="text-slate-400 text-sm py-4 text-center">{t("No requirements available")}</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-          </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -999,7 +1124,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-slate-400">{t("No risks available")}</p>
             )}
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsRiskDialogOpen(false)}>
               {t("Cancel")}
             </Button>

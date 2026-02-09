@@ -787,10 +787,20 @@ export default function EvidencePage() {
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Evidence")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -809,7 +819,7 @@ export default function EvidencePage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Evidence")}</span>
       </nav>
 
@@ -878,111 +888,113 @@ export default function EvidencePage() {
             })}
           </div>
 
-          {/* Search, Filter, and Action Buttons Row */}
-          <div className="flex items-center gap-3">
-            <Input
-              placeholder={t("Search by name, domain or assignee...")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="max-w-md bg-white"
-            />
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-[200px] bg-white">
-                <SelectValue placeholder={t("Department")} />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                <SelectItem value="all">{t("All Departments")}</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-              <SelectTrigger className="w-[200px] bg-white">
-                <SelectValue placeholder={t("Integrated Framework")} />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-                {frameworks.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex-1" />
-            <PermissionGate resource="compliance.evidence" action="create">
-              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Import")}
-              </Button>
-            </PermissionGate>
-            <PermissionGate resource="compliance.evidence" action="delete">
-              <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-                <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Delete All")}
-              </Button>
-            </PermissionGate>
-            {isCustomerAdmin ? (
-              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("New Evidence")}
-              </Button>
-            ) : (
-              <PermissionGate resource="compliance.evidence" action="create">
-                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                  {t("New Evidence")}
-                </Button>
-              </PermissionGate>
-            )}
-          </div>
-
           {/* Table */}
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="relative h-8 w-8">
-                <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="flex items-center justify-center h-64">
+                <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Search & Filter Toolbar */}
+              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+                <div className="relative max-w-xs">
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder={t("Search by name, domain or assignee...")}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  />
+                </div>
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Department")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("All Departments")}</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Framework")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                    {frameworks.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex-1" />
+                <PermissionGate resource="compliance.evidence" action="create">
+                  <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                    <Download className="h-4 w-4 me-2" />
+                    {t("Import")}
+                  </Button>
+                </PermissionGate>
+                <PermissionGate resource="compliance.evidence" action="delete">
+                  <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+                    <Trash2 className="h-4 w-4 me-2" />
+                    {t("Delete All")}
+                  </Button>
+                </PermissionGate>
+                {isCustomerAdmin ? (
+                  <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                    <Plus className="h-4 w-4 me-2" />
+                    {t("New Evidence")}
+                  </Button>
+                ) : (
+                  <PermissionGate resource="compliance.evidence" action="create">
+                    <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                      <Plus className="h-4 w-4 me-2" />
+                      {t("New Evidence")}
+                    </Button>
+                  </PermissionGate>
+                )}
+              </div>
+
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Evidence Code")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Evidence Name")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Issue Identified By")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department Name")}</TableHead>
+                  <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Evidence Code")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Evidence Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Issue Identified By")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Department")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {evidences.map((evidence) => (
                     <TableRow
                       key={evidence.id}
-                      className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                      className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
                       onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
                     >
-                      <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
-                      <TableCell className="py-4 text-sm text-slate-700">{evidence.name}</TableCell>
-                      <TableCell className="py-4 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{evidence.evidenceCode}</TableCell>
+                      <TableCell className="py-3.5 text-sm text-slate-600">{evidence.name}</TableCell>
+                      <TableCell className="py-3.5 text-sm text-slate-600">{evidence.domain || "-"}</TableCell>
+                      <TableCell className="py-3.5">
                         <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
-                          {evidence.status}
+                          {t(evidence.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-4 text-sm text-slate-700">{evidence.issueIdentifiedBy || "-"}</TableCell>
-                      <TableCell className="py-4 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
-                      <TableCell className="py-4 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
+                      <TableCell className="py-3.5 text-sm text-slate-600">{evidence.issueIdentifiedBy || "-"}</TableCell>
+                      <TableCell className="py-3.5 text-sm text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
+                      <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{evidence.department?.name || "-"}</TableCell>
                     </TableRow>
                   ))}
                   {evidences.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                        {t("No evidence records found")}
+                      <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
+                        {t("No evidence records found.")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -990,46 +1002,30 @@ export default function EvidencePage() {
               </Table>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-                <span className="text-sm text-slate-500">
-                  {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No evidence")}
+              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  {total > 0
+                    ? t("Showing {start} to {end} of {total}").replace("{start}", String(startItem)).replace("{end}", String(endItem)).replace("{total}", String(total))
+                    : t("No evidence")}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
-                    className="h-8 w-8"
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage((p) => p - 1)}
-                    className="h-8 w-8"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
                     disabled={currentPage >= totalPages}
                     onClick={() => setCurrentPage((p) => p + 1)}
-                    className="h-8 w-8"
                   >
                     <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                    className="h-8 w-8"
-                  >
-                    <ChevronsRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -1097,55 +1093,55 @@ export default function EvidencePage() {
           </div>
 
           {/* Artifacts List */}
-          <div className="bg-white rounded-xl border border-slate-200">
-            <div className="px-4 py-3 border-b border-slate-100">
-              <h3 className="font-semibold text-slate-800">{t("Uploaded Artifacts")}</h3>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
+              <h3 className="text-base font-semibold text-slate-800">{t("Uploaded Artifacts")}</h3>
             </div>
             <div className="divide-y divide-slate-100">
               {artifacts.length === 0 ? (
-                <div className="p-8 text-center text-slate-500">
+                <div className="p-8 text-center text-sm text-slate-500">
                   {t("No artifacts uploaded yet")}
                 </div>
               ) : (
                 artifacts.map((artifact) => (
                   <div
                     key={artifact.id}
-                    className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
+                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/60 transition-colors"
                   >
                     <div className="flex-shrink-0">
                       {getFileIcon(artifact.fileType || "")}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-primary truncate">
+                      <p className="text-sm font-medium text-slate-800 truncate">
                         {artifact.artifactCode} : {artifact.fileName}
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-xs text-slate-500">
                         {t("By")} {artifact.uploadedBy?.fullName || "Unknown"}, {new Date(artifact.uploadedAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-primary"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                         onClick={() => openLinkEvidenceDialog(artifact)}
                         title={t("Link to Evidence")}
                       >
-                        <Link2 className="h-4 w-4" />
+                        <Link2 className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
-                        <Eye className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
+                        <Eye className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
-                        <Download className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
+                        <Download className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-red-500"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                         onClick={() => handleDeleteArtifact(artifact.id)}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
@@ -1409,7 +1405,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1513,7 +1509,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
