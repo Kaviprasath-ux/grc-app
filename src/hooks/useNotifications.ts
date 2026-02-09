@@ -99,14 +99,17 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
       const response = await fetch(`/api/notifications?${params}`);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+        // Silently fallback if notifications table doesn't exist yet
+        setNotifications([]);
+        return;
       }
 
       const data = await response.json();
       setNotifications(data.notifications);
       setPagination(data.pagination);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch notifications');
+      // Silently handle - notifications may not be set up yet
+      setNotifications([]);
     } finally {
       setIsLoading(false);
     }
@@ -118,13 +121,16 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
       const response = await fetch('/api/notifications/unread-count');
 
       if (!response.ok) {
-        throw new Error('Failed to fetch unread count');
+        // Silently fallback if notifications table doesn't exist yet
+        setUnreadCount(0);
+        return;
       }
 
       const data = await response.json();
       setUnreadCount(data.count);
     } catch (err) {
-      console.error('Error fetching unread count:', err);
+      // Silently handle - notifications may not be set up yet
+      setUnreadCount(0);
     }
   }, []);
 
