@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 // GET all users (with optional role and department filters)
 // Note: User model doesn't have auditHeadId or reportingManagerId fields - those filters removed
@@ -168,6 +168,7 @@ export async function POST(request: NextRequest) {
         actorId: createdById,
         newUserId: user.id,
         userName: user.fullName,
+        channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
       });
     }
 

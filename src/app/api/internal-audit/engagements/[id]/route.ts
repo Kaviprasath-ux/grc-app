@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter } from '@/lib/api-auth';
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 // GET /api/internal-audit/engagements/[id] - Get a single engagement
 // Uses audit.fieldwork:view to allow auditees to view engagement details
@@ -128,6 +128,7 @@ export const PUT = withAuth(
           engagementCode: engagement.auditId,
           engagementName: engagement.engagementTitle || engagement.auditId,
           role: 'Auditor',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
       // Notify auditee only if assignment actually changed
@@ -140,6 +141,7 @@ export const PUT = withAuth(
           engagementCode: engagement.auditId,
           engagementName: engagement.engagementTitle || engagement.auditId,
           role: 'Auditee',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

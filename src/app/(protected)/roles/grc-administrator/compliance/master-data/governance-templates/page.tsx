@@ -182,7 +182,7 @@ export default function GovernanceTemplatesPage() {
 
     try {
       const form = new FormData();
-      form.append("file", formData.file);
+      form.append("file", formData.file!);
       form.append("governanceType", formData.governanceType);
 
       const response = await fetch("/api/governance-templates", {

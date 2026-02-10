@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -151,6 +151,7 @@ export const PUT = withAuth(
           assetCode: asset.assetId,
           assetName: asset.name,
           role: 'owner',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
       // Notify new custodian if changed and different from current user
@@ -164,6 +165,7 @@ export const PUT = withAuth(
           assetCode: asset.assetId,
           assetName: asset.name,
           role: 'custodian',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

@@ -343,6 +343,7 @@ class NotificationService {
     evidenceId: string;
     evidenceName: string;
     controlCode?: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -357,6 +358,7 @@ class NotificationService {
       relatedEntityId: params.evidenceId,
       link: `/compliance/evidence/${params.evidenceId}`,
       priority: NOTIFICATION_PRIORITIES.NORMAL,
+      channels: params.channels,
     });
   }
 
@@ -370,6 +372,7 @@ class NotificationService {
     riskId: string;
     riskCode: string;
     riskName: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -381,6 +384,7 @@ class NotificationService {
       relatedEntityType: 'risk',
       relatedEntityId: params.riskId,
       link: `/risk-management/register/${params.riskId}`,
+      channels: params.channels,
     });
   }
 
@@ -394,6 +398,7 @@ class NotificationService {
     controlId: string;
     controlCode: string;
     controlName: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -405,6 +410,7 @@ class NotificationService {
       relatedEntityType: 'control',
       relatedEntityId: params.controlId,
       link: `/compliance/control/${params.controlId}`,
+      channels: params.channels,
     });
   }
 
@@ -419,6 +425,7 @@ class NotificationService {
     assetCode: string;
     assetName: string;
     role: 'owner' | 'custodian';
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -430,6 +437,7 @@ class NotificationService {
       relatedEntityType: 'asset',
       relatedEntityId: params.assetId,
       link: `/asset-management/inventory/${params.assetId}`,
+      channels: params.channels,
     });
   }
 
@@ -443,6 +451,7 @@ class NotificationService {
     capaId: string;
     capaCode: string;
     capaTitle: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -455,6 +464,7 @@ class NotificationService {
       relatedEntityId: params.capaId,
       link: `/internal-audit/capa-tracking/${params.capaId}`,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -469,6 +479,7 @@ class NotificationService {
     engagementCode: string;
     engagementName: string;
     role: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -480,6 +491,7 @@ class NotificationService {
       relatedEntityType: 'engagement',
       relatedEntityId: params.engagementId,
       link: `/internal-audit/fieldwork/${params.engagementId}`,
+      channels: params.channels,
     });
   }
 
@@ -495,6 +507,7 @@ class NotificationService {
     entityName: string;
     commentPreview: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -506,6 +519,7 @@ class NotificationService {
       relatedEntityType: params.entityType,
       relatedEntityId: params.entityId,
       link: params.link,
+      channels: params.channels,
     });
   }
 
@@ -520,6 +534,7 @@ class NotificationService {
     entityId: string;
     entityName: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -532,6 +547,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -546,6 +562,7 @@ class NotificationService {
     entityId: string;
     entityName: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -557,6 +574,7 @@ class NotificationService {
       relatedEntityType: params.entityType,
       relatedEntityId: params.entityId,
       link: params.link,
+      channels: params.channels,
     });
   }
 
@@ -572,6 +590,7 @@ class NotificationService {
     entityName: string;
     reason?: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -586,6 +605,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -601,6 +621,7 @@ class NotificationService {
     entityName: string;
     reason?: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -615,6 +636,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -631,6 +653,7 @@ class NotificationService {
     entityName: string;
     description?: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -645,6 +668,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.NORMAL,
+      channels: params.channels,
     });
   }
 
@@ -660,6 +684,7 @@ class NotificationService {
     requestName: string;
     clarificationComment?: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -674,6 +699,7 @@ class NotificationService {
       relatedEntityId: params.requestId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.NORMAL,
+      channels: params.channels,
     });
   }
 
@@ -689,6 +715,7 @@ class NotificationService {
     entityName: string;
     dueDate: Date;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     const eventMap = {
       evidence: NOTIFICATION_EVENTS.EVIDENCE_DUE_REMINDER,
@@ -707,6 +734,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -718,6 +746,7 @@ class NotificationService {
     actorId: string;
     newUserId: string;
     userName: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -727,6 +756,7 @@ class NotificationService {
       title: 'Welcome to GRC Platform',
       message: `Welcome ${params.userName}! Your account has been created successfully.`,
       link: '/dashboard',
+      channels: params.channels,
     });
   }
 

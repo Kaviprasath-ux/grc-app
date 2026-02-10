@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { notificationService, NOTIFICATION_EVENTS } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 interface SubscriptionPlanInput {
   startDate: string;
@@ -181,6 +181,7 @@ export async function POST(req: NextRequest) {
         relatedEntityType: 'customerAccount',
         relatedEntityId: result.customerAccount.id,
         link: '/dashboard',
+        channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
       });
     }
 

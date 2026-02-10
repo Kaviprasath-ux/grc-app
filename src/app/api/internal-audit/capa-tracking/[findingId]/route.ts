@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ findingId: string }>;
@@ -158,6 +158,7 @@ export const PATCH = withAuth(
             entityId: findingId,
             entityName: updatedFinding.finding || `Finding #${updatedFinding.findingId}`,
             link: `/internal-audit/capa-tracking/${findingId}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
       }
@@ -190,6 +191,7 @@ export const PATCH = withAuth(
               entityId: findingId,
               entityName: updatedFinding.finding || `Finding #${updatedFinding.findingId}`,
               link: `/internal-audit/capa-tracking/${findingId}`,
+              channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
             });
           }
         }

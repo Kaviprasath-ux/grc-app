@@ -794,10 +794,5 @@
   "assets": "assets",
   "lifecycle statuses": "lifecycle statuses",
   "failed": "failed",
-  "category not found": "category not found",
-  "Email Notifications": "Email Notifications",
-  "Enable or disable email notifications": "Enable or disable email notifications",
-  "Email notifications enabled": "Email notifications enabled",
-  "Email notifications disabled": "Email notifications disabled",
-  "Failed to update email notifications setting": "Failed to update email notifications setting"
+  "category not found": "category not found"
 }

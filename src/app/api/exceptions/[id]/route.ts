@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -254,6 +254,7 @@ export const PUT = withAuth(
           entityName: existing.name,
           reason: rejectionReason,
           link: `/compliance/exceptions/${id}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 
@@ -273,6 +274,7 @@ export const PUT = withAuth(
           entityId: id,
           entityName: existing.name,
           link: `/compliance/exceptions/${id}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

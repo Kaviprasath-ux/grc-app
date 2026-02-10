@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string; requestId: string }>;
@@ -139,6 +139,7 @@ export const PATCH = withAuth(
           requestName: updatedRequest.title,
           clarificationComment: body.clarificationComment ? body.clarificationComment.substring(0, 100) : undefined,
           link: `/internal-audit/fieldwork/${engagementId}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 
@@ -153,6 +154,7 @@ export const PATCH = withAuth(
           entityName: updatedRequest.title,
           description: updatedRequest.description ? updatedRequest.description.substring(0, 100) : undefined,
           link: `/internal-audit/fieldwork/${engagementId}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

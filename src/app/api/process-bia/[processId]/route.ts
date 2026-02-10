@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ processId: string }>;
@@ -240,6 +240,7 @@ export const PUT = withAuth(
             entityName: process.name,
             reason: rejectionReason || undefined,
             link: `/organization/process/bia/${process.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
 
@@ -253,6 +254,7 @@ export const PUT = withAuth(
             entityId: process.id,
             entityName: process.name,
             link: `/organization/process/bia/${process.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
 
@@ -267,6 +269,7 @@ export const PUT = withAuth(
             entityName: process.name,
             reason: rejectionReason || undefined,
             link: `/organization/process/bia/${process.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
       }

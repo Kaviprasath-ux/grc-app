@@ -4,7 +4,7 @@ import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/li
 import { aiDeleteService } from "@/services/ai-delete-service";
 import { unlink } from "fs/promises";
 import path from "path";
-import { notificationService, NOTIFICATION_EVENTS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -146,6 +146,7 @@ export const PUT = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
 
@@ -161,6 +162,7 @@ export const PUT = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
       }
@@ -265,6 +267,7 @@ export const PATCH = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
 
@@ -280,6 +283,7 @@ export const PATCH = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
       }

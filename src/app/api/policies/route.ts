@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_EVENTS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all policies with filters
 export const GET = withAuth(
@@ -182,6 +182,7 @@ export const POST = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
 
@@ -197,6 +198,7 @@ export const POST = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
       }

@@ -794,10 +794,5 @@
   "assets": "أصول",
   "lifecycle statuses": "حالات دورة الحياة",
   "failed": "فشل",
-  "category not found": "الفئة غير موجودة",
-  "Email Notifications": "إشعارات البريد الإلكتروني",
-  "Enable or disable email notifications": "تمكين أو تعطيل إشعارات البريد الإلكتروني",
-  "Email notifications enabled": "تم تمكين إشعارات البريد الإلكتروني",
-  "Email notifications disabled": "تم تعطيل إشعارات البريد الإلكتروني",
-  "Failed to update email notifications setting": "فشل تحديث إعداد إشعارات البريد الإلكتروني"
+  "category not found": "الفئة غير موجودة"
 }

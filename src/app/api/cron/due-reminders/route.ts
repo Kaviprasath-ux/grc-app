@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 /**
  * Due Date Reminder Cron Job API
@@ -89,6 +89,7 @@ export async function GET(req: NextRequest) {
             : evidence.name,
           dueDate: evidence.dueDate,
           link: `/compliance/evidence/${evidence.id}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
         counts.evidence++;
       } catch (error) {
@@ -145,6 +146,7 @@ export async function GET(req: NextRequest) {
           entityName: finding.finding || `Finding #${finding.findingId}`,
           dueDate: finding.targetDate,
           link: `/internal-audit/capa-tracking/${finding.id}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
         counts.capa++;
       } catch (error) {
@@ -192,6 +194,7 @@ export async function GET(req: NextRequest) {
           entityName: `${policy.code}: ${policy.name}`,
           dueDate: policy.reviewDate,
           link: `/compliance/governance/${policy.id}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
         counts.review++;
       } catch (error) {

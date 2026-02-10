@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 // GET /api/internal-audit/engagements - Get all audit engagements
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -229,6 +229,7 @@ export const POST = withAuth(
           engagementCode: engagement.auditId,
           engagementName: engagement.engagementTitle || engagement.auditId,
           role: 'Auditor',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 
@@ -242,6 +243,7 @@ export const POST = withAuth(
           engagementCode: engagement.auditId,
           engagementName: engagement.engagementTitle || engagement.auditId,
           role: 'Auditee',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

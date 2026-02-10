@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getDataScopeFilter } from "@/lib/api-auth";
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 // Helper function to calculate risk rating based on score
 // Rating values matching website: Catastrophic, Very high, High, Low Risk
@@ -298,6 +298,7 @@ export const POST = withAuth(
           riskId: risk.id,
           riskCode: risk.riskId,
           riskName: risk.name,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 
