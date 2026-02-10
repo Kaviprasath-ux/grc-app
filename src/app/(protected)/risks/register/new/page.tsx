@@ -123,6 +123,7 @@ export default function NewRiskPage() {
   const [newCauseName, setNewCauseName] = useState("");
   const [newCauseDescription, setNewCauseDescription] = useState("");
   const [creatingCause, setCreatingCause] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   // Form state
   const [formData, setFormData] = useState({
@@ -344,9 +345,38 @@ export default function NewRiskPage() {
   };
 
   const validateStep = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
     switch (currentStep) {
       case 1:
-        return formData.name.trim() !== "";
+        // Validate required fields
+        if (!formData.name.trim()) {
+          errors.name = t("Please enter the Risk Name") || "Please enter the Risk Name";
+        }
+        if (!formData.departmentId) {
+          errors.departmentId = t("Please select the Department") || "Please select the Department";
+        }
+        if (!formData.ownerId) {
+          errors.ownerId = t("Please select the Risk Owner") || "Please select the Risk Owner";
+        }
+        if (!formData.riskSources.trim()) {
+          errors.riskSources = t("Please enter the Risk Sources") || "Please enter the Risk Sources";
+        }
+        if (!formData.categoryId) {
+          errors.categoryId = t("Please Select the Risk Category") || "Please Select the Risk Category";
+        }
+        if (!formData.typeId) {
+          errors.typeId = t("Please Select the Risk Type") || "Please Select the Risk Type";
+        }
+        if (formData.selectedThreats.length === 0) {
+          errors.selectedThreats = t("Please Select the Threat") || "Please Select the Threat";
+        }
+        if (formData.selectedVulnerabilities.length === 0) {
+          errors.selectedVulnerabilities = t("Please Select the Vulnerability") || "Please Select the Vulnerability";
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
       case 2:
         return true;
       default:
@@ -355,9 +385,12 @@ export default function NewRiskPage() {
   };
 
   const handleNext = () => {
-    if (validateStep() && currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
+    if (validateStep()) {
+      if (currentStep < steps.length) {
+        setCurrentStep(currentStep + 1);
+      }
     }
+    // Validation errors are displayed inline next to fields
   };
 
   const handlePrevious = () => {
@@ -561,7 +594,11 @@ export default function NewRiskPage() {
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
                       placeholder={t("enterRiskName")}
+                      className={validationErrors.name ? "border-red-500" : ""}
                     />
+                    {validationErrors.name && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.name}</p>
+                    )}
                   </div>
                 </div>
 
@@ -578,13 +615,13 @@ export default function NewRiskPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="department">{t("department")}</Label>
+                    <Label htmlFor="department">{t("department")} *</Label>
                     <Select
                       value={formData.departmentId}
                       onValueChange={(value) => handleInputChange("departmentId", value)}
                       disabled={isDepartmentRole}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={validationErrors.departmentId ? "border-red-500" : ""}>
                         <SelectValue placeholder={t("selectDepartment")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
@@ -595,15 +632,18 @@ export default function NewRiskPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {validationErrors.departmentId && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.departmentId}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="owner">{t("riskOwner")}</Label>
+                    <Label htmlFor="owner">{t("riskOwner")} *</Label>
                     <Select
                       value={formData.ownerId}
                       onValueChange={(value) => handleInputChange("ownerId", value)}
                       disabled={!formData.departmentId}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={validationErrors.ownerId ? "border-red-500" : ""}>
                         <SelectValue placeholder={formData.departmentId ? t("selectOwner") : t("selectDepartmentFirst")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
@@ -620,27 +660,34 @@ export default function NewRiskPage() {
                         )}
                       </SelectContent>
                     </Select>
+                    {validationErrors.ownerId && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.ownerId}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="riskSources">{t("riskSources")}</Label>
+                    <Label htmlFor="riskSources">{t("riskSources")} *</Label>
                     <Input
                       id="riskSources"
                       value={formData.riskSources}
                       onChange={(e) => handleInputChange("riskSources", e.target.value)}
                       placeholder={t("enterRiskSources")}
+                      className={validationErrors.riskSources ? "border-red-500" : ""}
                     />
+                    {validationErrors.riskSources && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.riskSources}</p>
+                    )}
                   </div>
                   <div>
-                    <Label htmlFor="category">{t("riskCategory")}</Label>
+                    <Label htmlFor="category">{t("riskCategory")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => handleInputChange("categoryId", value)}
                       >
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className={cn("flex-1", validationErrors.categoryId && "border-red-500")}>
                           <SelectValue placeholder={t("selectCategory")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
@@ -655,17 +702,20 @@ export default function NewRiskPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+                    {validationErrors.categoryId && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.categoryId}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="riskType">{t("riskType")}</Label>
+                    <Label htmlFor="riskType">{t("riskType")} *</Label>
                     <Select
                       value={formData.typeId}
                       onValueChange={(value) => handleInputChange("typeId", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={validationErrors.typeId ? "border-red-500" : ""}>
                         <SelectValue placeholder={t("riskType")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
@@ -676,6 +726,9 @@ export default function NewRiskPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {validationErrors.typeId && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.typeId}</p>
+                    )}
                   </div>
                   {riskTypes.find(rt => rt.id === formData.typeId)?.name === "Asset Risk" && (
                     <div>
@@ -734,12 +787,12 @@ export default function NewRiskPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label>{t("potentialThreats")}</Label>
+                    <Label>{t("potentialThreats")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         onValueChange={(value) => addToSelection("selectedThreats", value)}
                       >
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className={cn("flex-1", validationErrors.selectedThreats && "border-red-500")}>
                           <SelectValue placeholder={t("selectThreats")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
@@ -771,16 +824,19 @@ export default function NewRiskPage() {
                         </Badge>
                       ))}
                     </div>
+                    {validationErrors.selectedThreats && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.selectedThreats}</p>
+                    )}
                   </div>
                   <div>
-                    <Label>{t("associatedVulnerabilities")}</Label>
+                    <Label>{t("associatedVulnerabilities")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         onValueChange={(value) =>
                           addToSelection("selectedVulnerabilities", value)
                         }
                       >
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className={cn("flex-1", validationErrors.selectedVulnerabilities && "border-red-500")}>
                           <SelectValue placeholder={t("selectVulnerabilities")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
@@ -812,6 +868,9 @@ export default function NewRiskPage() {
                         </Badge>
                       ))}
                     </div>
+                    {validationErrors.selectedVulnerabilities && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.selectedVulnerabilities}</p>
+                    )}
                   </div>
                 </div>
 
@@ -1034,7 +1093,7 @@ export default function NewRiskPage() {
               {currentStep === 1 ? t("cancel") : t("previous")}
             </Button>
             {currentStep < steps.length ? (
-              <Button onClick={handleNext} disabled={!validateStep()}>
+              <Button onClick={handleNext}>
                 {t("next")}
                 <ChevronRight className="h-4 w-4 ms-1" />
               </Button>

@@ -193,6 +193,20 @@ export default function RiskSettingsCategoryPage() {
   const [riskSubCatForm, setRiskSubCatForm] = useState({ type: "" });
   const [riskRangeForm, setRiskRangeForm] = useState({ title: "", color: "#000000", lowRange: 0, highRange: 0, timelineDays: 0, description: "" });
 
+  // Error states for inline validation
+  const [vulnCatError, setVulnCatError] = useState("");
+  const [threatCatError, setThreatCatError] = useState("");
+  const [controlStrengthError, setControlStrengthError] = useState("");
+  const [likelihoodError, setLikelihoodError] = useState("");
+  const [threatError, setThreatError] = useState("");
+  const [vulnerabilityError, setVulnerabilityError] = useState("");
+  const [riskCategoryError, setRiskCategoryError] = useState("");
+  const [impactCatError, setImpactCatError] = useState("");
+  const [impactRatingError, setImpactRatingError] = useState("");
+  const [vulnRatingError, setVulnRatingError] = useState("");
+  const [riskSubCatError, setRiskSubCatError] = useState("");
+  const [riskRangeError, setRiskRangeError] = useState("");
+
   useEffect(() => {
     fetchData();
   }, [category]);
@@ -265,11 +279,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Vulnerability Category
   const handleAddVulnCat = async () => {
     if (!vulnCatForm.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Name is required"),
-      });
+      setVulnCatError(t("Name is required"));
       return;
     }
     try {
@@ -295,11 +305,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditVulnCat = async () => {
     if (!selectedItem || !vulnCatForm.name.trim()) {
       if (!vulnCatForm.name.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Name is required"),
-        });
+        setVulnCatError(t("Name is required"));
       }
       return;
     }
@@ -337,11 +343,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Threat Category
   const handleAddThreatCat = async () => {
     if (!threatCatForm.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Name is required"),
-      });
+      setThreatCatError(t("Name is required"));
       return;
     }
     try {
@@ -367,11 +369,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditThreatCat = async () => {
     if (!selectedItem || !threatCatForm.name.trim()) {
       if (!threatCatForm.name.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Name is required"),
-        });
+        setThreatCatError(t("Name is required"));
       }
       return;
     }
@@ -409,19 +407,11 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Control Strength
   const handleAddControlStrength = async () => {
     if (!controlStrengthForm.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Name is required"),
-      });
+      setControlStrengthError(t("Name is required"));
       return;
     }
     if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Score is required"),
-      });
+      setControlStrengthError(t("Score is required"));
       return;
     }
     try {
@@ -447,20 +437,12 @@ export default function RiskSettingsCategoryPage() {
   const handleEditControlStrength = async () => {
     if (!selectedItem || !controlStrengthForm.name.trim()) {
       if (!controlStrengthForm.name.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Name is required"),
-        });
+        setControlStrengthError(t("Name is required"));
       }
       return;
     }
     if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Score is required"),
-      });
+      setControlStrengthError(t("Score is required"));
       return;
     }
     try {
@@ -497,27 +479,15 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Likelihood
   const handleAddLikelihood = async () => {
     if (!likelihoodForm.title.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Title is required"),
-      });
+      setLikelihoodError(t("Title is required"));
       return;
     }
     if (!likelihoodForm.timeFrame || !likelihoodForm.timeFrame.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Time Frame is required"),
-      });
+      setLikelihoodError(t("Time Frame is required"));
       return;
     }
     if (!likelihoodForm.probability || !likelihoodForm.probability.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Probability is required"),
-      });
+      setLikelihoodError(t("Probability is required"));
       return;
     }
     try {
@@ -543,28 +513,16 @@ export default function RiskSettingsCategoryPage() {
   const handleEditLikelihood = async () => {
     if (!selectedItem || !likelihoodForm.title.trim()) {
       if (!likelihoodForm.title.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Title is required"),
-        });
+        setLikelihoodError(t("Title is required"));
       }
       return;
     }
     if (!likelihoodForm.timeFrame || !likelihoodForm.timeFrame.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Time Frame is required"),
-      });
+      setLikelihoodError(t("Time Frame is required"));
       return;
     }
     if (!likelihoodForm.probability || !likelihoodForm.probability.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Probability is required"),
-      });
+      setLikelihoodError(t("Probability is required"));
       return;
     }
     try {
@@ -601,11 +559,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Threat
   const handleAddThreat = async () => {
     if (!threatForm.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Name is required"),
-      });
+      setThreatError(t("Name is required"));
       return;
     }
     try {
@@ -631,11 +585,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditThreat = async () => {
     if (!selectedItem || !threatForm.name.trim()) {
       if (!threatForm.name.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Name is required"),
-        });
+        setThreatError(t("Name is required"));
       }
       return;
     }
@@ -673,11 +623,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Vulnerability
   const handleAddVulnerability = async () => {
     if (!vulnerabilityForm.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Name is required"),
-      });
+      setVulnerabilityError(t("Name is required"));
       return;
     }
     try {
@@ -703,11 +649,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditVulnerability = async () => {
     if (!selectedItem || !vulnerabilityForm.name.trim()) {
       if (!vulnerabilityForm.name.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Name is required"),
-        });
+        setVulnerabilityError(t("Name is required"));
       }
       return;
     }
@@ -745,11 +687,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Risk Category
   const handleAddRiskCategory = async () => {
     if (!riskCategoryForm.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Name is required"),
-      });
+      setRiskCategoryError(t("Name is required"));
       return;
     }
     try {
@@ -775,11 +713,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditRiskCategory = async () => {
     if (!selectedItem || !riskCategoryForm.name.trim()) {
       if (!riskCategoryForm.name.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Name is required"),
-        });
+        setRiskCategoryError(t("Name is required"));
       }
       return;
     }
@@ -817,11 +751,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Impact Category
   const handleAddImpactCat = async () => {
     if (!impactCatForm.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Name is required"),
-      });
+      setImpactCatError(t("Name is required"));
       return;
     }
     try {
@@ -847,11 +777,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditImpactCat = async () => {
     if (!selectedItem || !impactCatForm.name.trim()) {
       if (!impactCatForm.name.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Name is required"),
-        });
+        setImpactCatError(t("Name is required"));
       }
       return;
     }
@@ -889,11 +815,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Impact Rating
   const handleAddImpactRating = async () => {
     if (!impactRatingForm.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Name is required"),
-      });
+      setImpactRatingError(t("Name is required"));
       return;
     }
     try {
@@ -919,11 +841,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditImpactRating = async () => {
     if (!selectedItem || !impactRatingForm.name.trim()) {
       if (!impactRatingForm.name.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Name is required"),
-        });
+        setImpactRatingError(t("Name is required"));
       }
       return;
     }
@@ -961,11 +879,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Vulnerability Rating
   const handleAddVulnRating = async () => {
     if (!vulnRatingForm.label.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Label is required"),
-      });
+      setVulnRatingError(t("Label is required"));
       return;
     }
     try {
@@ -991,11 +905,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditVulnRating = async () => {
     if (!selectedItem || !vulnRatingForm.label.trim()) {
       if (!vulnRatingForm.label.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Label is required"),
-        });
+        setVulnRatingError(t("Label is required"));
       }
       return;
     }
@@ -1033,11 +943,7 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Risk Sub Category
   const handleAddRiskSubCat = async () => {
     if (!riskSubCatForm.type.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Type is required"),
-      });
+      setRiskSubCatError(t("Type is required"));
       return;
     }
     try {
@@ -1063,11 +969,7 @@ export default function RiskSettingsCategoryPage() {
   const handleEditRiskSubCat = async () => {
     if (!selectedItem || !riskSubCatForm.type.trim()) {
       if (!riskSubCatForm.type.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Type is required"),
-        });
+        setRiskSubCatError(t("Type is required"));
       }
       return;
     }
@@ -1105,35 +1007,19 @@ export default function RiskSettingsCategoryPage() {
   // CRUD Handlers for Risk Range
   const handleAddRiskRange = async () => {
     if (!riskRangeForm.title.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Title is required"),
-      });
+      setRiskRangeError(t("Title is required"));
       return;
     }
     if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Color is required"),
-      });
+      setRiskRangeError(t("Color is required"));
       return;
     }
     if (riskRangeForm.lowRange === null || riskRangeForm.lowRange === undefined) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Low Range is required"),
-      });
+      setRiskRangeError(t("Low Range is required"));
       return;
     }
     if (riskRangeForm.highRange === null || riskRangeForm.highRange === undefined) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("High Range is required"),
-      });
+      setRiskRangeError(t("High Range is required"));
       return;
     }
     try {
@@ -1159,36 +1045,20 @@ export default function RiskSettingsCategoryPage() {
   const handleEditRiskRange = async () => {
     if (!selectedItem || !riskRangeForm.title.trim()) {
       if (!riskRangeForm.title.trim()) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Title is required"),
-        });
+        setRiskRangeError(t("Title is required"));
       }
       return;
     }
     if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Color is required"),
-      });
+      setRiskRangeError(t("Color is required"));
       return;
     }
     if (riskRangeForm.lowRange === null || riskRangeForm.lowRange === undefined) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Low Range is required"),
-      });
+      setRiskRangeError(t("Low Range is required"));
       return;
     }
     if (riskRangeForm.highRange === null || riskRangeForm.highRange === undefined) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("High Range is required"),
-      });
+      setRiskRangeError(t("High Range is required"));
       return;
     }
     try {
@@ -2065,7 +1935,23 @@ export default function RiskSettingsCategoryPage() {
       )}
 
       {/* Add Dialog */}
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+      <Dialog open={isAddOpen} onOpenChange={(open) => {
+        setIsAddOpen(open);
+        if (!open) {
+          setVulnCatError("");
+          setThreatCatError("");
+          setControlStrengthError("");
+          setLikelihoodError("");
+          setThreatError("");
+          setVulnerabilityError("");
+          setRiskCategoryError("");
+          setImpactCatError("");
+          setImpactRatingError("");
+          setVulnRatingError("");
+          setRiskSubCatError("");
+          setRiskRangeError("");
+        }
+      }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           <DialogHeader className="px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
@@ -2087,52 +1973,126 @@ export default function RiskSettingsCategoryPage() {
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
-                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} placeholder={t("Enter vulnerability category")} className="bg-white" />
+                <Input
+                  value={vulnCatForm.name}
+                  onChange={(e) => {
+                    setVulnCatForm({ name: e.target.value });
+                    setVulnCatError("");
+                  }}
+                  placeholder={t("Enter vulnerability category")}
+                  className={vulnCatError ? "bg-white border-red-500" : "bg-white"}
+                />
+                {vulnCatError && <p className="text-sm text-red-500 mt-1">{vulnCatError}</p>}
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
-                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} placeholder={t("Enter threat category")} className="bg-white" />
+                <Input
+                  value={threatCatForm.name}
+                  onChange={(e) => {
+                    setThreatCatForm({ name: e.target.value });
+                    setThreatCatError("");
+                  }}
+                  placeholder={t("Enter threat category")}
+                  className={threatCatError ? "bg-white border-red-500" : "bg-white"}
+                />
+                {threatCatError && <p className="text-sm text-red-500 mt-1">{threatCatError}</p>}
               </div>
             )}
             {category === "control-strength" && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} placeholder={t("Enter name")} className="bg-white" />
+                  <Input
+                    value={controlStrengthForm.name}
+                    onChange={(e) => {
+                      setControlStrengthForm({ ...controlStrengthForm, name: e.target.value });
+                      setControlStrengthError("");
+                    }}
+                    placeholder={t("Enter name")}
+                    className={controlStrengthError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
-                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} placeholder={t("Enter score")} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={controlStrengthForm.score}
+                    onChange={(e) => {
+                      setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 });
+                      setControlStrengthError("");
+                    }}
+                    placeholder={t("Enter score")}
+                    className={controlStrengthError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
+                {controlStrengthError && <p className="text-sm text-red-500 mt-1">{controlStrengthError}</p>}
               </>
             )}
             {category === "likelihood" && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
-                  <Input value={likelihoodForm.title} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, title: e.target.value })} className="bg-white" />
+                  <Input
+                    value={likelihoodForm.title}
+                    onChange={(e) => {
+                      setLikelihoodForm({ ...likelihoodForm, title: e.target.value });
+                      setLikelihoodError("");
+                    }}
+                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
-                  <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={likelihoodForm.score}
+                    onChange={(e) => {
+                      setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 });
+                      setLikelihoodError("");
+                    }}
+                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Time Frame")} <span className="text-red-500">*</span></Label>
-                  <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} className="bg-white" />
+                  <Input
+                    value={likelihoodForm.timeFrame}
+                    onChange={(e) => {
+                      setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value });
+                      setLikelihoodError("");
+                    }}
+                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Probability")} <span className="text-red-500">*</span></Label>
-                  <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} className="bg-white" />
+                  <Input
+                    value={likelihoodForm.probability}
+                    onChange={(e) => {
+                      setLikelihoodForm({ ...likelihoodForm, probability: e.target.value });
+                      setLikelihoodError("");
+                    }}
+                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
+                {likelihoodError && <p className="text-sm text-red-500 mt-1">{likelihoodError}</p>}
               </>
             )}
             {category === "threat" && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                  <Input value={threatForm.name} onChange={(e) => setThreatForm({ ...threatForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={threatForm.name}
+                    onChange={(e) => {
+                      setThreatForm({ ...threatForm, name: e.target.value });
+                      setThreatError("");
+                    }}
+                    className={threatError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {threatError && <p className="text-sm text-red-500 mt-1">{threatError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2182,22 +2142,54 @@ export default function RiskSettingsCategoryPage() {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
-                  <Input value={riskRangeForm.title} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, title: e.target.value })} className="bg-white" />
+                  <Input
+                    value={riskRangeForm.title}
+                    onChange={(e) => {
+                      setRiskRangeForm({ ...riskRangeForm, title: e.target.value });
+                      setRiskRangeError("");
+                    }}
+                    className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Color")} <span className="text-red-500">*</span></Label>
-                  <Input type="color" value={riskRangeForm.color} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, color: e.target.value })} className="bg-white h-10" />
+                  <Input
+                    type="color"
+                    value={riskRangeForm.color}
+                    onChange={(e) => {
+                      setRiskRangeForm({ ...riskRangeForm, color: e.target.value });
+                      setRiskRangeError("");
+                    }}
+                    className={riskRangeError ? "bg-white h-10 border-red-500" : "bg-white h-10"}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Low Range")} <span className="text-red-500">*</span></Label>
-                    <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} className="bg-white" />
+                    <Input
+                      type="number"
+                      value={riskRangeForm.lowRange}
+                      onChange={(e) => {
+                        setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 });
+                        setRiskRangeError("");
+                      }}
+                      className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("High Range")} <span className="text-red-500">*</span></Label>
-                    <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} className="bg-white" />
+                    <Input
+                      type="number"
+                      value={riskRangeForm.highRange}
+                      onChange={(e) => {
+                        setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 });
+                        setRiskRangeError("");
+                      }}
+                      className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                    />
                   </div>
                 </div>
+                {riskRangeError && <p className="text-sm text-red-500 mt-1">{riskRangeError}</p>}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Timeline Days")}</Label>
                   <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} className="bg-white" />
@@ -2212,7 +2204,15 @@ export default function RiskSettingsCategoryPage() {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Type")} <span className="text-red-500">*</span></Label>
-                  <Input value={riskCategoryForm.name} onChange={(e) => setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={riskCategoryForm.name}
+                    onChange={(e) => {
+                      setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value });
+                      setRiskCategoryError("");
+                    }}
+                    className={riskCategoryError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {riskCategoryError && <p className="text-sm text-red-500 mt-1">{riskCategoryError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
@@ -2231,14 +2231,30 @@ export default function RiskSettingsCategoryPage() {
             {category === "impact" && activeTab === "tab1" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                <Input value={impactCatForm.name} onChange={(e) => setImpactCatForm({ name: e.target.value })} className="bg-white" />
+                <Input
+                  value={impactCatForm.name}
+                  onChange={(e) => {
+                    setImpactCatForm({ name: e.target.value });
+                    setImpactCatError("");
+                  }}
+                  className={impactCatError ? "bg-white border-red-500" : "bg-white"}
+                />
+                {impactCatError && <p className="text-sm text-red-500 mt-1">{impactCatError}</p>}
               </div>
             )}
             {category === "impact" && activeTab === "tab2" && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                  <Input value={impactRatingForm.name} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={impactRatingForm.name}
+                    onChange={(e) => {
+                      setImpactRatingForm({ ...impactRatingForm, name: e.target.value });
+                      setImpactRatingError("");
+                    }}
+                    className={impactRatingError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {impactRatingError && <p className="text-sm text-red-500 mt-1">{impactRatingError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
@@ -2254,7 +2270,15 @@ export default function RiskSettingsCategoryPage() {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
-                  <Input value={vulnRatingForm.label} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, label: e.target.value })} className="bg-white" />
+                  <Input
+                    value={vulnRatingForm.label}
+                    onChange={(e) => {
+                      setVulnRatingForm({ ...vulnRatingForm, label: e.target.value });
+                      setVulnRatingError("");
+                    }}
+                    className={vulnRatingError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {vulnRatingError && <p className="text-sm text-red-500 mt-1">{vulnRatingError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
@@ -2265,7 +2289,15 @@ export default function RiskSettingsCategoryPage() {
             {category === "risk-sub-category" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Type")} <span className="text-red-500">*</span></Label>
-                <Input value={riskSubCatForm.type} onChange={(e) => setRiskSubCatForm({ type: e.target.value })} className="bg-white" />
+                <Input
+                  value={riskSubCatForm.type}
+                  onChange={(e) => {
+                    setRiskSubCatForm({ type: e.target.value });
+                    setRiskSubCatError("");
+                  }}
+                  className={riskSubCatError ? "bg-white border-red-500" : "bg-white"}
+                />
+                {riskSubCatError && <p className="text-sm text-red-500 mt-1">{riskSubCatError}</p>}
               </div>
             )}
           </div>
@@ -2290,7 +2322,23 @@ export default function RiskSettingsCategoryPage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen} onOpenChange={(open) => {
+        setIsEditOpen(open);
+        if (!open) {
+          setVulnCatError("");
+          setThreatCatError("");
+          setControlStrengthError("");
+          setLikelihoodError("");
+          setThreatError("");
+          setVulnerabilityError("");
+          setRiskCategoryError("");
+          setImpactCatError("");
+          setImpactRatingError("");
+          setVulnRatingError("");
+          setRiskSubCatError("");
+          setRiskRangeError("");
+        }
+      }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           <DialogHeader className="px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
@@ -2312,52 +2360,122 @@ export default function RiskSettingsCategoryPage() {
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
-                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} className="bg-white" />
+                <Input
+                  value={vulnCatForm.name}
+                  onChange={(e) => {
+                    setVulnCatForm({ name: e.target.value });
+                    setVulnCatError("");
+                  }}
+                  className={vulnCatError ? "bg-white border-red-500" : "bg-white"}
+                />
+                {vulnCatError && <p className="text-sm text-red-500 mt-1">{vulnCatError}</p>}
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
-                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} className="bg-white" />
+                <Input
+                  value={threatCatForm.name}
+                  onChange={(e) => {
+                    setThreatCatForm({ name: e.target.value });
+                    setThreatCatError("");
+                  }}
+                  className={threatCatError ? "bg-white border-red-500" : "bg-white"}
+                />
+                {threatCatError && <p className="text-sm text-red-500 mt-1">{threatCatError}</p>}
               </div>
             )}
             {category === "control-strength" && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={controlStrengthForm.name}
+                    onChange={(e) => {
+                      setControlStrengthForm({ ...controlStrengthForm, name: e.target.value });
+                      setControlStrengthError("");
+                    }}
+                    className={controlStrengthError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
-                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={controlStrengthForm.score}
+                    onChange={(e) => {
+                      setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 });
+                      setControlStrengthError("");
+                    }}
+                    className={controlStrengthError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
+                {controlStrengthError && <p className="text-sm text-red-500 mt-1">{controlStrengthError}</p>}
               </>
             )}
             {category === "likelihood" && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
-                  <Input value={likelihoodForm.title} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, title: e.target.value })} className="bg-white" />
+                  <Input
+                    value={likelihoodForm.title}
+                    onChange={(e) => {
+                      setLikelihoodForm({ ...likelihoodForm, title: e.target.value });
+                      setLikelihoodError("");
+                    }}
+                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
-                  <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={likelihoodForm.score}
+                    onChange={(e) => {
+                      setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 });
+                      setLikelihoodError("");
+                    }}
+                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Time Frame")} <span className="text-red-500">*</span></Label>
-                  <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} className="bg-white" />
+                  <Input
+                    value={likelihoodForm.timeFrame}
+                    onChange={(e) => {
+                      setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value });
+                      setLikelihoodError("");
+                    }}
+                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Probability")} <span className="text-red-500">*</span></Label>
-                  <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} className="bg-white" />
+                  <Input
+                    value={likelihoodForm.probability}
+                    onChange={(e) => {
+                      setLikelihoodForm({ ...likelihoodForm, probability: e.target.value });
+                      setLikelihoodError("");
+                    }}
+                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
+                {likelihoodError && <p className="text-sm text-red-500 mt-1">{likelihoodError}</p>}
               </>
             )}
             {category === "threat" && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                  <Input value={threatForm.name} onChange={(e) => setThreatForm({ ...threatForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={threatForm.name}
+                    onChange={(e) => {
+                      setThreatForm({ ...threatForm, name: e.target.value });
+                      setThreatError("");
+                    }}
+                    className={threatError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {threatError && <p className="text-sm text-red-500 mt-1">{threatError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2382,7 +2500,15 @@ export default function RiskSettingsCategoryPage() {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                  <Input value={vulnerabilityForm.name} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={vulnerabilityForm.name}
+                    onChange={(e) => {
+                      setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value });
+                      setVulnerabilityError("");
+                    }}
+                    className={vulnerabilityError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {vulnerabilityError && <p className="text-sm text-red-500 mt-1">{vulnerabilityError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2407,22 +2533,54 @@ export default function RiskSettingsCategoryPage() {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
-                  <Input value={riskRangeForm.title} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, title: e.target.value })} className="bg-white" />
+                  <Input
+                    value={riskRangeForm.title}
+                    onChange={(e) => {
+                      setRiskRangeForm({ ...riskRangeForm, title: e.target.value });
+                      setRiskRangeError("");
+                    }}
+                    className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Color")} <span className="text-red-500">*</span></Label>
-                  <Input type="color" value={riskRangeForm.color} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, color: e.target.value })} className="bg-white h-10" />
+                  <Input
+                    type="color"
+                    value={riskRangeForm.color}
+                    onChange={(e) => {
+                      setRiskRangeForm({ ...riskRangeForm, color: e.target.value });
+                      setRiskRangeError("");
+                    }}
+                    className={riskRangeError ? "bg-white h-10 border-red-500" : "bg-white h-10"}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Low Range")} <span className="text-red-500">*</span></Label>
-                    <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} className="bg-white" />
+                    <Input
+                      type="number"
+                      value={riskRangeForm.lowRange}
+                      onChange={(e) => {
+                        setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 });
+                        setRiskRangeError("");
+                      }}
+                      className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("High Range")} <span className="text-red-500">*</span></Label>
-                    <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} className="bg-white" />
+                    <Input
+                      type="number"
+                      value={riskRangeForm.highRange}
+                      onChange={(e) => {
+                        setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 });
+                        setRiskRangeError("");
+                      }}
+                      className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                    />
                   </div>
                 </div>
+                {riskRangeError && <p className="text-sm text-red-500 mt-1">{riskRangeError}</p>}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Timeline Days")}</Label>
                   <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} className="bg-white" />
@@ -2437,7 +2595,15 @@ export default function RiskSettingsCategoryPage() {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Type")} <span className="text-red-500">*</span></Label>
-                  <Input value={riskCategoryForm.name} onChange={(e) => setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={riskCategoryForm.name}
+                    onChange={(e) => {
+                      setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value });
+                      setRiskCategoryError("");
+                    }}
+                    className={riskCategoryError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {riskCategoryError && <p className="text-sm text-red-500 mt-1">{riskCategoryError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
@@ -2456,14 +2622,30 @@ export default function RiskSettingsCategoryPage() {
             {category === "impact" && activeTab === "tab1" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                <Input value={impactCatForm.name} onChange={(e) => setImpactCatForm({ name: e.target.value })} className="bg-white" />
+                <Input
+                  value={impactCatForm.name}
+                  onChange={(e) => {
+                    setImpactCatForm({ name: e.target.value });
+                    setImpactCatError("");
+                  }}
+                  className={impactCatError ? "bg-white border-red-500" : "bg-white"}
+                />
+                {impactCatError && <p className="text-sm text-red-500 mt-1">{impactCatError}</p>}
               </div>
             )}
             {category === "impact" && activeTab === "tab2" && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                  <Input value={impactRatingForm.name} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={impactRatingForm.name}
+                    onChange={(e) => {
+                      setImpactRatingForm({ ...impactRatingForm, name: e.target.value });
+                      setImpactRatingError("");
+                    }}
+                    className={impactRatingError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {impactRatingError && <p className="text-sm text-red-500 mt-1">{impactRatingError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
@@ -2479,7 +2661,15 @@ export default function RiskSettingsCategoryPage() {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
-                  <Input value={vulnRatingForm.label} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, label: e.target.value })} className="bg-white" />
+                  <Input
+                    value={vulnRatingForm.label}
+                    onChange={(e) => {
+                      setVulnRatingForm({ ...vulnRatingForm, label: e.target.value });
+                      setVulnRatingError("");
+                    }}
+                    className={vulnRatingError ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {vulnRatingError && <p className="text-sm text-red-500 mt-1">{vulnRatingError}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
@@ -2490,7 +2680,15 @@ export default function RiskSettingsCategoryPage() {
             {category === "risk-sub-category" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Type")} <span className="text-red-500">*</span></Label>
-                <Input value={riskSubCatForm.type} onChange={(e) => setRiskSubCatForm({ type: e.target.value })} className="bg-white" />
+                <Input
+                  value={riskSubCatForm.type}
+                  onChange={(e) => {
+                    setRiskSubCatForm({ type: e.target.value });
+                    setRiskSubCatError("");
+                  }}
+                  className={riskSubCatError ? "bg-white border-red-500" : "bg-white"}
+                />
+                {riskSubCatError && <p className="text-sm text-red-500 mt-1">{riskSubCatError}</p>}
               </div>
             )}
           </div>

@@ -91,6 +91,9 @@ export default function NewProcessPage() {
   const [newNature, setNewNature] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [dialogSaving, setDialogSaving] = useState(false);
+  const [frequencyError, setFrequencyError] = useState("");
+  const [natureError, setNatureError] = useState("");
+  const [locationError, setLocationError] = useState("");
 
   const TOTAL_STEPS = 3;
 
@@ -238,7 +241,7 @@ export default function NewProcessPage() {
 
   const handleAddFrequency = async () => {
     if (!newFrequency.trim()) {
-      toast({ title: t("Error"), description: t("Please enter a frequency name"), variant: "destructive" });
+      setFrequencyError(t("Please enter a frequency name"));
       return;
     }
 
@@ -271,7 +274,7 @@ export default function NewProcessPage() {
 
   const handleAddNature = async () => {
     if (!newNature.trim()) {
-      toast({ title: t("Error"), description: t("Please enter a nature of implementation"), variant: "destructive" });
+      setNatureError(t("Please enter a nature of implementation"));
       return;
     }
 
@@ -304,7 +307,7 @@ export default function NewProcessPage() {
 
   const handleAddLocation = async () => {
     if (!newLocation.trim()) {
-      toast({ title: t("Error"), description: t("Please enter a location name"), variant: "destructive" });
+      setLocationError(t("Please enter a location name"));
       return;
     }
 
@@ -936,10 +939,14 @@ export default function NewProcessPage() {
               <Input
                 id="frequencyName"
                 value={newFrequency}
-                onChange={(e) => setNewFrequency(e.target.value)}
+                onChange={(e) => {
+                  setNewFrequency(e.target.value);
+                  setFrequencyError("");
+                }}
                 placeholder={t("e.g., Daily, Weekly, Monthly, Quarterly")}
-                className="mt-2"
+                className={`mt-2 ${frequencyError ? "border-red-500" : ""}`}
               />
+              {frequencyError && <p className="text-sm text-red-500 mt-1">{frequencyError}</p>}
             </div>
           </div>
           <DialogFooter>
@@ -965,10 +972,14 @@ export default function NewProcessPage() {
               <Input
                 id="nature"
                 value={newNature}
-                onChange={(e) => setNewNature(e.target.value)}
+                onChange={(e) => {
+                  setNewNature(e.target.value);
+                  setNatureError("");
+                }}
                 placeholder={t("e.g., Manual, Automated, Manual + Automated")}
-                className="mt-2"
+                className={`mt-2 ${natureError ? "border-red-500" : ""}`}
               />
+              {natureError && <p className="text-sm text-red-500 mt-1">{natureError}</p>}
             </div>
           </div>
           <DialogFooter>
@@ -994,10 +1005,14 @@ export default function NewProcessPage() {
               <Input
                 id="locationName"
                 value={newLocation}
-                onChange={(e) => setNewLocation(e.target.value)}
+                onChange={(e) => {
+                  setNewLocation(e.target.value);
+                  setLocationError("");
+                }}
                 placeholder={t("e.g., Head Office, Branch A, Remote")}
-                className="mt-2"
+                className={`mt-2 ${locationError ? "border-red-500" : ""}`}
               />
+              {locationError && <p className="text-sm text-red-500 mt-1">{locationError}</p>}
             </div>
           </div>
           <DialogFooter>

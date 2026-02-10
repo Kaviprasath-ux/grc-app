@@ -315,6 +315,20 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const findingAttachmentInputRef = useRef<HTMLInputElement>(null);
   const [newEvidence, setNewEvidence] = useState({ title: "", description: "", auditee: "", auditeeId: "", numberOfSamples: "" });
 
+  // Validation error states
+  const [uploadFilesError, setUploadFilesError] = useState("");
+  const [aiWorkpaperTaskError, setAiWorkpaperTaskError] = useState("");
+  const [generatedWorkpapersError, setGeneratedWorkpapersError] = useState("");
+  const [findingTitleError, setFindingTitleError] = useState("");
+  const [fullFindingTitleError, setFullFindingTitleError] = useState("");
+  const [newDocumentTitleError, setNewDocumentTitleError] = useState("");
+  const [newDocumentFileError, setNewDocumentFileError] = useState("");
+  const [editDocumentTitleError, setEditDocumentTitleError] = useState("");
+  const [editEvidenceTitleError, setEditEvidenceTitleError] = useState("");
+  const [attachmentFileError, setAttachmentFileError] = useState("");
+  const [aiReviewSelectionError, setAiReviewSelectionError] = useState("");
+  const [newEvidenceTitleError, setNewEvidenceTitleError] = useState("");
+
   useEffect(() => {
     if (open && engagementId) {
       setLoading(true);
@@ -437,11 +451,17 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   // File upload handlers
   const handleFileDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); addFiles(Array.from(e.dataTransfer.files)); };
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => { const files = e.target.files ? Array.from(e.target.files) : []; addFiles(files); e.target.value = ""; };
-  const addFiles = (files: File[]) => { for (const file of files) { setUploadedFiles((prev) => [...prev, { id: Date.now().toString() + Math.random().toString(36).substr(2, 9), name: file.name, size: file.size, type: file.type, file }]); } };
+  const addFiles = (files: File[]) => {
+    setUploadFilesError("");
+    setNewDocumentFileError("");
+    setAttachmentFileError("");
+    for (const file of files) { setUploadedFiles((prev) => [...prev, { id: Date.now().toString() + Math.random().toString(36).substr(2, 9), name: file.name, size: file.size, type: file.type, file }]); }
+  };
   const removeFile = (fileId: string) => { setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId)); };
 
   const handleUploadFiles = async () => {
-    if (uploadedFiles.length === 0) { toast.error(t("Please select files to upload")); return; }
+    if (uploadedFiles.length === 0) { setUploadFilesError(t("Please select files to upload")); return; }
+    setUploadFilesError("");
     setUploading(true);
     try {
       const formData = new FormData();
@@ -473,7 +493,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleUpdateAIWorkpaper = async () => {
     if (!selectedAIWorkpaper) return;
-    if (!editAIWorkpaper.task.trim()) { toast.error(t("Task is required")); return; }
+    if (!editAIWorkpaper.task.trim()) { setAiWorkpaperTaskError(t("Task is required")); return; }
+    setAiWorkpaperTaskError("");
     setSavingAIWorkpaper(true);
     try {
       const serializeField = (field: string) => { const lines = field.split('\n').map(line => line.trim()).filter(line => line.length > 0); return JSON.stringify(lines); };
@@ -503,10 +524,14 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     } catch (error) { console.error("Error generating AI workpapers:", error); toast.error(t("Failed to generate AI workpapers")); } finally { setGeneratingWorkpapers(false); }
   };
 
-  const handleToggleGeneratedSelection = (id: string) => { setSelectedGeneratedIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]); };
+  const handleToggleGeneratedSelection = (id: string) => {
+    setGeneratedWorkpapersError("");
+    setSelectedGeneratedIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+  };
 
   const handleAddSelectedWorkpapers = async () => {
-    if (selectedGeneratedIds.length === 0) { toast.error(t("Please select at least one workpaper")); return; }
+    if (selectedGeneratedIds.length === 0) { setGeneratedWorkpapersError(t("Please select at least one workpaper")); return; }
+    setGeneratedWorkpapersError("");
     setAddingGeneratedWorkpapers(true);
     try {
       const selectedWorkpapers = generatedWorkpapers.filter((wp) => selectedGeneratedIds.includes(wp.id));
@@ -517,7 +542,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   };
 
   const handleAddFinding = async () => {
-    if (!newFinding.title.trim()) { toast.error(t("Finding title is required")); return; }
+    if (!newFinding.title.trim()) { setFindingTitleError(t("Finding title is required")); return; }
+    setFindingTitleError("");
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newFinding, status: "Open" }) });
       if (response.ok) { toast.success(t("Finding added successfully")); setAddFindingDialogOpen(false); setNewFinding({ title: "", description: "", severity: "Medium", recommendation: "" }); fetchFindings(); }
@@ -526,7 +552,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   };
 
   const handleAddFullFinding = async () => {
-    if (!fullFinding.findingTitle.trim()) { toast.error(t("Finding title is required")); return; }
+    if (!fullFinding.findingTitle.trim()) { setFullFindingTitleError(t("Finding title is required")); return; }
+    setFullFindingTitleError("");
     setSavingFullFinding(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: fullFinding.findingTitle, severity: fullFinding.severity || "Medium", criteria: fullFinding.criteria || null, condition: fullFinding.condition || null, cause: fullFinding.cause || null, effect: fullFinding.effect || null, recommendation: fullFinding.recommendation || null, responsiblePersonId: fullFinding.responsiblePersonId || null, status: fullFinding.status || "Open", targetDate: fullFinding.targetClosureDate || null }) });
@@ -553,8 +580,10 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   };
 
   const handleUploadDocument = async () => {
-    if (!newDocument.title.trim()) { toast.error(t("Document title is required")); return; }
-    if (uploadedFiles.length === 0) { toast.error(t("Please select a file to upload")); return; }
+    if (!newDocument.title.trim()) { setNewDocumentTitleError(t("Document title is required")); return; }
+    if (uploadedFiles.length === 0) { setNewDocumentFileError(t("Please select a file to upload")); return; }
+    setNewDocumentTitleError("");
+    setNewDocumentFileError("");
     setUploading(true);
     try {
       const formData = new FormData();
@@ -592,7 +621,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleUpdateDocument = async () => {
     if (!selectedDocument) return;
-    if (!editDocument.title.trim()) { toast.error(t("Document title is required")); return; }
+    if (!editDocument.title.trim()) { setEditDocumentTitleError(t("Document title is required")); return; }
+    setEditDocumentTitleError("");
     setSavingDocument(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/other-documents/${selectedDocument.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: editDocument.title, documentType: editDocument.documentType, description: editDocument.description }) });
@@ -607,7 +637,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleUpdateEvidence = async () => {
     if (!selectedEvidence) return;
-    if (!editEvidence.title.trim()) { toast.error(t("Title is required")); return; }
+    if (!editEvidence.title.trim()) { setEditEvidenceTitleError(t("Title is required")); return; }
+    setEditEvidenceTitleError("");
     setSavingEvidence(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${selectedEvidence.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: editEvidence.title, description: editEvidence.description, auditee: editEvidence.auditee, auditeeId: editEvidence.auditeeId || null, status: editEvidence.status, numberOfSamples: editEvidence.numberOfSamples || null }) });
@@ -630,7 +661,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleUploadAttachment = async () => {
     if (!evidenceForAttachment) return;
-    if (uploadedFiles.length === 0) { toast.error(t("Please select a file to upload")); return; }
+    if (uploadedFiles.length === 0) { setAttachmentFileError(t("Please select a file to upload")); return; }
+    setAttachmentFileError("");
     setUploadingAttachment(true);
     try {
       const formData = new FormData();
@@ -677,11 +709,18 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     } catch (error) { console.error("Error sending response:", error); toast.error(t("Failed to send response")); } finally { setSendingResponse(false); }
   };
 
-  const handleSelectEvidence = (id: string, checked: boolean) => { if (checked) setSelectedEvidenceIds([...selectedEvidenceIds, id]); else setSelectedEvidenceIds(selectedEvidenceIds.filter((eid) => eid !== id)); };
-  const handleSelectAllEvidence = (checked: boolean) => { if (checked) setSelectedEvidenceIds(filteredEvidenceRequests.map((er) => er.id)); else setSelectedEvidenceIds([]); };
+  const handleSelectEvidence = (id: string, checked: boolean) => {
+    setAiReviewSelectionError("");
+    if (checked) setSelectedEvidenceIds([...selectedEvidenceIds, id]); else setSelectedEvidenceIds(selectedEvidenceIds.filter((eid) => eid !== id));
+  };
+  const handleSelectAllEvidence = (checked: boolean) => {
+    setAiReviewSelectionError("");
+    if (checked) setSelectedEvidenceIds(filteredEvidenceRequests.map((er) => er.id)); else setSelectedEvidenceIds([]);
+  };
 
   const handleAIReview = async () => {
-    if (selectedEvidenceIds.length === 0) { toast.error(t("Please select at least one evidence request")); return; }
+    if (selectedEvidenceIds.length === 0) { setAiReviewSelectionError(t("Please select at least one evidence request")); return; }
+    setAiReviewSelectionError("");
     setGeneratingAIReview(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/ai-review`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ evidenceRequestIds: selectedEvidenceIds }) });
@@ -736,7 +775,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   };
 
   const handleAddEvidence = async () => {
-    if (!newEvidence.title.trim()) { toast.error(t("Evidence title is required")); return; }
+    if (!newEvidence.title.trim()) { setNewEvidenceTitleError(t("Evidence title is required")); return; }
+    setNewEvidenceTitleError("");
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: newEvidence.title, description: newEvidence.description, auditee: newEvidence.auditee, auditeeId: newEvidence.auditeeId || null, numberOfSamples: newEvidence.numberOfSamples || null, status: "Pending" }) });
       if (response.ok) { toast.success(t("Evidence request added successfully")); setAddEvidenceDialogOpen(false); setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", numberOfSamples: "" }); fetchEvidenceRequests(); }
@@ -1050,6 +1090,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                               {generatingAIReview ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Generating...")}</>) : (<><MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("AI Review")} ({selectedEvidenceIds.length})</>)}
                             </Button>
                           )}
+                          {!isAuditeeOnly && isAuditHead && selectedEvidenceIds.length === 0 && (
+                            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 ltr:ml-3 rtl:mr-3" onClick={handleAIReview} disabled={generatingAIReview || isReadOnly}>
+                              {generatingAIReview ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Generating...")}</>) : (<><MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("AI Review")}</>)}
+                            </Button>
+                          )}
                         </div>
                         {!isAuditeeOnly && isAuditHead && (
                           <Button size="sm" onClick={() => setAddEvidenceDialogOpen(true)} disabled={isReadOnly}>
@@ -1057,6 +1102,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                           </Button>
                         )}
                       </div>
+                      {aiReviewSelectionError && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                          <p className="text-sm text-red-600">{aiReviewSelectionError}</p>
+                        </div>
+                      )}
                       {isAuditeeOnly ? (
                         filteredEvidenceRequests.length > 0 ? (
                           <div className="space-y-4">
@@ -1273,10 +1323,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Upload")} {uploadCategory === "workpapers" ? t("Workpaper") : t("Document")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}>
+            <div className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadFilesError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}>
               <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" /><p className="text-slate-600">{t("Drag and drop files here, or click to browse")}</p><p className="text-sm text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
               <input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
             </div>
+            {uploadFilesError && <p className="text-sm text-red-500 mt-1">{uploadFilesError}</p>}
             {uploadedFiles.length > 0 && (<div className="space-y-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium">{file.name}</span><span className="text-xs text-slate-400 ml-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="sm" onClick={() => removeFile(file.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50"><X className="h-4 w-4" /></Button></div>))}</div>)}
           </div>
           <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
@@ -1291,7 +1342,13 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Finding")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Title")} <span className="text-red-500">*</span></Label><Input value={newFinding.title} onChange={(e) => setNewFinding({ ...newFinding, title: e.target.value })} placeholder={t("Enter finding title")} /></div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")} <span className="text-red-500">*</span></Label>
+              <div>
+                <Input value={newFinding.title} onChange={(e) => { setNewFinding({ ...newFinding, title: e.target.value }); setFindingTitleError(""); }} placeholder={t("Enter finding title")} className={findingTitleError ? "border-red-500" : ""} />
+                {findingTitleError && <p className="text-sm text-red-500 mt-1">{findingTitleError}</p>}
+              </div>
+            </div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Description")}</Label><Textarea value={newFinding.description} onChange={(e) => setNewFinding({ ...newFinding, description: e.target.value })} placeholder={t("Enter description")} rows={3} /></div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Severity")}</Label><Select value={newFinding.severity} onValueChange={(value) => setNewFinding({ ...newFinding, severity: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Low">{t("Low")}</SelectItem><SelectItem value="Medium">{t("Medium")}</SelectItem><SelectItem value="High">{t("High")}</SelectItem><SelectItem value="Critical">{t("Critical")}</SelectItem></SelectContent></Select></div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Recommendation")}</Label><Textarea value={newFinding.recommendation} onChange={(e) => setNewFinding({ ...newFinding, recommendation: e.target.value })} placeholder={t("Enter recommendation")} rows={3} /></div>
@@ -1327,10 +1384,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                   </Label>
                   <Input
                     value={fullFinding.findingTitle}
-                    onChange={(e) => setFullFinding({ ...fullFinding, findingTitle: e.target.value })}
+                    onChange={(e) => { setFullFinding({ ...fullFinding, findingTitle: e.target.value }); setFullFindingTitleError(""); }}
                     placeholder={t("Enter a descriptive title for this finding")}
-                    className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200"
+                    className={`w-full bg-white focus:border-primary-500 focus:ring-primary-200 ${fullFindingTitleError ? "border-red-500" : "border-slate-300"}`}
                   />
+                  {fullFindingTitleError && <p className="text-sm text-red-500 mt-1">{fullFindingTitleError}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -1599,12 +1657,18 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Evidence Request")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Title")} <span className="text-red-500">*</span></Label><Input value={newEvidence.title} onChange={(e) => setNewEvidence({ ...newEvidence, title: e.target.value })} placeholder={t("Enter evidence request title")} /></div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")} <span className="text-red-500">*</span></Label>
+              <div>
+                <Input value={newEvidence.title} onChange={(e) => { setNewEvidence({ ...newEvidence, title: e.target.value }); setNewEvidenceTitleError(""); }} placeholder={t("Enter evidence request title")} className={newEvidenceTitleError ? "border-red-500" : ""} />
+                {newEvidenceTitleError && <p className="text-sm text-red-500 mt-1">{newEvidenceTitleError}</p>}
+              </div>
+            </div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Description")}</Label><Textarea value={newEvidence.description} onChange={(e) => setNewEvidence({ ...newEvidence, description: e.target.value })} placeholder={t("Enter description")} rows={3} /></div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Auditee")} <span className="text-red-500">*</span></Label><Select value={newEvidence.auditeeId} onValueChange={(value) => { const sa = auditees.find(a => a.id === value); setNewEvidence({ ...newEvidence, auditeeId: value, auditee: sa?.fullName || "" }); }}><SelectTrigger><SelectValue placeholder={t("Select auditee")} /></SelectTrigger><SelectContent>{auditees.map((auditee) => (<SelectItem key={auditee.id} value={auditee.id}>{auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}</SelectItem>))}</SelectContent></Select></div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Number of Samples")}</Label><Input type="number" min="1" value={newEvidence.numberOfSamples} onChange={(e) => setNewEvidence({ ...newEvidence, numberOfSamples: e.target.value })} placeholder={t("Enter number of samples required")} /></div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => setAddEvidenceDialogOpen(false)}>{t("Cancel")}</Button><Button size="sm" onClick={handleAddEvidence} disabled={isReadOnly}>{t("Add Evidence Request")}</Button></div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setAddEvidenceDialogOpen(false); setNewEvidenceTitleError(""); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleAddEvidence} disabled={isReadOnly}>{t("Add Evidence Request")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1621,21 +1685,28 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("New Document")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Title")}</Label><Input value={newDocument.title} onChange={(e) => setNewDocument({ ...newDocument, title: e.target.value })} placeholder={t("Enter document title")} /></div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")}</Label>
+              <div>
+                <Input value={newDocument.title} onChange={(e) => { setNewDocument({ ...newDocument, title: e.target.value }); setNewDocumentTitleError(""); }} placeholder={t("Enter document title")} className={newDocumentTitleError ? "border-red-500" : ""} />
+                {newDocumentTitleError && <p className="text-sm text-red-500 mt-1">{newDocumentTitleError}</p>}
+              </div>
+            </div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Document Type")}</Label><Select value={newDocument.documentType} onValueChange={(value) => setNewDocument({ ...newDocument, documentType: value })}><SelectTrigger><SelectValue placeholder={t("Select document type")} /></SelectTrigger><SelectContent><SelectItem value="Minutes of Meeting">{t("Minutes of Meeting")}</SelectItem><SelectItem value="Approval Document">{t("Approval Document")}</SelectItem><SelectItem value="Email Communication">{t("Email Communication")}</SelectItem><SelectItem value="Contract">{t("Contract")}</SelectItem><SelectItem value="Invoice">{t("Invoice")}</SelectItem><SelectItem value="Policy Document">{t("Policy Document")}</SelectItem><SelectItem value="Other">{t("Other")}</SelectItem></SelectContent></Select></div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Description")}</Label><Textarea value={newDocument.description} onChange={(e) => setNewDocument({ ...newDocument, description: e.target.value })} placeholder={t("Enter description")} rows={4} /></div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
               <Label className="text-end text-slate-500 pt-2">{t("Attach File")}</Label>
               <div>
-                <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}>
+                <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${newDocumentFileError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}>
                   <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
                   <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
                 </div>
+                {newDocumentFileError && <p className="text-sm text-red-500 mt-1">{newDocumentFileError}</p>}
                 {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary-500" /><span className="text-sm">{file.name}</span><span className="text-xs text-slate-400">({formatFileSize(file.size)})</span></div><Button variant="ghost" size="sm" onClick={() => removeFile(file.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"><X className="h-4 w-4" /></Button></div>))}</div>)}
               </div>
             </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setNewDocumentDialogOpen(false); setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleUploadDocument} disabled={uploading || isReadOnly}>{uploading ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save")}</Button></div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setNewDocumentDialogOpen(false); setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentTitleError(""); setNewDocumentFileError(""); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleUploadDocument} disabled={uploading || isReadOnly}>{uploading ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1660,7 +1731,13 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit AI Workpaper")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Task")} <span className="text-red-500">*</span></Label><Input value={editAIWorkpaper.task} onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, task: e.target.value })} placeholder={t("Enter task description")} /></div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Task")} <span className="text-red-500">*</span></Label>
+              <div>
+                <Input value={editAIWorkpaper.task} onChange={(e) => { setEditAIWorkpaper({ ...editAIWorkpaper, task: e.target.value }); setAiWorkpaperTaskError(""); }} placeholder={t("Enter task description")} className={aiWorkpaperTaskError ? "border-red-500" : ""} />
+                {aiWorkpaperTaskError && <p className="text-sm text-red-500 mt-1">{aiWorkpaperTaskError}</p>}
+              </div>
+            </div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Evidences")}</Label><Textarea value={editAIWorkpaper.evidences} onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, evidences: e.target.value })} placeholder={t("Enter evidences (one per line)")} rows={4} /></div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Steps")}</Label><Textarea value={editAIWorkpaper.steps} onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, steps: e.target.value })} placeholder={t("Enter steps (one per line)")} rows={4} /></div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Question Checklist")}</Label><Input value={editAIWorkpaper.questionChecklist} onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, questionChecklist: e.target.value })} placeholder={t("Enter question checklist")} /></div>
@@ -1687,7 +1764,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             : generatedWorkpapers.length > 0 ? (<div className="space-y-6">{generatedWorkpapers.map((wp) => (<div key={wp.id} className={`border rounded-lg p-4 ${selectedGeneratedIds.includes(wp.id) ? "border-primary-600 bg-primary-50" : "border-slate-200"}`}><div className="flex items-start gap-3"><Checkbox checked={selectedGeneratedIds.includes(wp.id)} onCheckedChange={() => handleToggleGeneratedSelection(wp.id)} className="mt-1" /><div className="flex-1 space-y-4"><h4 className="font-semibold text-slate-900">{wp.task}</h4><div><h5 className="font-medium text-slate-700 mb-2">{t("Steps")}</h5><div className="text-sm text-slate-600 ltr:pl-4 rtl:pr-4 space-y-1">{renderJsonList(wp.steps)}</div></div><div><h5 className="font-medium text-slate-700 mb-2">{t("Evidences")}</h5><div className="text-sm text-slate-600 ltr:pl-4 rtl:pr-4 space-y-1">{renderJsonList(wp.evidences)}</div></div></div></div></div>))}</div>)
             : (<div className="text-center py-12 text-slate-500">{t("No workpapers generated. Click generate to create AI workpapers.")}</div>)}
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setGenerateAIDialogOpen(false); setGeneratedWorkpapers([]); setSelectedGeneratedIds([]); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleAddSelectedWorkpapers} disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isReadOnly}>{addingGeneratedWorkpapers ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Adding...")}</>) : `${t("Add Selected")} (${selectedGeneratedIds.length})`}</Button></div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            {generatedWorkpapersError && <p className="text-sm text-red-500 ltr:mr-auto rtl:ml-auto flex items-center">{generatedWorkpapersError}</p>}
+            <Button variant="outline" size="sm" onClick={() => { setGenerateAIDialogOpen(false); setGeneratedWorkpapers([]); setSelectedGeneratedIds([]); setGeneratedWorkpapersError(""); }}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleAddSelectedWorkpapers} disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isReadOnly}>{addingGeneratedWorkpapers ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Adding...")}</>) : `${t("Add Selected")} (${selectedGeneratedIds.length})`}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1696,12 +1777,22 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{isEditingDocument ? t("Edit Document") : t("Document Details")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Title")}</Label>{isEditingDocument ? <Input value={editDocument.title} onChange={(e) => setEditDocument({ ...editDocument, title: e.target.value })} placeholder={t("Enter document title")} /> : <div className="p-3 bg-slate-50 rounded-md border">{selectedDocument?.title || selectedDocument?.fileName || "-"}</div>}</div>
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">{t("Title")}</Label>
+              {isEditingDocument ? (
+                <div>
+                  <Input value={editDocument.title} onChange={(e) => { setEditDocument({ ...editDocument, title: e.target.value }); setEditDocumentTitleError(""); }} placeholder={t("Enter document title")} className={editDocumentTitleError ? "border-red-500" : ""} />
+                  {editDocumentTitleError && <p className="text-sm text-red-500 mt-1">{editDocumentTitleError}</p>}
+                </div>
+              ) : (
+                <div className="p-3 bg-slate-50 rounded-md border">{selectedDocument?.title || selectedDocument?.fileName || "-"}</div>
+              )}
+            </div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Document Type")}</Label>{isEditingDocument ? <Select value={editDocument.documentType} onValueChange={(value) => setEditDocument({ ...editDocument, documentType: value })}><SelectTrigger><SelectValue placeholder={t("Select document type")} /></SelectTrigger><SelectContent><SelectItem value="Minutes of Meeting">{t("Minutes of Meeting")}</SelectItem><SelectItem value="Approval Document">{t("Approval Document")}</SelectItem><SelectItem value="Email Communication">{t("Email Communication")}</SelectItem><SelectItem value="Contract">{t("Contract")}</SelectItem><SelectItem value="Invoice">{t("Invoice")}</SelectItem><SelectItem value="Policy Document">{t("Policy Document")}</SelectItem><SelectItem value="Other">{t("Other")}</SelectItem></SelectContent></Select> : <div className="p-3 bg-slate-50 rounded-md border">{selectedDocument?.documentType || "-"}</div>}</div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Description")}</Label>{isEditingDocument ? <Textarea value={editDocument.description} onChange={(e) => setEditDocument({ ...editDocument, description: e.target.value })} placeholder={t("Enter description")} rows={4} /> : <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">{selectedDocument?.description || "-"}</div>}</div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Attached File")}</Label><div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border"><div className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary-600" /><div><p className="text-sm font-medium">{selectedDocument?.fileName}</p><p className="text-xs text-slate-500">{formatFileSize(selectedDocument?.fileSize || 0)}</p></div></div><Button variant="outline" size="sm" onClick={() => { if (selectedDocument?.filePath) { const link = document.createElement("a"); link.href = `/api${selectedDocument.filePath}`; link.download = selectedDocument.fileName; link.click(); } }}><Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Download")}</Button></div></div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" onClick={() => { setViewEditDocumentDialogOpen(false); setSelectedDocument(null); setIsEditingDocument(false); }}>{isEditingDocument ? t("Cancel") : t("Close")}</Button>{isEditingDocument && <Button size="sm" onClick={handleUpdateDocument} disabled={savingDocument || isReadOnly}>{savingDocument ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save")}</Button>}</div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" onClick={() => { setViewEditDocumentDialogOpen(false); setSelectedDocument(null); setIsEditingDocument(false); setEditDocumentTitleError(""); }}>{isEditingDocument ? t("Cancel") : t("Close")}</Button>{isEditingDocument && <Button size="sm" onClick={handleUpdateDocument} disabled={savingDocument || isReadOnly}>{savingDocument ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save")}</Button>}</div>
         </DialogContent>
       </Dialog>
 
@@ -1710,7 +1801,17 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{isEditingEvidence ? t("Edit Evidence Request") : t("View Evidence Request")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Request Title")} <span className="text-red-500">*</span></Label>{isEditingEvidence ? <Input value={editEvidence.title} onChange={(e) => setEditEvidence({ ...editEvidence, title: e.target.value })} placeholder={t("Enter title")} /> : <div className="p-3 bg-slate-50 rounded-md border">{selectedEvidence?.title || "-"}</div>}</div>
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">{t("Request Title")} <span className="text-red-500">*</span></Label>
+              {isEditingEvidence ? (
+                <div>
+                  <Input value={editEvidence.title} onChange={(e) => { setEditEvidence({ ...editEvidence, title: e.target.value }); setEditEvidenceTitleError(""); }} placeholder={t("Enter title")} className={editEvidenceTitleError ? "border-red-500" : ""} />
+                  {editEvidenceTitleError && <p className="text-sm text-red-500 mt-1">{editEvidenceTitleError}</p>}
+                </div>
+              ) : (
+                <div className="p-3 bg-slate-50 rounded-md border">{selectedEvidence?.title || "-"}</div>
+              )}
+            </div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Auditee")}</Label>{isEditingEvidence ? <Select value={editEvidence.auditeeId} onValueChange={(value) => { const sa = auditees.find(a => a.id === value); setEditEvidence({ ...editEvidence, auditeeId: value, auditee: sa?.fullName || "" }); }}><SelectTrigger><SelectValue placeholder={t("Select auditee")}>{editEvidence.auditee && <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm">{editEvidence.auditee}<X className="h-3 w-3 cursor-pointer" onClick={(e) => { e.stopPropagation(); setEditEvidence({ ...editEvidence, auditeeId: "", auditee: "" }); }} /></span>}</SelectValue></SelectTrigger><SelectContent>{auditees.map((auditee) => (<SelectItem key={auditee.id} value={auditee.id}>{auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}</SelectItem>))}</SelectContent></Select> : <div className="p-3 bg-slate-50 rounded-md border">{selectedEvidence?.auditee || "-"}</div>}</div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Number of Samples")}</Label>{isEditingEvidence ? <Input type="number" min="1" value={editEvidence.numberOfSamples} onChange={(e) => setEditEvidence({ ...editEvidence, numberOfSamples: e.target.value })} placeholder={t("Enter number of samples")} /> : <div className="p-3 bg-slate-50 rounded-md border">{selectedEvidence?.numberOfSamples || "-"}</div>}</div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Description")}</Label>{isEditingEvidence ? <Textarea value={editEvidence.description} onChange={(e) => setEditEvidence({ ...editEvidence, description: e.target.value })} placeholder={t("Enter description")} rows={4} /> : <div className="p-3 bg-slate-50 rounded-md border min-h-[80px]">{selectedEvidence?.description || "-"}</div>}</div>
@@ -1736,7 +1837,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             )}
           </div>
           <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => { setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); setIsEditingEvidence(false); }}>{isEditingEvidence ? t("Cancel") : t("Close")}</Button>
+            <Button variant="outline" onClick={() => { setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); setIsEditingEvidence(false); setEditEvidenceTitleError(""); }}>{isEditingEvidence ? t("Cancel") : t("Close")}</Button>
             <div className="flex gap-2">
               {!isEditingEvidence && isAuditHead && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
                 <><Button variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-50" onClick={() => { if (selectedEvidence) handleOpenClarificationDialog(selectedEvidence); }}><AlertCircle className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Need Clarification")}</Button><Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { if (selectedEvidence) { handleApproveEvidence(selectedEvidence.id); setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); } }}><Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Approve")}</Button></>
@@ -1807,14 +1908,15 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Attachment")}</DialogTitle><DialogDescription className="text-slate-600">{t("Upload attachment for")}: {evidenceForAttachment?.title}</DialogDescription></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Attach File")}</Label>
-              <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => attachmentFileInputRef.current?.click()}>
+              <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${attachmentFileError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => attachmentFileInputRef.current?.click()}>
                 <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
                 <input ref={attachmentFileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
               </div>
+              {attachmentFileError && <p className="text-sm text-red-500 mt-1">{attachmentFileError}</p>}
               {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary-500" /><span className="text-sm text-slate-700">{file.name}</span><span className="text-xs text-slate-400">({formatFileSize(file.size)})</span></div><Button variant="ghost" size="sm" onClick={() => removeFile(file.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"><X className="h-4 w-4" /></Button></div>))}</div>)}
             </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setAttachmentDialogOpen(false); setEvidenceForAttachment(null); setUploadedFiles([]); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleUploadAttachment} disabled={uploadingAttachment || isReadOnly}>{uploadingAttachment ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Uploading...")}</>) : t("Upload")}</Button></div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setAttachmentDialogOpen(false); setEvidenceForAttachment(null); setUploadedFiles([]); setAttachmentFileError(""); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleUploadAttachment} disabled={uploadingAttachment || isReadOnly}>{uploadingAttachment ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Uploading...")}</>) : t("Upload")}</Button></div>
         </DialogContent>
       </Dialog>
 

@@ -56,6 +56,7 @@ export default function RiskReportsPage() {
     managementReportOptions.map(opt => ({ ...opt }))
   );
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [yearError, setYearError] = useState("");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -167,6 +168,15 @@ export default function RiskReportsPage() {
   };
 
   const handleShowManagementReport = () => {
+    // Validate year is always required
+    if (!filterYear || filterYear.trim() === "") {
+      setYearError(t("Year is required"));
+      return;
+    }
+
+    // Clear any previous errors
+    setYearError("");
+
     const selectedOptions = managementOptions.filter(opt => opt.checked).map(opt => opt.id);
     const queryString = selectedOptions.join(",");
     router.push(`/risks/reports/management?options=${queryString}&year=${filterYear}`);
@@ -362,7 +372,10 @@ export default function RiskReportsPage() {
                       <Input
                         type="text"
                         value={filterYear}
-                        onChange={(e) => setFilterYear(e.target.value)}
+                        onChange={(e) => {
+                          setFilterYear(e.target.value);
+                          setYearError(""); // Clear error when user types
+                        }}
                         className="w-20 h-7 text-sm bg-white"
                         placeholder={t("Year")}
                       />
@@ -371,6 +384,10 @@ export default function RiskReportsPage() {
                 </div>
               ))}
             </div>
+            {/* Error message */}
+            {yearError && (
+              <p className="mt-3 text-sm text-red-600">{yearError}</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">

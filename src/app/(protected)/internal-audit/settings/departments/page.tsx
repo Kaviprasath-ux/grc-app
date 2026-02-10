@@ -80,6 +80,7 @@ export default function DepartmentsPage() {
     headId: ""
   });
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -115,6 +116,7 @@ export default function DepartmentsPage() {
   const openAddDialog = () => {
     setEditItem(null);
     setFormData({ name: "", description: "", headId: "" });
+    setFormError("");
     setDialogOpen(true);
   };
 
@@ -125,16 +127,13 @@ export default function DepartmentsPage() {
       description: item.description || "",
       headId: item.headId || ""
     });
+    setFormError("");
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Department Name is required"),
-      });
+      setFormError(t("Department Name is required"));
       return;
     }
 
@@ -405,11 +404,15 @@ export default function DepartmentsPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Department Name")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    setFormError("");
+                  }}
                   placeholder={t("Enter department name")}
-                  className="mt-1.5 w-full bg-white"
+                  className={`mt-1.5 w-full bg-white ${formError ? "border-red-500" : ""}`}
                   autoFocus
                 />
+                {formError && <p className="text-sm text-red-500 mt-1">{formError}</p>}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Department Head")}</Label>

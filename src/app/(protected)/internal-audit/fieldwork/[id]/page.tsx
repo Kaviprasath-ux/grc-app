@@ -280,6 +280,7 @@ export default function FieldworkDetailsPage() {
     description: "",
   });
   const [savingDocument, setSavingDocument] = useState(false);
+  const [documentValidationErrors, setDocumentValidationErrors] = useState<{ [key: string]: string }>({});
 
   // Evidence Request view/edit/delete states
   const [viewEditEvidenceDialogOpen, setViewEditEvidenceDialogOpen] = useState(false);
@@ -929,12 +930,17 @@ export default function FieldworkDetailsPage() {
   };
 
   const handleUploadDocument = async () => {
+    const errors: { [key: string]: string } = {};
+
     if (!newDocument.title.trim()) {
-      toast.error(t("Document title is required"));
-      return;
+      errors.newDocumentTitle = t("Document title is required") || "Document title is required";
     }
     if (uploadedFiles.length === 0) {
-      toast.error(t("Please select a file to upload"));
+      errors.uploadedFiles = t("Please select a file to upload") || "Please select a file to upload";
+    }
+
+    setDocumentValidationErrors(errors);
+    if (Object.keys(errors).length > 0) {
       return;
     }
 
@@ -1033,13 +1039,20 @@ export default function FieldworkDetailsPage() {
       description: doc.description || "",
     });
     setIsEditingDocument(editMode);
+    setDocumentValidationErrors({});
     setViewEditDocumentDialogOpen(true);
   };
 
   const handleUpdateDocument = async () => {
     if (!selectedDocument) return;
+
+    const errors: { [key: string]: string } = {};
     if (!editDocument.title.trim()) {
-      toast.error(t("Document title is required"));
+      errors.editDocumentTitle = t("Document title is required") || "Document title is required";
+    }
+
+    setDocumentValidationErrors(errors);
+    if (Object.keys(errors).length > 0) {
       return;
     }
 
@@ -2501,6 +2514,7 @@ export default function FieldworkDetailsPage() {
               onClick={() => {
                 setUploadedFiles([]);
                 setNewDocument({ title: "", documentType: "", description: "" });
+                setDocumentValidationErrors({});
                 setNewDocumentDialogOpen(true);
               }}
               disabled={isReadOnly}
@@ -3224,13 +3238,19 @@ export default function FieldworkDetailsPage() {
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-end text-slate-500">{t("Title")}</Label>
-              <Input
-                value={newDocument.title}
-                onChange={(e) => setNewDocument({ ...newDocument, title: e.target.value })}
-                placeholder={t("Enter document title")}
-              />
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Title")}</Label>
+              <div className="space-y-1">
+                <Input
+                  value={newDocument.title}
+                  onChange={(e) => setNewDocument({ ...newDocument, title: e.target.value })}
+                  placeholder={t("Enter document title")}
+                  className={documentValidationErrors.newDocumentTitle ? 'border-red-500' : ''}
+                />
+                {documentValidationErrors.newDocumentTitle && (
+                  <p className="text-sm text-red-600">{documentValidationErrors.newDocumentTitle}</p>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <Label className="text-end text-slate-500">{t("Document Type")}</Label>
@@ -3671,11 +3691,17 @@ export default function FieldworkDetailsPage() {
             <div className="space-y-2">
               <Label className="text-slate-700 font-medium">{t("Title")}</Label>
               {isEditingDocument ? (
-                <Input
-                  value={editDocument.title}
-                  onChange={(e) => setEditDocument({ ...editDocument, title: e.target.value })}
-                  placeholder={t("Enter document title")}
-                />
+                <>
+                  <Input
+                    value={editDocument.title}
+                    onChange={(e) => setEditDocument({ ...editDocument, title: e.target.value })}
+                    placeholder={t("Enter document title")}
+                    className={documentValidationErrors.editDocumentTitle ? 'border-red-500' : ''}
+                  />
+                  {documentValidationErrors.editDocumentTitle && (
+                    <p className="text-sm text-red-600">{documentValidationErrors.editDocumentTitle}</p>
+                  )}
+                </>
               ) : (
                 <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedDocument?.title || selectedDocument?.fileName || "-"}

@@ -147,6 +147,7 @@ export default function ProcessPage() {
   const [saving, setSaving] = useState(false);
   const [nextProcessId, setNextProcessId] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [formErrors, setFormErrors] = useState({ name: "", ownerId: "" });
 
   const TOTAL_STEPS = 3;
 
@@ -292,6 +293,7 @@ export default function ProcessPage() {
       lastAuditDate: "",
     });
     setUploadedFiles([]);
+    setFormErrors({ name: "", ownerId: "" });
 
     // Recalculate next process ID to ensure it's current
     const maxId = processes.reduce((max: number, p: Process) => {
@@ -332,6 +334,7 @@ export default function ProcessPage() {
         ? new Date(process.lastAuditDate).toISOString().split("T")[0]
         : "",
     });
+    setFormErrors({ name: "", ownerId: "" });
     setDialogOpen(true);
   };
 
@@ -350,25 +353,29 @@ export default function ProcessPage() {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setCurrentStep(1);
+    setFormErrors({ name: "", ownerId: "" });
   };
 
   const handleSave = async () => {
+    // Clear all errors first
+    setFormErrors({ name: "", ownerId: "" });
+
     // Validate required fields
+    let hasError = false;
+    const newErrors = { name: "", ownerId: "" };
+
     if (!formData.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Process name is required"),
-      });
-      return;
+      newErrors.name = t("Process name is required");
+      hasError = true;
     }
 
     if (!formData.ownerId || !formData.ownerId.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Process owner is required"),
-      });
+      newErrors.ownerId = t("Process owner is required");
+      hasError = true;
+    }
+
+    if (hasError) {
+      setFormErrors(newErrors);
       return;
     }
 
@@ -901,10 +908,14 @@ export default function ProcessPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    setFormErrors({ ...formErrors, name: "" });
+                  }}
                   placeholder={t("Enter Process Name")}
-                  className="mt-1.5 w-full bg-white"
+                  className={`mt-1.5 w-full bg-white ${formErrors.name ? "border-red-500" : ""}`}
                 />
+                {formErrors.name && <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>}
               </div>
             </div>
 
@@ -946,9 +957,12 @@ export default function ProcessPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Process Owner")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.ownerId}
-                  onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, ownerId: value });
+                    setFormErrors({ ...formErrors, ownerId: "" });
+                  }}
                 >
-                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
+                  <SelectTrigger className={`mt-1.5 w-full bg-white border-slate-200 ${formErrors.ownerId ? "border-red-500" : ""}`}>
                     <SelectValue placeholder={t("Select Owner")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -959,6 +973,7 @@ export default function ProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {formErrors.ownerId && <p className="text-sm text-red-500 mt-1">{formErrors.ownerId}</p>}
               </div>
             </div>
 

@@ -216,6 +216,7 @@ export default function AuditPlanningPage() {
   const [saving, setSaving] = useState(false);
   const [engagementForm, setEngagementForm] = useState<EngagementFormData>(emptyFormData);
   const [tasks, setTasks] = useState<AuditTask[]>([...defaultTasks]);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   // File uploads
   const attachFileRef = useRef<HTMLInputElement>(null);
@@ -350,6 +351,7 @@ export default function AuditPlanningPage() {
     setHistoricalRisks([]);
     setAttachedFiles([]);
     setWorkpaperFiles([]);
+    setValidationErrors({});
   };
 
   const openAddDialog = async () => {
@@ -494,35 +496,32 @@ export default function AuditPlanningPage() {
   };
 
   const validateEngagementForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
     if (!engagementForm.engagementTitle.trim()) {
-      toast.error(t("Engagement Title is required"));
-      return false;
+      errors.engagementTitle = t("Engagement Title is required") || "Engagement Title is required";
     }
     if (!engagementForm.engagementObjective.trim()) {
-      toast.error(t("Engagement Objective is required"));
-      return false;
+      errors.engagementObjective = t("Engagement Objective is required") || "Engagement Objective is required";
     }
     if (!engagementForm.engagementScope.trim()) {
-      toast.error(t("Engagement Scope is required"));
-      return false;
+      errors.engagementScope = t("Engagement Scope is required") || "Engagement Scope is required";
     }
     if (!engagementForm.departmentId) {
-      toast.error(t("Department is required"));
-      return false;
+      errors.departmentId = t("Department is required") || "Department is required";
     }
     if (!engagementForm.auditorId) {
-      toast.error(t("Auditor is required"));
-      return false;
+      errors.auditorId = t("Auditor is required") || "Auditor is required";
     }
     if (!engagementForm.startDate) {
-      toast.error(t("Start Date is required"));
-      return false;
+      errors.startDate = t("Start Date is required") || "Start Date is required";
     }
     if (!engagementForm.targetDate) {
-      toast.error(t("Target Date is required"));
-      return false;
+      errors.targetDate = t("Target Date is required") || "Target Date is required";
     }
-    return true;
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSaveEngagement = async () => {
@@ -754,8 +753,11 @@ export default function AuditPlanningPage() {
           value={engagementForm.engagementTitle}
           onChange={(e) => setEngagementForm({ ...engagementForm, engagementTitle: e.target.value })}
           placeholder={t("Enter engagement title")}
-          className="w-full bg-white"
+          className={`w-full bg-white ${validationErrors.engagementTitle ? 'border-red-500' : ''}`}
         />
+        {validationErrors.engagementTitle && (
+          <p className="text-sm text-red-600 mt-1">{validationErrors.engagementTitle}</p>
+        )}
       </div>
 
       {/* Engagement Objective */}
@@ -768,8 +770,11 @@ export default function AuditPlanningPage() {
           onChange={(e) => setEngagementForm({ ...engagementForm, engagementObjective: e.target.value })}
           placeholder={t("Enter engagement objective")}
           rows={3}
-          className="w-full bg-white resize-none"
+          className={`w-full bg-white resize-none ${validationErrors.engagementObjective ? 'border-red-500' : ''}`}
         />
+        {validationErrors.engagementObjective && (
+          <p className="text-sm text-red-600 mt-1">{validationErrors.engagementObjective}</p>
+        )}
       </div>
 
       {/* Engagement Scope */}
@@ -782,8 +787,11 @@ export default function AuditPlanningPage() {
           onChange={(e) => setEngagementForm({ ...engagementForm, engagementScope: e.target.value })}
           placeholder={t("Enter engagement scope")}
           rows={3}
-          className="w-full bg-white resize-none"
+          className={`w-full bg-white resize-none ${validationErrors.engagementScope ? 'border-red-500' : ''}`}
         />
+        {validationErrors.engagementScope && (
+          <p className="text-sm text-red-600 mt-1">{validationErrors.engagementScope}</p>
+        )}
       </div>
 
       {/* Department */}
@@ -795,7 +803,7 @@ export default function AuditPlanningPage() {
           value={engagementForm.departmentId}
           onValueChange={handleEngagementDepartmentChange}
         >
-          <SelectTrigger className="w-full bg-white">
+          <SelectTrigger className={`w-full bg-white ${validationErrors.departmentId ? 'border-red-500' : ''}`}>
             <SelectValue placeholder={t("Select department")} />
           </SelectTrigger>
           <SelectContent>
@@ -806,6 +814,9 @@ export default function AuditPlanningPage() {
             ))}
           </SelectContent>
         </Select>
+        {validationErrors.departmentId && (
+          <p className="text-sm text-red-600 mt-1">{validationErrors.departmentId}</p>
+        )}
       </div>
 
       {/* Link Open Risks */}
@@ -943,7 +954,7 @@ export default function AuditPlanningPage() {
             value={engagementForm.auditorId}
             onValueChange={(value) => setEngagementForm({ ...engagementForm, auditorId: value })}
           >
-            <SelectTrigger className="w-full bg-white">
+            <SelectTrigger className={`w-full bg-white ${validationErrors.auditorId ? 'border-red-500' : ''}`}>
               <SelectValue placeholder={t("Select auditor")} />
             </SelectTrigger>
             <SelectContent>
@@ -960,6 +971,9 @@ export default function AuditPlanningPage() {
               )}
             </SelectContent>
           </Select>
+          {validationErrors.auditorId && (
+            <p className="text-sm text-red-600 mt-1">{validationErrors.auditorId}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label className="text-sm font-medium text-slate-700">{t("Auditee")}</Label>
@@ -997,8 +1011,11 @@ export default function AuditPlanningPage() {
             value={engagementForm.startDate}
             onChange={(date) => setEngagementForm({ ...engagementForm, startDate: date ? date.toISOString().split('T')[0] : "" })}
             placeholder={t("Select start date")}
-            className="w-full h-10 bg-white"
+            className={`w-full h-10 bg-white ${validationErrors.startDate ? 'border-red-500' : ''}`}
           />
+          {validationErrors.startDate && (
+            <p className="text-sm text-red-600 mt-1">{validationErrors.startDate}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label className="text-sm font-medium text-slate-700">
@@ -1008,8 +1025,11 @@ export default function AuditPlanningPage() {
             value={engagementForm.targetDate}
             onChange={(date) => setEngagementForm({ ...engagementForm, targetDate: date ? date.toISOString().split('T')[0] : "" })}
             placeholder={t("Select target date")}
-            className="w-full h-10 bg-white"
+            className={`w-full h-10 bg-white ${validationErrors.targetDate ? 'border-red-500' : ''}`}
           />
+          {validationErrors.targetDate && (
+            <p className="text-sm text-red-600 mt-1">{validationErrors.targetDate}</p>
+          )}
         </div>
       </div>
 

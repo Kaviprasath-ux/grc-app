@@ -111,8 +111,9 @@ export default function RiskAssessmentConfigPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: string; item: any } | null>(null);
 
-  // Validation error
+  // Validation errors
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<any>({});
 
   useEffect(() => {
     fetchAllData();
@@ -183,6 +184,7 @@ export default function RiskAssessmentConfigPage() {
     setDialogType(type);
     setEditItem(null);
     setValidationError(null);
+    setFormErrors({});
     if (type === "factor") {
       setFormData({ label: "" });
     } else if (type === "probability" || type === "impact") {
@@ -197,6 +199,7 @@ export default function RiskAssessmentConfigPage() {
     setDialogType(type);
     setEditItem(item);
     setValidationError(null);
+    setFormErrors({});
     if (type === "factor") {
       setFormData({ label: item.label });
     } else if (type === "probability" || type === "impact") {
@@ -208,24 +211,24 @@ export default function RiskAssessmentConfigPage() {
   };
 
   const handleSave = async () => {
+    // Clear errors
+    setFormErrors({});
+    setValidationError(null);
+
+    // Validate fields
+    let hasError = false;
+    const newErrors: any = {};
+
     if (!formData.label?.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Label is required"),
-      });
-      return;
+      newErrors.label = t("Label is required");
+      hasError = true;
     }
 
     // Validate value fields for probability and impact
     if (dialogType === "probability" || dialogType === "impact") {
       if (formData.value === undefined || formData.value === null || formData.value === "") {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Value is required"),
-        });
-        return;
+        newErrors.value = t("Value is required");
+        hasError = true;
       }
     }
 
@@ -234,17 +237,16 @@ export default function RiskAssessmentConfigPage() {
       const lowValue = Number(formData.lowValue) || 0;
       const highValue = Number(formData.highValue) || 0;
       if (highValue <= lowValue) {
-        toast({
-          variant: "destructive",
-          title: t("Error"),
-          description: t("Highest value must be greater than lowest value"),
-        });
         setValidationError(t("Highest value must be greater than lowest value"));
-        return;
+        hasError = true;
       }
     }
 
-    setValidationError(null);
+    if (hasError) {
+      setFormErrors(newErrors);
+      return;
+    }
+
     setSaving(true);
     try {
       let url = "";
@@ -681,11 +683,15 @@ export default function RiskAssessmentConfigPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.label || ""}
-                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, label: e.target.value });
+                    setFormErrors({ ...formErrors, label: "" });
+                  }}
                   placeholder={t("Enter factor label")}
-                  className="mt-1.5 w-full bg-white"
+                  className={`mt-1.5 w-full bg-white ${formErrors.label ? "border-red-500" : ""}`}
                   autoFocus
                 />
+                {formErrors.label && <p className="text-sm text-red-500 mt-1">{formErrors.label}</p>}
               </div>
             )}
             {(dialogType === "probability" || dialogType === "impact") && (
@@ -694,21 +700,29 @@ export default function RiskAssessmentConfigPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={formData.label || ""}
-                    onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, label: e.target.value });
+                      setFormErrors({ ...formErrors, label: "" });
+                    }}
                     placeholder={t("Enter label")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${formErrors.label ? "border-red-500" : ""}`}
                     autoFocus
                   />
+                  {formErrors.label && <p className="text-sm text-red-500 mt-1">{formErrors.label}</p>}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Value")} <span className="text-red-500">*</span></Label>
                   <Input
                     type="number"
                     value={formData.value || 0}
-                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, value: e.target.value });
+                      setFormErrors({ ...formErrors, value: "" });
+                    }}
                     placeholder={t("Enter value")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${formErrors.value ? "border-red-500" : ""}`}
                   />
+                  {formErrors.value && <p className="text-sm text-red-500 mt-1">{formErrors.value}</p>}
                 </div>
               </div>
             )}
@@ -718,11 +732,15 @@ export default function RiskAssessmentConfigPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={formData.label || ""}
-                    onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, label: e.target.value });
+                      setFormErrors({ ...formErrors, label: "" });
+                    }}
                     placeholder={t("Enter scoring range label")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${formErrors.label ? "border-red-500" : ""}`}
                     autoFocus
                   />
+                  {formErrors.label && <p className="text-sm text-red-500 mt-1">{formErrors.label}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
