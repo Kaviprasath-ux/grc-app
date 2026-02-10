@@ -22,16 +22,14 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   ArrowUpDown,
   Home,
   Eye,
   Pencil,
   Search,
 } from "lucide-react";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { FieldworkDetailModal } from "./FieldworkDetailModal";
 
@@ -320,12 +318,12 @@ export default function FieldworkPage() {
               placeholder={t("Search engagements...")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 ml-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Status")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -337,7 +335,7 @@ export default function FieldworkPage() {
             </Select>
 
             <Select value={auditorFilter} onValueChange={setAuditorFilter}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Auditors")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -351,7 +349,7 @@ export default function FieldworkPage() {
             </Select>
 
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-[180px] h-9 text-sm bg-white border-slate-300">
+              <SelectTrigger className="w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Departments")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -427,51 +425,13 @@ export default function FieldworkPage() {
         </Table>
 
         {/* Pagination */}
-        {sortedEngagements.length > 0 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-            <span className="text-xs text-slate-500">
-              {startIndex + 1} {t("to")} {Math.min(endIndex, sortedEngagements.length)} {t("of")} {sortedEngagements.length}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <PaginationUI
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={sortedEngagements.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Fieldwork Detail Modal */}

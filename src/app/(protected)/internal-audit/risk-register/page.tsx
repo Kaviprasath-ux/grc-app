@@ -33,7 +33,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronRight, Home } from "lucide-react";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -1167,13 +1168,13 @@ export default function RiskRegisterPage() {
               placeholder={t("Search risks...")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full h-9 pl-9 pr-3 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full h-9 pl-9 pr-3 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               disabled={isReadOnlyRole}
             />
           </div>
           <div className="flex items-center gap-3 ml-auto">
             <Select value={yearFilter} onValueChange={setYearFilter} disabled={isReadOnlyRole}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300" disabled={isReadOnlyRole}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200" disabled={isReadOnlyRole}>
                 <SelectValue placeholder={t("Year")} />
               </SelectTrigger>
               <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1186,7 +1187,7 @@ export default function RiskRegisterPage() {
               </SelectContent>
             </Select>
             <Select value={departmentFilter} onValueChange={setDepartmentFilter} disabled={isReadOnlyRole}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300" disabled={isReadOnlyRole}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200" disabled={isReadOnlyRole}>
                 <SelectValue placeholder={t("Department")} />
               </SelectTrigger>
               <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1266,54 +1267,13 @@ export default function RiskRegisterPage() {
         </div>
 
         {/* Pagination */}
-        {totalItems > 0 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-            <span className="text-xs text-slate-500">
-              {startItem} {t("to")} {endItem} {t("of")} {totalItems}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-xs text-slate-500 px-2">
-                {t("Page")} {currentPage} {t("of")} {totalPages || 1}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <PaginationUI
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={pageSize}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Delete Confirmation Dialog */}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Plus, Trash2, Upload, X } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -402,12 +403,13 @@ export function EditProfileWizard({
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">Established</Label>
-                  <Input
-                    type="date"
-                    value={formData.establishedDate}
-                    onChange={(e) => setFormData({ ...formData, establishedDate: e.target.value })}
-                    className="mt-1.5"
-                  />
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={formData.establishedDate}
+                      onChange={(date) => setFormData({ ...formData, establishedDate: date ? date.toISOString().split("T")[0] : "" })}
+                      placeholder="Select date"
+                    />
+                  </div>
                 </div>
               </div>
 

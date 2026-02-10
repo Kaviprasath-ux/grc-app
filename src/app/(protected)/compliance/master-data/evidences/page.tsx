@@ -588,7 +588,7 @@ export default function EvidencesMasterDataPage() {
             <span>{t("Compliance")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-          <span className="text-slate-500">{t("Master Data")}</span>
+          <span className="text-slate-500">{t("Compliance Settings")}</span>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Evidences")}</span>
         </nav>
@@ -612,7 +612,7 @@ export default function EvidencesMasterDataPage() {
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Master Data")}
+          {t("Compliance Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Evidences")}</span>

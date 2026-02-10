@@ -74,12 +74,12 @@ export default function MasterDataPage() {
           <span>{t("Compliance")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{t("Master Data")}</span>
+        <span className="text-primary-700 font-medium">{t("Compliance Settings")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Master Data")}</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Compliance Settings")}</h1>
       </div>
 
       {/* Category Cards - matching Organization Settings pattern */}

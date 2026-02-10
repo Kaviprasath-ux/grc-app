@@ -476,7 +476,7 @@ export default function UserManagementPage() {
               placeholder={t("Search users...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[300px] h-9 bg-white border-slate-200"
+              className="pl-10 w-[300px] h-9 bg-slate-50 border-slate-200"
             />
           </div>
         </div>

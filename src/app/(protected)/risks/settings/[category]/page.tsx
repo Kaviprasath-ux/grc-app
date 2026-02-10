@@ -3,12 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Search, Home, ChevronRight, Download, Upload } from "lucide-react";
-import { DataGrid } from "@/components/shared";
+import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -22,15 +20,32 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ColumnDef } from "@tanstack/react-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
 
 // Type definitions
 interface VulnerabilityCategory {
@@ -152,6 +167,9 @@ export default function RiskSettingsCategoryPage() {
   const [activeTab, setActiveTab] = useState<string>("tab1");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage2, setCurrentPage2] = useState(1);
+  const pageSize = 10;
 
   // Data states
   const [vulnerabilityCategories, setVulnerabilityCategories] = useState<VulnerabilityCategory[]>([]);
@@ -195,6 +213,10 @@ export default function RiskSettingsCategoryPage() {
 
   useEffect(() => {
     fetchData();
+    setCurrentPage(1);
+    setCurrentPage2(1);
+    setSearchTerm("");
+    setActiveTab("tab1");
   }, [category]);
 
   const fetchData = async () => {
@@ -1365,384 +1387,11 @@ export default function RiskSettingsCategoryPage() {
     }
   };
 
-  // Column Definitions - Matching UAT design
-  const vulnCatColumns: ColumnDef<VulnerabilityCategory>[] = [
-    { accessorKey: "name", header: t("Vulnerability Category") },
-    ...((canEdit || canDelete) ? [{
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }: { row: { original: VulnerabilityCategory } }) => (
-        <div className="flex items-center gap-1">
-          {canEdit && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-              setActiveTab("tab1");
-              setSelectedItem(row.original);
-              setVulnCatForm({ name: row.original.name });
-              setIsEditOpen(true);
-            }}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          {canDelete && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-              setActiveTab("tab1");
-              setSelectedItem(row.original);
-              setIsDeleteOpen(true);
-            }}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      ),
-    }] : []),
-  ];
-
-  const threatCatColumns: ColumnDef<ThreatCategory>[] = [
-    { accessorKey: "name", header: t("Threat Category") },
-    ...((canEdit || canDelete) ? [{
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }: { row: { original: ThreatCategory } }) => (
-        <div className="flex items-center gap-1">
-          {canEdit && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-              setActiveTab("tab2");
-              setSelectedItem(row.original);
-              setThreatCatForm({ name: row.original.name });
-              setIsEditOpen(true);
-            }}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          {canDelete && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-              setActiveTab("tab2");
-              setSelectedItem(row.original);
-              setIsDeleteOpen(true);
-            }}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      ),
-    }] : []),
-  ];
-
-  const controlStrengthColumns: ColumnDef<ControlStrength>[] = [
-    { accessorKey: "name", header: t("Name") },
-    { accessorKey: "score", header: t("Score") },
-    ...((canEdit || canDelete) ? [{
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }: { row: { original: ControlStrength } }) => (
-        <div className="flex items-center gap-1">
-          {canEdit && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-              setSelectedItem(row.original);
-              setControlStrengthForm({ name: row.original.name, score: row.original.score });
-              setIsEditOpen(true);
-            }}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          {canDelete && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-              setSelectedItem(row.original);
-              setIsDeleteOpen(true);
-            }}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      ),
-    }] : []),
-  ];
-
-  const likelihoodColumns: ColumnDef<RiskLikelihood>[] = [
-    { accessorKey: "title", header: t("Title") },
-    { accessorKey: "score", header: t("Score") },
-    { accessorKey: "timeFrame", header: t("Time Frame") },
-    { accessorKey: "probability", header: t("Probability") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setLikelihoodForm({
-              title: row.original.title,
-              score: row.original.score,
-              timeFrame: row.original.timeFrame || "",
-              probability: row.original.probability || "",
-            });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const threatColumns: ColumnDef<RiskThreat>[] = [
-    { accessorKey: "threatId", header: t("Threat ID") },
-    { accessorKey: "category.name", header: t("Category"), cell: ({ row }) => row.original.category?.name || "-" },
-    { accessorKey: "name", header: t("Name") },
-    { accessorKey: "description", header: t("Description") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setThreatForm({
-              name: row.original.name,
-              description: row.original.description || "",
-              categoryId: row.original.categoryId || "",
-            });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const vulnerabilityColumns: ColumnDef<RiskVulnerability>[] = [
-    { accessorKey: "vulnId", header: t("Vulnerability ID") },
-    { accessorKey: "category.name", header: t("Category"), cell: ({ row }) => row.original.category?.name || "-" },
-    { accessorKey: "name", header: t("Name") },
-    { accessorKey: "description", header: t("Description") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setVulnerabilityForm({
-              name: row.original.name,
-              description: row.original.description || "",
-              categoryId: row.original.categoryId || "",
-            });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const riskCategoryColumns: ColumnDef<RiskCategory>[] = [
-    { accessorKey: "name", header: t("Type") },
-    {
-      accessorKey: "status",
-      header: t("Status"),
-      cell: ({ row }) => (
-        <Badge variant={row.getValue("status") === "Active" ? "default" : "secondary"}>
-          {row.getValue("status") === "Active" ? t("Active") : t("Inactive")}
-        </Badge>
-      ),
-    },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setRiskCategoryForm({
-              name: row.original.name,
-              status: row.original.status,
-            });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const impactCatColumns: ColumnDef<ImpactCategory>[] = [
-    { accessorKey: "name", header: t("Name") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setImpactCatForm({ name: row.original.name });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const impactRatingColumns: ColumnDef<ImpactRating>[] = [
-    { accessorKey: "name", header: t("Name") },
-    { accessorKey: "score", header: t("Score") },
-    { accessorKey: "description", header: t("Description") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setImpactRatingForm({
-              name: row.original.name,
-              score: row.original.score,
-              description: row.original.description || "",
-            });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const vulnRatingColumns: ColumnDef<VulnerabilityRating>[] = [
-    { accessorKey: "label", header: t("Label") },
-    { accessorKey: "score", header: t("Score") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setVulnRatingForm({ label: row.original.label, score: row.original.score });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const riskSubCatColumns: ColumnDef<RiskSubCategory>[] = [
-    { accessorKey: "type", header: t("Type") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setRiskSubCatForm({ type: row.original.type });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const riskRangeColumns: ColumnDef<RiskRange>[] = [
-    { accessorKey: "title", header: t("Title") },
-    {
-      accessorKey: "color",
-      header: t("Color"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded" style={{ backgroundColor: row.getValue("color") || "#ccc" }} />
-          {row.getValue("color") || "-"}
-        </div>
-      ),
-    },
-    { accessorKey: "lowRange", header: t("Low Range") },
-    { accessorKey: "highRange", header: t("High Range") },
-    { accessorKey: "timelineDays", header: t("Timeline Days") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
-            setSelectedItem(row.original);
-            setRiskRangeForm({
-              title: row.original.title,
-              color: row.original.color || "#000000",
-              lowRange: row.original.lowRange,
-              highRange: row.original.highRange,
-              timelineDays: row.original.timelineDays,
-              description: row.original.description || "",
-            });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  // Pagination helper
+  const getPaginatedSlice = <T,>(data: T[], page: number): T[] => {
+    const start = (page - 1) * pageSize;
+    return data.slice(start, start + pageSize);
+  };
 
   const title = categoryTitles[category] || "Settings";
 
@@ -1768,12 +1417,15 @@ export default function RiskSettingsCategoryPage() {
           <span className="text-primary-700 font-medium">{title}</span>
         </nav>
 
-        {/* Page Header */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
+          </div>
         </div>
       </div>
     );
@@ -1783,6 +1435,54 @@ export default function RiskSettingsCategoryPage() {
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access Risk Settings.")} />;
   }
+
+  // Filtered data helpers
+  const filteredVulnCats = vulnerabilityCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredThreatCats = threatCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredControlStrengths = controlStrengths.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredLikelihoods = likelihoods.filter(l => l.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredThreats = threats.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredVulnerabilities = vulnerabilities.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredRiskCategories = riskCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredImpactCats = impactCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredImpactRatings = impactRatings.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredVulnRatings = vulnerabilityRatings.filter(r => r.label.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredRiskSubCats = riskSubCategories.filter(c => c.type.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // Pagination helpers
+  const getTotalPages = (totalItems: number) => Math.ceil(totalItems / pageSize);
+
+  // Search bar renderer
+  const renderSearchBar = (placeholder?: string) => (
+    <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+      <div className="relative flex-1 min-w-[280px] max-w-md">
+        <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder={placeholder || t("Search...")}
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); setCurrentPage2(1); }}
+          className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+        />
+      </div>
+    </div>
+  );
+
+  // Action buttons renderer
+  const renderActions = (onEdit: () => void, onDelete: () => void) => (
+    <div className="flex items-center gap-0.5">
+      {canEdit && (
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={onEdit} title={t("Edit")}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
+      {canDelete && (
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={onDelete} title={t("Delete")}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -1804,102 +1504,284 @@ export default function RiskSettingsCategoryPage() {
         <span className="text-primary-700 font-medium">{title}</span>
       </nav>
 
-      {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
-      </div>
-
-      {/* Category: Vulnerability Category + Threat Category sections */}
+      {/* ============================================================ */}
+      {/* Category: Vulnerability Category + Threat Category sections  */}
+      {/* ============================================================ */}
       {category === "category" && (
-        <div className="space-y-8">
-          {/* Vulnerability Category Section */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{t("Vulnerability Category")}</h3>
-              <Button onClick={() => { setActiveTab("tab1"); setVulnCatForm({ name: "" }); setIsAddOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" />{t("Add Vulnerability Category")}
-              </Button>
-            </div>
-            <DataGrid
-              columns={vulnCatColumns}
-              data={vulnerabilityCategories}
-              hideSearch={true}
-            />
+        <>
+          {/* Page Header */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
           </div>
 
-          {/* Threat Category Section */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{t("Threat Category")}</h3>
-              <Button onClick={() => { setActiveTab("tab2"); setThreatCatForm({ name: "" }); setIsAddOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" />{t("Add Threat Category")}
-              </Button>
+          <div className="space-y-8">
+            {/* Vulnerability Category Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-800">{t("Vulnerability Category")}</h3>
+                {canCreate && (
+                  <Button size="sm" onClick={() => { setActiveTab("tab1"); setVulnCatForm({ name: "" }); setIsAddOpen(true); }}>
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add")}
+                  </Button>
+                )}
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {renderSearchBar(t("Search vulnerability categories..."))}
+                <Table>
+                  <TableHeader>
+                    <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Category Name")}</TableHead>
+                      {(canEdit || canDelete) && (
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {getPaginatedSlice(filteredVulnCats, currentPage).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="h-24 text-center text-sm text-slate-500">
+                          {t("No categories found")}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      getPaginatedSlice(filteredVulnCats, currentPage).map((item) => (
+                        <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                          <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                          {(canEdit || canDelete) && (
+                            <TableCell className="py-3 pr-5">
+                              {renderActions(
+                                () => { setActiveTab("tab1"); setSelectedItem(item); setVulnCatForm({ name: item.name }); setIsEditOpen(true); },
+                                () => { setActiveTab("tab1"); setSelectedItem(item); setIsDeleteOpen(true); }
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+                <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredVulnCats.length)} totalItems={filteredVulnCats.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+              </div>
             </div>
-            <DataGrid
-              columns={threatCatColumns}
-              data={threatCategories}
-              hideSearch={true}
-            />
+
+            {/* Threat Category Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-800">{t("Threat Category")}</h3>
+                {canCreate && (
+                  <Button size="sm" onClick={() => { setActiveTab("tab2"); setThreatCatForm({ name: "" }); setIsAddOpen(true); }}>
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add")}
+                  </Button>
+                )}
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {renderSearchBar(t("Search threat categories..."))}
+                <Table>
+                  <TableHeader>
+                    <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Category Name")}</TableHead>
+                      {(canEdit || canDelete) && (
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {getPaginatedSlice(filteredThreatCats, currentPage2).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="h-24 text-center text-sm text-slate-500">
+                          {t("No categories found")}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      getPaginatedSlice(filteredThreatCats, currentPage2).map((item) => (
+                        <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                          <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                          {(canEdit || canDelete) && (
+                            <TableCell className="py-3 pr-5">
+                              {renderActions(
+                                () => { setActiveTab("tab2"); setSelectedItem(item); setThreatCatForm({ name: item.name }); setIsEditOpen(true); },
+                                () => { setActiveTab("tab2"); setSelectedItem(item); setIsDeleteOpen(true); }
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+                <Pagination currentPage={currentPage2} totalPages={getTotalPages(filteredThreatCats.length)} totalItems={filteredThreatCats.length} itemsPerPage={pageSize} onPageChange={setCurrentPage2} />
+              </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Control Strength */}
+      {/* ============================================================ */}
+      {/* Control Strength                                             */}
+      {/* ============================================================ */}
       {category === "control-strength" && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <Button onClick={() => { setControlStrengthForm({ name: "", score: 0 }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("Add Control Strength")}
-            </Button>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            {canCreate && (
+              <Button size="sm" onClick={() => { setControlStrengthForm({ name: "", score: 0 }); setIsAddOpen(true); }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Control Strength")}
+              </Button>
+            )}
           </div>
-          <DataGrid columns={controlStrengthColumns} data={controlStrengths.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-        </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {renderSearchBar(t("Search control strengths..."))}
+            <Table>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Score")}</TableHead>
+                  {(canEdit || canDelete) && (
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getPaginatedSlice(filteredControlStrengths, currentPage).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                  </TableRow>
+                ) : (
+                  getPaginatedSlice(filteredControlStrengths, currentPage).map((item) => (
+                    <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600">{item.score}</TableCell>
+                      {(canEdit || canDelete) && (
+                        <TableCell className="py-3 pr-5">
+                          {renderActions(
+                            () => { setSelectedItem(item); setControlStrengthForm({ name: item.name, score: item.score }); setIsEditOpen(true); },
+                            () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredControlStrengths.length)} totalItems={filteredControlStrengths.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+          </div>
+        </>
       )}
 
-      {/* Likelihood */}
+      {/* ============================================================ */}
+      {/* Likelihood                                                   */}
+      {/* ============================================================ */}
       {category === "likelihood" && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <Button onClick={() => { setLikelihoodForm({ title: "", score: 0, timeFrame: "", probability: "" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("Add Likelihood")}
-            </Button>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            {canCreate && (
+              <Button size="sm" onClick={() => { setLikelihoodForm({ title: "", score: 0, timeFrame: "", probability: "" }); setIsAddOpen(true); }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Likelihood")}
+              </Button>
+            )}
           </div>
-          <DataGrid columns={likelihoodColumns} data={likelihoods.filter(l => l.title.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-        </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {renderSearchBar(t("Search likelihoods..."))}
+            <Table>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Title")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Score")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Time Frame")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Probability")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getPaginatedSlice(filteredLikelihoods, currentPage).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                  </TableRow>
+                ) : (
+                  getPaginatedSlice(filteredLikelihoods, currentPage).map((item) => (
+                    <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.title}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600">{item.score}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600">{item.timeFrame || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600">{item.probability || "-"}</TableCell>
+                      <TableCell className="py-3 pr-5">
+                        {renderActions(
+                          () => { setSelectedItem(item); setLikelihoodForm({ title: item.title, score: item.score, timeFrame: item.timeFrame || "", probability: item.probability || "" }); setIsEditOpen(true); },
+                          () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredLikelihoods.length)} totalItems={filteredLikelihoods.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+          </div>
+        </>
       )}
 
-      {/* Threat */}
+      {/* ============================================================ */}
+      {/* Threat                                                       */}
+      {/* ============================================================ */}
       {category === "threat" && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <Button onClick={() => { setThreatForm({ name: "", description: "", categoryId: "" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("Add Threat")}
-            </Button>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            {canCreate && (
+              <Button size="sm" onClick={() => { setThreatForm({ name: "", description: "", categoryId: "" }); setIsAddOpen(true); }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Threat")}
+              </Button>
+            )}
           </div>
-          <DataGrid columns={threatColumns} data={threats.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-        </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {renderSearchBar(t("Search threats..."))}
+            <Table>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Threat ID")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getPaginatedSlice(filteredThreats, currentPage).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                  </TableRow>
+                ) : (
+                  getPaginatedSlice(filteredThreats, currentPage).map((item) => (
+                    <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm text-slate-600 pl-5">{item.threatId}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600">{item.category?.name || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800">{item.name}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600 max-w-[200px] truncate">{item.description || "-"}</TableCell>
+                      <TableCell className="py-3 pr-5">
+                        {renderActions(
+                          () => { setSelectedItem(item); setThreatForm({ name: item.name, description: item.description || "", categoryId: item.categoryId || "" }); setIsEditOpen(true); },
+                          () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredThreats.length)} totalItems={filteredThreats.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+          </div>
+        </>
       )}
 
-      {/* Vulnerability */}
+      {/* ============================================================ */}
+      {/* Vulnerability                                                */}
+      {/* ============================================================ */}
       {category === "vulnerability" && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setIsVulnImportOpen(true)}>
                 <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1909,180 +1791,484 @@ export default function RiskSettingsCategoryPage() {
                 <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Export")}
               </Button>
-              <Button onClick={() => { setVulnerabilityForm({ name: "", description: "", categoryId: "" }); setIsAddOpen(true); }}>
-                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Vulnerability")}
-              </Button>
+              {canCreate && (
+                <Button size="sm" onClick={() => { setVulnerabilityForm({ name: "", description: "", categoryId: "" }); setIsAddOpen(true); }}>
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Vulnerability")}
+                </Button>
+              )}
             </div>
           </div>
-          <DataGrid columns={vulnerabilityColumns} data={vulnerabilities.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-        </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {renderSearchBar(t("Search vulnerabilities..."))}
+            <Table>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Vulnerability ID")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getPaginatedSlice(filteredVulnerabilities, currentPage).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                  </TableRow>
+                ) : (
+                  getPaginatedSlice(filteredVulnerabilities, currentPage).map((item) => (
+                    <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm text-slate-600 pl-5">{item.vulnId}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600">{item.category?.name || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800">{item.name}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600 max-w-[200px] truncate">{item.description || "-"}</TableCell>
+                      <TableCell className="py-3 pr-5">
+                        {renderActions(
+                          () => { setSelectedItem(item); setVulnerabilityForm({ name: item.name, description: item.description || "", categoryId: item.categoryId || "" }); setIsEditOpen(true); },
+                          () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredVulnerabilities.length)} totalItems={filteredVulnerabilities.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+          </div>
+        </>
       )}
 
-      {/* Methodology */}
+      {/* ============================================================ */}
+      {/* Risk Methodology                                             */}
+      {/* ============================================================ */}
       {category === "risk-methodology" && (
-        <div className="space-y-6">
-          {/* Score Configuration */}
-          <div>
-            <h3 className="font-semibold mb-4">{t("Risk Score Configuration")}</h3>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="flex items-center justify-between p-3 border rounded">
-                <span>{t("Use Likelihood")}</span>
-                <Switch
-                  checked={riskScoreConfig?.useLikelihood ?? true}
-                  onCheckedChange={(val) => handleUpdateScoreConfig("useLikelihood", val)}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded">
-                <span>{t("Use Impact")}</span>
-                <Switch
-                  checked={riskScoreConfig?.useImpact ?? true}
-                  onCheckedChange={(val) => handleUpdateScoreConfig("useImpact", val)}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded">
-                <span>{t("Use Asset Score")}</span>
-                <Switch
-                  checked={riskScoreConfig?.useAssetScore ?? false}
-                  onCheckedChange={(val) => handleUpdateScoreConfig("useAssetScore", val)}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded">
-                <span>{t("Use Vulnerability Score")}</span>
-                <Switch
-                  checked={riskScoreConfig?.useVulnerabilityScore ?? false}
-                  onCheckedChange={(val) => handleUpdateScoreConfig("useVulnerabilityScore", val)}
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Label>{t("Risk Tolerance")}</Label>
-              <Input
-                type="number"
-                className="w-24"
-                value={riskScoreConfig?.riskTolerance ?? 10}
-                onChange={(e) => handleUpdateScoreConfig("riskTolerance", parseInt(e.target.value) || 0)}
-              />
-            </div>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
           </div>
 
-          {/* Risk Ranges */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">{t("Risk Ranges")}</h3>
-              <Button onClick={() => { setRiskRangeForm({ title: "", color: "#000000", lowRange: 0, highRange: 0, timelineDays: 0, description: "" }); setIsAddOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" />{t("Add Risk Range")}
-              </Button>
+          <div className="space-y-6">
+            {/* Score Configuration */}
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-800">{t("Risk Score Configuration")}</h3>
+              </div>
+              <div className="p-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-sm text-slate-700">{t("Use Likelihood")}</span>
+                    <Switch
+                      checked={riskScoreConfig?.useLikelihood ?? true}
+                      onCheckedChange={(val) => handleUpdateScoreConfig("useLikelihood", val)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-sm text-slate-700">{t("Use Impact")}</span>
+                    <Switch
+                      checked={riskScoreConfig?.useImpact ?? true}
+                      onCheckedChange={(val) => handleUpdateScoreConfig("useImpact", val)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-sm text-slate-700">{t("Use Asset Score")}</span>
+                    <Switch
+                      checked={riskScoreConfig?.useAssetScore ?? false}
+                      onCheckedChange={(val) => handleUpdateScoreConfig("useAssetScore", val)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-sm text-slate-700">{t("Use Vulnerability Score")}</span>
+                    <Switch
+                      checked={riskScoreConfig?.useVulnerabilityScore ?? false}
+                      onCheckedChange={(val) => handleUpdateScoreConfig("useVulnerabilityScore", val)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 pt-2">
+                  <Label className="text-sm font-medium text-slate-700">{t("Risk Tolerance")}</Label>
+                  <Input
+                    type="number"
+                    className="w-24 bg-white"
+                    value={riskScoreConfig?.riskTolerance ?? 10}
+                    onChange={(e) => handleUpdateScoreConfig("riskTolerance", parseInt(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
             </div>
-            <DataGrid columns={riskRangeColumns} data={riskRanges} hideSearch={true} />
+
+            {/* Risk Ranges */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-800">{t("Risk Ranges")}</h3>
+                {canCreate && (
+                  <Button size="sm" onClick={() => { setRiskRangeForm({ title: "", color: "#000000", lowRange: 0, highRange: 0, timelineDays: 0, description: "" }); setIsAddOpen(true); }}>
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Risk Range")}
+                  </Button>
+                )}
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Title")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Color")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Low Range")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("High Range")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Timeline Days")}</TableHead>
+                      {(canEdit || canDelete) && (
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {riskRanges.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center text-sm text-slate-500">{t("No risk ranges defined")}</TableCell>
+                      </TableRow>
+                    ) : (
+                      riskRanges.map((item) => (
+                        <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                          <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.title}</TableCell>
+                          <TableCell className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded border border-slate-200" style={{ backgroundColor: item.color || "#ccc" }} />
+                              <span className="text-sm text-slate-600">{item.color || "-"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{item.lowRange}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{item.highRange}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{item.timelineDays}</TableCell>
+                          {(canEdit || canDelete) && (
+                            <TableCell className="py-3 pr-5">
+                              {renderActions(
+                                () => { setSelectedItem(item); setRiskRangeForm({ title: item.title, color: item.color || "#000000", lowRange: item.lowRange, highRange: item.highRange, timelineDays: item.timelineDays, description: item.description || "" }); setIsEditOpen(true); },
+                                () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Risk Category */}
+      {/* ============================================================ */}
+      {/* Risk Category                                                */}
+      {/* ============================================================ */}
       {category === "risk-category" && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <Button onClick={() => { setRiskCategoryForm({ name: "", status: "Active" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("Add Risk Category")}
-            </Button>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            {canCreate && (
+              <Button size="sm" onClick={() => { setRiskCategoryForm({ name: "", status: "Active" }); setIsAddOpen(true); }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Risk Category")}
+              </Button>
+            )}
           </div>
-          <DataGrid columns={riskCategoryColumns} data={riskCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-        </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {renderSearchBar(t("Search risk categories..."))}
+            <Table>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Type")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                  {(canEdit || canDelete) && (
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getPaginatedSlice(filteredRiskCategories, currentPage).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                  </TableRow>
+                ) : (
+                  getPaginatedSlice(filteredRiskCategories, currentPage).map((item) => (
+                    <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                      <TableCell className="py-3">
+                        <span className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+                          item.status === "Active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
+                        )}>
+                          {item.status === "Active" ? t("Active") : t("Inactive")}
+                        </span>
+                      </TableCell>
+                      {(canEdit || canDelete) && (
+                        <TableCell className="py-3 pr-5">
+                          {renderActions(
+                            () => { setSelectedItem(item); setRiskCategoryForm({ name: item.name, status: item.status }); setIsEditOpen(true); },
+                            () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredRiskCategories.length)} totalItems={filteredRiskCategories.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+          </div>
+        </>
       )}
 
-      {/* Impact */}
+      {/* ============================================================ */}
+      {/* Impact (Tabbed: Categories + Ratings)                        */}
+      {/* ============================================================ */}
       {category === "impact" && (
-        <div>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="tab1">{t("Impact Categories")}</TabsTrigger>
-              <TabsTrigger value="tab2">{t("Impact Ratings")}</TabsTrigger>
-            </TabsList>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            {canCreate && (
+              <Button size="sm" onClick={() => {
+                if (activeTab === "tab1") { setImpactCatForm({ name: "" }); }
+                else { setImpactRatingForm({ name: "", score: 0, description: "" }); }
+                setIsAddOpen(true);
+              }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {activeTab === "tab1" ? t("Add Impact Category") : t("Add Impact Rating")}
+              </Button>
+            )}
+          </div>
 
-            <TabsContent value="tab1" className="mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="relative w-64">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-                <Button onClick={() => { setImpactCatForm({ name: "" }); setIsAddOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />{t("Add Impact Category")}
-                </Button>
-              </div>
-              <DataGrid columns={impactCatColumns} data={impactCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-            </TabsContent>
+          {/* Custom Tabs */}
+          <div className="flex gap-4 border-b border-slate-200">
+            <button
+              className={cn(
+                "pb-2.5 text-sm font-medium border-b-2 transition-colors",
+                activeTab === "tab1" ? "border-primary-600 text-primary-600" : "border-transparent text-slate-500 hover:text-slate-700"
+              )}
+              onClick={() => { setActiveTab("tab1"); setCurrentPage(1); }}
+            >
+              {t("Impact Categories")}
+            </button>
+            <button
+              className={cn(
+                "pb-2.5 text-sm font-medium border-b-2 transition-colors",
+                activeTab === "tab2" ? "border-primary-600 text-primary-600" : "border-transparent text-slate-500 hover:text-slate-700"
+              )}
+              onClick={() => { setActiveTab("tab2"); setCurrentPage(1); }}
+            >
+              {t("Impact Ratings")}
+            </button>
+          </div>
 
-            <TabsContent value="tab2" className="mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="relative w-64">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-                <Button onClick={() => { setImpactRatingForm({ name: "", score: 0, description: "" }); setIsAddOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />{t("Add Impact Rating")}
-                </Button>
-              </div>
-              <DataGrid columns={impactRatingColumns} data={impactRatings.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-            </TabsContent>
-          </Tabs>
-        </div>
+          {/* Impact Categories Tab */}
+          {activeTab === "tab1" && (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {renderSearchBar(t("Search impact categories..."))}
+              <Table>
+                <TableHeader>
+                  <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Name")}</TableHead>
+                    {(canEdit || canDelete) && (
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getPaginatedSlice(filteredImpactCats, currentPage).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                    </TableRow>
+                  ) : (
+                    getPaginatedSlice(filteredImpactCats, currentPage).map((item) => (
+                      <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                        <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                        {(canEdit || canDelete) && (
+                          <TableCell className="py-3 pr-5">
+                            {renderActions(
+                              () => { setSelectedItem(item); setImpactCatForm({ name: item.name }); setIsEditOpen(true); },
+                              () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+              <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredImpactCats.length)} totalItems={filteredImpactCats.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+            </div>
+          )}
+
+          {/* Impact Ratings Tab */}
+          {activeTab === "tab2" && (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {renderSearchBar(t("Search impact ratings..."))}
+              <Table>
+                <TableHeader>
+                  <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Score")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
+                    {(canEdit || canDelete) && (
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getPaginatedSlice(filteredImpactRatings, currentPage).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                    </TableRow>
+                  ) : (
+                    getPaginatedSlice(filteredImpactRatings, currentPage).map((item) => (
+                      <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                        <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-600">{item.score}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-600 max-w-[200px] truncate">{item.description || "-"}</TableCell>
+                        {(canEdit || canDelete) && (
+                          <TableCell className="py-3 pr-5">
+                            {renderActions(
+                              () => { setSelectedItem(item); setImpactRatingForm({ name: item.name, score: item.score, description: item.description || "" }); setIsEditOpen(true); },
+                              () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+              <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredImpactRatings.length)} totalItems={filteredImpactRatings.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+            </div>
+          )}
+        </>
       )}
 
-      {/* Vulnerability Rating */}
+      {/* ============================================================ */}
+      {/* Vulnerability Rating                                         */}
+      {/* ============================================================ */}
       {category === "vulnerability-rating" && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <Button onClick={() => { setVulnRatingForm({ label: "", score: 0 }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("Add Vulnerability Rating")}
-            </Button>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            {canCreate && (
+              <Button size="sm" onClick={() => { setVulnRatingForm({ label: "", score: 0 }); setIsAddOpen(true); }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Vulnerability Rating")}
+              </Button>
+            )}
           </div>
-          <DataGrid columns={vulnRatingColumns} data={vulnerabilityRatings.filter(r => r.label.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-        </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {renderSearchBar(t("Search vulnerability ratings..."))}
+            <Table>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Label")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Score")}</TableHead>
+                  {(canEdit || canDelete) && (
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getPaginatedSlice(filteredVulnRatings, currentPage).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                  </TableRow>
+                ) : (
+                  getPaginatedSlice(filteredVulnRatings, currentPage).map((item) => (
+                    <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.label}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600">{item.score}</TableCell>
+                      {(canEdit || canDelete) && (
+                        <TableCell className="py-3 pr-5">
+                          {renderActions(
+                            () => { setSelectedItem(item); setVulnRatingForm({ label: item.label, score: item.score }); setIsEditOpen(true); },
+                            () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredVulnRatings.length)} totalItems={filteredVulnRatings.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+          </div>
+        </>
       )}
 
-      {/* Risk Sub Category */}
+      {/* ============================================================ */}
+      {/* Risk Sub Category                                            */}
+      {/* ============================================================ */}
       {category === "risk-sub-category" && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <Button onClick={() => { setRiskSubCatForm({ type: "" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("Add Risk Sub Category")}
-            </Button>
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            {canCreate && (
+              <Button size="sm" onClick={() => { setRiskSubCatForm({ type: "" }); setIsAddOpen(true); }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Risk Sub Category")}
+              </Button>
+            )}
           </div>
-          <DataGrid columns={riskSubCatColumns} data={riskSubCategories.filter(c => c.type.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-        </div>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {renderSearchBar(t("Search sub categories..."))}
+            <Table>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Type")}</TableHead>
+                  {(canEdit || canDelete) && (
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getPaginatedSlice(filteredRiskSubCats, currentPage).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="h-24 text-center text-sm text-slate-500">{t("No items found")}</TableCell>
+                  </TableRow>
+                ) : (
+                  getPaginatedSlice(filteredRiskSubCats, currentPage).map((item) => (
+                    <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.type}</TableCell>
+                      {(canEdit || canDelete) && (
+                        <TableCell className="py-3 pr-5">
+                          {renderActions(
+                            () => { setSelectedItem(item); setRiskSubCatForm({ type: item.type }); setIsEditOpen(true); },
+                            () => { setSelectedItem(item); setIsDeleteOpen(true); }
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredRiskSubCats.length)} totalItems={filteredRiskSubCats.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
+          </div>
+        </>
       )}
 
-      {/* Add Dialog */}
+      {/* ============================================================ */}
+      {/* Add Dialog                                                   */}
+      {/* ============================================================ */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
-          <DialogHeader className="px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">
-              {category === "category" && activeTab === "tab1" && t("Add Vulnerability Category")}
-              {category === "category" && activeTab === "tab2" && t("Add Threat Category")}
-              {category === "control-strength" && t("Add Control Strength")}
-              {category === "likelihood" && t("Add Likelihood")}
-              {category === "threat" && t("Add Threat")}
-              {category === "vulnerability" && t("Add Vulnerability")}
-              {category === "risk-methodology" && t("Add Risk Range")}
-              {category === "risk-category" && t("Add Risk Category")}
-              {category === "impact" && activeTab === "tab1" && t("Add Impact Category")}
-              {category === "impact" && activeTab === "tab2" && t("Add Impact Rating")}
-              {category === "vulnerability-rating" && t("Add Vulnerability Rating")}
-              {category === "risk-sub-category" && t("Add Risk Sub Category")}
-            </DialogTitle>
-          </DialogHeader>
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {category === "category" && activeTab === "tab1" && t("Add Vulnerability Category")}
+                {category === "category" && activeTab === "tab2" && t("Add Threat Category")}
+                {category === "control-strength" && t("Add Control Strength")}
+                {category === "likelihood" && t("Add Likelihood")}
+                {category === "threat" && t("Add Threat")}
+                {category === "vulnerability" && t("Add Vulnerability")}
+                {category === "risk-methodology" && t("Add Risk Range")}
+                {category === "risk-category" && t("Add Risk Category")}
+                {category === "impact" && activeTab === "tab1" && t("Add Impact Category")}
+                {category === "impact" && activeTab === "tab2" && t("Add Impact Rating")}
+                {category === "vulnerability-rating" && t("Add Vulnerability Rating")}
+                {category === "risk-sub-category" && t("Add Risk Sub Category")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
           <div className="px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
@@ -2144,7 +2330,7 @@ export default function RiskSettingsCategoryPage() {
                     <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder={t("Select Category")} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {threatCategories.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                       ))}
@@ -2169,7 +2355,7 @@ export default function RiskSettingsCategoryPage() {
                     <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder={t("Select Category")} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {vulnerabilityCategories.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                       ))}
@@ -2220,7 +2406,7 @@ export default function RiskSettingsCategoryPage() {
                     <SelectTrigger className="w-full bg-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       <SelectItem value="Active">{t("Active")}</SelectItem>
                       <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
                     </SelectContent>
@@ -2269,7 +2455,7 @@ export default function RiskSettingsCategoryPage() {
               </div>
             )}
           </div>
-          <DialogFooter className="px-6 py-4 border-t border-slate-100">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={() => {
               if (category === "category" && activeTab === "tab1") handleAddVulnCat();
@@ -2285,29 +2471,33 @@ export default function RiskSettingsCategoryPage() {
               else if (category === "vulnerability-rating") handleAddVulnRating();
               else if (category === "risk-sub-category") handleAddRiskSubCat();
             }}>{t("Save")}</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
+      {/* ============================================================ */}
+      {/* Edit Dialog                                                  */}
+      {/* ============================================================ */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
-          <DialogHeader className="px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">
-              {category === "category" && activeTab === "tab1" && t("Edit Vulnerability Category")}
-              {category === "category" && activeTab === "tab2" && t("Edit Threat Category")}
-              {category === "control-strength" && t("Edit Control Strength")}
-              {category === "likelihood" && t("Edit Likelihood")}
-              {category === "threat" && t("Edit Threat")}
-              {category === "vulnerability" && t("Edit Vulnerability")}
-              {category === "risk-methodology" && t("Edit Risk Range")}
-              {category === "risk-category" && t("Edit Risk Category")}
-              {category === "impact" && activeTab === "tab1" && t("Edit Impact Category")}
-              {category === "impact" && activeTab === "tab2" && t("Edit Impact Rating")}
-              {category === "vulnerability-rating" && t("Edit Vulnerability Rating")}
-              {category === "risk-sub-category" && t("Edit Risk Sub Category")}
-            </DialogTitle>
-          </DialogHeader>
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {category === "category" && activeTab === "tab1" && t("Edit Vulnerability Category")}
+                {category === "category" && activeTab === "tab2" && t("Edit Threat Category")}
+                {category === "control-strength" && t("Edit Control Strength")}
+                {category === "likelihood" && t("Edit Likelihood")}
+                {category === "threat" && t("Edit Threat")}
+                {category === "vulnerability" && t("Edit Vulnerability")}
+                {category === "risk-methodology" && t("Edit Risk Range")}
+                {category === "risk-category" && t("Edit Risk Category")}
+                {category === "impact" && activeTab === "tab1" && t("Edit Impact Category")}
+                {category === "impact" && activeTab === "tab2" && t("Edit Impact Rating")}
+                {category === "vulnerability-rating" && t("Edit Vulnerability Rating")}
+                {category === "risk-sub-category" && t("Edit Risk Sub Category")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
           <div className="px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
@@ -2369,7 +2559,7 @@ export default function RiskSettingsCategoryPage() {
                     <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder={t("Select Category")} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {threatCategories.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                       ))}
@@ -2394,7 +2584,7 @@ export default function RiskSettingsCategoryPage() {
                     <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder={t("Select Category")} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {vulnerabilityCategories.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                       ))}
@@ -2445,7 +2635,7 @@ export default function RiskSettingsCategoryPage() {
                     <SelectTrigger className="w-full bg-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       <SelectItem value="Active">{t("Active")}</SelectItem>
                       <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
                     </SelectContent>
@@ -2494,7 +2684,7 @@ export default function RiskSettingsCategoryPage() {
               </div>
             )}
           </div>
-          <DialogFooter className="px-6 py-4 border-t border-slate-100">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={() => {
               if (category === "category" && activeTab === "tab1") handleEditVulnCat();
@@ -2510,22 +2700,24 @@ export default function RiskSettingsCategoryPage() {
               else if (category === "vulnerability-rating") handleEditVulnRating();
               else if (category === "risk-sub-category") handleEditRiskSubCat();
             }}>{t("Save")}</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
-          <DialogHeader className="px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
-            <DialogDescription className="text-sm text-slate-500 mt-1">
-              {t("Are you sure you want to delete this item?")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="px-6 py-4 border-t border-slate-100">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>{t("Cancel")}</Button>
-            <Button variant="destructive" onClick={() => {
+      {/* ============================================================ */}
+      {/* Delete Confirmation Dialog                                   */}
+      {/* ============================================================ */}
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
+              {t("Are you sure you want to delete this item? This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 bg-slate-50/80 rounded-b-lg">
+            <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => {
               if (category === "category" && activeTab === "tab1") handleDeleteVulnCat();
               else if (category === "category" && activeTab === "tab2") handleDeleteThreatCat();
               else if (category === "control-strength") handleDeleteControlStrength();
@@ -2538,12 +2730,14 @@ export default function RiskSettingsCategoryPage() {
               else if (category === "impact" && activeTab === "tab2") handleDeleteImpactRating();
               else if (category === "vulnerability-rating") handleDeleteVulnRating();
               else if (category === "risk-sub-category") handleDeleteRiskSubCat();
-            }}>{t("Delete")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            }}>{t("Delete")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {/* Vulnerability Import Dialog */}
+      {/* ============================================================ */}
+      {/* Vulnerability Import Dialog                                  */}
+      {/* ============================================================ */}
       <Dialog open={isVulnImportOpen} onOpenChange={(open) => {
         setIsVulnImportOpen(open);
         if (!open) {
@@ -2551,9 +2745,11 @@ export default function RiskSettingsCategoryPage() {
         }
       }}>
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0">
-          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle>{t("Import Vulnerabilities")}</DialogTitle>
-          </DialogHeader>
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Vulnerabilities")}</DialogTitle>
+            </DialogHeader>
+          </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <p className="text-sm text-slate-500">
@@ -2634,7 +2830,7 @@ export default function RiskSettingsCategoryPage() {
             </div>
           </div>
           {vulnSelectedFile && (
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => setVulnSelectedFile(null)}

@@ -666,7 +666,7 @@ export function NewRiskWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[800px] h-[85vh] flex flex-col p-0 gap-0">
+      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
         {/* Fixed Header */}
         <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
           <DialogHeader>
@@ -804,7 +804,7 @@ export function NewRiskWizard({
                         value={formData.departmentId}
                         onValueChange={(value) => handleInputChange("departmentId", value)}
                       >
-                        <SelectTrigger className="bg-white border-slate-200">
+                        <SelectTrigger className="w-full bg-white border-slate-200">
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent>
@@ -826,7 +826,7 @@ export function NewRiskWizard({
                         onValueChange={(value) => handleInputChange("ownerId", value)}
                         disabled={!formData.departmentId}
                       >
-                        <SelectTrigger className="bg-white border-slate-200">
+                        <SelectTrigger className="w-full bg-white border-slate-200">
                           <SelectValue placeholder={formData.departmentId ? "Select owner" : "Select department first"} />
                         </SelectTrigger>
                         <SelectContent>
@@ -903,7 +903,7 @@ export function NewRiskWizard({
                         value={formData.typeId}
                         onValueChange={(value) => handleInputChange("typeId", value)}
                       >
-                        <SelectTrigger className="bg-white border-slate-200">
+                        <SelectTrigger className="w-full bg-white border-slate-200">
                           <SelectValue placeholder="Select risk type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -927,7 +927,7 @@ export function NewRiskWizard({
                           value={formData.impactedAssetId}
                           onValueChange={(value) => handleInputChange("impactedAssetId", value)}
                         >
-                          <SelectTrigger className="bg-white border-slate-200">
+                          <SelectTrigger className="w-full bg-white border-slate-200">
                             <SelectValue placeholder="Select asset" />
                           </SelectTrigger>
                           <SelectContent>
@@ -951,7 +951,7 @@ export function NewRiskWizard({
                           value={formData.impactedProcessId}
                           onValueChange={(value) => handleInputChange("impactedProcessId", value)}
                         >
-                          <SelectTrigger className="bg-white border-slate-200">
+                          <SelectTrigger className="w-full bg-white border-slate-200">
                             <SelectValue placeholder="Select process" />
                           </SelectTrigger>
                           <SelectContent>
@@ -969,7 +969,7 @@ export function NewRiskWizard({
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-400">Impacted Asset/Process</Label>
                         <Select disabled>
-                          <SelectTrigger className="bg-slate-50 border-slate-200">
+                          <SelectTrigger className="w-full bg-slate-50 border-slate-200">
                             <SelectValue placeholder="Select risk type first" />
                           </SelectTrigger>
                         </Select>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Home, ChevronRight } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/usePagination";
+import { Home, ChevronRight, Search, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import {
@@ -22,19 +23,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { useUserRoles, usePermissions } from "@/hooks/usePermissions";
-import { PermissionGate } from "@/components/ui/permission-gate";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { RiskResponseDialog } from "@/components/risks/risk-response-dialog";
 
 interface Risk {
   id: string;
@@ -98,9 +91,6 @@ function ProgressBar({
 }
 
 export default function RiskResponsePage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const fromRiskDashboard = searchParams.get("from") === "risk-dashboard";
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const { canEdit, canApprove } = usePermissions('risk.response');
@@ -116,13 +106,19 @@ export default function RiskResponsePage() {
   const userDepartmentId = session?.user?.departmentId;
 
   // Filters - "all" shows all items without filtering
+  const [searchTerm, setSearchTerm] = useState("");
   const [strategyFilter, setStrategyFilter] = useState("all");
   const [progressFilter, setProgressFilter] = useState("all");
+  const ITEMS_PER_PAGE = 20;
 
   // Dialog states
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Response dialog state
+  const [responseDialogOpen, setResponseDialogOpen] = useState(false);
+  const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRisks();
@@ -147,7 +143,8 @@ export default function RiskResponsePage() {
   };
 
   const openDetail = (risk: Risk) => {
-    router.push(`/risks/response/${risk.id}`);
+    setSelectedRiskId(risk.id);
+    setResponseDialogOpen(true);
   };
 
   // Handle Respond action - changes responseStatus from Open to In-Progress
@@ -161,11 +158,12 @@ export default function RiskResponsePage() {
         body: JSON.stringify({ responseStatus: "In-Progress" }),
       });
       if (response.ok) {
-        // Update local state and navigate to detail
+        // Update local state and open dialog
         setRisks(prev => prev.map(r =>
           r.id === risk.id ? { ...r, responseStatus: "In-Progress" } : r
         ));
-        router.push(`/risks/response/${risk.id}`);
+        setSelectedRiskId(risk.id);
+        setResponseDialogOpen(true);
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error("PATCH failed:", response.status, errorData);
@@ -421,8 +419,20 @@ export default function RiskResponsePage() {
     }
   };
 
-  // Display risks filtered by both strategy and progress status
-  const displayRisks = filteredByProgress;
+  // Search filter
+  const displayRisks = filteredByProgress.filter((risk) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      risk.riskId.toLowerCase().includes(term) ||
+      risk.name.toLowerCase().includes(term) ||
+      (risk.responseStrategy || "").toLowerCase().includes(term) ||
+      (risk.owner?.fullName || "").toLowerCase().includes(term)
+    );
+  });
+
+  // Pagination
+  const { currentPage, setCurrentPage, totalPages, paginatedData: paginatedRisks } = usePagination({ data: displayRisks, itemsPerPage: ITEMS_PER_PAGE });
 
   if (loading) {
     return (
@@ -531,69 +541,86 @@ export default function RiskResponsePage() {
         </div>
       </div>
 
-      {/* Risk List Table */}
+      {/* Risk List */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-slate-700 font-medium">{t("Risk ID")}</TableHead>
-              <TableHead className="text-slate-700 font-medium">{t("Risk Name")}</TableHead>
-              <TableHead className="text-slate-700 font-medium">{t("Residual Risk Rating")}</TableHead>
-              <TableHead className="text-slate-700 font-medium">{t("Risk Priority")}</TableHead>
-              <TableHead className="text-slate-700 font-medium">{t("Risk Due Date")}</TableHead>
-              <TableHead className="text-slate-700 font-medium">{t("Response Status")}</TableHead>
-              <TableHead className="text-slate-700 font-medium">{t("Action")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {displayRisks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  {t("No risks found")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              displayRisks.map((risk) => (
-                <TableRow key={risk.id} className="hover:bg-slate-50 transition-colors">
-                  <TableCell className="py-3 font-medium text-primary-600">{risk.riskId}</TableCell>
-                  <TableCell className="py-3 text-slate-800">{risk.name}</TableCell>
-                  <TableCell className="py-3">
-                    <span className={cn(
-                      "text-sm font-medium",
-                      risk.riskRating === "Low Risk" && "text-green-600",
-                      risk.riskRating === "High" && "text-orange-600",
-                      risk.riskRating === "Very high" && "text-red-600",
-                      risk.riskRating === "Catastrophic" && "text-red-800"
-                    )}>
-                      {risk.riskRating || "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3 text-slate-600">-</TableCell>
-                  <TableCell className="py-3 text-slate-600">
-                    {risk.treatmentDueDate
-                      ? new Date(risk.treatmentDueDate).toLocaleDateString("en-GB")
-                      : "-"}
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <span className={cn(
-                      "px-2 py-1 rounded text-xs font-medium",
-                      (risk.responseStatus || "Open") === "Completed" && "bg-green-100 text-green-800",
-                      (risk.responseStatus || "Open") === "Awaiting Approval" && "bg-purple-100 text-purple-800",
-                      (risk.responseStatus || "Open") === "In-Progress" && "bg-yellow-100 text-yellow-800",
-                      (risk.responseStatus || "Open") === "Sent Back" && "bg-red-100 text-red-800",
-                      (risk.responseStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
-                    )}>
-                      {risk.responseStatus || "Open"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    {getActionButtons(risk)}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        {/* Search Bar */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative flex-1 min-w-[280px] max-w-md">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search risks...")}
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Column Headers */}
+        <div className="grid grid-cols-[100px_1.5fr_120px_110px_110px_120px_110px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <span>{t("Risk ID")}</span>
+          <span>{t("Risk Name")}</span>
+          <span>{t("Risk Rating")}</span>
+          <span>{t("Strategy")}</span>
+          <span>{t("Due Date")}</span>
+          <span>{t("Status")}</span>
+          <span>{t("Action")}</span>
+        </div>
+
+        {/* Rows */}
+        <div className="divide-y divide-slate-100">
+          {paginatedRisks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <AlertTriangle className="h-10 w-10 text-slate-300 mb-3" />
+              <p className="text-sm font-medium text-slate-600">{t("No risks found")}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search or filters")}</p>
+            </div>
+          ) : (
+            paginatedRisks.map((risk) => (
+              <div
+                key={risk.id}
+                className="grid grid-cols-[100px_1.5fr_120px_110px_110px_120px_110px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
+              >
+                <span className="text-sm font-medium text-primary-600">{risk.riskId}</span>
+                <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
+                <span>
+                  <RiskRatingBadge rating={risk.riskRating || "-"} />
+                </span>
+                <span className="text-sm text-slate-600">{risk.responseStrategy || "-"}</span>
+                <span className="text-sm text-slate-600">
+                  {risk.treatmentDueDate
+                    ? new Date(risk.treatmentDueDate).toLocaleDateString("en-GB")
+                    : "-"}
+                </span>
+                <span>
+                  <span className={cn(
+                    "px-2 py-1 rounded text-xs font-medium",
+                    (risk.responseStatus || "Open") === "Completed" && "bg-green-100 text-green-800",
+                    (risk.responseStatus || "Open") === "Awaiting Approval" && "bg-purple-100 text-purple-800",
+                    (risk.responseStatus || "Open") === "In-Progress" && "bg-amber-100 text-amber-800",
+                    (risk.responseStatus || "Open") === "Sent Back" && "bg-red-100 text-red-800",
+                    (risk.responseStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
+                  )}>
+                    {risk.responseStatus || "Open"}
+                  </span>
+                </span>
+                <span>
+                  {getActionButtons(risk)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={displayRisks.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Success Dialog */}
@@ -612,6 +639,14 @@ export default function RiskResponsePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Risk Response Dialog */}
+      <RiskResponseDialog
+        open={responseDialogOpen}
+        onOpenChange={setResponseDialogOpen}
+        riskId={selectedRiskId}
+        onStatusChange={() => fetchRisks()}
+      />
     </div>
   );
 }

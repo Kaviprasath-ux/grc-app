@@ -39,13 +39,11 @@ import {
   CheckCircle2,
   XCircle,
   Bot,
-  ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Home,
   Search,
 } from "lucide-react";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -513,7 +511,7 @@ export default function CAPATrackingPage() {
                 setSearchQuery(e.target.value);
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
-              className="pl-10 w-[300px] h-9 bg-white border-slate-300"
+              className="pl-10 w-[300px] h-9 bg-slate-50 border-slate-200"
             />
           </div>
           <div className="flex items-center gap-3 ml-auto">
@@ -524,7 +522,7 @@ export default function CAPATrackingPage() {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
             >
-              <SelectTrigger className="w-[200px] h-9 text-sm bg-white border-slate-300">
+              <SelectTrigger className="w-[200px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Departments")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -647,51 +645,13 @@ export default function CAPATrackingPage() {
         </div>
 
         {/* Pagination */}
-        {pagination.total > 0 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-            <span className="text-xs text-slate-500">
-              {startIndex} {t("to")} {endIndex} {t("of")} {pagination.total}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={pagination.page === 1}
-                onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={pagination.page === 1}
-                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => setPagination((prev) => ({ ...prev, page: pagination.totalPages }))}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <PaginationUI
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.total}
+          itemsPerPage={pagination.limit}
+          onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
+        />
       </div>
 
       {/* Delete Confirmation Dialog */}

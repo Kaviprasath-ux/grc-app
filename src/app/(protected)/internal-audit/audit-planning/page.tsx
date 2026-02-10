@@ -1413,12 +1413,12 @@ export default function AuditPlanningPage() {
               placeholder={t("Search By Audit ID, Name")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
           <div className="flex items-center gap-3 ml-auto">
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-300">
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Department")} />
               </SelectTrigger>
               <SelectContent>
@@ -1431,7 +1431,7 @@ export default function AuditPlanningPage() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-300">
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Status")} />
               </SelectTrigger>
               <SelectContent>
@@ -1442,7 +1442,7 @@ export default function AuditPlanningPage() {
               </SelectContent>
             </Select>
             <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger className="w-[110px] h-9 text-sm bg-white border-slate-300">
+              <SelectTrigger className="w-[110px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Year")} />
               </SelectTrigger>
               <SelectContent>

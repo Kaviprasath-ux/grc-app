@@ -509,7 +509,7 @@ function RiskRegisterContent() {
                 className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 ms-auto">
               <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("Category")} />

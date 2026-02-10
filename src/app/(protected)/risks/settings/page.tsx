@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -110,8 +109,22 @@ export default function RiskSettingsPage() {
 
   if (permissionsLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>{t("Risk Management")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Settings")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Settings")}</h1>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -137,41 +150,31 @@ export default function RiskSettingsPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Settings")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Settings")}</h1>
       </div>
 
       {/* Settings Card Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {settingCards.map((card) => {
           const Icon = card.icon;
-
           return (
-            <div
+            <button
               key={card.id}
-              className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full min-h-[160px]"
+              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left cursor-pointer"
+              onClick={() => router.push(card.href)}
             >
-              <div className="flex items-start gap-4 flex-1">
-                <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
-                  <Icon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-base font-semibold text-slate-800">{card.title}</h4>
-                  <p className="text-sm text-slate-500 line-clamp-2">
-                    {card.description}
-                  </p>
-                </div>
+              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0">
+                <Icon className="h-5 w-5 text-primary-600" />
               </div>
-              <div className="flex items-center justify-end pt-3 mt-4 border-t border-slate-100">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push(card.href)}
-                >
-                  {t("Manage")}
-                </Button>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-slate-800">{card.title}</h4>
+                <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {card.description}
+                </p>
               </div>
-            </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+            </button>
           );
         })}
       </div>

@@ -27,14 +27,14 @@ import {
   Pencil,
   X,
   Save,
-  ChevronLeft,
-  ChevronRight,
   Shield,
   AlertTriangle,
   Target,
   FileText,
   Clock,
   Link2,
+  Zap,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -143,17 +143,15 @@ interface RiskDetailDialogProps {
 const likelihoodLabels = ["", "Rare", "Unlikely", "Possible", "Likely", "Almost Certain"];
 const impactLabels = ["", "Insignificant", "Minor", "Moderate", "Major", "Catastrophic"];
 
-// Carousel sections matching the website
 const sections = [
-  { id: "overview", label: "Risk Overview", icon: FileText },
-  { id: "context", label: "Risk Context", icon: Target },
-  { id: "assessment", label: "Risk Assessment", icon: AlertTriangle },
+  { id: "overview", label: "Overview", icon: FileText },
+  { id: "context", label: "Context", icon: Target },
+  { id: "assessment", label: "Assessment", icon: AlertTriangle },
   { id: "controls", label: "Controls", icon: Shield },
-  { id: "response", label: "Risk Response", icon: Link2 },
-  { id: "activity", label: "Activity Log", icon: Clock },
+  { id: "response", label: "Response", icon: Link2 },
+  { id: "activity", label: "Activity", icon: Clock },
 ];
 
-// Risk rating matching website: Catastrophic, Very high, High, Low Risk
 function calculateRiskRating(score: number): string {
   if (score >= 20) return "Catastrophic";
   if (score >= 15) return "Very high";
@@ -349,89 +347,73 @@ export function RiskDetailDialog({
     }
   };
 
-  const goToPrevSection = () => {
-    setActiveSection((prev) => (prev > 0 ? prev - 1 : sections.length - 1));
-  };
-
-  const goToNextSection = () => {
-    setActiveSection((prev) => (prev < sections.length - 1 ? prev + 1 : 0));
-  };
-
   if (!risk) return null;
-
-  const CurrentIcon = sections[activeSection].icon;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-lg font-semibold text-slate-800 mb-2">
-                {risk.riskId} - {risk.name}
-              </DialogTitle>
-              <div className="flex items-center gap-2 flex-wrap">
-                <RiskRatingBadge rating={editMode ? riskRating : risk.riskRating} />
-                <RiskStatusBadge status={editMode ? formData.status : risk.status} />
+      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" showCloseButton={false}>
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 px-6 pt-5 pb-0">
+          <DialogHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg font-semibold text-slate-800 truncate pe-2">
+                  {risk.riskId} - {risk.name}
+                </DialogTitle>
+              </div>
+              <div className="flex-shrink-0 flex items-center gap-2">
+                {!editMode ? (
+                  <PermissionGate resource="risk.register" action="edit">
+                    <Button variant="outline" size="sm" onClick={() => onEditModeChange(true)}>
+                      <Pencil className="h-3.5 w-3.5 me-1" />
+                      Edit
+                    </Button>
+                  </PermissionGate>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => onEditModeChange(false)}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={loading}>
+                      <Save className="h-3.5 w-3.5 me-1" />
+                      {loading ? "Saving..." : "Save"}
+                    </Button>
+                  </>
+                )}
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600" onClick={() => onOpenChange(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-            <div className="flex-shrink-0 flex gap-2">
-              {!editMode ? (
-                <PermissionGate resource="risk.register" action="edit">
-                  <Button variant="outline" size="sm" onClick={() => onEditModeChange(true)}>
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                </PermissionGate>
-              ) : (
-                <>
-                  <Button variant="outline" size="sm" onClick={() => onEditModeChange(false)}>
-                    <X className="h-4 w-4 mr-1" />
-                    Cancel
-                  </Button>
-                  <Button size="sm" onClick={handleSave} disabled={loading}>
-                    <Save className="h-4 w-4 mr-1" />
-                    {loading ? "Saving..." : "Save"}
-                  </Button>
-                </>
-              )}
+            <div className="flex items-center gap-2 flex-wrap mt-2">
+              <RiskRatingBadge rating={editMode ? riskRating : risk.riskRating} />
+              <RiskStatusBadge status={editMode ? formData.status : risk.status} />
             </div>
-          </div>
-        </DialogHeader>
-
-        {/* Carousel Navigation */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-slate-100">
-          <Button variant="ghost" size="sm" onClick={goToPrevSection}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous
-          </Button>
-
-          <div className="flex items-center gap-2">
-            {sections.map((section, index) => (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(index)}
-                className={cn(
-                  "w-2.5 h-2.5 rounded-full transition-all",
-                  activeSection === index
-                    ? "bg-primary-500 w-8"
-                    : "bg-slate-300 hover:bg-slate-400"
-                )}
-                title={section.label}
-              />
-            ))}
-          </div>
-
-          <Button variant="ghost" size="sm" onClick={goToNextSection}>
-            Next
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
+          </DialogHeader>
         </div>
 
-        {/* Section Header */}
-        <div className="flex-shrink-0 flex items-center gap-2 px-6 py-3">
-          <CurrentIcon className="h-5 w-5 text-primary-500" />
-          <h3 className="text-lg font-semibold text-slate-800">{sections[activeSection].label}</h3>
+        {/* Tab Navigation */}
+        <div className="flex-shrink-0 px-6 border-b border-slate-200">
+          <div className="flex items-center gap-1 overflow-x-auto -mb-px">
+            {sections.map((section, index) => {
+              const Icon = section.icon;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(index)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap border-b-2",
+                    activeSection === index
+                      ? "text-primary-600 border-primary-600"
+                      : "text-slate-400 border-transparent hover:text-slate-600"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {section.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Content Area */}
@@ -509,47 +491,49 @@ export function RiskDetailDialog({
                 </>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Risk ID</p>
-                      <p className="font-medium">{risk.riskId}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk ID</p>
+                      <p className="font-semibold text-slate-800 mt-1">{risk.riskId}</p>
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Status</p>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</p>
                       <RiskStatusBadge status={risk.status} className="mt-1" />
-                    </div>
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Risk Rating</p>
-                      <RiskRatingBadge rating={risk.riskRating} className="mt-1" />
-                    </div>
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Risk Score</p>
-                      <p className="font-bold text-lg">{risk.riskScore}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Department</p>
-                      <p className="font-medium">{risk.department?.name || "-"}</p>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Rating</p>
+                      <RiskRatingBadge rating={risk.riskRating} className="mt-1" />
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Risk Owner</p>
-                      <p className="font-medium">{risk.owner?.fullName || "-"}</p>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Score</p>
+                      <p className="font-bold text-lg text-slate-800 mt-0.5">{risk.riskScore}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Department</p>
+                      <p className="font-medium text-slate-800 mt-1">{risk.department?.name || "-"}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Owner</p>
+                      <p className="font-medium text-slate-800 mt-1">{risk.owner?.fullName || "-"}</p>
                       {risk.owner?.email && (
-                        <p className="text-xs text-muted-foreground">{risk.owner.email}</p>
+                        <p className="text-xs text-slate-500">{risk.owner.email}</p>
                       )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Created</p>
-                      <p className="font-medium">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Created</p>
+                      <p className="font-medium text-slate-800 mt-1">
                         {new Date(risk.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Last Updated</p>
-                      <p className="font-medium">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Last Updated</p>
+                      <p className="font-medium text-slate-800 mt-1">
                         {new Date(risk.updatedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -610,7 +594,6 @@ export function RiskDetailDialog({
                         value={formData.typeId}
                         onValueChange={(value) => {
                           handleInputChange("typeId", value);
-                          // Clear the opposite field when type changes
                           const selectedType = riskTypes.find(t => t.id === value);
                           if (selectedType?.name === "Asset Risk") {
                             handleInputChange("impactedProcessId", "");
@@ -632,7 +615,6 @@ export function RiskDetailDialog({
                       </Select>
                     </div>
                   </div>
-                  {/* Impacted Asset or Process based on Risk Type */}
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-slate-700">Impacted Asset</Label>
@@ -676,49 +658,49 @@ export function RiskDetailDialog({
                 </>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground uppercase mb-2">Description</p>
-                    <p className="text-sm">{risk.description || "No description provided"}</p>
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Description</p>
+                    <p className="text-sm text-slate-700">{risk.description || "No description provided"}</p>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground uppercase mb-2">Risk Sources</p>
-                    <p className="text-sm">{risk.riskSources || "No sources specified"}</p>
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Risk Sources</p>
+                    <p className="text-sm text-slate-700">{risk.riskSources || "No sources specified"}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Category</p>
-                      <p className="font-medium">{risk.category?.name || "-"}</p>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Category</p>
+                      <p className="font-medium text-slate-800 mt-1">{risk.category?.name || "-"}</p>
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Risk Type</p>
-                      <p className="font-medium">{risk.type?.name || "-"}</p>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Type</p>
+                      <p className="font-medium text-slate-800 mt-1">{risk.type?.name || "-"}</p>
                     </div>
                   </div>
 
-                  {/* Impacted Asset or Process */}
                   {risk.impactedAsset && (
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Impacted Asset</p>
-                      <p className="font-medium">{risk.impactedAsset.assetId} - {risk.impactedAsset.name}</p>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Impacted Asset</p>
+                      <p className="font-medium text-slate-800 mt-1">{risk.impactedAsset.assetId} - {risk.impactedAsset.name}</p>
                     </div>
                   )}
                   {risk.impactedProcess && (
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Impacted Process</p>
-                      <p className="font-medium">{risk.impactedProcess.processCode} - {risk.impactedProcess.name}</p>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Impacted Process</p>
+                      <p className="font-medium text-slate-800 mt-1">{risk.impactedProcess.processCode} - {risk.impactedProcess.name}</p>
                     </div>
                   )}
 
                   {/* Threats */}
                   {risk.threats && risk.threats.length > 0 && (
-                    <div className="p-4 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase mb-2">Threats</p>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Threats</p>
                       <div className="flex flex-wrap gap-2">
                         {risk.threats.map((t) => (
                           <span
                             key={t.threat.id}
-                            className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full border border-slate-200"
                           >
+                            <Zap className="h-3 w-3" />
                             {t.threat.name}
                           </span>
                         ))}
@@ -728,14 +710,15 @@ export function RiskDetailDialog({
 
                   {/* Vulnerabilities */}
                   {risk.vulnerabilities && risk.vulnerabilities.length > 0 && (
-                    <div className="p-4 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase mb-2">Vulnerabilities</p>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Vulnerabilities</p>
                       <div className="flex flex-wrap gap-2">
                         {risk.vulnerabilities.map((v) => (
                           <span
                             key={v.vulnerability.id}
-                            className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full border border-slate-200"
                           >
+                            <Shield className="h-3 w-3" />
                             {v.vulnerability.name}
                           </span>
                         ))}
@@ -745,14 +728,15 @@ export function RiskDetailDialog({
 
                   {/* Causes */}
                   {risk.causes && risk.causes.length > 0 && (
-                    <div className="p-4 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase mb-2">Causes</p>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Causes</p>
                       <div className="flex flex-wrap gap-2">
                         {risk.causes.map((c) => (
                           <span
                             key={c.cause.id}
-                            className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-full border border-slate-200"
                           >
+                            <AlertTriangle className="h-3 w-3" />
                             {c.cause.name}
                           </span>
                         ))}
@@ -801,7 +785,7 @@ export function RiskDetailDialog({
                       <span>Catastrophic</span>
                     </div>
                   </div>
-                  <div className="p-4 bg-slate-100 rounded-lg">
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-slate-700">Risk Score:</span>
                       <span className="text-2xl font-bold text-slate-800">{riskScore}</span>
@@ -814,38 +798,38 @@ export function RiskDetailDialog({
                 </>
               ) : (
                 <div className="space-y-4">
-                  {/* Risk Matrix Visual */}
+                  {/* Likelihood / Impact / Score */}
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 bg-blue-50 rounded-lg text-center">
-                      <p className="text-xs text-muted-foreground uppercase">Likelihood</p>
-                      <p className="text-3xl font-bold text-blue-600">{risk.likelihood}</p>
-                      <p className="text-sm text-blue-600">{likelihoodLabels[risk.likelihood]}</p>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Likelihood</p>
+                      <p className="text-3xl font-bold text-slate-800 mt-1">{risk.likelihood}</p>
+                      <p className="text-sm text-slate-600">{likelihoodLabels[risk.likelihood]}</p>
                     </div>
-                    <div className="p-4 bg-purple-50 rounded-lg text-center">
-                      <p className="text-xs text-muted-foreground uppercase">Impact</p>
-                      <p className="text-3xl font-bold text-purple-600">{risk.impact}</p>
-                      <p className="text-sm text-purple-600">{impactLabels[risk.impact]}</p>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Impact</p>
+                      <p className="text-3xl font-bold text-slate-800 mt-1">{risk.impact}</p>
+                      <p className="text-sm text-slate-600">{impactLabels[risk.impact]}</p>
                     </div>
-                    <div className="p-4 bg-slate-100 rounded-lg text-center">
-                      <p className="text-xs text-muted-foreground uppercase">Risk Score</p>
-                      <p className="text-3xl font-bold">{risk.riskScore}</p>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Score</p>
+                      <p className="text-3xl font-bold text-slate-800 mt-1">{risk.riskScore}</p>
                       <RiskRatingBadge rating={risk.riskRating} className="mt-1" />
                     </div>
                   </div>
 
                   {/* Risk Matrix Grid */}
-                  <div className="mt-6">
-                    <p className="text-sm font-medium mb-3">Risk Matrix</p>
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-sm font-medium text-slate-700 mb-3">Risk Matrix</p>
                     <div className="grid grid-cols-6 gap-1 text-xs">
                       <div className="p-2"></div>
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="p-2 text-center font-medium">
+                        <div key={i} className="p-2 text-center font-medium text-slate-600">
                           {i}
                         </div>
                       ))}
                       {[5, 4, 3, 2, 1].map((likelihood) => (
                         <Fragment key={`row-${likelihood}`}>
-                          <div className="p-2 text-center font-medium">
+                          <div className="p-2 text-center font-medium text-slate-600">
                             {likelihood}
                           </div>
                           {[1, 2, 3, 4, 5].map((impact) => {
@@ -874,24 +858,24 @@ export function RiskDetailDialog({
                         </Fragment>
                       ))}
                     </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                      <span>← Likelihood</span>
-                      <span>Impact →</span>
+                    <div className="flex justify-between text-xs text-slate-400 mt-2">
+                      <span>Likelihood</span>
+                      <span>Impact</span>
                     </div>
                   </div>
 
                   {/* Assessment History */}
                   {risk.assessments && risk.assessments.length > 0 && (
-                    <div className="mt-6">
-                      <h4 className="font-medium mb-2">Assessment History</h4>
+                    <div>
+                      <p className="text-sm font-medium text-slate-700 mb-3">Assessment History</p>
                       <div className="space-y-2">
                         {risk.assessments.map((assessment) => (
                           <div
                             key={assessment.id}
-                            className="flex justify-between items-center p-3 bg-slate-50 rounded-lg"
+                            className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100"
                           >
-                            <span className="text-sm font-medium">{assessment.assessmentId}</span>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm font-medium text-slate-800">{assessment.assessmentId}</span>
+                            <span className="text-sm text-slate-500">
                               {new Date(assessment.assessmentDate).toLocaleDateString()}
                             </span>
                             <RiskRatingBadge rating={assessment.riskRating} />
@@ -908,74 +892,69 @@ export function RiskDetailDialog({
           {/* Controls Section */}
           {activeSection === 3 && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-muted-foreground">
-                  Controls linked to this risk ({editMode ? formData.selectedControls.length : (risk.controlRisks?.length || 0)})
-                </p>
-              </div>
+              <p className="text-sm text-slate-500">
+                Controls linked to this risk ({editMode ? formData.selectedControls.length : (risk.controlRisks?.length || 0)})
+              </p>
 
               {editMode ? (
-                <>
-                  {/* Control selection in edit mode */}
-                  <div className="space-y-3">
-                    <div className="border rounded-lg max-h-[300px] overflow-y-auto">
-                      {controls.length > 0 ? (
-                        <div className="divide-y">
-                          {controls.map((control) => (
-                            <label
-                              key={control.id}
-                              className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={formData.selectedControls.includes(control.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    handleInputChange("selectedControls", [...formData.selectedControls, control.id]);
-                                  } else {
-                                    handleInputChange("selectedControls", formData.selectedControls.filter(id => id !== control.id));
-                                  }
-                                }}
-                                className="h-4 w-4 rounded border-gray-300"
-                              />
-                              <div className="flex-1">
-                                <span className="font-medium text-primary-600">{control.controlCode}</span>
-                                <span className="text-sm text-slate-600 ml-2">{control.name}</span>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="p-4 text-center text-muted-foreground">
-                          No controls available
-                        </div>
-                      )}
+                <div className="border border-slate-200 rounded-lg max-h-[400px] overflow-y-auto">
+                  {controls.length > 0 ? (
+                    <div className="divide-y divide-slate-100">
+                      {controls.map((control) => (
+                        <label
+                          key={control.id}
+                          className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.selectedControls.includes(control.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleInputChange("selectedControls", [...formData.selectedControls, control.id]);
+                              } else {
+                                handleInputChange("selectedControls", formData.selectedControls.filter(id => id !== control.id));
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                          <div className="flex-1">
+                            <span className="font-medium text-primary-600">{control.controlCode}</span>
+                            <span className="text-sm text-slate-600 ms-2">{control.name}</span>
+                          </div>
+                        </label>
+                      ))}
                     </div>
-                  </div>
-                </>
+                  ) : (
+                    <div className="p-8 text-center">
+                      <Shield className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                      <p className="text-sm text-slate-500">No controls available</p>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
-                  {/* View mode - show linked controls */}
                   {risk.controlRisks && risk.controlRisks.length > 0 ? (
                     <div className="space-y-2">
                       {risk.controlRisks.map((cr) => (
                         <div
                           key={cr.control.id}
-                          className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
+                          className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100"
                         >
-                          <Shield className="h-4 w-4 text-primary-500" />
+                          <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                            <Shield className="h-4 w-4 text-primary-600" />
+                          </div>
                           <div>
                             <span className="font-medium text-primary-600">{cr.control.controlCode}</span>
-                            <span className="text-sm text-slate-600 ml-2">{cr.control.name}</span>
+                            <span className="text-sm text-slate-600 ms-2">{cr.control.name}</span>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                      <Shield className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p>No controls linked to this risk yet</p>
-                      <p className="text-sm">Click Edit to associate controls with this risk</p>
+                    <div className="border border-slate-200 rounded-lg p-8 text-center">
+                      <Shield className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                      <p className="text-sm font-medium text-slate-600">No controls linked</p>
+                      <p className="text-xs text-slate-400 mt-1">Click Edit to associate controls with this risk</p>
                     </div>
                   )}
                 </>
@@ -1028,58 +1007,58 @@ export function RiskDetailDialog({
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Response Strategy</p>
-                      <p className="font-medium text-lg">
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Response Strategy</p>
+                      <p className="font-semibold text-slate-800 mt-1">
                         {risk.responseStrategy || "Not defined"}
                       </p>
                     </div>
-                    <div className="p-4 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Treatment Due Date</p>
-                      <p className="font-medium text-lg">
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Treatment Due Date</p>
+                      <p className="font-semibold text-slate-800 mt-1">
                         {risk.treatmentDueDate
                           ? new Date(risk.treatmentDueDate).toLocaleDateString()
                           : "Not set"}
                       </p>
                     </div>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-xs text-muted-foreground uppercase mb-2">Treatment Plan</p>
-                    <p className="text-sm">
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Treatment Plan</p>
+                    <p className="text-sm text-slate-700">
                       {risk.treatmentPlan || "No treatment plan defined"}
                     </p>
                   </div>
                   {risk.treatmentStatus && (
-                    <div className="p-4 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-muted-foreground uppercase">Treatment Status</p>
-                      <p className="font-medium">{risk.treatmentStatus}</p>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Treatment Status</p>
+                      <p className="font-medium text-slate-800 mt-1">{risk.treatmentStatus}</p>
                     </div>
                   )}
 
                   {/* Response Actions */}
                   {risk.responses && risk.responses.length > 0 && (
-                    <div className="mt-6">
-                      <h4 className="font-medium mb-2">Response Actions</h4>
+                    <div>
+                      <p className="text-sm font-medium text-slate-700 mb-3">Response Actions</p>
                       <div className="space-y-2">
                         {risk.responses.map((response) => (
                           <div
                             key={response.id}
-                            className="flex justify-between items-center p-3 bg-slate-50 rounded-lg"
+                            className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100"
                           >
                             <div>
-                              <span className="font-medium">{response.actionTitle}</span>
-                              <span className="text-xs text-muted-foreground ml-2">
+                              <span className="font-medium text-slate-800">{response.actionTitle}</span>
+                              <span className="text-xs text-slate-500 ms-2">
                                 ({response.responseType})
                               </span>
                             </div>
                             <span
                               className={cn(
-                                "text-xs px-2 py-1 rounded-full",
+                                "text-xs px-2.5 py-1 rounded-full font-medium",
                                 response.status === "Completed"
                                   ? "bg-green-100 text-green-800"
                                   : response.status === "In Progress"
                                   ? "bg-blue-100 text-blue-800"
-                                  : "bg-slate-100 text-slate-800"
+                                  : "bg-slate-100 text-slate-700"
                               )}
                             >
                               {response.status}
@@ -1097,29 +1076,25 @@ export function RiskDetailDialog({
           {/* Activity Log Section */}
           {activeSection === 5 && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Activity history for this risk
-              </p>
-
               {activityLogs && activityLogs.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {activityLogs.map((log) => (
-                    <div key={log.id} className="flex gap-3 p-3 bg-slate-50 rounded-lg">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-primary flex-shrink-0" />
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
+                    <div key={log.id} className="flex gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-primary-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
                           <div>
-                            <span className="font-medium">{log.activity}</span>
-                            <span className="text-sm text-muted-foreground ml-2">
+                            <span className="font-medium text-slate-800">{log.activity}</span>
+                            <span className="text-sm text-slate-500 ms-2">
                               by {log.actor}
                             </span>
                           </div>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-slate-400 flex-shrink-0">
                             {new Date(log.createdAt).toLocaleString()}
                           </span>
                         </div>
                         {log.description && (
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-sm text-slate-500 mt-1">
                             {log.description}
                           </p>
                         )}
@@ -1128,10 +1103,10 @@ export function RiskDetailDialog({
                   ))}
                 </div>
               ) : (
-                <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p>No activity logs yet</p>
-                  <p className="text-sm mt-1">
+                <div className="border border-slate-200 rounded-lg p-8 text-center">
+                  <Clock className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                  <p className="text-sm font-medium text-slate-600">No activity logs yet</p>
+                  <p className="text-xs text-slate-400 mt-1">
                     Created on {new Date(risk.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -1140,10 +1115,10 @@ export function RiskDetailDialog({
           )}
         </div>
 
-        {/* Footer with section indicators */}
-        <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-center">
-          <p className="text-sm text-slate-500">
-            {activeSection + 1} of {sections.length}: {sections[activeSection].label}
+        {/* Footer */}
+        <div className="flex-shrink-0 flex items-center justify-center px-6 py-3 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <p className="text-xs font-medium text-slate-400">
+            {sections[activeSection].label} &middot; {activeSection + 1} of {sections.length}
           </p>
         </div>
       </DialogContent>

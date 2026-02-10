@@ -51,11 +51,11 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Upload,
   Home,
+  Search,
 } from "lucide-react";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 
 interface Policy {
@@ -535,24 +535,29 @@ export default function GRCAdminGovernancePage() {
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search & Filters */}
               <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                <Input
-                  placeholder={t("Search by name or code...")}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="w-[300px] h-9 bg-white border-slate-200"
-                />
-                <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                  <SelectTrigger className="w-[200px] h-9 bg-white border-slate-200">
-                    <SelectValue placeholder={t("Integrated Framework")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                    <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-                    {frameworks.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative w-[300px]">
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder={t("Search by name or code...")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    className="w-full h-9 ltr:pl-9 rtl:pr-9 bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  />
+                </div>
+                <div className="ms-auto flex items-center gap-3">
+                  <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                    <SelectTrigger className="w-[200px] h-9 bg-slate-50 border-slate-200">
+                      <SelectValue placeholder={t("Integrated Framework")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
+                      {frameworks.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <Table>
@@ -635,49 +640,13 @@ export default function GRCAdminGovernancePage() {
               </Table>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-                <span className="text-xs text-slate-500">
-                  {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No items found")}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
-                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => p - 1)}
-                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => p + 1)}
-                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <PaginationUI
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={total}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
             </div>
           </TabsContent>
         ))}

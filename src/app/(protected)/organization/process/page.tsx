@@ -35,6 +35,7 @@ import { useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { useRiskSemanticMatch } from "@/hooks/useRiskSemanticMatch";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -2352,12 +2353,13 @@ export default function ProcessPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Review Date")}</Label>
-                    <Input
-                      type="date"
-                      value={processForm.kpiReviewDate}
-                      onChange={(e) => setProcessForm({ ...processForm, kpiReviewDate: e.target.value })}
-                      className="mt-1.5 bg-white"
-                    />
+                    <div className="mt-1.5">
+                      <DatePicker
+                        value={processForm.kpiReviewDate}
+                        onChange={(date) => setProcessForm({ ...processForm, kpiReviewDate: date ? date.toISOString().split("T")[0] : "" })}
+                        placeholder={t("Select date")}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -2722,12 +2724,13 @@ export default function ProcessPage() {
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Review Date")}</Label>
-                      <Input
-                        type="date"
-                        value={editingProcess.reviewDate ? new Date(editingProcess.reviewDate).toISOString().split('T')[0] : ""}
-                        onChange={(e) => setEditingProcess({ ...editingProcess, reviewDate: e.target.value || undefined })}
-                        className="mt-1.5 bg-white"
-                      />
+                      <div className="mt-1.5">
+                        <DatePicker
+                          value={editingProcess.reviewDate ? new Date(editingProcess.reviewDate).toISOString().split('T')[0] : ""}
+                          onChange={(date) => setEditingProcess({ ...editingProcess, reviewDate: date ? date.toISOString().split("T")[0] : undefined })}
+                          placeholder={t("Select date")}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface UsePaginationProps<T> {
-  data: T[];
+  data?: readonly T[];
   itemsPerPage?: number;
 }
 
@@ -21,13 +21,22 @@ export function usePagination<T>({
 }: UsePaginationProps<T>): UsePaginationReturn<T> {
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.ceil(data.length / itemsPerPage);
+  const safeData = useMemo(() => data ?? [], [data]);
+
+  const totalPages = useMemo(() => {
+    if (itemsPerPage <= 0) return 1;
+    return Math.max(1, Math.ceil(safeData.length / itemsPerPage));
+  }, [safeData.length, itemsPerPage]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return data.slice(startIndex, endIndex);
-  }, [data, currentPage, itemsPerPage]);
+    return safeData.slice(startIndex, startIndex + itemsPerPage);
+  }, [safeData, currentPage, itemsPerPage]);
+
+  // ✅ Correct place to sync state with data changes
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const goToNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -40,11 +49,6 @@ export function usePagination<T>({
   const resetPage = () => {
     setCurrentPage(1);
   };
-
-  // Reset to page 1 if current page exceeds total pages (when data changes)
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(1);
-  }
 
   return {
     currentPage,

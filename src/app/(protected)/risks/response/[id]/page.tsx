@@ -414,12 +414,11 @@ export default function RiskViewPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-slate-800">{risk?.name || t("Risk View")}</h1>
-          {/* Show current status badge */}
+          <h1 className="text-2xl font-bold text-slate-800">{risk?.name || t("Risk View")}</h1>
           <span className={cn(
-            "px-2 py-1 rounded text-xs font-medium",
+            "px-2.5 py-1 rounded-md text-xs font-medium",
             currentStatus === "Open" && "bg-blue-100 text-blue-800",
-            currentStatus === "In-Progress" && "bg-yellow-100 text-yellow-800",
+            currentStatus === "In-Progress" && "bg-amber-100 text-amber-800",
             currentStatus === "Awaiting Approval" && "bg-purple-100 text-purple-800",
             currentStatus === "Sent Back" && "bg-red-100 text-red-800",
             currentStatus === "Completed" && "bg-green-100 text-green-800"
@@ -433,8 +432,8 @@ export default function RiskViewPage() {
       {/* Charts - 2x2 Grid Layout */}
       <div className="grid grid-cols-2 gap-6">
         {/* Risk Treatment - Donut Chart */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base text-primary font-semibold mb-3">{t("Risk Treatment")}</h3>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Risk Treatment")}</h3>
           <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
             <p className="text-sm font-medium text-slate-700 mb-3">{t("Task Progress")}</p>
             <div className="flex items-center gap-4">
@@ -479,11 +478,11 @@ export default function RiskViewPage() {
         </div>
 
         {/* Budget Allocation Vs Used */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base text-primary font-semibold mb-3">{t("Budget Allocation Vs Used")}</h3>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Budget Allocation Vs Used")}</h3>
           <div className="h-48 flex flex-col justify-between">
             <div>
-              <p className="text-sm text-slate-500">{t("Allocated")}</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Allocated")}</p>
               <p className="text-3xl font-bold text-slate-800">0</p>
             </div>
             <div className="flex items-center gap-6 text-sm">
@@ -500,8 +499,8 @@ export default function RiskViewPage() {
         </div>
 
         {/* Days Remaining - Bar Chart */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base text-primary font-semibold mb-3">{t("Days Remaining")}</h3>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Days Remaining")}</h3>
           <div className="h-48 flex items-center justify-center">
             <div className="w-full">
               {/* Simple bar representation */}
@@ -528,8 +527,8 @@ export default function RiskViewPage() {
         </div>
 
         {/* Residual Risk Rating */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base text-primary font-semibold mb-3">{t("Residual Risk Rating")}</h3>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Residual Risk Rating")}</h3>
           <div className="h-48 flex flex-col justify-between">
             {/* Gauge-like display */}
             <div className="flex items-center gap-4">
@@ -543,7 +542,7 @@ export default function RiskViewPage() {
 
             {/* Planned Residual Risk Rating */}
             <div className="border-t border-slate-100 pt-4">
-              <p className="text-sm text-primary font-medium mb-2">{t("Planned Residual Risk Rating")}</p>
+              <p className="text-xs font-semibold text-slate-800 uppercase tracking-wide mb-2">{t("Planned Residual Risk Rating")}</p>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full border-4 border-orange-500 flex items-center justify-center">
                   <div className="w-2 h-2 rounded-full bg-orange-500"></div>
@@ -558,57 +557,57 @@ export default function RiskViewPage() {
       </div>
 
       {/* Risk Details */}
-      <div className="bg-white rounded-lg border border-slate-200 p-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-center gap-2 mb-2">
-          <span className="font-bold text-lg text-primary">{risk.riskId}</span>
-          <span className="text-slate-400">|</span>
-          <span className="font-medium text-lg text-slate-800">{risk.name}</span>
+          <span className="font-bold text-lg text-primary-600">{risk.riskId}</span>
+          <span className="text-slate-300">|</span>
+          <span className="font-semibold text-lg text-slate-800">{risk.name}</span>
         </div>
-        <p className="text-slate-500 mb-6">{risk.description}</p>
+        <p className="text-sm text-slate-500 mb-6">{risk.description}</p>
 
         <div className="grid grid-cols-3 gap-6 mb-6">
           <div>
-            <p className="text-sm text-slate-500">{t("Risk Owner")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Risk Owner")}</p>
             <p className="font-medium text-slate-800">{risk.owner?.fullName || t("No items found")}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">{t("Likelihood")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Likelihood")}</p>
             <p className="font-medium text-slate-800">{getLikelihoodLabel(risk.likelihood)}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">{t("Impact")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Impact")}</p>
             <p className="font-medium text-slate-800">{getImpactLabel(risk.impact)}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6 mb-6">
           <div>
-            <p className="text-sm text-slate-500">{t("Inherent Risk Rating")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Inherent Risk Rating")}</p>
             <p className="font-medium text-slate-800">-</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">{t("Residual Risk Rating")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Residual Risk Rating")}</p>
             <span className={cn("font-medium", getRiskRatingColor(risk.riskRating))}>
               {risk.riskRating}
             </span>
           </div>
           <div>
-            <p className="text-sm text-slate-500">{t("Control Rating")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Control Rating")}</p>
             <p className="font-medium text-slate-800">-</p>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6">
           <div>
-            <p className="text-sm text-slate-500">{t("Risk Response Strategy")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Risk Response Strategy")}</p>
             <p className="font-medium text-slate-800">{risk.responseStrategy || t("Treat")}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">{t("Assessment Date")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Assessment Date")}</p>
             <p className="font-medium text-slate-800">{new Date().toLocaleDateString("en-GB")}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">{t("Next Review Date")}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Next Review Date")}</p>
             <p className="font-medium text-slate-800">-</p>
           </div>
         </div>
@@ -616,10 +615,10 @@ export default function RiskViewPage() {
 
       {/* Existing Controls */}
       <div>
-        <p className="text-slate-500 mb-3">{t("Existing Controls")}</p>
+        <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Existing Controls")}</h3>
         <div className="space-y-2">
           {controls.map((control) => (
-            <div key={control.id} className="bg-white rounded-lg border border-slate-200">
+            <div key={control.id} className="bg-white rounded-xl border border-slate-200">
               <Collapsible
                 open={expandedControls.includes(control.id)}
                 onOpenChange={() => toggleControl(control.id)}
@@ -646,7 +645,7 @@ export default function RiskViewPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-slate-800">{control.effectiveness}%</p>
-                          <p className="text-sm text-slate-500">{t("partially effective")}</p>
+                          <p className="text-xs text-slate-500">{t("partially effective")}</p>
                         </div>
                       </div>
                     </div>
@@ -661,7 +660,7 @@ export default function RiskViewPage() {
       {/* Planned Controls */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-primary font-medium">{t("Planned Controls")}</p>
+          <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Planned Controls")}</h3>
           {canEdit && (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setAddControlOpen(true)}>
@@ -675,7 +674,7 @@ export default function RiskViewPage() {
           )}
         </div>
         {plannedControls.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 py-4 text-center text-slate-500">
+          <div className="bg-white rounded-xl border border-slate-200 py-8 text-center text-slate-400 text-sm">
             {t("No items found")}
           </div>
         ) : (
