@@ -87,8 +87,10 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['Time', 'الوقت', 'Laiks'],
   ['Notifications', 'الإشعارات', 'Paziņojumi'],
+  ['No notifications', 'لا توجد إشعارات', 'Nav paziņojumu'],
   ['Mark all read', 'تحديد الكل كمقروء', 'Atzīmēt visus kā lasītus'],
   ['View all notifications', 'عرض جميع الإشعارات', 'Skatīt visus paziņojumus'],
+  ['Search pages', 'البحث في الصفحات', 'Meklēt lapas'],
   ['Evidence request due tomorrow', 'طلب الأدلة مستحق غداً', 'Pierādījumu pieprasījums jāiesniedz rīt'],
   ['Risk assessment assigned', 'تم تعيين تقييم المخاطر', 'Piešķirts riska novērtējums'],
   ['New audit finding created', 'تم إنشاء اكتشاف تدقيق جديد', 'Izveidots jauns audita konstatējums'],

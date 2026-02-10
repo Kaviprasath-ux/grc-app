@@ -33,6 +33,12 @@ export default function EscalationConfigPage() {
     clarification: 2,
     issueResolution: 3,
   });
+  const [formErrors, setFormErrors] = useState({
+    responseSubmission: "",
+    acknowledgement: "",
+    clarification: "",
+    issueResolution: "",
+  });
 
   useEffect(() => {
     fetchConfig();
@@ -59,37 +65,42 @@ export default function EscalationConfigPage() {
   };
 
   const handleSave = async () => {
+    // Clear all errors first
+    setFormErrors({
+      responseSubmission: "",
+      acknowledgement: "",
+      clarification: "",
+      issueResolution: "",
+    });
+
     // Validate all fields are positive numbers
+    let hasError = false;
+    const newErrors = {
+      responseSubmission: "",
+      acknowledgement: "",
+      clarification: "",
+      issueResolution: "",
+    };
+
     if (!formData.responseSubmission || Number(formData.responseSubmission) < 1) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Response Submission must be at least 1 day"),
-      });
-      return;
+      newErrors.responseSubmission = t("Response Submission must be at least 1 day");
+      hasError = true;
     }
     if (!formData.acknowledgement || Number(formData.acknowledgement) < 1) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Acknowledgement must be at least 1 day"),
-      });
-      return;
+      newErrors.acknowledgement = t("Acknowledgement must be at least 1 day");
+      hasError = true;
     }
     if (!formData.clarification || Number(formData.clarification) < 1) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Clarification must be at least 1 day"),
-      });
-      return;
+      newErrors.clarification = t("Clarification must be at least 1 day");
+      hasError = true;
     }
     if (!formData.issueResolution || Number(formData.issueResolution) < 1) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Issue Resolution must be at least 1 day"),
-      });
+      newErrors.issueResolution = t("Issue Resolution must be at least 1 day");
+      hasError = true;
+    }
+
+    if (hasError) {
+      setFormErrors(newErrors);
       return;
     }
 
@@ -211,11 +222,15 @@ export default function EscalationConfigPage() {
                   type="number"
                   min={1}
                   value={formData.responseSubmission}
-                  onChange={(e) => setFormData({ ...formData, responseSubmission: parseInt(e.target.value) || 5 })}
-                  className="bg-white w-24"
+                  onChange={(e) => {
+                    setFormData({ ...formData, responseSubmission: parseInt(e.target.value) || 5 });
+                    setFormErrors({ ...formErrors, responseSubmission: "" });
+                  }}
+                  className={`bg-white w-24 ${formErrors.responseSubmission ? "border-red-500" : ""}`}
                 />
                 <span className="text-sm text-slate-500">{t("days")}</span>
               </div>
+              {formErrors.responseSubmission && <p className="text-sm text-red-500 mt-1">{formErrors.responseSubmission}</p>}
             </div>
 
             <div>
@@ -225,11 +240,15 @@ export default function EscalationConfigPage() {
                   type="number"
                   min={1}
                   value={formData.acknowledgement}
-                  onChange={(e) => setFormData({ ...formData, acknowledgement: parseInt(e.target.value) || 1 })}
-                  className="bg-white w-24"
+                  onChange={(e) => {
+                    setFormData({ ...formData, acknowledgement: parseInt(e.target.value) || 1 });
+                    setFormErrors({ ...formErrors, acknowledgement: "" });
+                  }}
+                  className={`bg-white w-24 ${formErrors.acknowledgement ? "border-red-500" : ""}`}
                 />
                 <span className="text-sm text-slate-500">{t("days")}</span>
               </div>
+              {formErrors.acknowledgement && <p className="text-sm text-red-500 mt-1">{formErrors.acknowledgement}</p>}
             </div>
 
             <div>
@@ -239,11 +258,15 @@ export default function EscalationConfigPage() {
                   type="number"
                   min={1}
                   value={formData.clarification}
-                  onChange={(e) => setFormData({ ...formData, clarification: parseInt(e.target.value) || 2 })}
-                  className="bg-white w-24"
+                  onChange={(e) => {
+                    setFormData({ ...formData, clarification: parseInt(e.target.value) || 2 });
+                    setFormErrors({ ...formErrors, clarification: "" });
+                  }}
+                  className={`bg-white w-24 ${formErrors.clarification ? "border-red-500" : ""}`}
                 />
                 <span className="text-sm text-slate-500">{t("days")}</span>
               </div>
+              {formErrors.clarification && <p className="text-sm text-red-500 mt-1">{formErrors.clarification}</p>}
             </div>
 
             <div>
@@ -253,11 +276,15 @@ export default function EscalationConfigPage() {
                   type="number"
                   min={1}
                   value={formData.issueResolution}
-                  onChange={(e) => setFormData({ ...formData, issueResolution: parseInt(e.target.value) || 3 })}
-                  className="bg-white w-24"
+                  onChange={(e) => {
+                    setFormData({ ...formData, issueResolution: parseInt(e.target.value) || 3 });
+                    setFormErrors({ ...formErrors, issueResolution: "" });
+                  }}
+                  className={`bg-white w-24 ${formErrors.issueResolution ? "border-red-500" : ""}`}
                 />
                 <span className="text-sm text-slate-500">{t("days")}</span>
               </div>
+              {formErrors.issueResolution && <p className="text-sm text-red-500 mt-1">{formErrors.issueResolution}</p>}
             </div>
           </div>
         </div>

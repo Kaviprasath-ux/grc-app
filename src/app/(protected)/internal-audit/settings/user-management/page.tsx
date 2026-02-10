@@ -122,6 +122,13 @@ export default function UserManagementPage() {
     confirmPassword: "",
   });
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState({
+    firstName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    roles: "",
+  });
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -202,6 +209,13 @@ export default function UserManagementPage() {
       password: "",
       confirmPassword: "",
     });
+    setFormErrors({
+      firstName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      roles: "",
+    });
     setDialogOpen(true);
   };
 
@@ -220,6 +234,13 @@ export default function UserManagementPage() {
       roles,
       password: "",
       confirmPassword: "",
+    });
+    setFormErrors({
+      firstName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      roles: "",
     });
     setDialogOpen(true);
   };
@@ -269,40 +290,48 @@ export default function UserManagementPage() {
   };
 
   const handleSave = async () => {
+    // Clear all errors first
+    setFormErrors({
+      firstName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      roles: "",
+    });
+
+    // Validate fields
+    let hasError = false;
+    const newErrors = {
+      firstName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      roles: "",
+    };
+
     if (!formData.firstName.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("First Name is required"),
-      });
-      return;
+      newErrors.firstName = t("First Name is required");
+      hasError = true;
     }
     if (!formData.email.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Email is required"),
-      });
-      return;
+      newErrors.email = t("Email is required");
+      hasError = true;
     }
     if (!editItem && !formData.password.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Password is required"),
-      });
-      return;
+      newErrors.password = t("Password is required");
+      hasError = true;
     }
     if (!editItem && formData.password !== formData.confirmPassword) {
-      toast({ title: t("Error"), description: t("Passwords do not match"), variant: "destructive" });
-      return;
+      newErrors.confirmPassword = t("Passwords do not match");
+      hasError = true;
     }
     if (!formData.roles || formData.roles.length === 0) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("At least one role must be selected"),
-      });
+      newErrors.roles = t("At least one role must be selected");
+      hasError = true;
+    }
+
+    if (hasError) {
+      setFormErrors(newErrors);
       return;
     }
 
@@ -586,10 +615,14 @@ export default function UserManagementPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("First Name")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, firstName: e.target.value });
+                      setFormErrors({ ...formErrors, firstName: "" });
+                    }}
                     placeholder={t("Enter first name")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${formErrors.firstName ? "border-red-500" : ""}`}
                   />
+                  {formErrors.firstName && <p className="text-sm text-red-500 mt-1">{formErrors.firstName}</p>}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Last Name")}</Label>
@@ -618,10 +651,14 @@ export default function UserManagementPage() {
                   <Input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      setFormErrors({ ...formErrors, email: "" });
+                    }}
                     placeholder={t("Enter email")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${formErrors.email ? "border-red-500" : ""}`}
                   />
+                  {formErrors.email && <p className="text-sm text-red-500 mt-1">{formErrors.email}</p>}
                 </div>
               </div>
 
@@ -665,13 +702,16 @@ export default function UserManagementPage() {
               {/* User Role (multi-select with checkboxes) */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("User Role")} <span className="text-red-500">*</span></Label>
-                <div className="mt-1.5 grid grid-cols-2 gap-2 border border-slate-200 rounded-lg p-3 bg-white">
+                <div className={`mt-1.5 grid grid-cols-2 gap-2 border rounded-lg p-3 bg-white ${formErrors.roles ? "border-red-500" : "border-slate-200"}`}>
                   {allowedRoles.map((role) => (
                     <div key={role} className="flex items-center space-x-2">
                       <Checkbox
                         id={role}
                         checked={formData.roles.includes(role)}
-                        onCheckedChange={(checked) => handleRoleChange(role, checked as boolean)}
+                        onCheckedChange={(checked) => {
+                          handleRoleChange(role, checked as boolean);
+                          setFormErrors({ ...formErrors, roles: "" });
+                        }}
                       />
                       <label htmlFor={role} className="text-sm cursor-pointer text-slate-700">
                         {role}
@@ -679,6 +719,7 @@ export default function UserManagementPage() {
                     </div>
                   ))}
                 </div>
+                {formErrors.roles && <p className="text-sm text-red-500 mt-1">{formErrors.roles}</p>}
                 {allowedRoles.length === 1 && (
                   <p className="text-xs text-slate-500 mt-1">
                     {isCustomerAdmin ? "As Customer Administrator, you can only create Audit Head users." : ""}
@@ -694,20 +735,28 @@ export default function UserManagementPage() {
                     <Input
                       type="password"
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, password: e.target.value });
+                        setFormErrors({ ...formErrors, password: "" });
+                      }}
                       placeholder={t("Enter password")}
-                      className="mt-1.5 w-full bg-white"
+                      className={`mt-1.5 w-full bg-white ${formErrors.password ? "border-red-500" : ""}`}
                     />
+                    {formErrors.password && <p className="text-sm text-red-500 mt-1">{formErrors.password}</p>}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Confirm Password")} <span className="text-red-500">*</span></Label>
                     <Input
                       type="password"
                       value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, confirmPassword: e.target.value });
+                        setFormErrors({ ...formErrors, confirmPassword: "" });
+                      }}
                       placeholder={t("Confirm password")}
-                      className="mt-1.5 w-full bg-white"
+                      className={`mt-1.5 w-full bg-white ${formErrors.confirmPassword ? "border-red-500" : ""}`}
                     />
+                    {formErrors.confirmPassword && <p className="text-sm text-red-500 mt-1">{formErrors.confirmPassword}</p>}
                   </div>
                 </div>
               )}

@@ -83,6 +83,7 @@ export default function AddEvidenceRequestPage() {
     expectedEvidence: "",
     auditorNotes: "",
   });
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   // File uploads
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -184,16 +185,20 @@ export default function AddEvidenceRequestPage() {
     e.preventDefault();
 
     // Validation
+    const errors: { [key: string]: string } = {};
+
     if (!formData.engagementId) {
-      toast.error(t("Please select an Audit Engagement"));
-      return;
+      errors.engagementId = t("Please select an Audit Engagement") || "Please select an Audit Engagement";
     }
     if (!formData.title.trim()) {
-      toast.error(t("Evidence Title is required"));
-      return;
+      errors.title = t("Evidence Title is required") || "Evidence Title is required";
     }
     if (!formData.dueDate) {
-      toast.error(t("Due Date is required"));
+      errors.dueDate = t("Due Date is required") || "Due Date is required";
+    }
+
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) {
       return;
     }
 
@@ -272,7 +277,7 @@ export default function AddEvidenceRequestPage() {
             value={formData.engagementId}
             onValueChange={(value) => setFormData({ ...formData, engagementId: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={validationErrors.engagementId ? 'border-red-500' : ''}>
               <SelectValue placeholder={t("Select Audit Engagement")} />
             </SelectTrigger>
             <SelectContent>
@@ -283,7 +288,10 @@ export default function AddEvidenceRequestPage() {
               ))}
             </SelectContent>
           </Select>
-          {selectedEngagement && (
+          {validationErrors.engagementId && (
+            <p className="text-sm text-red-600 mt-1">{validationErrors.engagementId}</p>
+          )}
+          {selectedEngagement && !validationErrors.engagementId && (
             <div className="text-sm text-gray-500 mt-1">
               {t("Department")}: {selectedEngagement.department?.name || t("N/A")}
             </div>
@@ -299,7 +307,11 @@ export default function AddEvidenceRequestPage() {
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             placeholder={t("Enter evidence title")}
+            className={validationErrors.title ? 'border-red-500' : ''}
           />
+          {validationErrors.title && (
+            <p className="text-sm text-red-600 mt-1">{validationErrors.title}</p>
+          )}
         </div>
 
         {/* Description */}
@@ -424,7 +436,11 @@ export default function AddEvidenceRequestPage() {
             value={formData.dueDate}
             onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : "" })}
             placeholder={t("Select due date")}
+            className={validationErrors.dueDate ? 'border-red-500' : ''}
           />
+          {validationErrors.dueDate && (
+            <p className="text-sm text-red-600 mt-1">{validationErrors.dueDate}</p>
+          )}
         </div>
 
         {/* Testing Procedure Details - Collapsible */}

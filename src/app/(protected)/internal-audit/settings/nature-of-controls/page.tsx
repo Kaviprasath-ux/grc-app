@@ -61,6 +61,7 @@ export default function NatureOfControlsPage() {
   const [editItem, setEditItem] = useState<NatureOfControl | null>(null);
   const [formData, setFormData] = useState({ label: "" });
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -87,22 +88,20 @@ export default function NatureOfControlsPage() {
   const openAddDialog = () => {
     setEditItem(null);
     setFormData({ label: "" });
+    setFormError("");
     setDialogOpen(true);
   };
 
   const openEditDialog = (item: NatureOfControl) => {
     setEditItem(item);
     setFormData({ label: item.label });
+    setFormError("");
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!formData.label.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Label is required"),
-      });
+      setFormError(t("Label is required"));
       return;
     }
 
@@ -365,11 +364,15 @@ export default function NatureOfControlsPage() {
               <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
               <Input
                 value={formData.label}
-                onChange={(e) => setFormData({ label: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ label: e.target.value });
+                  setFormError("");
+                }}
                 placeholder={t("Enter label")}
-                className="mt-1.5 w-full bg-white"
+                className={`mt-1.5 w-full bg-white ${formError ? "border-red-500" : ""}`}
                 autoFocus
               />
+              {formError && <p className="text-sm text-red-500 mt-1">{formError}</p>}
             </div>
           </div>
 

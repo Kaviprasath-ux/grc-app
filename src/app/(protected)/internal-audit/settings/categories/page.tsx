@@ -61,6 +61,7 @@ export default function AuditCategoriesPage() {
   const [editItem, setEditItem] = useState<AuditCategory | null>(null);
   const [formData, setFormData] = useState({ name: "" });
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -87,22 +88,20 @@ export default function AuditCategoriesPage() {
   const openAddDialog = () => {
     setEditItem(null);
     setFormData({ name: "" });
+    setFormError("");
     setDialogOpen(true);
   };
 
   const openEditDialog = (item: AuditCategory) => {
     setEditItem(item);
     setFormData({ name: item.name });
+    setFormError("");
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Category name is required",
-      });
+      setFormError(t("Category name is required"));
       return;
     }
 
@@ -365,11 +364,15 @@ export default function AuditCategoriesPage() {
               <Label className="text-sm font-medium text-slate-700">{t("Category Name")} <span className="text-red-500">*</span></Label>
               <Input
                 value={formData.name}
-                onChange={(e) => setFormData({ name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ name: e.target.value });
+                  setFormError("");
+                }}
                 placeholder={t("Enter category name")}
-                className="mt-1.5 w-full bg-white"
+                className={`mt-1.5 w-full bg-white ${formError ? "border-red-500" : ""}`}
                 autoFocus
               />
+              {formError && <p className="text-sm text-red-500 mt-1">{formError}</p>}
             </div>
           </div>
 

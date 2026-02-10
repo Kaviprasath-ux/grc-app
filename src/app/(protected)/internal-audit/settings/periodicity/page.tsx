@@ -62,6 +62,7 @@ export default function PeriodicityPage() {
   const [editItem, setEditItem] = useState<Periodicity | null>(null);
   const [formData, setFormData] = useState({ interval: "", months: 1 });
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState({ interval: "", months: "" });
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -88,30 +89,36 @@ export default function PeriodicityPage() {
   const openAddDialog = () => {
     setEditItem(null);
     setFormData({ interval: "", months: 1 });
+    setFormErrors({ interval: "", months: "" });
     setDialogOpen(true);
   };
 
   const openEditDialog = (item: Periodicity) => {
     setEditItem(item);
     setFormData({ interval: item.interval, months: item.months });
+    setFormErrors({ interval: "", months: "" });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
+    // Clear all errors first
+    setFormErrors({ interval: "", months: "" });
+
+    // Validate fields
+    let hasError = false;
+    const newErrors = { interval: "", months: "" };
+
     if (!formData.interval.trim()) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Interval is required"),
-      });
-      return;
+      newErrors.interval = t("Interval is required");
+      hasError = true;
     }
     if (!formData.months || Number(formData.months) < 1) {
-      toast({
-        variant: "destructive",
-        title: t("Error"),
-        description: t("Months must be at least 1"),
-      });
+      newErrors.months = t("Months must be at least 1");
+      hasError = true;
+    }
+
+    if (hasError) {
+      setFormErrors(newErrors);
       return;
     }
 
@@ -345,11 +352,15 @@ export default function PeriodicityPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Interval")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.interval}
-                  onChange={(e) => setFormData({ ...formData, interval: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, interval: e.target.value });
+                    setFormErrors({ ...formErrors, interval: "" });
+                  }}
                   placeholder={t("Enter interval (e.g., Monthly, Quarterly)")}
-                  className="mt-1.5 w-full bg-white"
+                  className={`mt-1.5 w-full bg-white ${formErrors.interval ? "border-red-500" : ""}`}
                   autoFocus
                 />
+                {formErrors.interval && <p className="text-sm text-red-500 mt-1">{formErrors.interval}</p>}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Months")} <span className="text-red-500">*</span></Label>
@@ -357,10 +368,14 @@ export default function PeriodicityPage() {
                   type="number"
                   min={1}
                   value={formData.months}
-                  onChange={(e) => setFormData({ ...formData, months: parseInt(e.target.value) || 1 })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, months: parseInt(e.target.value) || 1 });
+                    setFormErrors({ ...formErrors, months: "" });
+                  }}
                   placeholder={t("Enter number of months")}
-                  className="mt-1.5 w-full bg-white"
+                  className={`mt-1.5 w-full bg-white ${formErrors.months ? "border-red-500" : ""}`}
                 />
+                {formErrors.months && <p className="text-sm text-red-500 mt-1">{formErrors.months}</p>}
               </div>
             </div>
           </div>
