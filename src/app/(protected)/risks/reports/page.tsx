@@ -63,6 +63,7 @@ export default function RiskReportsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchReportData = async (reportId: string) => {
     setLoading(true);

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Building2, Target, Info, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -663,14 +663,6 @@ export function NewRiskWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-        {/* Fixed Header */}
-        <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">
-              {isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}
-            </DialogTitle>
-          </DialogHeader>
       <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
         <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
           <DialogTitle className="text-lg font-semibold text-slate-800">{isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}</DialogTitle>
