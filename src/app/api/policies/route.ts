@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all policies with filters
 export const GET = withAuth(
@@ -164,6 +165,41 @@ export const POST = withAuth(
           } catch {
             // Ignore duplicate errors
           }
+        }
+      }
+
+      // Send notifications for policy assignments
+      if (customerAccountId) {
+        // Notify assignee if different from actor
+        if (assigneeId && assigneeId !== session.id) {
+          await notificationService.send({
+            customerAccountId,
+            actorId: session.id,
+            recipientId: assigneeId,
+            event: NOTIFICATION_EVENTS.POLICY_ASSIGNED,
+            title: "Policy assigned to you",
+            message: `Policy "${policy.name}" has been assigned to you`,
+            relatedEntityType: "policy",
+            relatedEntityId: policy.id,
+            link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify approver if different from actor and different from assignee
+        if (approverId && approverId !== session.id && approverId !== assigneeId) {
+          await notificationService.send({
+            customerAccountId,
+            actorId: session.id,
+            recipientId: approverId,
+            event: NOTIFICATION_EVENTS.POLICY_ASSIGNED,
+            title: "Policy assigned for your approval",
+            message: `Policy "${policy.name}" has been assigned to you for approval`,
+            relatedEntityType: "policy",
+            relatedEntityId: policy.id,
+            link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
         }
       }
 

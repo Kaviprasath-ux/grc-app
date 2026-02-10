@@ -294,6 +294,7 @@ export default function ContextPage() {
     status: "Active",
     departmentId: "",
   });
+  const [stakeholderErrors, setStakeholderErrors] = useState<Record<string, string>>({});
 
   // New issue form
   const [newIssue, setNewIssue] = useState({
@@ -310,6 +311,8 @@ export default function ContextPage() {
     selectedProcesses: [] as string[],
     selectedStakeholders: [] as string[],
   });
+  const [issueErrors, setIssueErrors] = useState<Record<string, string>>({});
+  const [issueStepError, setIssueStepError] = useState("");
 
   // Dynamic options state
   const [domains, setDomains] = useState<string[]>(defaultDomains);
@@ -323,6 +326,9 @@ export default function ContextPage() {
   const [newDomain, setNewDomain] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [newType, setNewType] = useState("");
+  const [domainError, setDomainError] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [typeError, setTypeError] = useState("");
 
   // Process dialog state
   const [showProcessDialog, setShowProcessDialog] = useState(false);
@@ -330,8 +336,9 @@ export default function ContextPage() {
   const [tempSelectedProcesses, setTempSelectedProcesses] = useState<string[]>([]);
 
   // Stakeholder step 4 state
-  const [stakeholderType, setStakeholderType] = useState("Internal");
+  const [stakeholderType, setStakeholderType] = useState("");
   const [selectedStakeholderId, setSelectedStakeholderId] = useState("");
+  const [step4Errors, setStep4Errors] = useState<Record<string, string>>({});
   const [selectedNeedExpectation, setSelectedNeedExpectation] = useState("");
   const [stakeholderNeeds, setStakeholderNeeds] = useState<{ stakeholderId: string; needExpectation: string }[]>([]);
   const [needExpectationOptions, setNeedExpectationOptions] = useState<string[]>([]);
@@ -341,30 +348,36 @@ export default function ContextPage() {
 
   // Handlers for adding new options
   const handleAddDomain = () => {
-    if (newDomain.trim() && !domains.includes(newDomain.trim())) {
+    if (!newDomain.trim()) { setDomainError(t("Please enter domain name")); return; }
+    setDomainError("");
+    if (!domains.includes(newDomain.trim())) {
       setDomains([...domains, newDomain.trim()]);
       setNewIssue({ ...newIssue, domain: newDomain.trim() });
-      setNewDomain("");
-      setShowAddDomainDialog(false);
     }
+    setNewDomain("");
+    setShowAddDomainDialog(false);
   };
 
   const handleAddCategory = () => {
-    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+    if (!newCategory.trim()) { setCategoryError(t("Please enter category name")); return; }
+    setCategoryError("");
+    if (!categories.includes(newCategory.trim())) {
       setCategories([...categories, newCategory.trim()]);
       setNewIssue({ ...newIssue, category: newCategory.trim() });
-      setNewCategory("");
-      setShowAddCategoryDialog(false);
     }
+    setNewCategory("");
+    setShowAddCategoryDialog(false);
   };
 
   const handleAddType = () => {
-    if (newType.trim() && !issueTypes.includes(newType.trim())) {
+    if (!newType.trim()) { setTypeError(t("Please enter issue type name")); return; }
+    setTypeError("");
+    if (!issueTypes.includes(newType.trim())) {
       setIssueTypes([...issueTypes, newType.trim()]);
       setNewIssue({ ...newIssue, issueType: newType.trim() });
-      setNewType("");
-      setShowAddTypeDialog(false);
     }
+    setNewType("");
+    setShowAddTypeDialog(false);
   };
 
   // Process dialog handlers
@@ -387,12 +400,16 @@ export default function ContextPage() {
 
   // Stakeholder step 4 handlers
   const handleAddStakeholderNeed = () => {
-    if (selectedStakeholderId && selectedNeedExpectation) {
-      const newNeed = { stakeholderId: selectedStakeholderId, needExpectation: selectedNeedExpectation };
-      setStakeholderNeeds([...stakeholderNeeds, newNeed]);
-      setSelectedStakeholderId("");
-      setSelectedNeedExpectation("");
-    }
+    const errors: Record<string, string> = {};
+    if (!stakeholderType) errors.stakeholderType = t("Please Select Stakeholder Type");
+    if (!selectedStakeholderId) errors.stakeholder = t("Please select Stakeholder");
+    if (!selectedNeedExpectation) errors.needExpectation = t("Please Select Need and Exception");
+    if (Object.keys(errors).length > 0) { setStep4Errors(errors); return; }
+    setStep4Errors({});
+    const newNeed = { stakeholderId: selectedStakeholderId, needExpectation: selectedNeedExpectation };
+    setStakeholderNeeds([...stakeholderNeeds, newNeed]);
+    setSelectedStakeholderId("");
+    setSelectedNeedExpectation("");
   };
 
   const handleAddCustomNeedExpectation = () => {
@@ -648,7 +665,15 @@ export default function ContextPage() {
 
   // Stakeholder CRUD
   const handleAddStakeholder = async () => {
-    if (!newStakeholder.name.trim()) return;
+    const errors: Record<string, string> = {};
+    if (!newStakeholder.name.trim()) errors.name = t("Please Enter Stakeholder Name");
+    if (!newStakeholder.type) errors.type = t("Please Select Stakeholder Type");
+    if (!newStakeholder.status) errors.status = t("Please Select Status");
+    if (Object.keys(errors).length > 0) {
+      setStakeholderErrors(errors);
+      return;
+    }
+    setStakeholderErrors({});
     try {
       const res = await fetch("/api/stakeholders", {
         method: "POST",
@@ -1372,7 +1397,7 @@ export default function ContextPage() {
 
   // Add Issue Form (5-Step Wizard) - Rendered as Modal
   const renderAddIssueModal = () => (
-    <Dialog open={showAddIssue} onOpenChange={(open) => { if (!open) { setShowAddIssue(false); setCurrentStep(1); } }}>
+    <Dialog open={showAddIssue} onOpenChange={(open) => { if (!open) { setShowAddIssue(false); setCurrentStep(1); setIssueErrors({}); setStep4Errors({}); } }}>
       <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
         {/* Fixed Header */}
         <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
@@ -1440,9 +1465,9 @@ export default function ContextPage() {
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={newIssue.domain}
-                        onValueChange={(value) => setNewIssue({ ...newIssue, domain: value })}
+                        onValueChange={(value) => { setNewIssue({ ...newIssue, domain: value }); if (issueErrors.domain) setIssueErrors((prev) => { const { domain, ...rest } = prev; return rest; }); }}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className={`w-full ${issueErrors.domain ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select domain")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
@@ -1457,15 +1482,20 @@ export default function ContextPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+                    {issueErrors.domain && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{issueErrors.domain}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-error">*</span></Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={newIssue.category}
-                        onValueChange={(value) => setNewIssue({ ...newIssue, category: value })}
+                        onValueChange={(value) => { setNewIssue({ ...newIssue, category: value }); if (issueErrors.category) setIssueErrors((prev) => { const { category, ...rest } = prev; return rest; }); }}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className={`w-full ${issueErrors.category ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select category")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
@@ -1480,17 +1510,22 @@ export default function ContextPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+                    {issueErrors.category && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{issueErrors.category}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {/* Department & Issue Owner */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Department")} <span className="text-error">*</span></Label>
                     <Select
                       value={newIssue.departmentId}
-                      onValueChange={(value) => setNewIssue({ ...newIssue, departmentId: value, ownerId: "" })}
+                      onValueChange={(value) => { setNewIssue({ ...newIssue, departmentId: value, ownerId: "" }); if (issueErrors.departmentId) setIssueErrors((prev) => { const { departmentId, ...rest } = prev; return rest; }); }}
                     >
-                      <SelectTrigger className="w-full mt-1.5">
+                      <SelectTrigger className={`w-full mt-1.5 ${issueErrors.departmentId ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1501,15 +1536,20 @@ export default function ContextPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {issueErrors.departmentId && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{issueErrors.departmentId}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Issue Owner")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Issue Owner")} <span className="text-error">*</span></Label>
                     <Select
                       value={newIssue.ownerId}
-                      onValueChange={(value) => setNewIssue({ ...newIssue, ownerId: value })}
+                      onValueChange={(value) => { setNewIssue({ ...newIssue, ownerId: value }); if (issueErrors.ownerId) setIssueErrors((prev) => { const { ownerId, ...rest } = prev; return rest; }); }}
                       disabled={!newIssue.departmentId}
                     >
-                      <SelectTrigger className="w-full mt-1.5">
+                      <SelectTrigger className={`w-full mt-1.5 ${issueErrors.ownerId ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                         <SelectValue placeholder={newIssue.departmentId ? t("Select owner") : t("Select department first")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1525,17 +1565,22 @@ export default function ContextPage() {
                           ))}
                       </SelectContent>
                     </Select>
+                    {issueErrors.ownerId && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{issueErrors.ownerId}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {/* Issue Type - Full Width */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Issue Type")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Issue Type")} <span className="text-error">*</span></Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={newIssue.issueType}
-                      onValueChange={(value) => setNewIssue({ ...newIssue, issueType: value })}
+                      onValueChange={(value) => { setNewIssue({ ...newIssue, issueType: value }); if (issueErrors.issueType) setIssueErrors((prev) => { const { issueType, ...rest } = prev; return rest; }); }}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className={`w-full ${issueErrors.issueType ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select type")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1550,6 +1595,11 @@ export default function ContextPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {issueErrors.issueType && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{issueErrors.issueType}</p>
+                    </div>
+                  )}
                 </div>
                 {/* Description */}
                 <div>
@@ -1664,10 +1714,10 @@ export default function ContextPage() {
                 <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Stakeholder Information")}</h3>
                 {/* Stakeholder Type */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Type")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Type")} <span className="text-error">*</span></Label>
                   <RadioGroup
                     value={stakeholderType}
-                    onValueChange={setStakeholderType}
+                    onValueChange={(value) => { setStakeholderType(value); if (step4Errors.stakeholderType) setStep4Errors((prev) => { const { stakeholderType, ...rest } = prev; return rest; }); }}
                     className="flex gap-6 mt-1.5"
                   >
                     <div className="flex items-center space-x-2">
@@ -1683,16 +1733,21 @@ export default function ContextPage() {
                       <Label htmlFor="st-thirdparty" className="font-normal">{t("Third Party")}</Label>
                     </div>
                   </RadioGroup>
+                  {step4Errors.stakeholderType && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{step4Errors.stakeholderType}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Stakeholder Selection */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Stakeholder")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Stakeholder")} <span className="text-error">*</span></Label>
                   <Select
                     value={selectedStakeholderId}
-                    onValueChange={setSelectedStakeholderId}
+                    onValueChange={(value) => { setSelectedStakeholderId(value); if (step4Errors.stakeholder) setStep4Errors((prev) => { const { stakeholder, ...rest } = prev; return rest; }); }}
                   >
-                    <SelectTrigger className="mt-1.5">
+                    <SelectTrigger className={`mt-1.5 ${step4Errors.stakeholder ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select stakeholder")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1703,22 +1758,27 @@ export default function ContextPage() {
                           </SelectItem>
                         ))
                       ) : (
-                        <div className="p-2 text-sm text-slate-500">{t("No")} {t(stakeholderType)} {t("stakeholders found")}</div>
+                        <div className="p-2 text-sm text-slate-500">{t("No")} {t(stakeholderType || "Internal")} {t("stakeholders found")}</div>
                       )}
                     </SelectContent>
                   </Select>
+                  {step4Errors.stakeholder && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{step4Errors.stakeholder}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Need and Expectation */}
                 <div className="flex items-end gap-4">
                   <div className="flex-1">
-                    <Label className="text-sm font-medium text-slate-700">{t("Need and Expectation")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Need and Expectation")} <span className="text-error">*</span></Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={selectedNeedExpectation}
-                        onValueChange={setSelectedNeedExpectation}
+                        onValueChange={(value) => { setSelectedNeedExpectation(value); if (step4Errors.needExpectation) setStep4Errors((prev) => { const { needExpectation, ...rest } = prev; return rest; }); }}
                       >
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className={`flex-1 ${step4Errors.needExpectation ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select need/expectation")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
@@ -1733,10 +1793,14 @@ export default function ContextPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+                    {step4Errors.needExpectation && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{step4Errors.needExpectation}</p>
+                      </div>
+                    )}
                   </div>
                   <Button
                     onClick={handleAddStakeholderNeed}
-                    disabled={!selectedStakeholderId || !selectedNeedExpectation}
                   >
                     <Plus className="h-4 w-4 me-1.5" />
                     {t("Add Stakeholder")}
@@ -1890,6 +1954,8 @@ export default function ContextPage() {
               if (currentStep === 1) {
                 setShowAddIssue(false);
                 setCurrentStep(1);
+                setIssueErrors({});
+                setStep4Errors({});
               } else {
                 setCurrentStep(currentStep - 1);
               }
@@ -1902,6 +1968,25 @@ export default function ContextPage() {
             onClick={() => {
               if (currentStep === 5) {
                 handleAddIssue();
+              } else if (currentStep === 1) {
+                const errors: Record<string, string> = {};
+                if (!newIssue.domain) errors.domain = t("Please select Domain");
+                if (!newIssue.category) errors.category = t("Please select Category");
+                if (!newIssue.departmentId) errors.departmentId = t("Please select Department");
+                if (!newIssue.ownerId) errors.ownerId = t("Please select Owner");
+                if (!newIssue.issueType) errors.issueType = t("Please select Issue Type");
+                if (Object.keys(errors).length > 0) {
+                  setIssueErrors(errors);
+                  return;
+                }
+                setIssueErrors({});
+                setCurrentStep(2);
+              } else if (currentStep === 2) {
+                if (newIssue.selectedRegulations.length === 0) {
+                  setIssueStepError(t("Please link a regulation for this Issue"));
+                  return;
+                }
+                setCurrentStep(3);
               } else {
                 setCurrentStep(currentStep + 1);
               }
@@ -1913,8 +1998,31 @@ export default function ContextPage() {
         </div>
       </DialogContent>
 
+      {/* Issue Step Error Dialog */}
+      <Dialog open={!!issueStepError} onOpenChange={(open) => { if (!open) setIssueStepError(""); }}>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 [&>button.absolute]:hidden" nested>
+          <DialogHeader className="sr-only">
+            <DialogTitle>{t("Error")}</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-slate-50">
+            <span className="text-sm font-semibold text-primary-600">{t("Error")}</span>
+            <button onClick={() => setIssueStepError("")} className="text-primary-600 hover:text-primary-800">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="px-5 py-6">
+            <p className="text-sm text-slate-700">{issueStepError}</p>
+          </div>
+          <div className="flex justify-end px-5 py-3 border-t border-slate-200">
+            <Button size="sm" onClick={() => setIssueStepError("")}>
+              {t("OK")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Domain Dialog */}
-        <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
+        <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
           <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -1928,16 +2036,21 @@ export default function ContextPage() {
               <Label className="text-sm font-medium text-slate-700">{t("Domain Name")} <span className="text-error">*</span></Label>
               <Input
                 value={newDomain}
-                onChange={(e) => setNewDomain(e.target.value)}
+                onChange={(e) => { setNewDomain(e.target.value); if (domainError) setDomainError(""); }}
                 placeholder={t("Enter domain name")}
-                className="mt-1.5"
+                className={`mt-1.5 ${domainError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {domainError && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{domainError}</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-              <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
+              <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
                 {t("Cancel")}
               </Button>
-              <Button onClick={handleAddDomain} disabled={!newDomain.trim()}>
+              <Button onClick={handleAddDomain}>
                 {t("Add Domain")}
               </Button>
             </div>
@@ -1945,7 +2058,7 @@ export default function ContextPage() {
         </Dialog>
 
         {/* Add Category Dialog */}
-        <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
+        <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
           <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -1959,16 +2072,21 @@ export default function ContextPage() {
               <Label className="text-sm font-medium text-slate-700">{t("Category Name")} <span className="text-error">*</span></Label>
               <Input
                 value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
+                onChange={(e) => { setNewCategory(e.target.value); if (categoryError) setCategoryError(""); }}
                 placeholder={t("Enter category name")}
-                className="mt-1.5"
+                className={`mt-1.5 ${categoryError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {categoryError && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{categoryError}</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-              <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
+              <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
                 {t("Cancel")}
               </Button>
-              <Button onClick={handleAddCategory} disabled={!newCategory.trim()}>
+              <Button onClick={handleAddCategory}>
                 {t("Add Category")}
               </Button>
             </div>
@@ -1976,7 +2094,7 @@ export default function ContextPage() {
         </Dialog>
 
         {/* Add Issue Type Dialog */}
-        <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
+        <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
           <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -1990,16 +2108,21 @@ export default function ContextPage() {
               <Label className="text-sm font-medium text-slate-700">{t("Issue Type Name")} <span className="text-error">*</span></Label>
               <Input
                 value={newType}
-                onChange={(e) => setNewType(e.target.value)}
+                onChange={(e) => { setNewType(e.target.value); if (typeError) setTypeError(""); }}
                 placeholder={t("Enter issue type name")}
-                className="mt-1.5"
+                className={`mt-1.5 ${typeError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {typeError && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{typeError}</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-              <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
+              <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
                 {t("Cancel")}
               </Button>
-              <Button onClick={handleAddType} disabled={!newType.trim()}>
+              <Button onClick={handleAddType}>
                 {t("Add Type")}
               </Button>
             </div>
@@ -2669,7 +2792,7 @@ export default function ContextPage() {
       </DialogContent>
 
       {/* Add Domain Dialog */}
-        <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
+        <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
           <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -2684,23 +2807,30 @@ export default function ContextPage() {
               <Input
                 id="editNewDomain"
                 value={newDomain}
-                onChange={(e) => setNewDomain(e.target.value)}
+                onChange={(e) => { setNewDomain(e.target.value); if (domainError) setDomainError(""); }}
                 placeholder={t("Enter domain name")}
-                className="mt-1.5"
+                className={`mt-1.5 ${domainError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {domainError && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{domainError}</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-              <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
+              <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
                 {t("Cancel")}
               </Button>
               <Button onClick={() => {
-                if (newDomain.trim() && !domains.includes(newDomain.trim())) {
+                if (!newDomain.trim()) { setDomainError(t("Please enter domain name")); return; }
+                setDomainError("");
+                if (!domains.includes(newDomain.trim())) {
                   setDomains([...domains, newDomain.trim()]);
                   setEditIssueForm({ ...editIssueForm, domain: newDomain.trim() });
-                  setNewDomain("");
-                  setShowAddDomainDialog(false);
                 }
-              }} disabled={!newDomain.trim()}>
+                setNewDomain("");
+                setShowAddDomainDialog(false);
+              }}>
                 {t("Add Domain")}
               </Button>
             </div>
@@ -2708,7 +2838,7 @@ export default function ContextPage() {
         </Dialog>
 
         {/* Add Category Dialog */}
-        <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
+        <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
           <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -2723,23 +2853,30 @@ export default function ContextPage() {
               <Input
                 id="editNewCategory"
                 value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
+                onChange={(e) => { setNewCategory(e.target.value); if (categoryError) setCategoryError(""); }}
                 placeholder={t("Enter category name")}
-                className="mt-1.5"
+                className={`mt-1.5 ${categoryError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {categoryError && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{categoryError}</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-              <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
+              <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
                 {t("Cancel")}
               </Button>
               <Button onClick={() => {
-                if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+                if (!newCategory.trim()) { setCategoryError(t("Please enter category name")); return; }
+                setCategoryError("");
+                if (!categories.includes(newCategory.trim())) {
                   setCategories([...categories, newCategory.trim()]);
                   setEditIssueForm({ ...editIssueForm, category: newCategory.trim() });
-                  setNewCategory("");
-                  setShowAddCategoryDialog(false);
                 }
-              }} disabled={!newCategory.trim()}>
+                setNewCategory("");
+                setShowAddCategoryDialog(false);
+              }}>
                 {t("Add Category")}
               </Button>
             </div>
@@ -2747,7 +2884,7 @@ export default function ContextPage() {
         </Dialog>
 
         {/* Add Issue Type Dialog */}
-        <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
+        <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
           <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -2762,23 +2899,30 @@ export default function ContextPage() {
               <Input
                 id="editNewType"
                 value={newType}
-                onChange={(e) => setNewType(e.target.value)}
+                onChange={(e) => { setNewType(e.target.value); if (typeError) setTypeError(""); }}
                 placeholder={t("Enter issue type name")}
-                className="mt-1.5"
+                className={`mt-1.5 ${typeError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {typeError && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{typeError}</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-              <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
+              <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
                 {t("Cancel")}
               </Button>
               <Button onClick={() => {
-                if (newType.trim() && !issueTypes.includes(newType.trim())) {
+                if (!newType.trim()) { setTypeError(t("Please enter issue type name")); return; }
+                setTypeError("");
+                if (!issueTypes.includes(newType.trim())) {
                   setIssueTypes([...issueTypes, newType.trim()]);
                   setEditIssueForm({ ...editIssueForm, issueType: newType.trim() });
-                  setNewType("");
-                  setShowAddTypeDialog(false);
                 }
-              }} disabled={!newType.trim()}>
+                setNewType("");
+                setShowAddTypeDialog(false);
+              }}>
                 {t("Add Type")}
               </Button>
             </div>
@@ -3062,7 +3206,7 @@ export default function ContextPage() {
                 </Button>
               )}
               {!isReadOnlyRole && (
-                <Button size="sm" onClick={() => setShowAddStakeholder(true)}>
+                <Button size="sm" onClick={() => { setStakeholderErrors({}); setNewStakeholder({ name: "", type: "Internal", status: "Active", departmentId: "" }); setShowAddStakeholder(true); }}>
                   <Plus className="h-4 w-4 me-2" />
                   {t("New Stakeholder")}
                 </Button>
@@ -3192,7 +3336,7 @@ export default function ContextPage() {
                 <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Stakeholders")}</h3>
                 <p className="text-sm text-slate-500 mb-6">{t("Add your first stakeholder to get started.")}</p>
                 {!isReadOnlyRole && (
-                  <Button size="sm" onClick={() => setShowAddStakeholder(true)}>
+                  <Button size="sm" onClick={() => { setStakeholderErrors({}); setNewStakeholder({ name: "", type: "Internal", status: "Active", departmentId: "" }); setShowAddStakeholder(true); }}>
                     <Plus className="h-4 w-4 me-2" />
                     {t("New Stakeholder")}
                   </Button>
@@ -3216,7 +3360,7 @@ export default function ContextPage() {
                 </Button>
               )}
               {!isReadOnlyRole && (
-                <Button size="sm" onClick={() => setShowAddIssue(true)}>
+                <Button size="sm" onClick={() => { setIssueErrors({}); setStep4Errors({}); setShowAddIssue(true); }}>
                   <Plus className="h-4 w-4 me-2" />
                   {t("Add Issue")}
                 </Button>
@@ -3386,7 +3530,7 @@ export default function ContextPage() {
                 <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Issues Found")}</h3>
                 <p className="text-sm text-slate-500 mb-6">{t("Create your first issue to get started.")}</p>
                 {!isReadOnlyRole && (
-                  <Button size="sm" onClick={() => setShowAddIssue(true)}>
+                  <Button size="sm" onClick={() => { setIssueErrors({}); setStep4Errors({}); setShowAddIssue(true); }}>
                     <Plus className="h-4 w-4 me-2" />
                     {t("Add Issue")}
                   </Button>
@@ -3404,7 +3548,7 @@ export default function ContextPage() {
       {renderEditIssueModal()}
 
       {/* Add Stakeholder Dialog */}
-      <Dialog open={showAddStakeholder} onOpenChange={setShowAddStakeholder}>
+      <Dialog open={showAddStakeholder} onOpenChange={(open) => { setShowAddStakeholder(open); if (!open) setStakeholderErrors({}); }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
@@ -3417,10 +3561,13 @@ export default function ContextPage() {
           <div className="px-6 py-6">
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Type")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Type")} <span className="text-error">*</span></Label>
                 <RadioGroup
                   value={newStakeholder.type}
-                  onValueChange={(value) => setNewStakeholder({ ...newStakeholder, type: value })}
+                  onValueChange={(value) => {
+                    setNewStakeholder({ ...newStakeholder, type: value });
+                    if (stakeholderErrors.type) setStakeholderErrors((prev) => { const { type, ...rest } = prev; return rest; });
+                  }}
                   className="flex gap-6 mt-1.5"
                 >
                   <div className="flex items-center space-x-2">
@@ -3436,16 +3583,29 @@ export default function ContextPage() {
                     <Label htmlFor="add-thirdparty" className="font-normal text-sm text-slate-600">{t("Third Party")}</Label>
                   </div>
                 </RadioGroup>
+                {stakeholderErrors.type && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{stakeholderErrors.type}</p>
+                  </div>
+                )}
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Name")} <span className="text-error">*</span></Label>
                 <Input
                   value={newStakeholder.name}
-                  onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewStakeholder({ ...newStakeholder, name: e.target.value });
+                    if (stakeholderErrors.name) setStakeholderErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                  }}
                   placeholder={t("Enter stakeholder name")}
-                  className="mt-1.5"
+                  className={`mt-1.5 ${stakeholderErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {stakeholderErrors.name && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{stakeholderErrors.name}</p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -3468,12 +3628,15 @@ export default function ContextPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Status")} <span className="text-error">*</span></Label>
                   <Select
                     value={newStakeholder.status}
-                    onValueChange={(value) => setNewStakeholder({ ...newStakeholder, status: value })}
+                    onValueChange={(value) => {
+                      setNewStakeholder({ ...newStakeholder, status: value });
+                      if (stakeholderErrors.status) setStakeholderErrors((prev) => { const { status, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="w-full mt-1.5">
+                    <SelectTrigger className={`w-full mt-1.5 ${stakeholderErrors.status ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select status")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3481,6 +3644,11 @@ export default function ContextPage() {
                       <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
                     </SelectContent>
                   </Select>
+                  {stakeholderErrors.status && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{stakeholderErrors.status}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -3488,7 +3656,7 @@ export default function ContextPage() {
 
           {/* Fixed Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => setShowAddStakeholder(false)}>
+            <Button variant="outline" onClick={() => { setStakeholderErrors({}); setShowAddStakeholder(false); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleAddStakeholder}>{t("Save")}</Button>
@@ -3614,7 +3782,7 @@ export default function ContextPage() {
       </Dialog>
 
       {/* Add Domain Dialog */}
-      <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
+      <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -3630,17 +3798,22 @@ export default function ContextPage() {
             <Label className="text-sm font-medium text-slate-700">{t("Domain Name")} <span className="text-error">*</span></Label>
             <Input
               value={newDomain}
-              onChange={(e) => setNewDomain(e.target.value)}
+              onChange={(e) => { setNewDomain(e.target.value); if (domainError) setDomainError(""); }}
               placeholder={t("Enter domain name")}
-              className="mt-1.5"
+              className={`mt-1.5 ${domainError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             />
+            {domainError && (
+              <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-sm text-red-600">{domainError}</p>
+              </div>
+            )}
           </div>
           {/* Fixed Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
+            <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleAddDomain} disabled={!newDomain.trim()}>
+            <Button onClick={handleAddDomain}>
               {t("Add Domain")}
             </Button>
           </div>
@@ -3648,7 +3821,7 @@ export default function ContextPage() {
       </Dialog>
 
       {/* Add Category Dialog */}
-      <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
+      <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -3664,17 +3837,22 @@ export default function ContextPage() {
             <Label className="text-sm font-medium text-slate-700">{t("Category Name")} <span className="text-error">*</span></Label>
             <Input
               value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
+              onChange={(e) => { setNewCategory(e.target.value); if (categoryError) setCategoryError(""); }}
               placeholder={t("Enter category name")}
-              className="mt-1.5"
+              className={`mt-1.5 ${categoryError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             />
+            {categoryError && (
+              <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-sm text-red-600">{categoryError}</p>
+              </div>
+            )}
           </div>
           {/* Fixed Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
+            <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleAddCategory} disabled={!newCategory.trim()}>
+            <Button onClick={handleAddCategory}>
               {t("Add Category")}
             </Button>
           </div>
@@ -3682,7 +3860,7 @@ export default function ContextPage() {
       </Dialog>
 
       {/* Add Issue Type Dialog */}
-      <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
+      <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -3698,17 +3876,22 @@ export default function ContextPage() {
             <Label className="text-sm font-medium text-slate-700">{t("Issue Type Name")} <span className="text-error">*</span></Label>
             <Input
               value={newType}
-              onChange={(e) => setNewType(e.target.value)}
+              onChange={(e) => { setNewType(e.target.value); if (typeError) setTypeError(""); }}
               placeholder={t("Enter issue type name")}
-              className="mt-1.5"
+              className={`mt-1.5 ${typeError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             />
+            {typeError && (
+              <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-sm text-red-600">{typeError}</p>
+              </div>
+            )}
           </div>
           {/* Fixed Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
+            <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleAddType} disabled={!newType.trim()}>
+            <Button onClick={handleAddType}>
               {t("Add Type")}
             </Button>
           </div>

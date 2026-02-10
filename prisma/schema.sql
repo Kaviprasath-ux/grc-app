@@ -2158,6 +2158,7 @@ CREATE TABLE "EvidenceAIIngestJob" (
     "runpodJobId" TEXT NOT NULL,
     "sentDocumentId" TEXT,
     "returnedDocumentId" TEXT,
+    "ingestedFileName" TEXT,
     "status" TEXT NOT NULL DEFAULT 'queued',
     "error" TEXT,
     "result" TEXT,
@@ -2236,6 +2237,49 @@ CREATE TABLE "NotificationPreference" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "NotificationPreference_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailSettings" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "smtpHost" TEXT NOT NULL,
+    "smtpPort" INTEGER NOT NULL DEFAULT 587,
+    "smtpUser" TEXT NOT NULL,
+    "smtpPassword" TEXT NOT NULL,
+    "fromAddress" TEXT NOT NULL,
+    "fromName" TEXT,
+    "replyToAddress" TEXT,
+    "useTLS" BOOLEAN NOT NULL DEFAULT true,
+    "useSSL" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isVerified" BOOLEAN NOT NULL DEFAULT false,
+    "lastTestedAt" TIMESTAMP(3),
+    "lastTestResult" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailTemplate" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "subject" TEXT NOT NULL,
+    "bodyHtml" TEXT NOT NULL,
+    "bodyText" TEXT,
+    "placeholders" TEXT,
+    "category" TEXT NOT NULL DEFAULT 'notification',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isSystem" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailTemplate_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -2900,6 +2944,21 @@ CREATE INDEX "NotificationPreference_customerAccountId_idx" ON "NotificationPref
 
 -- CreateIndex
 CREATE UNIQUE INDEX "NotificationPreference_userId_notificationType_key" ON "NotificationPreference"("userId", "notificationType");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmailSettings_customerAccountId_key" ON "EmailSettings"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "EmailSettings_customerAccountId_idx" ON "EmailSettings"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "EmailTemplate_customerAccountId_idx" ON "EmailTemplate"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "EmailTemplate_code_idx" ON "EmailTemplate"("code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmailTemplate_customerAccountId_code_key" ON "EmailTemplate"("customerAccountId", "code");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
@@ -3686,6 +3745,12 @@ ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_cust
 
 -- AddForeignKey
 ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailSettings" ADD CONSTRAINT "EmailSettings_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailTemplate" ADD CONSTRAINT "EmailTemplate_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

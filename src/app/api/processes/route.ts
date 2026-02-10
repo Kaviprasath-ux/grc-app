@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all processes - filtered by tenant
 export async function GET() {
@@ -151,6 +151,7 @@ export async function POST(request: NextRequest) {
           relatedEntityType: 'process',
           relatedEntityId: process.id,
           link: `/organization/process/${process.id}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
     };

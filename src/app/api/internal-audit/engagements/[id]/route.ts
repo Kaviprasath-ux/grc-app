@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter } from '@/lib/api-auth';
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 // GET /api/internal-audit/engagements/[id] - Get a single engagement
 // Uses audit.fieldwork:view to allow auditees to view engagement details
@@ -53,9 +53,10 @@ export const PUT = withAuth(
       const body = await req.json();
       const tenantFilter = getTenantFilter(session);
 
-      // Verify engagement exists and belongs to tenant
+      // Verify engagement exists and belongs to tenant (include current assignments for change detection)
       const existingEngagement = await prisma.auditEngagement.findFirst({
         where: { id, ...tenantFilter },
+        select: { id: true, assignedAuditorId: true, auditeeId: true },
       });
 
       if (!existingEngagement) {
@@ -117,8 +118,8 @@ export const PUT = withAuth(
         }
       });
 
-      // Notify assigned auditor
-      if (auditorId && auditorId !== session.id && session.customerAccountId) {
+      // Notify assigned auditor only if assignment actually changed
+      if (auditorId && auditorId !== existingEngagement.assignedAuditorId && auditorId !== session.id && session.customerAccountId) {
         await notificationService.notifyEngagementAssigned({
           customerAccountId: session.customerAccountId,
           actorId: session.id,
@@ -127,10 +128,11 @@ export const PUT = withAuth(
           engagementCode: engagement.auditId,
           engagementName: engagement.engagementTitle || engagement.auditId,
           role: 'Auditor',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
-      // Notify auditee
-      if (auditeeId && auditeeId !== session.id && session.customerAccountId) {
+      // Notify auditee only if assignment actually changed
+      if (auditeeId && auditeeId !== existingEngagement.auditeeId && auditeeId !== session.id && session.customerAccountId) {
         await notificationService.notifyEngagementAssigned({
           customerAccountId: session.customerAccountId,
           actorId: session.id,
@@ -139,6 +141,7 @@ export const PUT = withAuth(
           engagementCode: engagement.auditId,
           engagementName: engagement.engagementTitle || engagement.auditId,
           role: 'Auditee',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

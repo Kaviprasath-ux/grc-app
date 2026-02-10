@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Sparkles, Search, Download, Upload, Home, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, Search, Upload, Home, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -21,10 +20,16 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ColumnDef } from "@tanstack/react-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -92,6 +97,10 @@ export default function AssetClassificationPage() {
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Dialog states
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -390,6 +399,18 @@ export default function AssetClassificationPage() {
     );
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredClassifications.length / itemsPerPage);
+  const paginatedClassifications = filteredClassifications.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   // Export handler
   const handleExport = () => {
     const headers = ["Sub Category", "Asset Group", "Confidentiality", "Integrity", "Availability", "Asset Criticality", "Asset Criticality Score"];
@@ -670,82 +691,6 @@ export default function AssetClassificationPage() {
     }
   };
 
-  // Grid Columns matching UAT
-  const ciaColumns: ColumnDef<CIAClassification>[] = [
-    {
-      accessorKey: "subCategory.name",
-      header: t("Sub Category"),
-      cell: ({ row }) => row.original.subCategory?.name || "-",
-    },
-    {
-      accessorKey: "group.name",
-      header: t("Asset Group"),
-      cell: ({ row }) => row.original.group?.name || "-",
-    },
-    {
-      accessorKey: "confidentiality",
-      header: t("Confidentiality"),
-      cell: ({ row }) => row.original.confidentiality || "-",
-    },
-    {
-      accessorKey: "integrity",
-      header: t("Integrity"),
-      cell: ({ row }) => row.original.integrity || "-",
-    },
-    {
-      accessorKey: "availability",
-      header: t("Availability"),
-      cell: ({ row }) => row.original.availability || "-",
-    },
-    {
-      accessorKey: "assetCriticality",
-      header: t("Asset Criticality"),
-      cell: ({ row }) => row.original.assetCriticality || "-",
-    },
-    {
-      accessorKey: "assetCriticalityScore",
-      header: t("Asset Criticality Score"),
-      cell: ({ row }) => row.original.assetCriticalityScore,
-    },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleAIRiskEvaluation(row.original)}
-            disabled={isPolling}
-          >
-            {isPolling && currentClassificationForAI?.id === row.original.id ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-1" />
-            )}
-            {t("AI Risk Evaluation")}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => openEditDialog(row.original)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-            onClick={() => openDeleteDialog(row.original)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -768,60 +713,163 @@ export default function AssetClassificationPage() {
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Classification")}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Asset Classification")}</h1>
-      </div>
-
-      {/* Search and Actions - aligned on same row */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search by Group, Sub Category, Confidentiality, Availability, Integrity, Criticality")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[500px] bg-white border-slate-200"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Upload className="h-4 w-4 mr-2" />
-            {t("Export")}
-          </Button>
-          <Button size="sm" onClick={() => {
-            resetForm();
-            setIsAddOpen(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("New Asset Classification")}
-          </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Asset Classification")}</h1>
         </div>
       </div>
 
-      {/* Asset Classification Grid */}
-      <DataGrid
-        columns={ciaColumns}
-        data={filteredClassifications}
-        hideSearch={true}
-      />
+      {/* Action Buttons - Above the card */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
+        <Button size="sm" onClick={() => {
+          resetForm();
+          setIsAddOpen(true);
+        }}>
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("New Asset Classification")}
+        </Button>
+      </div>
+
+      {/* Card with Search Toolbar + Table + Pagination */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search Toolbar */}
+        <div className="flex items-center px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search classifications...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        {filteredClassifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+              <Sparkles className="h-6 w-6 text-primary-500" />
+            </div>
+            <h3 className="text-sm font-medium text-slate-800 mb-1">{t("No classifications found")}</h3>
+            <p className="text-xs text-slate-500">{searchTerm ? t("Try adjusting your search") : t("Add your first asset classification")}</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50 border-b border-slate-100 hover:bg-slate-50">
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Sub Category")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Asset Group")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Confidentiality")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Integrity")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Availability")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Asset Criticality")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Score")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Action")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedClassifications.map((c) => (
+                <TableRow key={c.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{c.subCategory?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{c.group?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{c.confidentiality || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{c.integrity || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{c.availability || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{c.assetCriticality || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{c.assetCriticalityScore}</TableCell>
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs text-primary-600 border-primary-200 hover:bg-primary-50 hover:text-primary-700"
+                        onClick={() => handleAIRiskEvaluation(c)}
+                        disabled={isPolling}
+                      >
+                        {isPolling && currentClassificationForAI?.id === c.id ? (
+                          <Loader2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                        )}
+                        {t("AI Risk Evaluation")}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => openEditDialog(c)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                        onClick={() => openDeleteDialog(c)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+
+        {/* Pagination */}
+        {filteredClassifications.length > 0 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">
+              {t("Showing")} {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredClassifications.length)} {t("of")} {filteredClassifications.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Add Classification Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Classification")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Classification")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-6 py-5">
             <div className="space-y-5">
               {/* Asset Sub Category & Asset Group */}
               <div className="grid grid-cols-2 gap-4">
@@ -996,7 +1044,7 @@ export default function AssetClassificationPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleAdd}>{t("Save")}</Button>
           </div>
@@ -1005,16 +1053,16 @@ export default function AssetClassificationPage() {
 
       {/* Edit Classification Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Asset Classification")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Asset Classification")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-6 py-5">
             <div className="space-y-5">
               {/* Asset Sub Category & Asset Group */}
               <div className="grid grid-cols-2 gap-4">
@@ -1189,7 +1237,7 @@ export default function AssetClassificationPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleEdit}>{t("Save")}</Button>
           </div>
@@ -1198,16 +1246,16 @@ export default function AssetClassificationPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
                 {t("Are you sure you want to delete this classification? This action cannot be undone.")}
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>{t("Cancel")}</Button>
             <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
           </div>
@@ -1216,13 +1264,13 @@ export default function AssetClassificationPage() {
 
       {/* Add Asset Sensitivity Dialog - inline add */}
       <Dialog open={isAddSensitivityOpen} onOpenChange={setIsAddSensitivityOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Sensitivity")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Sensitivity")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-6 py-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
               <Input
@@ -1233,7 +1281,7 @@ export default function AssetClassificationPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewSensitivityName("");
               setIsAddSensitivityOpen(false);
@@ -1245,13 +1293,13 @@ export default function AssetClassificationPage() {
 
       {/* Add CIA Rating Dialog - inline add */}
       <Dialog open={isAddCIARatingOpen} onOpenChange={setIsAddCIARatingOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add")} {t(newCIARatingType)}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add")} {t(newCIARatingType)}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-6 py-5 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-semantic-error">*</span></Label>
               <Input
@@ -1272,7 +1320,7 @@ export default function AssetClassificationPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewCIARatingLabel("");
               setNewCIARatingValue(0);
@@ -1285,16 +1333,16 @@ export default function AssetClassificationPage() {
 
       {/* AI Risk Evaluation Results Dialog (Generate Risks V2 response) */}
       <Dialog open={isAIRiskDialogOpen} onOpenChange={setIsAIRiskDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+              <DialogTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
                 <Sparkles className="h-5 w-5 text-primary-600" />
                 {t("AI Risk Evaluation")}
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
             <div className="space-y-1">
               <p className="text-sm font-medium text-slate-700">
                 {t("Asset")}: {currentClassificationForAI?.subCategory?.name} - {currentClassificationForAI?.group?.name}
@@ -1350,7 +1398,7 @@ export default function AssetClassificationPage() {
                       const allControls = threatList.flatMap((t: any) => t.controls ?? []);
                       const allVulnerabilities = threatList.flatMap((t: any) => (t.Vulnerabilities ?? []));
                       return (
-                        <div key={idx} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-white shadow-sm">
+                        <div key={idx} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-white">
                           <div className="flex justify-between items-start gap-2">
                             <div className="flex-1 min-w-0 flex items-center gap-2">
                               <h5 className="font-semibold text-slate-900 truncate">{risk.Risk_name}</h5>
@@ -1370,11 +1418,11 @@ export default function AssetClassificationPage() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 shrink-0 text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                              className="h-7 w-7 shrink-0 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                               onClick={() => removeRisk(idx)}
                               title={t("Remove risk")}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                           <p className="text-sm text-slate-600">{risk.Risk_description}</p>
@@ -1434,7 +1482,7 @@ export default function AssetClassificationPage() {
               );
             })()}
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAIRiskDialogOpen(false)}>
               {t("Close")}
             </Button>
@@ -1449,7 +1497,7 @@ export default function AssetClassificationPage() {
                 >
                   {isAddingToRegister ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                       {t("Adding...")}
                     </>
                   ) : (
@@ -1461,7 +1509,7 @@ export default function AssetClassificationPage() {
                   onClick={() => currentClassificationForAI && handleAIRiskEvaluation(currentClassificationForAI)}
                   disabled={isAddingToRegister}
                 >
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Regenerate")}
                 </Button>
               </>

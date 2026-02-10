@@ -21,6 +21,7 @@ model CustomerAccount {
   name                   String                   // Customer organization name
   logoUrl                String?                  // Customer logo
   isActive               Boolean                  @default(true)
+  emailNotificationsEnabled Boolean               @default(true) // Toggle for non-mandatory email notifications
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   // Relations - all data belonging to this customer
@@ -2987,6 +2988,7 @@ model EvidenceAIIngestJob {
   // Document ID tracking: what we sent vs what RunPod returned
   sentDocumentId     String?   // The document_id we sent (evidence.id or artifact.id)
   returnedDocumentId String?   // The document_id RunPod returned (if any)
+  ingestedFileName   String?   // Actual file name sent to RunPod (for proper delete matching)
 
   status        String    @default("queued") // queued, processing, completed, failed
   error         String?   @db.Text
@@ -3093,4 +3095,57 @@ model NotificationPreference {
 
   @@unique([userId, notificationType])
   @@index([customerAccountId])
+}
+
+// ==================== EMAIL CONFIGURATION (GLOBAL - INSTANCE LEVEL) ====================
+// Email settings are global for the entire application instance.
+// Managed by GRCAdministrator (superadmin). All customers use the same SMTP config.
+
+// EmailSettings - Global SMTP configuration (only ONE record should exist)
+model EmailSettings {
+  id                String           @id @default(cuid())
+  // SMTP Configuration
+  smtpHost          String           // e.g., "smtp.office365.com"
+  smtpPort          Int              @default(587)
+  smtpUser          String           // SMTP username/email
+  smtpPassword      String           // SMTP password (should be encrypted in production)
+  fromAddress       String           // e.g., "notifications@company.com"
+  fromName          String?          // Display name for From field, e.g., "GRC System"
+  replyToAddress    String?          // Reply-to address
+  // Security settings
+  useTLS            Boolean          @default(true)
+  useSSL            Boolean          @default(false) // SSL on port 465
+  // Status
+  isActive          Boolean          @default(true)
+  isVerified        Boolean          @default(false) // Set to true after successful test email
+  lastTestedAt      DateTime?
+  lastTestResult    String?          // Success/Error message from last test
+  // Metadata
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+// EmailTemplate - Global email templates (managed by GRCAdministrator)
+model EmailTemplate {
+  id                String           @id @default(cuid())
+  // Template identification
+  code              String           @unique // Unique code, e.g., "EVIDENCE_ASSIGNED"
+  name              String           // Human-readable name
+  description       String?          // Description of when this template is used
+  // Template content
+  subject           String           // Email subject with {placeholders}
+  bodyHtml          String           @db.Text // HTML body with {placeholders}
+  bodyText          String?          @db.Text // Plain text alternative
+  // Available placeholders (stored as JSON array)
+  // e.g., ["recipientName", "entityName", "entityLink", "dueDate", "actorName"]
+  placeholders      String?          @db.Text
+  // Template settings
+  category          String           @default("notification") // notification, reminder, system, custom
+  isActive          Boolean          @default(true)
+  isSystem          Boolean          @default(false) // System templates cannot be deleted
+  // Metadata
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([code])
 }

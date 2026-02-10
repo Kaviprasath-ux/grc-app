@@ -89,6 +89,9 @@ export default function KPIDetailsPage() {
   // KPI Records (history)
   const [kpiRecords, setKpiRecords] = useState<KPIRecord[]>([]);
 
+  // KPI form validation errors
+  const [kpiErrors, setKpiErrors] = useState<Record<string, string>>({});
+
   // Dialog states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<KPIRecord | null>(null);
@@ -141,6 +144,17 @@ export default function KPIDetailsPage() {
   };
 
   const handleSave = async () => {
+    const errors: Record<string, string> = {};
+    if (!kpiConfig.objective.trim()) errors.objective = t("Please Enter Objective.");
+    if (!kpiConfig.dataSource.trim()) errors.dataSource = t("Please Enter Data Source.");
+    if (!kpiConfig.expectedValue) errors.expectedValue = t("Please Enter the Expected Score.");
+    if (!kpiConfig.description.trim()) errors.description = t("Please Enter Description.");
+    if (!kpiConfig.formula.trim()) errors.formula = t("Please Enter the Calculated Formula.");
+    if (Object.keys(errors).length > 0) {
+      setKpiErrors(errors);
+      return;
+    }
+    setKpiErrors({});
     setSaving(true);
     try {
       const res = await fetch(`/api/process-kpi/${processId}`, {
@@ -366,8 +380,11 @@ export default function KPIDetailsPage() {
 
       {/* KPI Configuration Form */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-slate-800">{t("KPI Configuration")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
               <div>
@@ -375,33 +392,51 @@ export default function KPIDetailsPage() {
                 <Input
                   placeholder={t("Enter Objective")}
                   value={kpiConfig.objective}
-                  onChange={(e) =>
-                    setKpiConfig({ ...kpiConfig, objective: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setKpiConfig({ ...kpiConfig, objective: e.target.value });
+                    if (kpiErrors.objective) setKpiErrors((prev) => { const { objective, ...rest } = prev; return rest; });
+                  }}
+                  className={kpiErrors.objective ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {kpiErrors.objective && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{kpiErrors.objective}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <h5 className="text-sm font-medium mb-2">{t("KPI Data Source")}</h5>
                 <Input
                   placeholder={t("Enter Data Source")}
                   value={kpiConfig.dataSource}
-                  onChange={(e) =>
-                    setKpiConfig({ ...kpiConfig, dataSource: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setKpiConfig({ ...kpiConfig, dataSource: e.target.value });
+                    if (kpiErrors.dataSource) setKpiErrors((prev) => { const { dataSource, ...rest } = prev; return rest; });
+                  }}
+                  className={kpiErrors.dataSource ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {kpiErrors.dataSource && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{kpiErrors.dataSource}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <h5 className="text-sm font-medium mb-2">{t("Expected Value")}</h5>
                 <Input
                   type="number"
                   value={kpiConfig.expectedValue}
-                  onChange={(e) =>
-                    setKpiConfig({
-                      ...kpiConfig,
-                      expectedValue: parseInt(e.target.value) || 0,
-                    })
-                  }
+                  onChange={(e) => {
+                    setKpiConfig({ ...kpiConfig, expectedValue: parseInt(e.target.value) || 0 });
+                    if (kpiErrors.expectedValue) setKpiErrors((prev) => { const { expectedValue, ...rest } = prev; return rest; });
+                  }}
+                  className={kpiErrors.expectedValue ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {kpiErrors.expectedValue && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{kpiErrors.expectedValue}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -412,44 +447,53 @@ export default function KPIDetailsPage() {
                 <Input
                   placeholder={t("Enter Description")}
                   value={kpiConfig.description}
-                  onChange={(e) =>
-                    setKpiConfig({ ...kpiConfig, description: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setKpiConfig({ ...kpiConfig, description: e.target.value });
+                    if (kpiErrors.description) setKpiErrors((prev) => { const { description, ...rest } = prev; return rest; });
+                  }}
+                  className={kpiErrors.description ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {kpiErrors.description && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{kpiErrors.description}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <h5 className="text-sm font-medium mb-2">{t("KPI Measurement Formula")}</h5>
                 <Input
                   placeholder={t("Enter the KPI Calculation Formula")}
                   value={kpiConfig.formula}
-                  onChange={(e) =>
-                    setKpiConfig({ ...kpiConfig, formula: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setKpiConfig({ ...kpiConfig, formula: e.target.value });
+                    if (kpiErrors.formula) setKpiErrors((prev) => { const { formula, ...rest } = prev; return rest; });
+                  }}
+                  className={kpiErrors.formula ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {kpiErrors.formula && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{kpiErrors.formula}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <h5 className="text-sm font-medium mb-2">{t("Targeted Achieved Value")}</h5>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    value={kpiConfig.targetedAchievedValue}
-                    onChange={(e) =>
-                      setKpiConfig({
-                        ...kpiConfig,
-                        targetedAchievedValue: parseInt(e.target.value) || 0,
-                      })
-                    }
-                  />
-                  <Button variant="outline" size="sm">
-                    {t("Edit Assignee")}
-                  </Button>
-                </div>
+                <Input
+                  type="number"
+                  value={kpiConfig.targetedAchievedValue}
+                  onChange={(e) =>
+                    setKpiConfig({
+                      ...kpiConfig,
+                      targetedAchievedValue: parseInt(e.target.value) || 0,
+                    })
+                  }
+                />
               </div>
             </div>
           </div>
 
           <div className="flex justify-end mt-6">
-            <Button onClick={handleSave} disabled={saving}>
+            <Button type="button" onClick={handleSave} disabled={saving}>
               {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>

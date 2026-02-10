@@ -38,7 +38,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ArrowLeft,
   Plus,
   Pencil,
   Trash2,
@@ -47,8 +46,6 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Upload,
   Home,
 } from "lucide-react";
@@ -95,6 +92,7 @@ export default function GovernanceTemplatesPage() {
     governanceType: "",
     file: null as File | null,
   });
+  const [templateErrors, setTemplateErrors] = useState<Record<string, string>>({});
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -122,6 +120,7 @@ export default function GovernanceTemplatesPage() {
       return;
     }
     setFileError("");
+    if (templateErrors.file) setTemplateErrors((prev) => { const { file, ...rest } = prev; return rest; });
     setFormData({ ...formData, file });
   };
 
@@ -150,6 +149,7 @@ export default function GovernanceTemplatesPage() {
         return;
       }
       setFileError("");
+      if (templateErrors.file) setTemplateErrors((prev) => { const { file, ...rest } = prev; return rest; });
       setFormData({ ...formData, file });
     }
   };
@@ -172,11 +172,15 @@ export default function GovernanceTemplatesPage() {
   };
 
   const handleCreate = async () => {
-    if (!formData.file || !formData.governanceType) return;
+    const errors: Record<string, string> = {};
+    if (!formData.governanceType) errors.governanceType = t("Please select the template");
+    if (!formData.file) errors.file = t("Please upload a template file");
+    if (Object.keys(errors).length > 0) { setTemplateErrors(errors); return; }
+    setTemplateErrors({});
 
     try {
       const form = new FormData();
-      form.append("file", formData.file);
+      form.append("file", formData.file!);
       form.append("governanceType", formData.governanceType);
 
       const response = await fetch("/api/governance-templates", {
@@ -312,10 +316,22 @@ export default function GovernanceTemplatesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-2 border-primary-200"></div>
-          <div className="absolute inset-0 rounded-full border-2 border-primary-600 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-slate-500">{t("Master Data")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Governance Templates")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -329,173 +345,185 @@ export default function GovernanceTemplatesPage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Master Data")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Governance Templates")}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
 
-      {/* Search and Actions - same row */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search templates...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[300px] bg-white border-slate-200"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            {t("Export")}
-          </Button>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                {t("New Template")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-              <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-                <DialogTitle className="text-lg font-semibold text-slate-800">
-                  {t("Add Governance Template")}
-                </DialogTitle>
-              </div>
-              <div className="flex-1 overflow-y-auto px-6 py-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">
-                      {t("Governance Type")} <span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      value={formData.governanceType}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, governanceType: value })
-                      }
-                    >
-                      <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder={t("Select type")} />
-                      </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="Policy">{t("Policy")}</SelectItem>
-                        <SelectItem value="Standard">{t("Standard")}</SelectItem>
-                        <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">
-                      {t("Upload Template")} <span className="text-red-500">*</span>
-                    </Label>
-
-                    {/* Drag and Drop Zone */}
-                    <div
-                      className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-                        dragOver
-                          ? "border-primary bg-primary/5"
-                          : fileError
-                            ? "border-red-400 bg-red-50"
-                            : "border-slate-300 hover:border-slate-400"
-                      }`}
-                      onDragOver={handleFileDragOver}
-                      onDragLeave={handleFileDragLeave}
-                      onDrop={handleFileDrop}
-                    >
-                      {!formData.file ? (
-                        <div className="flex flex-col items-center text-center">
-                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                            <Upload className="h-5 w-5 text-slate-400" />
-                          </div>
-                          <p className="text-sm text-slate-600">
-                            {t("Drag and Drop or")}{" "}
-                            <label className="text-primary cursor-pointer hover:underline">
-                              {t("Click to upload")}
-                              <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".docx"
-                                className="hidden"
-                                onChange={handleFileChange}
-                              />
-                            </label>
-                          </p>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {t("Supported format: DOCX only. Max Size: 25MB")}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {/* File Item */}
-                          <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-700 truncate">
-                                {formData.file.name}
-                              </p>
-                              <p className="text-xs text-slate-400">
-                                {formatFileSize(formData.file.size)}
-                              </p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                              onClick={handleRemoveFile}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+      {/* Action Buttons above card */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
+        <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); resetForm(); setTemplateErrors({}); setFileError(""); } else { setCreateDialogOpen(true); } }}>
+          <DialogTrigger asChild>
+            <Button size="sm" onClick={() => setTemplateErrors({})}>
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("New Template")}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+            <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+              <DialogTitle className="text-base font-semibold text-slate-800">
+                {t("Add Governance Template")}
+              </DialogTitle>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t("Governance Type")} <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.governanceType}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, governanceType: value });
+                      if (templateErrors.governanceType) setTemplateErrors((prev) => { const { governanceType, ...rest } = prev; return rest; });
+                    }}
+                  >
+                    <SelectTrigger className={`w-full bg-white ${templateErrors.governanceType ? "border-red-500 focus:ring-red-500" : ""}`}>
+                      <SelectValue placeholder={t("Select type")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                      <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                      <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {templateErrors.governanceType && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{templateErrors.governanceType}</p>
                     </div>
-                    {fileError && (
-                      <p className="text-sm text-red-500 mt-1">{fileError}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t("Upload Template")} <span className="text-red-500">*</span>
+                  </Label>
+
+                  {/* Drag and Drop Zone */}
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                      dragOver
+                        ? "border-primary bg-primary/5"
+                        : fileError || templateErrors.file
+                          ? "border-red-400 bg-red-50"
+                          : "border-slate-300 hover:border-slate-400"
+                    }`}
+                    onDragOver={handleFileDragOver}
+                    onDragLeave={handleFileDragLeave}
+                    onDrop={handleFileDrop}
+                  >
+                    {!formData.file ? (
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                          <Upload className="h-5 w-5 text-slate-400" />
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          {t("Drag and Drop or")}{" "}
+                          <label className="text-primary cursor-pointer hover:underline">
+                            {t("Click to upload")}
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept=".docx"
+                              className="hidden"
+                              onChange={handleFileChange}
+                            />
+                          </label>
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {t("Supported format: DOCX only. Max Size: 25MB")}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {/* File Item */}
+                        <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-700 truncate">
+                              {formData.file.name}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {formatFileSize(formData.file.size)}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={handleRemoveFile}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     )}
                   </div>
+                  {fileError && (
+                    <p className="text-sm text-red-500 mt-1">{fileError}</p>
+                  )}
+                  {templateErrors.file && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{templateErrors.file}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setCreateDialogOpen(false);
-                    resetForm();
-                  }}
-                >
-                  {t("Cancel")}
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={!formData.file || !formData.governanceType}
-                >
-                  {t("Save")}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+            </div>
+            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCreateDialogOpen(false);
+                  resetForm();
+                  setTemplateErrors({});
+                }}
+              >
+                {t("Cancel")}
+              </Button>
+              <Button
+                onClick={handleCreate}
+              >
+                {t("Save")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search inside card */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search templates...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Template Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Governance Type")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Uploaded By")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Created")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[120px]">{t("Actions")}</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Template Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Governance Type")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Uploaded By")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Created")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[120px]">{t("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -514,8 +542,8 @@ export default function GovernanceTemplatesPage() {
               </TableRow>
             ) : (
               paginatedTemplates.map((template) => (
-                <TableRow key={template.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 text-sm pl-4">
+                <TableRow key={template.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <TableCell className="py-3 text-sm ps-5">
                     <p className="font-medium text-slate-800">{template.name}</p>
                   </TableCell>
                   <TableCell className="py-3 text-sm">
@@ -534,31 +562,31 @@ export default function GovernanceTemplatesPage() {
                   <TableCell className="py-3 text-sm text-slate-600">
                     {formatDate(template.createdAt)}
                   </TableCell>
-                  <TableCell className="py-3 text-sm pr-4">
-                    <div className="flex gap-1">
+                  <TableCell className="py-3 text-sm pe-5">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleView(template)}
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditDialog(template)}
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => openDeleteDialog(template)}
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -569,50 +597,30 @@ export default function GovernanceTemplatesPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <p className="text-sm text-slate-500">
-            {t("Showing")} {startIndex + 1} {t("to")} {Math.min(startIndex + itemsPerPage, filteredTemplates.length)} {t("of")}{" "}
-            {filteredTemplates.length}
-          </p>
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
+            {filteredTemplates.length > 0
+              ? `${startIndex + 1} ${t("to")} ${Math.min(startIndex + itemsPerPage, filteredTemplates.length)} ${t("of")} ${filteredTemplates.length}`
+              : t("No templates")}
+          </span>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="h-8 w-8"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="h-8 w-8"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-slate-600 px-2">
-              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
-            </span>
             <Button
               variant="ghost"
               size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="h-8 w-8"
+              disabled={currentPage >= totalPages}
             >
               <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="h-8 w-8"
-            >
-              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -620,9 +628,9 @@ export default function GovernanceTemplatesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">
               {t("Edit Governance Template")}
             </DialogTitle>
           </div>
@@ -726,7 +734,7 @@ export default function GovernanceTemplatesPage() {
               )}
             </div>
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -749,16 +757,16 @@ export default function GovernanceTemplatesPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
+          <AlertDialogHeader className="px-6 py-4">
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">
               {t("Delete Template")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete")} &quot;{selectedTemplate?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+          <AlertDialogFooter className="px-6 py-4 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}

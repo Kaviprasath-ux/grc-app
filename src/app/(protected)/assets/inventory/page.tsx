@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Upload, Download, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, Home, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Download, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, Home, ChevronRight, ChevronLeft, Eye } from "lucide-react";
 import Link from "next/link";
-import { DataGrid } from "@/components/shared";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ColumnDef } from "@tanstack/react-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
 interface Department {
@@ -154,6 +160,8 @@ const formatDate = (dateString: string | null) => {
   return new Date(dateString).toLocaleDateString();
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function AssetInventoryPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
@@ -183,6 +191,9 @@ export default function AssetInventoryPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [lifecycleFilter, setLifecycleFilter] = useState("all");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Dialog states
   const [isAddAssetOpen, setIsAddAssetOpen] = useState(false);
@@ -302,6 +313,18 @@ export default function AssetInventoryPage() {
     const matchesLifecycle = lifecycleFilter === "all" || a.lifecycleStatusId === lifecycleFilter;
     return matchesSearch && matchesCategory && matchesDepartment && matchesLifecycle;
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedAssets = filteredAssets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const startItem = filteredAssets.length > 0 ? startIndex + 1 : 0;
+  const endItem = Math.min(startIndex + ITEMS_PER_PAGE, filteredAssets.length);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, departmentFilter, lifecycleFilter]);
 
   // Generate next asset ID (ASSET prefix format matching UAT)
   const generateAssetId = () => {
@@ -634,87 +657,6 @@ export default function AssetInventoryPage() {
     }).length,
   };
 
-  // Columns matching UAT: Asset ID, Asset Name, Asset Owner, Asset Category, Asset Sub Category, Group, Action
-  const assetColumns: ColumnDef<Asset>[] = [
-    {
-      accessorKey: "assetId",
-      header: t("Asset ID"),
-      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assetId")}</span>,
-    },
-    {
-      accessorKey: "name",
-      header: t("Asset Name"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          {getAssetTypeIcon(row.original.assetType)}
-          <span className="font-medium">{row.getValue("name")}</span>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "owner.fullName",
-      header: t("Asset Owner"),
-      cell: ({ row }) => row.original.owner?.fullName || "-",
-    },
-    {
-      accessorKey: "category.name",
-      header: t("Asset Category"),
-      cell: ({ row }) => row.original.category?.name || "-",
-    },
-    {
-      accessorKey: "subCategory.name",
-      header: t("Asset Sub Category"),
-      cell: ({ row }) => row.original.subCategory?.name || "-",
-    },
-    {
-      accessorKey: "group.name",
-      header: t("Group"),
-      cell: ({ row }) => row.original.group?.name || "-",
-    },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          {canEdit && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-400 hover:text-slate-600"
-              onClick={() => {
-                setEditingAsset({
-                  ...row.original,
-                  acquisitionDate: row.original.acquisitionDate
-                    ? new Date(row.original.acquisitionDate).toISOString().split('T')[0]
-                    : null,
-                  nextReviewDate: row.original.nextReviewDate
-                    ? new Date(row.original.nextReviewDate).toISOString().split('T')[0]
-                    : null,
-                });
-                setIsEditAssetOpen(true);
-              }}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          {canDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-              onClick={() => {
-                setDeletingAssetId(row.original.id);
-                setIsDeleteDialogOpen(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ];
-
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
@@ -743,7 +685,7 @@ export default function AssetInventoryPage() {
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Inventory")}</span>
       </nav>
 
@@ -808,108 +750,225 @@ export default function AssetInventoryPage() {
         </div>
       </div>
 
-      {/* Filters and Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
+      {/* Action Buttons - Above Card */}
+      <div className="flex items-center justify-end gap-2">
+        <PermissionGate resource="asset.inventory" action="create">
+          <label>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <Button variant="outline" size="sm" asChild>
+              <span>
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
+              </span>
+            </Button>
+          </label>
+        </PermissionGate>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
+        <PermissionGate resource="asset.inventory" action="create">
+          <Button size="sm" onClick={() => {
+            setNewAsset({ ...newAsset, assetId: generateAssetId() });
+            setIsAddAssetOpen(true);
+          }}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Add Asset")}
+          </Button>
+        </PermissionGate>
+      </div>
+
+      {/* Table Card */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search & Filter Toolbar */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
               placeholder={t("Search assets...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px] bg-white"
+              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px] bg-white">
-              <SelectValue placeholder={t("All Categories")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Categories")}</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-[180px] bg-white">
-              <SelectValue placeholder={t("All Departments")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Departments")}</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-            <SelectTrigger className="w-[180px] bg-white">
-              <SelectValue placeholder={t("All Status")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Status")}</SelectItem>
-              {lifecycleStatuses.map((ls) => (
-                <SelectItem key={ls.id} value={ls.id}>
-                  {ls.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-3">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("All Categories")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">{t("All Categories")}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("All Departments")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">{t("All Departments")}</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("All Status")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">{t("All Status")}</SelectItem>
+                {lifecycleStatuses.map((ls) => (
+                  <SelectItem key={ls.id} value={ls.id}>
+                    {ls.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <PermissionGate resource="asset.inventory" action="create">
-            <label>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleImport}
-                className="hidden"
-              />
-              <Button variant="outline" size="sm" asChild>
-                <span>
-                  <Download className="h-4 w-4 mr-2" />
-                  {t("Import")}
-                </span>
-              </Button>
-            </label>
-          </PermissionGate>
-          <Button variant="outline" size="sm" onClick={handleExport}>
 
-            <Upload className="h-4 w-4 mr-2" />
-            {t("Export")}
-          </Button>
-          <PermissionGate resource="asset.inventory" action="create">
-            <Button size="sm" onClick={() => {
-              setNewAsset({ ...newAsset, assetId: generateAssetId() });
-              setIsAddAssetOpen(true);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("Add Asset")}
+        {/* Table */}
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Asset ID")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Asset Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Asset Owner")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Asset Category")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Asset Sub Category")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Group")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedAssets.map((asset) => (
+              <TableRow
+                key={asset.id}
+                className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
+              >
+                <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800 font-mono">{asset.assetId}</TableCell>
+                <TableCell className="py-3.5 text-sm text-slate-700">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">{getAssetTypeIcon(asset.assetType)}</span>
+                    <span className="font-medium">{asset.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="py-3.5 text-sm text-slate-600">{asset.owner?.fullName || "-"}</TableCell>
+                <TableCell className="py-3.5 text-sm text-slate-600">{asset.category?.name || "-"}</TableCell>
+                <TableCell className="py-3.5 text-sm text-slate-600">{asset.subCategory?.name || "-"}</TableCell>
+                <TableCell className="py-3.5 text-sm text-slate-600">{asset.group?.name || "-"}</TableCell>
+                <TableCell className="py-3.5 pe-5">
+                  <div className="flex items-center gap-0.5">
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => {
+                          setEditingAsset({
+                            ...asset,
+                            acquisitionDate: asset.acquisitionDate
+                              ? new Date(asset.acquisitionDate).toISOString().split('T')[0]
+                              : null,
+                            nextReviewDate: asset.nextReviewDate
+                              ? new Date(asset.nextReviewDate).toISOString().split('T')[0]
+                              : null,
+                          });
+                          setIsEditAssetOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                        onClick={() => {
+                          setDeletingAssetId(asset.id);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filteredAssets.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                      <Package className="h-6 w-6 text-primary-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">{t("No assets found")}</p>
+                    <p className="text-xs text-slate-400">{t("Create a new asset to get started")}</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
+            {filteredAssets.length > 0
+              ? `${t("Showing")} ${startItem} ${t("to")} ${endItem} ${t("of")} ${filteredAssets.length}`
+              : t("No assets")}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-          </PermissionGate>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Data Grid */}
-      <DataGrid columns={assetColumns} data={filteredAssets} hideSearch={true} />
-
       {/* Add Asset Dialog */}
       <Dialog open={isAddAssetOpen} onOpenChange={setIsAddAssetOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Asset")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add New Asset")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <div className="space-y-5">
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="space-y-4">
               {/* Asset Name - Full Width */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Asset Name")} <span className="text-semantic-error">*</span></Label>
@@ -1176,7 +1235,7 @@ export default function AssetInventoryPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               resetForm();
               setIsAddAssetOpen(false);
@@ -1190,18 +1249,18 @@ export default function AssetInventoryPage() {
 
       {/* Edit Asset Dialog */}
       <Dialog open={isEditAssetOpen} onOpenChange={setIsEditAssetOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Asset")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Asset")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
           {editingAsset && (
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              <div className="space-y-5">
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              <div className="space-y-4">
                 {/* Asset Name - Full Width */}
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Name")} <span className="text-semantic-error">*</span></Label>
@@ -1468,7 +1527,7 @@ export default function AssetInventoryPage() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsEditAssetOpen(false);
               setEditingAsset(null);
@@ -1482,23 +1541,18 @@ export default function AssetInventoryPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
             </DialogHeader>
           </div>
-
-          {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-6 py-5">
             <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete this asset? This action cannot be undone.")}
             </p>
           </div>
-
-          {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1511,16 +1565,13 @@ export default function AssetInventoryPage() {
 
       {/* Inline Add Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Category")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Category")}</DialogTitle>
             </DialogHeader>
           </div>
-
-          {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-6 py-5">
             <Label className="text-sm font-medium text-slate-700">{t("Category Name")}</Label>
             <Input
               value={newCategoryName}
@@ -1529,9 +1580,7 @@ export default function AssetInventoryPage() {
               className="mt-1.5"
             />
           </div>
-
-          {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewCategoryName("");
               setIsAddCategoryOpen(false);
@@ -1545,16 +1594,13 @@ export default function AssetInventoryPage() {
 
       {/* Inline Add Sub Category Dialog */}
       <Dialog open={isAddSubCategoryOpen} onOpenChange={setIsAddSubCategoryOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Sub Category")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Sub Category")}</DialogTitle>
             </DialogHeader>
           </div>
-
-          {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-6 py-5">
             <Label className="text-sm font-medium text-slate-700">{t("Sub Category Name")}</Label>
             <Input
               value={newSubCategoryName}
@@ -1563,9 +1609,7 @@ export default function AssetInventoryPage() {
               className="mt-1.5"
             />
           </div>
-
-          {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewSubCategoryName("");
               setIsAddSubCategoryOpen(false);
@@ -1579,16 +1623,13 @@ export default function AssetInventoryPage() {
 
       {/* Inline Add Group Dialog */}
       <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Group")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Group")}</DialogTitle>
             </DialogHeader>
           </div>
-
-          {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-6 py-5">
             <Label className="text-sm font-medium text-slate-700">{t("Group Name")}</Label>
             <Input
               value={newGroupName}
@@ -1597,9 +1638,7 @@ export default function AssetInventoryPage() {
               className="mt-1.5"
             />
           </div>
-
-          {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewGroupName("");
               setIsAddGroupOpen(false);
@@ -1613,16 +1652,13 @@ export default function AssetInventoryPage() {
 
       {/* Inline Add Lifecycle Status Dialog */}
       <Dialog open={isAddLifecycleOpen} onOpenChange={setIsAddLifecycleOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
             </DialogHeader>
           </div>
-
-          {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-6 py-5">
             <Label className="text-sm font-medium text-slate-700">{t("Status Name")}</Label>
             <Input
               value={newLifecycleName}
@@ -1631,9 +1667,7 @@ export default function AssetInventoryPage() {
               className="mt-1.5"
             />
           </div>
-
-          {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewLifecycleName("");
               setIsAddLifecycleOpen(false);

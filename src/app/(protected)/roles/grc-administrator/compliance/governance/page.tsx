@@ -146,6 +146,8 @@ export default function GRCAdminGovernancePage() {
     assigneeId: "",
   });
 
+  const [policyErrors, setPolicyErrors] = useState<Record<string, string>>({});
+
   // Step 2 - Control linking
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
   const [controlSearch, setControlSearch] = useState("");
@@ -263,6 +265,7 @@ export default function GRCAdminGovernancePage() {
 
   const resetCreateDialog = () => {
     setCreateStep(1);
+    setPolicyErrors({});
     setNewPolicy({
       name: "",
       documentType: activeDocType,
@@ -722,15 +725,26 @@ export default function GRCAdminGovernancePage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Governance Name")} *</Label>
                   <Input
                     value={newPolicy.name}
-                    onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
+                    onChange={(e) => {
+                      setNewPolicy({ ...newPolicy, name: e.target.value });
+                      if (policyErrors.name) setPolicyErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("Enter governance name")}
-                    className="mt-1.5 w-full"
+                    className={`mt-1.5 w-full ${policyErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                   />
+                  {policyErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.name}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Department")} *</Label>
-                  <Select value={newPolicy.departmentId} onValueChange={(v) => setNewPolicy({ ...newPolicy, departmentId: v, assigneeId: "" })}>
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                  <Select value={newPolicy.departmentId} onValueChange={(v) => {
+                    setNewPolicy({ ...newPolicy, departmentId: v, assigneeId: "" });
+                    if (policyErrors.departmentId) setPolicyErrors((prev) => { const { departmentId, ...rest } = prev; return rest; });
+                  }}>
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.departmentId ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -739,11 +753,19 @@ export default function GRCAdminGovernancePage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {policyErrors.departmentId && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.departmentId}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Document Type")} *</Label>
-                  <Select value={newPolicy.documentType} onValueChange={(v) => setNewPolicy({ ...newPolicy, documentType: v })}>
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                  <Select value={newPolicy.documentType} onValueChange={(v) => {
+                    setNewPolicy({ ...newPolicy, documentType: v });
+                    if (policyErrors.documentType) setPolicyErrors((prev) => { const { documentType, ...rest } = prev; return rest; });
+                  }}>
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.documentType ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select document type")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -752,11 +774,19 @@ export default function GRCAdminGovernancePage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {policyErrors.documentType && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.documentType}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Recurrence")} *</Label>
-                  <Select value={newPolicy.recurrence} onValueChange={(v) => setNewPolicy({ ...newPolicy, recurrence: v })}>
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                  <Select value={newPolicy.recurrence} onValueChange={(v) => {
+                    setNewPolicy({ ...newPolicy, recurrence: v });
+                    if (policyErrors.recurrence) setPolicyErrors((prev) => { const { recurrence, ...rest } = prev; return rest; });
+                  }}>
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.recurrence ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -765,15 +795,23 @@ export default function GRCAdminGovernancePage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {policyErrors.recurrence && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.recurrence}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Assignee")} *</Label>
                   <Select
                     value={newPolicy.assigneeId}
-                    onValueChange={(v) => setNewPolicy({ ...newPolicy, assigneeId: v })}
+                    onValueChange={(v) => {
+                      setNewPolicy({ ...newPolicy, assigneeId: v });
+                      if (policyErrors.assigneeId) setPolicyErrors((prev) => { const { assigneeId, ...rest } = prev; return rest; });
+                    }}
                     disabled={!newPolicy.departmentId}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.assigneeId ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={
                         !newPolicy.departmentId
                           ? t("Select department first")
@@ -792,6 +830,11 @@ export default function GRCAdminGovernancePage() {
                       )}
                     </SelectContent>
                   </Select>
+                  {policyErrors.assigneeId && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.assigneeId}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -956,10 +999,19 @@ export default function GRCAdminGovernancePage() {
             </Button>
             <Button
               onClick={() => {
+                if (createStep === 1) {
+                  const errors: Record<string, string> = {};
+                  if (!newPolicy.name) errors.name = t("Please enter the policy name");
+                  if (!newPolicy.departmentId) errors.departmentId = t("Please select the Department");
+                  if (!newPolicy.documentType) errors.documentType = t("Please select the document type");
+                  if (!newPolicy.recurrence) errors.recurrence = t("Please select the recurrence");
+                  if (!newPolicy.assigneeId) errors.assigneeId = t("Please select the assignee");
+                  if (Object.keys(errors).length > 0) { setPolicyErrors(errors); return; }
+                  setPolicyErrors({});
+                }
                 if (createStep < 3) setCreateStep(createStep + 1);
                 else handleCreatePolicy();
               }}
-              disabled={createStep === 1 && !canProceedStep1}
             >
               {createStep === 3 ? `${t("Create")} ${t(newPolicy.documentType)}` : t("Next")}
             </Button>

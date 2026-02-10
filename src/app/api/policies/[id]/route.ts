@@ -4,6 +4,7 @@ import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/li
 import { aiDeleteService } from "@/services/ai-delete-service";
 import { unlink } from "fs/promises";
 import path from "path";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -88,10 +89,10 @@ export const PUT = withAuth(
         aiReviewJustification,
       } = body;
 
-      // First, verify the policy belongs to the user's customer account
+      // First, verify the policy belongs to the user's customer account and get current assignments
       const existing = await prisma.policy.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, assigneeId: true, approverId: true, name: true },
       });
 
       if (!existing) {
@@ -130,6 +131,41 @@ export const PUT = withAuth(
           attachments: true,
         },
       });
+
+      // Send notifications for changed assignments
+      if (existing.customerAccountId) {
+        // Notify new assignee if changed and different from actor
+        if (assigneeId && assigneeId !== existing.assigneeId && assigneeId !== session.id) {
+          await notificationService.send({
+            customerAccountId: existing.customerAccountId,
+            actorId: session.id,
+            recipientId: assigneeId,
+            event: NOTIFICATION_EVENTS.POLICY_ASSIGNED,
+            title: "Policy assigned to you",
+            message: `Policy "${policy.name}" has been assigned to you`,
+            relatedEntityType: "policy",
+            relatedEntityId: policy.id,
+            link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify new approver if changed and different from actor
+        if (approverId && approverId !== existing.approverId && approverId !== session.id) {
+          await notificationService.send({
+            customerAccountId: existing.customerAccountId,
+            actorId: session.id,
+            recipientId: approverId,
+            event: NOTIFICATION_EVENTS.POLICY_ASSIGNED,
+            title: "Policy assigned for your approval",
+            message: `Policy "${policy.name}" has been assigned to you for approval`,
+            relatedEntityType: "policy",
+            relatedEntityId: policy.id,
+            link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+      }
 
       return NextResponse.json(policy);
     } catch (error: unknown) {
@@ -172,10 +208,10 @@ export const PATCH = withAuth(
         aiReviewJustification,
       } = body;
 
-      // First, verify the policy belongs to the user's customer account
+      // First, verify the policy belongs to the user's customer account and get current assignments
       const existing = await prisma.policy.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, assigneeId: true, approverId: true, name: true },
       });
 
       if (!existing) {
@@ -216,6 +252,41 @@ export const PATCH = withAuth(
           attachments: true,
         },
       });
+
+      // Send notifications for changed assignments
+      if (existing.customerAccountId) {
+        // Notify new assignee if changed and different from actor
+        if (assigneeId !== undefined && assigneeId !== existing.assigneeId && assigneeId && assigneeId !== session.id) {
+          await notificationService.send({
+            customerAccountId: existing.customerAccountId,
+            actorId: session.id,
+            recipientId: assigneeId,
+            event: NOTIFICATION_EVENTS.POLICY_ASSIGNED,
+            title: "Policy assigned to you",
+            message: `Policy "${policy.name}" has been assigned to you`,
+            relatedEntityType: "policy",
+            relatedEntityId: policy.id,
+            link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify new approver if changed and different from actor
+        if (approverId !== undefined && approverId !== existing.approverId && approverId && approverId !== session.id) {
+          await notificationService.send({
+            customerAccountId: existing.customerAccountId,
+            actorId: session.id,
+            recipientId: approverId,
+            event: NOTIFICATION_EVENTS.POLICY_ASSIGNED,
+            title: "Policy assigned for your approval",
+            message: `Policy "${policy.name}" has been assigned to you for approval`,
+            relatedEntityType: "policy",
+            relatedEntityId: policy.id,
+            link: `/compliance/governance/${policy.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+      }
 
       return NextResponse.json(policy);
     } catch (error: unknown) {

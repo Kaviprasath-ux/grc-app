@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -353,6 +353,7 @@ export const PUT = withAuth(
           riskId: risk.id,
           riskCode: risk.riskId,
           riskName: risk.name,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 
@@ -489,6 +490,7 @@ export const PATCH = withAuth(
           entityName: `${risk.riskId}: ${risk.name}`,
           reason: body.responseComment,
           link: `/risk-management/register/${risk.id}`,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

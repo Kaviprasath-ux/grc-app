@@ -4,7 +4,7 @@ import { aiDeleteService } from "@/services/ai-delete-service";
 import { unlink } from "fs/promises";
 import path from "path";
 import { withAuth } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET single evidence with all related data
 export async function GET(
@@ -150,6 +150,7 @@ export const PUT = withAuth(
           evidenceId: updatedEvidence.id,
           evidenceName: updatedEvidence.name,
           controlCode: updatedEvidence.control?.controlCode ?? undefined,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

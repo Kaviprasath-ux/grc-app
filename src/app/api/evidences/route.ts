@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all evidences with filters - filtered by customer account and department for department roles
 export const GET = withAuth(
@@ -191,6 +191,7 @@ export const POST = withAuth(
           evidenceId: evidence.id,
           evidenceName: evidence.name,
           controlCode: evidence.control?.controlCode ?? undefined,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

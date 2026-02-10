@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, Search, ChevronLeft, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -279,13 +279,22 @@ export default function FrameworkMasterDataPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-slate-500">{t("Master Data")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Framework")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">{t("Loading frameworks...")}</p>
         </div>
       </div>
     );
@@ -299,66 +308,35 @@ export default function FrameworkMasterDataPage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Master Data")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Framework")}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <Input
-          placeholder={t("Search frameworks...")}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm bg-white"
-        />
-        <div className="flex items-center gap-2">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder={t("All Types")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Types")}</SelectItem>
-              <SelectItem value="Framework">{t("Framework")}</SelectItem>
-              <SelectItem value="Standard">{t("Standard")}</SelectItem>
-              <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder={t("All Status")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Status")}</SelectItem>
-              <SelectItem value="Subscribed">{t("Subscribed")}</SelectItem>
-              <SelectItem value="Active">{t("Active")}</SelectItem>
-              <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            {t("Export")}
-          </Button>
-          <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200">
-                <Sparkles className="h-4 w-4 mr-2" />
-                {t("New Framework (AI)")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-              <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("AI Framework Generator")}</DialogTitle>
+      {/* Action Buttons - Above Card */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
+        <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200">
+              <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("New Framework (AI)")}
+            </Button>
+          </DialogTrigger>
+            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+              <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("AI Framework Generator")}</DialogTitle>
               </div>
-              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
                 <p className="text-sm text-slate-600">
                   {t("This feature will use AI to help generate framework requirements based on your inputs.")}
                 </p>
@@ -377,30 +355,30 @@ export default function FrameworkMasterDataPage() {
                   />
                 </div>
               </div>
-              <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-                <Button variant="outline" size="sm" onClick={() => setAiDialogOpen(false)}>
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+                <Button variant="outline" onClick={() => setAiDialogOpen(false)}>
                   {t("Cancel")}
                 </Button>
-                <Button size="sm">
-                  <Sparkles className="h-4 w-4 mr-2" />
+                <Button>
+                  <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Generate")}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
-          <Dialog open={createDialogOpen} onOpenChange={(open) => {
-            setCreateDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                {t("New Framework")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-              <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-                <DialogTitle className="text-lg font-semibold text-slate-800">
+        <Dialog open={createDialogOpen} onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button size="sm">
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("New Framework")}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+            <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+              <DialogTitle className="text-base font-semibold text-slate-800">
                   {wizardStep === 1 ? t("Create Integrated Framework") : t("Import Requirement")}
                 </DialogTitle>
               </div>
@@ -418,7 +396,7 @@ export default function FrameworkMasterDataPage() {
                     }`}>
                       {step < wizardStep ? <Check className="h-4 w-4" /> : step}
                     </div>
-                    <span className={`ml-2 text-sm ${
+                    <span className={`ltr:ml-2 rtl:mr-2 text-sm ${
                       step === wizardStep ? "text-slate-800 font-medium" : "text-slate-500"
                     }`}>
                       {step === 1 ? t("Framework Details") : t("Import Requirement")}
@@ -546,7 +524,7 @@ export default function FrameworkMasterDataPage() {
                       size="sm"
                       onClick={handleDownloadTemplate}
                     >
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                       {t("Download Template")}
                     </Button>
                   </div>
@@ -554,15 +532,14 @@ export default function FrameworkMasterDataPage() {
               )}
 
               {/* Footer */}
-              <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                 {wizardStep === 2 && (
-                  <Button variant="outline" size="sm" onClick={handlePreviousStep}>
+                  <Button variant="outline" onClick={handlePreviousStep}>
                     {t("Previous")}
                   </Button>
                 )}
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() => {
                     setCreateDialogOpen(false);
                     resetForm();
@@ -572,33 +549,68 @@ export default function FrameworkMasterDataPage() {
                 </Button>
                 {wizardStep === 1 ? (
                   <Button
-                    size="sm"
                     onClick={handleNextStep}
                     disabled={!formData.name || !formData.country || !formData.industry}
                   >
                     {t("Next")}
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={handleImport}>
-                    <Upload className="h-4 w-4 mr-2" />
+                  <Button onClick={handleImport}>
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Import")}
                   </Button>
                 )}
               </div>
             </DialogContent>
           </Dialog>
-        </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search Toolbar */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search frameworks...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+          <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-2">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("All Types")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Types")}</SelectItem>
+                <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("All Status")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Status")}</SelectItem>
+                <SelectItem value="Subscribed">{t("Subscribed")}</SelectItem>
+                <SelectItem value="Active">{t("Active")}</SelectItem>
+                <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Framework Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Type")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Framework Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -610,8 +622,8 @@ export default function FrameworkMasterDataPage() {
               </TableRow>
             ) : (
               paginatedFrameworks.map((framework) => (
-                <TableRow key={framework.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">
+                <TableRow key={framework.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">
                     {framework.name}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
@@ -628,23 +640,23 @@ export default function FrameworkMasterDataPage() {
                       {framework.status}
                     </span>
                   </TableCell>
-                  <TableCell className="py-3 text-sm pr-4">
-                    <div className="flex gap-1">
+                  <TableCell className="py-3 text-sm pe-5">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditDialog(framework)}
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => openDeleteDialog(framework)}
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -653,9 +665,9 @@ export default function FrameworkMasterDataPage() {
             )}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <p className="text-sm text-slate-500">
-            {t("Showing")} {filteredFrameworks.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <p className="text-xs text-slate-500">
+            {filteredFrameworks.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
             {Math.min(startIndex + itemsPerPage, filteredFrameworks.length)} {t("of")}{" "}
             {filteredFrameworks.length}
           </p>
@@ -663,41 +675,20 @@ export default function FrameworkMasterDataPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-slate-600 px-2">
-              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
-            </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
             >
               <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage >= totalPages}
-            >
-              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -706,8 +697,8 @@ export default function FrameworkMasterDataPage() {
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Integrated Framework")}</DialogTitle>
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Integrated Framework")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div className="space-y-2">
@@ -771,10 +762,9 @@ export default function FrameworkMasterDataPage() {
               </div>
             </div>
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
-              size="sm"
               onClick={() => {
                 setEditDialogOpen(false);
                 setSelectedFramework(null);
@@ -783,7 +773,7 @@ export default function FrameworkMasterDataPage() {
             >
               {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleEdit} disabled={!formData.name || !formData.country || !formData.industry}>
+            <Button onClick={handleEdit} disabled={!formData.name || !formData.country || !formData.industry}>
               {t("Save")}
             </Button>
           </div>
@@ -792,14 +782,14 @@ export default function FrameworkMasterDataPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="p-0 gap-0">
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
           <AlertDialogHeader className="px-6 py-5">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Framework")}</AlertDialogTitle>
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete Framework")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete")} &quot;{selectedFramework?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+          <AlertDialogFooter className="px-6 py-4 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}

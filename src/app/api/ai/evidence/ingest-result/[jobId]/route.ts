@@ -220,7 +220,7 @@ export const GET = withAuth(
                 controlCode: item.control_code,
               }));
 
-            // Create review record
+            // Create review record with proper document ID tracking
             await prisma.evidenceAIReview.create({
               data: {
                 evidenceId: fullEvidence.id,
@@ -234,6 +234,9 @@ export const GET = withAuth(
                 recommendations: null,
                 rawResponse: JSON.stringify(reviewData),
                 aiOperationId: aiOperation.id,
+                // Document ID tracking for proper cleanup
+                ingestJobId: jobId,
+                evidenceDocumentId: fullEvidence.id, // Same as document_id sent during ingest
               },
             });
 

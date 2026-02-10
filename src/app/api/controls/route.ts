@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all controls with filters - filtered by customer account
 export const GET = withAuth(
@@ -180,19 +180,8 @@ export const POST = withAuth(
         },
       });
 
-      // Notify owner if different from creator
-      if (ownerId && ownerId !== session.id && session.customerAccountId) {
-        await notificationService.notifyControlAssigned({
-          customerAccountId: session.customerAccountId,
-          actorId: session.id,
-          ownerId: ownerId,
-          controlId: control.id,
-          controlCode: control.controlCode,
-          controlName: control.name,
-        });
-      }
-      // Notify assignee if different from creator and owner
-      if (assigneeId && assigneeId !== session.id && assigneeId !== ownerId && session.customerAccountId) {
+      // Notify assignee/reviewer if different from creator (owner notifications removed per requirements)
+      if (assigneeId && assigneeId !== session.id && session.customerAccountId) {
         await notificationService.notifyControlAssigned({
           customerAccountId: session.customerAccountId,
           actorId: session.id,
@@ -200,6 +189,7 @@ export const POST = withAuth(
           controlId: control.id,
           controlCode: control.controlCode,
           controlName: control.name,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

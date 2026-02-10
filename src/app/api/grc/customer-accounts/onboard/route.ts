@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 interface SubscriptionPlanInput {
   startDate: string;
@@ -167,6 +168,22 @@ export async function POST(req: NextRequest) {
 
       return { customerAccount, newUser, createdPlans };
     });
+
+    // Send CUSTOMER_ONBOARDED notification to the new customer admin user
+    if (result.customerAccount.id && result.newUser.id && session.user?.id) {
+      await notificationService.send({
+        customerAccountId: result.customerAccount.id,
+        actorId: session.user.id, // The GRCAdministrator who created the customer
+        recipientId: result.newUser.id, // The new CustomerAdministrator
+        event: NOTIFICATION_EVENTS.CUSTOMER_ONBOARDED,
+        title: 'Welcome to GRC Platform',
+        message: `Your organization "${result.customerAccount.name}" has been successfully onboarded. You are now the administrator for your account.`,
+        relatedEntityType: 'customerAccount',
+        relatedEntityId: result.customerAccount.id,
+        link: '/dashboard',
+        channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+      });
+    }
 
     return NextResponse.json({
       success: true,

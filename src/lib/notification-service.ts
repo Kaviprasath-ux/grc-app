@@ -28,75 +28,28 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { sendTemplatedEmail, getUserInfo, TemplatePlaceholders } from './email-service';
 
-// ==================== NOTIFICATION CHANNELS ====================
-// Future-proofing for email notifications
+// Import constants from the client-safe constants file
+// This keeps all constants in one place and allows client code to import from there
+import {
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_EVENTS,
+  NOTIFICATION_PRIORITIES,
+  type NotificationChannel,
+  type NotificationEvent,
+  type NotificationPriority,
+} from './notification-constants';
 
-export const NOTIFICATION_CHANNELS = {
-  INBOX: 'inbox',
-  EMAIL: 'email',
-  // SMS: 'sms', // Future
-} as const;
-
-export type NotificationChannel = typeof NOTIFICATION_CHANNELS[keyof typeof NOTIFICATION_CHANNELS];
-
-// ==================== NOTIFICATION EVENT TYPES ====================
-// Categorized by when they should trigger notifications
-
-export const NOTIFICATION_EVENTS = {
-  // ========== USER & ACCOUNT EVENTS ==========
-  // Trigger: System/admin creates user or onboards customer
-  USER_CREATED: 'USER_CREATED',
-  CUSTOMER_ONBOARDED: 'CUSTOMER_ONBOARDED',
-
-  // ========== ASSIGNMENT EVENTS ==========
-  // Trigger: When responsibility is assigned to a user
-  // Rule: Assignment = notification. Creation alone does NOT trigger notification.
-  EVIDENCE_ASSIGNED: 'EVIDENCE_ASSIGNED',
-  CONTROL_ASSIGNED: 'CONTROL_ASSIGNED',
-  RISK_ASSIGNED: 'RISK_ASSIGNED',
-  ASSET_ASSIGNED: 'ASSET_ASSIGNED',
-  CAPA_ASSIGNED: 'CAPA_ASSIGNED',
-  ENGAGEMENT_ASSIGNED: 'ENGAGEMENT_ASSIGNED',
-  POLICY_ASSIGNED: 'POLICY_ASSIGNED',
-  PROCESS_ASSIGNED: 'PROCESS_ASSIGNED',
-
-  // ========== INTERACTION EVENTS ==========
-  // Trigger: Direct interaction requiring recipient's attention
-  COMMENT_ADDED: 'COMMENT_ADDED',
-  APPROVAL_REQUESTED: 'APPROVAL_REQUESTED',
-  APPROVAL_GRANTED: 'APPROVAL_GRANTED',
-  APPROVAL_DENIED: 'APPROVAL_DENIED',
-  SENT_BACK: 'SENT_BACK',
-  FEEDBACK_REQUESTED: 'FEEDBACK_REQUESTED',
-
-  // ========== DUE DATE REMINDERS ==========
-  // Trigger: Scheduled/system notifications for upcoming deadlines
-  EVIDENCE_DUE_REMINDER: 'EVIDENCE_DUE_REMINDER',
-  CAPA_DUE_REMINDER: 'CAPA_DUE_REMINDER',
-  REVIEW_DUE_REMINDER: 'REVIEW_DUE_REMINDER',
-
-  // ========== STATUS CHANGE EVENTS ==========
-  // Trigger: When status changes affect the assignee/owner
-  STATUS_CHANGED: 'STATUS_CHANGED',
-
-  // ========== SYSTEM EVENTS ==========
-  // Trigger: System-wide announcements
-  SYSTEM_ANNOUNCEMENT: 'SYSTEM_ANNOUNCEMENT',
-} as const;
-
-export type NotificationEvent = typeof NOTIFICATION_EVENTS[keyof typeof NOTIFICATION_EVENTS];
-
-// ==================== PRIORITY LEVELS ====================
-
-export const NOTIFICATION_PRIORITIES = {
-  LOW: 'low',
-  NORMAL: 'normal',
-  HIGH: 'high',
-  URGENT: 'urgent',
-} as const;
-
-export type NotificationPriority = typeof NOTIFICATION_PRIORITIES[keyof typeof NOTIFICATION_PRIORITIES];
+// Re-export for backwards compatibility with existing imports
+export {
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_EVENTS,
+  NOTIFICATION_PRIORITIES,
+  type NotificationChannel,
+  type NotificationEvent,
+  type NotificationPriority,
+};
 
 // ==================== INTERFACES ====================
 
@@ -192,9 +145,7 @@ class NotificationService {
             break;
 
           case NOTIFICATION_CHANNELS.EMAIL:
-            // Future: Email channel
-            // await this.sendEmailNotification(payload);
-            console.log('[NotificationService] Email channel not yet implemented');
+            await this.sendEmailNotification(payload);
             break;
 
           default:
@@ -247,8 +198,13 @@ class NotificationService {
             break;
 
           case NOTIFICATION_CHANNELS.EMAIL:
-            // Future: Bulk email notifications
-            console.log('[NotificationService] Bulk email not yet implemented');
+            // Send email to each recipient
+            for (const recipientId of validRecipients) {
+              await this.sendEmailNotification({
+                ...payload,
+                recipientId,
+              });
+            }
             break;
         }
       }
@@ -280,6 +236,99 @@ class NotificationService {
     });
   }
 
+  /**
+   * Send email notification using the email service.
+   * Maps notification events to email template codes.
+   * Respects customer account email notifications toggle (non-mandatory emails).
+   */
+  private async sendEmailNotification(payload: NotificationPayload): Promise<void> {
+    try {
+      // Check if customer account has email notifications enabled
+      const customerAccount = await prisma.customerAccount.findUnique({
+        where: { id: payload.customerAccountId },
+        select: { emailNotificationsEnabled: true },
+      });
+
+      // If email notifications are disabled for this customer, skip sending
+      // Note: All notifications are currently non-mandatory
+      if (customerAccount && !customerAccount.emailNotificationsEnabled) {
+        console.log('[NotificationService] Email notifications disabled for customer account:', payload.customerAccountId);
+        return;
+      }
+
+      // Get recipient info
+      const userInfo = await getUserInfo(payload.recipientId);
+      if (!userInfo) {
+        console.log('[NotificationService] Cannot send email - user not found:', payload.recipientId);
+        return;
+      }
+
+      // Map notification event to email template code
+      const templateCode = this.getEmailTemplateCode(payload.event);
+
+      // Build placeholders for the template
+      const placeholders: TemplatePlaceholders = {
+        title: payload.title,
+        message: payload.message,
+        entityLink: payload.link
+          ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${payload.link}`
+          : undefined,
+        entityType: payload.relatedEntityType,
+        entityName: payload.metadata?.entityName as string,
+        actorName: payload.metadata?.actorName as string,
+        dueDate: payload.metadata?.dueDate as string,
+        controlCode: payload.metadata?.controlCode as string,
+        riskCode: payload.metadata?.riskCode as string,
+        capaCode: payload.metadata?.capaCode as string,
+        ...payload.metadata,
+      };
+
+      await sendTemplatedEmail(
+        templateCode,
+        userInfo.email,
+        placeholders,
+        userInfo.name
+      );
+
+      console.log('[NotificationService] Email sent to:', userInfo.email);
+    } catch (error) {
+      console.error('[NotificationService] Failed to send email:', error);
+      // Don't throw - email failure shouldn't break the notification flow
+    }
+  }
+
+  /**
+   * Map notification events to email template codes.
+   */
+  private getEmailTemplateCode(event: NotificationEvent): string {
+    const templateMap: Record<NotificationEvent, string> = {
+      [NOTIFICATION_EVENTS.EVIDENCE_ASSIGNED]: 'EVIDENCE_ASSIGNED',
+      [NOTIFICATION_EVENTS.RISK_ASSIGNED]: 'RISK_ASSIGNED',
+      [NOTIFICATION_EVENTS.CAPA_ASSIGNED]: 'CAPA_ASSIGNED',
+      [NOTIFICATION_EVENTS.CONTROL_ASSIGNED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.ASSET_ASSIGNED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.ENGAGEMENT_ASSIGNED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.POLICY_ASSIGNED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.PROCESS_ASSIGNED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.COMMENT_ADDED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.APPROVAL_REQUESTED]: 'APPROVAL_REQUESTED',
+      [NOTIFICATION_EVENTS.APPROVAL_GRANTED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.APPROVAL_DENIED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.SENT_BACK]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.FEEDBACK_REQUESTED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.EVIDENCE_DUE_REMINDER]: 'DUE_REMINDER',
+      [NOTIFICATION_EVENTS.CAPA_DUE_REMINDER]: 'DUE_REMINDER',
+      [NOTIFICATION_EVENTS.REVIEW_DUE_REMINDER]: 'DUE_REMINDER',
+      [NOTIFICATION_EVENTS.STATUS_CHANGED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.SYSTEM_ANNOUNCEMENT]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.USER_CREATED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.CUSTOMER_ONBOARDED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.ISSUE_EVIDENCE]: 'GENERIC_NOTIFICATION',
+    };
+
+    return templateMap[event] || 'GENERIC_NOTIFICATION';
+  }
+
   // ==================== CONVENIENCE METHODS ====================
   // Pre-built methods for common notification scenarios
 
@@ -294,6 +343,7 @@ class NotificationService {
     evidenceId: string;
     evidenceName: string;
     controlCode?: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -308,6 +358,7 @@ class NotificationService {
       relatedEntityId: params.evidenceId,
       link: `/compliance/evidence/${params.evidenceId}`,
       priority: NOTIFICATION_PRIORITIES.NORMAL,
+      channels: params.channels,
     });
   }
 
@@ -321,6 +372,7 @@ class NotificationService {
     riskId: string;
     riskCode: string;
     riskName: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -332,6 +384,7 @@ class NotificationService {
       relatedEntityType: 'risk',
       relatedEntityId: params.riskId,
       link: `/risk-management/register/${params.riskId}`,
+      channels: params.channels,
     });
   }
 
@@ -345,6 +398,7 @@ class NotificationService {
     controlId: string;
     controlCode: string;
     controlName: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -356,6 +410,7 @@ class NotificationService {
       relatedEntityType: 'control',
       relatedEntityId: params.controlId,
       link: `/compliance/control/${params.controlId}`,
+      channels: params.channels,
     });
   }
 
@@ -370,6 +425,7 @@ class NotificationService {
     assetCode: string;
     assetName: string;
     role: 'owner' | 'custodian';
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -381,6 +437,7 @@ class NotificationService {
       relatedEntityType: 'asset',
       relatedEntityId: params.assetId,
       link: `/asset-management/inventory/${params.assetId}`,
+      channels: params.channels,
     });
   }
 
@@ -394,6 +451,7 @@ class NotificationService {
     capaId: string;
     capaCode: string;
     capaTitle: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -406,6 +464,7 @@ class NotificationService {
       relatedEntityId: params.capaId,
       link: `/internal-audit/capa-tracking/${params.capaId}`,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -420,6 +479,7 @@ class NotificationService {
     engagementCode: string;
     engagementName: string;
     role: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -431,6 +491,7 @@ class NotificationService {
       relatedEntityType: 'engagement',
       relatedEntityId: params.engagementId,
       link: `/internal-audit/fieldwork/${params.engagementId}`,
+      channels: params.channels,
     });
   }
 
@@ -446,6 +507,7 @@ class NotificationService {
     entityName: string;
     commentPreview: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -457,6 +519,7 @@ class NotificationService {
       relatedEntityType: params.entityType,
       relatedEntityId: params.entityId,
       link: params.link,
+      channels: params.channels,
     });
   }
 
@@ -471,6 +534,7 @@ class NotificationService {
     entityId: string;
     entityName: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -483,6 +547,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -497,6 +562,7 @@ class NotificationService {
     entityId: string;
     entityName: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -508,6 +574,7 @@ class NotificationService {
       relatedEntityType: params.entityType,
       relatedEntityId: params.entityId,
       link: params.link,
+      channels: params.channels,
     });
   }
 
@@ -523,6 +590,7 @@ class NotificationService {
     entityName: string;
     reason?: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -537,6 +605,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -552,6 +621,7 @@ class NotificationService {
     entityName: string;
     reason?: string;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -566,6 +636,70 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+    });
+  }
+
+  /**
+   * Notify when feedback is requested from a user.
+   * Use cases: Evidence requests, review requests, etc.
+   */
+  async notifyFeedbackRequested(params: {
+    customerAccountId: string;
+    actorId: string;
+    feedbackProviderId: string;
+    entityType: string;
+    entityId: string;
+    entityName: string;
+    description?: string;
+    link: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.feedbackProviderId,
+      event: NOTIFICATION_EVENTS.FEEDBACK_REQUESTED,
+      title: 'Feedback requested',
+      message: params.description
+        ? `Your feedback is requested for ${params.entityType} "${params.entityName}": ${params.description}`
+        : `Your feedback is requested for ${params.entityType} "${params.entityName}"`,
+      relatedEntityType: params.entityType,
+      relatedEntityId: params.entityId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.NORMAL,
+      channels: params.channels,
+    });
+  }
+
+  /**
+   * Notify when clarification is requested for an evidence request.
+   * Triggered when aiReviewStatus changes to "Needs Attention".
+   */
+  async notifyClarificationRequested(params: {
+    customerAccountId: string;
+    actorId: string;
+    auditeeId: string;
+    requestId: string;
+    requestName: string;
+    clarificationComment?: string;
+    link: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.auditeeId,
+      event: NOTIFICATION_EVENTS.FEEDBACK_REQUESTED,
+      title: 'Feedback requested',
+      message: params.clarificationComment
+        ? `Clarification requested for Evidence Request "${params.requestName}": ${params.clarificationComment}`
+        : `Clarification requested for Evidence Request "${params.requestName}"`,
+      relatedEntityType: 'Evidence Request',
+      relatedEntityId: params.requestId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.NORMAL,
+      channels: params.channels,
     });
   }
 
@@ -581,6 +715,7 @@ class NotificationService {
     entityName: string;
     dueDate: Date;
     link: string;
+    channels?: NotificationChannel[];
   }) {
     const eventMap = {
       evidence: NOTIFICATION_EVENTS.EVIDENCE_DUE_REMINDER,
@@ -599,6 +734,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
     });
   }
 
@@ -610,6 +746,7 @@ class NotificationService {
     actorId: string;
     newUserId: string;
     userName: string;
+    channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
@@ -619,6 +756,38 @@ class NotificationService {
       title: 'Welcome to GRC Platform',
       message: `Welcome ${params.userName}! Your account has been created successfully.`,
       link: '/dashboard',
+      channels: params.channels,
+    });
+  }
+
+  /**
+   * Notify when an issue is created from AI evidence review.
+   * Triggered when AI identifies non-compliance during evidence review.
+   */
+  async notifyIssueCreatedFromEvidence(params: {
+    customerAccountId: string;
+    actorId: string;
+    assigneeId: string;
+    evidenceId: string;
+    evidenceName: string;
+    issueId?: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.assigneeId,
+      event: NOTIFICATION_EVENTS.ISSUE_EVIDENCE,
+      title: 'Issue created from evidence review',
+      message: `Evidence "${params.evidenceName}" review generated an issue that has been assigned to you`,
+      relatedEntityType: 'evidence',
+      relatedEntityId: params.evidenceId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      metadata: {
+        issueId: params.issueId,
+        evidenceName: params.evidenceName,
+      },
     });
   }
 

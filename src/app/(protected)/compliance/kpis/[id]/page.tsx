@@ -16,7 +16,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -33,11 +32,11 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Pencil, Trash2, Upload, Plus, Calendar, Home, ChevronRight, Save } from "lucide-react";
+import { Pencil, Trash2, Upload, Plus, Calendar, Home, ChevronRight, Save } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
@@ -563,10 +562,7 @@ export default function KPIDetailPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-        </div>
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -587,11 +583,11 @@ export default function KPIDetailPage({
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/kpis" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("KPIs")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{kpi.code}</span>
       </nav>
 
@@ -603,25 +599,25 @@ export default function KPIDetailPage({
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">{t("KPI Code")}</p>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("KPI Code")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.evidence?.evidenceCode || kpi.code}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">{t("Status")}</p>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Status")}</p>
           <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
             {t(kpi.status)}
           </Badge>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">{t("Expected Score")}</p>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Expected Score")}</p>
           <p className="text-sm font-semibold text-slate-800">{expectedScore ?? "-"}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">{t("Actual Score")}</p>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Actual Score")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.actualScore ?? "-"}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">{t("Department")}</p>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Department")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.department?.name || kpi.evidence?.name || "-"}</p>
         </div>
       </div>
@@ -709,7 +705,7 @@ export default function KPIDetailPage({
           <h3 className="text-base font-semibold text-slate-800 mb-4">{t("Next Review")}</h3>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-              <p className="text-xs font-medium text-slate-500 mb-1">{t("Due Date")}</p>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Due Date")}</p>
               <p className="text-lg font-semibold text-slate-800">
                 {nextDueReviewDate
                   ? nextDueReviewDate.toLocaleDateString("en-GB", {
@@ -721,7 +717,7 @@ export default function KPIDetailPage({
               </p>
             </div>
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-              <p className="text-xs font-medium text-slate-500 mb-1">{t("Recurrence")}</p>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Recurrence")}</p>
               <p className="text-lg font-semibold text-slate-800">
                 {t(kpi.evidence?.recurrence || "Monthly")}
               </p>
@@ -743,7 +739,7 @@ export default function KPIDetailPage({
         <h3 className="text-base font-semibold text-slate-800 mb-4">{t("KPI Details")}</h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">{t("KPI Objective")}</Label>
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")}</Label>
             <Input
               placeholder={t("Enter Objective")}
               value={formData.objective}
@@ -752,7 +748,7 @@ export default function KPIDetailPage({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">{t("KPI Description")}</Label>
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")}</Label>
             <Input
               placeholder={t("Enter Description")}
               value={formData.description}
@@ -761,7 +757,7 @@ export default function KPIDetailPage({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">{t("Data Source")}</Label>
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Data Source")}</Label>
             <Input
               placeholder={t("Enter Data Source")}
               value={formData.dataSource}
@@ -770,7 +766,7 @@ export default function KPIDetailPage({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">{t("Calculation Formula")}</Label>
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Calculation Formula")}</Label>
             <Input
               placeholder={t("Enter Formula")}
               value={formData.calculationFormula}
@@ -779,7 +775,7 @@ export default function KPIDetailPage({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">{t("Expected Score")}</Label>
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Expected Score")}</Label>
             <Input
               type="number"
               placeholder="0"
@@ -789,7 +785,7 @@ export default function KPIDetailPage({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
               {t("KPI Actual Score")} <span className="text-error">*</span>
             </Label>
             <div className="flex items-center gap-2">
@@ -826,7 +822,7 @@ export default function KPIDetailPage({
       </div>
 
       {/* Review History Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">{t("Review History")}</h3>
           <span className="text-xs text-slate-500">
@@ -835,29 +831,31 @@ export default function KPIDetailPage({
         </div>
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-3 pl-4">{t("Review Date")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Actual Score")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Document")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3 text-right pr-4">{t("Actions")}</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Review Date")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actual Score")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Document")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider text-right pr-5">{t("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredReviews.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12">
-                  <div className="text-slate-400">
-                    <Calendar className="h-10 w-10 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">{t("No review history found")}</p>
-                    <p className="text-xs text-slate-400 mt-1">{t("Add your first actual score to start tracking")}</p>
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+                      <Calendar className="h-6 w-6 text-primary-600" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-800">{t("No review history found")}</p>
+                    <p className="text-xs text-slate-500 mt-1">{t("Add your first actual score to start tracking")}</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               filteredReviews.map((review) => (
-                <TableRow key={review.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">
+                <TableRow key={review.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">
                     {new Date(review.reviewDate).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
@@ -879,38 +877,38 @@ export default function KPIDetailPage({
                       <span className="text-slate-400">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="py-3 text-sm pr-4">
+                  <TableCell className="py-3 text-sm pr-5">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
                         title={t("Edit")}
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                         onClick={() => handleOpenUpdateDialog(review)}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         title={t("Delete")}
-                        className="h-8 w-8 text-slate-400 hover:text-error"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                         onClick={() => {
                           setReviewToDelete(review.id);
                           setDeleteDialogOpen(true);
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                       {review.status === "Missed" && (
                         <Button
                           variant="ghost"
                           size="icon"
                           title={t("Add Action Plan")}
-                          className="h-8 w-8 text-slate-400 hover:text-primary-600"
+                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                           onClick={() => handleOpenActionPlanDialog(review.id)}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-3.5 w-3.5" />
                         </Button>
                       )}
                     </div>
@@ -920,8 +918,8 @@ export default function KPIDetailPage({
             )}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <span className="text-sm text-slate-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
             {t("Showing")} {filteredReviews.length} {filteredReviews.length === 1 ? t("entry") : t("entries")}
           </span>
         </div>
@@ -929,37 +927,33 @@ export default function KPIDetailPage({
 
       {/* Update Actual Score Dialog */}
       <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Actual Score")}</DialogTitle>
-            </DialogHeader>
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Update Actual Score")}</DialogTitle>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">{t("Actual Score")}</Label>
-                <Input
-                  type="number"
-                  value={updateForm.actualScore}
-                  onChange={(e) =>
-                    setUpdateForm({ ...updateForm, actualScore: e.target.value })
-                  }
-                  className="h-9 border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">{t("Upload document")}</Label>
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                  <p className="text-sm text-slate-500">
-                    {t("Drag and drop or select file.")}
-                  </p>
-                </div>
+          <div className="px-6 py-4 space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actual Score")}</Label>
+              <Input
+                type="number"
+                value={updateForm.actualScore}
+                onChange={(e) =>
+                  setUpdateForm({ ...updateForm, actualScore: e.target.value })
+                }
+                className="h-9 border-slate-200"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Upload document")}</Label>
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
+                <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                <p className="text-sm text-slate-500">
+                  {t("Drag and drop or select file.")}
+                </p>
               </div>
             </div>
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setUpdateDialogOpen(false)}
@@ -974,121 +968,113 @@ export default function KPIDetailPage({
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("Confirmation")}</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Confirmation")}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete this?")}
             </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteReview}>{t("OK")}</AlertDialogAction>
-          </AlertDialogFooter>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <AlertDialogCancel className="border-slate-200">{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteReview} className="bg-semantic-error hover:bg-red-600">{t("Delete")}</AlertDialogAction>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Add Action Plan Dialog */}
       <Dialog open={actionPlanDialogOpen} onOpenChange={setActionPlanDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Plan Action")}</DialogTitle>
-            </DialogHeader>
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Update Plan Action")}</DialogTitle>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("Planned Action")} <span className="text-error">*</span>
-                </Label>
-                <Input
-                  placeholder={t("Enter planned action")}
-                  value={actionPlanForm.plannedAction}
-                  onChange={(e) =>
-                    setActionPlanForm({
-                      ...actionPlanForm,
-                      plannedAction: e.target.value,
-                    })
-                  }
-                  className="h-9 border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                <Textarea
-                  placeholder={t("Enter description")}
-                  value={actionPlanForm.description}
-                  onChange={(e) =>
-                    setActionPlanForm({
-                      ...actionPlanForm,
-                      description: e.target.value,
-                    })
-                  }
-                  className="border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("Percentage Completed")} <span className="text-error">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  placeholder="0"
-                  value={actionPlanForm.percentageCompleted}
-                  onChange={(e) =>
-                    setActionPlanForm({
-                      ...actionPlanForm,
-                      percentageCompleted: e.target.value,
-                    })
-                  }
-                  className="h-9 border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("Start Date")} <span className="text-error">*</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={actionPlanForm.startDate}
-                    onChange={(e) =>
-                      setActionPlanForm({
-                        ...actionPlanForm,
-                        startDate: e.target.value,
-                      })
-                    }
-                    className="h-9 border-slate-200"
-                  />
-                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("Status")} <span className="text-error">*</span>
-                </Label>
-                <Select
-                  value={actionPlanForm.status}
-                  onValueChange={(value) =>
-                    setActionPlanForm({ ...actionPlanForm, status: value })
-                  }
-                >
-                  <SelectTrigger className="h-9 bg-white border-slate-200">
-                    <SelectValue placeholder={t("Select status")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="Open">{t("Open")}</SelectItem>
-                    <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
-                    <SelectItem value="Completed">{t("Completed")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="px-6 py-4 space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {t("Planned Action")} <span className="text-error">*</span>
+              </Label>
+              <Input
+                placeholder={t("Enter planned action")}
+                value={actionPlanForm.plannedAction}
+                onChange={(e) =>
+                  setActionPlanForm({
+                    ...actionPlanForm,
+                    plannedAction: e.target.value,
+                  })
+                }
+                className="h-9 border-slate-200"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
+              <Textarea
+                placeholder={t("Enter description")}
+                value={actionPlanForm.description}
+                onChange={(e) =>
+                  setActionPlanForm({
+                    ...actionPlanForm,
+                    description: e.target.value,
+                  })
+                }
+                className="border-slate-200 focus-visible:ring-2 focus-visible:ring-primary-500/20 focus-visible:ring-offset-0 focus-visible:border-primary-300"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {t("Percentage Completed")} <span className="text-error">*</span>
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                placeholder="0"
+                value={actionPlanForm.percentageCompleted}
+                onChange={(e) =>
+                  setActionPlanForm({
+                    ...actionPlanForm,
+                    percentageCompleted: e.target.value,
+                  })
+                }
+                className="h-9 border-slate-200"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {t("Start Date")} <span className="text-error">*</span>
+              </Label>
+              <DatePicker
+                value={actionPlanForm.startDate || undefined}
+                onChange={(date) =>
+                  setActionPlanForm({
+                    ...actionPlanForm,
+                    startDate: date ? format(date, "yyyy-MM-dd") : "",
+                  })
+                }
+                placeholder={t("Select date")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {t("Status")} <span className="text-error">*</span>
+              </Label>
+              <Select
+                value={actionPlanForm.status}
+                onValueChange={(value) =>
+                  setActionPlanForm({ ...actionPlanForm, status: value })
+                }
+              >
+                <SelectTrigger className="w-full h-9 bg-white border-slate-200">
+                  <SelectValue placeholder={t("Select status")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4}>
+                  <SelectItem value="Open">{t("Open")}</SelectItem>
+                  <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+                  <SelectItem value="Completed">{t("Completed")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setActionPlanDialogOpen(false)}
@@ -1113,87 +1099,83 @@ export default function KPIDetailPage({
 
       {/* Add Actual Score Dialog */}
       <Dialog open={addScoreDialogOpen} onOpenChange={setAddScoreDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add KPI Actual Score")}</DialogTitle>
-            </DialogHeader>
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Add KPI Actual Score")}</DialogTitle>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <div className="space-y-4">
-              {/* Display Review Date Context */}
-              <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-slate-500">{t("Review Date")}</p>
-                    <p className="font-medium text-slate-800">
-                      {nextDueReviewDate
-                        ? nextDueReviewDate.toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })
-                        : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">{t("Expected Score")}</p>
-                    <p className="font-medium text-slate-800">{expectedScore ?? "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">{t("Recurrence")}</p>
-                    <p className="font-medium text-slate-800">
-                      {t(kpi?.evidence?.recurrence || "Monthly")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actual Score Input */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("Actual Score")} <span className="text-error">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  placeholder={t("Enter actual score")}
-                  value={addScoreForm.actualScore}
-                  onChange={(e) =>
-                    setAddScoreForm({ actualScore: e.target.value })
-                  }
-                  className="h-9 border-slate-200"
-                />
-                {addScoreForm.actualScore && expectedScore !== null && (
-                  <p className="text-sm">
-                    {t("Status")}:{" "}
-                    <Badge
-                      className={
-                        parseFloat(addScoreForm.actualScore) >= expectedScore
-                          ? "bg-success-light text-success-dark"
-                          : "bg-error-light text-error-dark"
-                      }
-                    >
-                      {parseFloat(addScoreForm.actualScore) >= expectedScore
-                        ? t("Achieved")
-                        : t("Missed")}
-                    </Badge>
+          <div className="px-6 py-4 space-y-4">
+            {/* Display Review Date Context */}
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review Date")}</p>
+                  <p className="font-medium text-slate-800 mt-1">
+                    {nextDueReviewDate
+                      ? nextDueReviewDate.toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </p>
-                )}
-              </div>
-
-              {/* Upload Document (optional) */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">{t("Upload Document (Optional)")}</Label>
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                  <p className="text-sm text-slate-500">
-                    {t("Drag and drop or select file.")}
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Expected Score")}</p>
+                  <p className="font-medium text-slate-800 mt-1">{expectedScore ?? "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</p>
+                  <p className="font-medium text-slate-800 mt-1">
+                    {t(kpi?.evidence?.recurrence || "Monthly")}
                   </p>
                 </div>
               </div>
             </div>
+
+            {/* Actual Score Input */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {t("Actual Score")} <span className="text-error">*</span>
+              </Label>
+              <Input
+                type="number"
+                placeholder={t("Enter actual score")}
+                value={addScoreForm.actualScore}
+                onChange={(e) =>
+                  setAddScoreForm({ actualScore: e.target.value })
+                }
+                className="h-9 border-slate-200"
+              />
+              {addScoreForm.actualScore && expectedScore !== null && (
+                <p className="text-sm">
+                  {t("Status")}:{" "}
+                  <Badge
+                    className={
+                      parseFloat(addScoreForm.actualScore) >= expectedScore
+                        ? "bg-success-light text-success-dark"
+                        : "bg-error-light text-error-dark"
+                    }
+                  >
+                    {parseFloat(addScoreForm.actualScore) >= expectedScore
+                      ? t("Achieved")
+                      : t("Missed")}
+                  </Badge>
+                </p>
+              )}
+            </div>
+
+            {/* Upload Document (optional) */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Upload Document (Optional)")}</Label>
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
+                <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                <p className="text-sm text-slate-500">
+                  {t("Drag and drop or select file.")}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {

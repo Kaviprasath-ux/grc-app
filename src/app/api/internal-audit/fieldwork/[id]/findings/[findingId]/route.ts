@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string; findingId: string }>;
@@ -131,6 +132,26 @@ export const PATCH = withAuth(
           department: true,
         },
       });
+
+      // Send CAPA_ASSIGNED notification if responsible person was changed to a different user
+      const newAssigneeId = updatedFinding.responsiblePersonId;
+      const oldAssigneeId = existingFinding.responsiblePersonId;
+      if (
+        newAssigneeId &&
+        newAssigneeId !== oldAssigneeId &&
+        newAssigneeId !== session.id &&
+        existingFinding.customerAccountId
+      ) {
+        await notificationService.notifyCAPAAssigned({
+          customerAccountId: existingFinding.customerAccountId,
+          actorId: session.id,
+          assigneeId: newAssigneeId,
+          capaId: updatedFinding.id,
+          capaCode: updatedFinding.findingId,
+          capaTitle: updatedFinding.finding,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+      }
 
       return NextResponse.json({
         id: updatedFinding.id,

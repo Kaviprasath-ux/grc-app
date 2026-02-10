@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Check, ChevronLeft, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -153,6 +153,7 @@ export default function GovernanceMasterDataPage() {
     content: "",
     status: "Not Uploaded",
   });
+  const [policyErrors, setPolicyErrors] = useState<Record<string, string>>({});
 
   // Get users filtered by selected department
   const filteredUsers = formData.departmentId
@@ -369,6 +370,7 @@ export default function GovernanceMasterDataPage() {
       content: "",
       status: "Not Uploaded",
     });
+    setPolicyErrors({});
     setWizardStep(1);
     setSelectedControlIds(new Set());
     setControlCategoryFilter("");
@@ -510,10 +512,22 @@ export default function GovernanceMasterDataPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="relative h-10 w-10">
-          <div className="absolute inset-0 rounded-full border-4 border-primary/30"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-slate-500">{t("Master Data")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Governance")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-center h-64">
+            <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -527,61 +541,62 @@ export default function GovernanceMasterDataPage() {
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Master Data")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Governance")}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
 
-      {/* Search and Actions - same row */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search governance documents...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[300px] bg-white border-slate-200"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            {t("Import")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            {t("Export")}
-          </Button>
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("New Policies")}
-          </Button>
-        </div>
+      {/* Action Buttons - above card */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Import")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
+        <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("New Policies")}
+        </Button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search inside card */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search governance documents...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Policy Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Assignee")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Approver")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Requirement")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Recurrence")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Code")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Type")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Policy Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Approver")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Requirement")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Recurrence")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Code")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -593,8 +608,8 @@ export default function GovernanceMasterDataPage() {
               </TableRow>
             ) : (
               filteredPolicies.map((policy) => (
-                <TableRow key={policy.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">{policy.name}</TableCell>
+                <TableRow key={policy.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{policy.name}</TableCell>
                   <TableCell className="py-3 text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[policy.status] || "bg-slate-100 text-slate-600"}`}>
                       {policy.status}
@@ -609,23 +624,23 @@ export default function GovernanceMasterDataPage() {
                   <TableCell className="py-3 text-sm text-slate-600">{policy.recurrence || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{policy.code}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{policy.documentType}</TableCell>
-                  <TableCell className="py-3 text-sm pr-4">
-                    <div className="flex gap-1">
+                  <TableCell className="py-3 text-sm pe-5">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                         onClick={() => openEditDialog(policy)}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                         onClick={() => openDeleteDialog(policy)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -636,49 +651,28 @@ export default function GovernanceMasterDataPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <p className="text-sm text-slate-500">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <span className="text-xs text-slate-500">
             {t("Showing")} {filteredPolicies.length} {t("of")} {total}
-          </p>
+          </span>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
-              onClick={() => setPage(1)}
-              disabled={page === 1}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-slate-600 px-2">
-              {t("Page")} {page} {t("of")} {totalPages || 1}
-            </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-slate-400 hover:text-slate-600"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >
               <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setPage(totalPages)}
-              disabled={page >= totalPages}
-            >
-              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -692,8 +686,8 @@ export default function GovernanceMasterDataPage() {
         }
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Policies")}</DialogTitle>
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("New Policies")}</DialogTitle>
           </div>
 
           {/* Step Indicators */}
@@ -709,7 +703,7 @@ export default function GovernanceMasterDataPage() {
                 }`}>
                   {step < wizardStep ? <Check className="h-4 w-4" /> : step}
                 </div>
-                <span className={`ml-2 text-sm ${
+                <span className={`ltr:ml-2 rtl:mr-2 text-sm ${
                   step === wizardStep ? "text-slate-800 font-medium" : "text-slate-500"
                 }`}>
                   {step === 1 ? t("Policy Information") : step === 2 ? t("Link Controls") : t("Review")}
@@ -729,12 +723,18 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Input
                     value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      if (policyErrors.name) setPolicyErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("Enter policy name")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${policyErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                   />
+                  {policyErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.name}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
@@ -742,15 +742,16 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Select
                     value={formData.departmentId || "none"}
-                    onValueChange={(value) =>
+                    onValueChange={(value) => {
                       setFormData({
                         ...formData,
                         departmentId: value === "none" ? "" : value,
                         assigneeId: "",
-                      })
-                    }
+                      });
+                      if (policyErrors.departmentId) setPolicyErrors((prev) => { const { departmentId, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.departmentId ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -762,6 +763,11 @@ export default function GovernanceMasterDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {policyErrors.departmentId && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.departmentId}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
@@ -769,11 +775,12 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Select
                     value={formData.documentType || "none"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, documentType: value === "none" ? "" : value })
-                    }
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, documentType: value === "none" ? "" : value });
+                      if (policyErrors.documentType) setPolicyErrors((prev) => { const { documentType, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.documentType ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select document type")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -785,6 +792,11 @@ export default function GovernanceMasterDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {policyErrors.documentType && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.documentType}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
@@ -792,11 +804,12 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Select
                     value={formData.recurrence || "none"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, recurrence: value === "none" ? "" : value })
-                    }
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, recurrence: value === "none" ? "" : value });
+                      if (policyErrors.recurrence) setPolicyErrors((prev) => { const { recurrence, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.recurrence ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -808,8 +821,10 @@ export default function GovernanceMasterDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {!formData.recurrence && formData.name && (
-                    <p className="text-red-500 text-sm mt-1">{t("Please select the recurrence")}</p>
+                  {policyErrors.recurrence && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.recurrence}</p>
+                    </div>
                   )}
                 </div>
                 <div>
@@ -818,11 +833,12 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Select
                     value={formData.assigneeId || "none"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, assigneeId: value === "none" ? "" : value })
-                    }
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, assigneeId: value === "none" ? "" : value });
+                      if (policyErrors.assigneeId) setPolicyErrors((prev) => { const { assigneeId, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.assigneeId ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select assignee")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -834,8 +850,10 @@ export default function GovernanceMasterDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {!formData.assigneeId && formData.departmentId && (
-                    <p className="text-red-500 text-sm mt-1">{t("Please select the assignee")}</p>
+                  {policyErrors.assigneeId && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.assigneeId}</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -900,12 +918,12 @@ export default function GovernanceMasterDataPage() {
 
                 {/* Search */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     placeholder={t("Search By Control Code, Name")}
                     value={controlSearchTerm}
                     onChange={(e) => setControlSearchTerm(e.target.value)}
-                    className="pl-10 bg-white"
+                    className="ltr:pl-10 rtl:pr-10 bg-white"
                   />
                 </div>
 
@@ -1015,20 +1033,31 @@ export default function GovernanceMasterDataPage() {
           </div>
 
           {/* Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             {wizardStep > 1 && (
               <Button variant="outline" size="sm" onClick={() => setWizardStep(wizardStep - 1)}>
                 {t("Previous")}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setCreateDialogOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => { resetForm(); setCreateDialogOpen(false); }}>
               {t("Cancel")}
             </Button>
             {wizardStep < 3 ? (
               <Button
                 size="sm"
-                onClick={() => setWizardStep(wizardStep + 1)}
-                disabled={wizardStep === 1 && (!formData.name || !formData.departmentId || !formData.documentType || !formData.recurrence || !formData.assigneeId)}
+                onClick={() => {
+                  if (wizardStep === 1) {
+                    const errors: Record<string, string> = {};
+                    if (!formData.name) errors.name = t("Please enter the policy name");
+                    if (!formData.departmentId) errors.departmentId = t("Please select the Department");
+                    if (!formData.documentType) errors.documentType = t("Please select the document type");
+                    if (!formData.recurrence) errors.recurrence = t("Please select the recurrence");
+                    if (!formData.assigneeId) errors.assigneeId = t("Please select the assignee");
+                    if (Object.keys(errors).length > 0) { setPolicyErrors(errors); return; }
+                    setPolicyErrors({});
+                  }
+                  setWizardStep(wizardStep + 1);
+                }}
               >
                 {t("Next")}
               </Button>
@@ -1044,8 +1073,8 @@ export default function GovernanceMasterDataPage() {
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Policy")}</DialogTitle>
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Policy")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
@@ -1209,7 +1238,7 @@ export default function GovernanceMasterDataPage() {
               </Select>
             </div>
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               size="sm"
@@ -1234,14 +1263,14 @@ export default function GovernanceMasterDataPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Policy")}</AlertDialogTitle>
+        <AlertDialogContent className="overflow-hidden p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-4">
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete Policy")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete")} &quot;{selectedPolicy?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
@@ -1264,8 +1293,8 @@ export default function GovernanceMasterDataPage() {
         }
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Policies")}</DialogTitle>
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Import Policies")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
@@ -1284,12 +1313,12 @@ export default function GovernanceMasterDataPage() {
               )}
             </div>
           </div>
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}
             </Button>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 size="sm"
@@ -1310,7 +1339,7 @@ export default function GovernanceMasterDataPage() {
               >
                 {importing ? (
                   <>
-                    <div className="relative h-4 w-4 mr-2">
+                    <div className="relative h-4 w-4 ltr:mr-2 rtl:ml-2">
                       <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
                       <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
                     </div>
@@ -1318,7 +1347,7 @@ export default function GovernanceMasterDataPage() {
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Import")}
                   </>
                 )}

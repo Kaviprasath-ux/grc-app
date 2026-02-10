@@ -354,6 +354,9 @@ export default function ProcessPage() {
   const [selectedKPIProcess, setSelectedKPIProcess] = useState<Process | null>(null);
   const [kpiSearchTerm, setKpiSearchTerm] = useState("");
   const [selectedKPIYear, setSelectedKPIYear] = useState("2026");
+  const [kpiConfig, setKpiConfig] = useState({ objective: "", description: "", dataSource: "", formula: "", expectedValue: 0, targetedAchievedValue: 0 });
+  const [kpiErrors, setKpiErrors] = useState<Record<string, string>>({});
+  const [kpiSaving, setKpiSaving] = useState(false);
 
   // Process Form state
   const [processForm, setProcessForm] = useState({
@@ -1042,7 +1045,41 @@ export default function ProcessPage() {
   // Open KPI Modal
   const openKPIModal = (process: Process) => {
     setSelectedKPIProcess(process);
+    setKpiConfig({ objective: "", description: "", dataSource: "", formula: "", expectedValue: 0, targetedAchievedValue: 0 });
+    setKpiErrors({});
     setIsKPIModalOpen(true);
+  };
+
+  // Save KPI Config
+  const handleSaveKpi = async () => {
+    const errors: Record<string, string> = {};
+    if (!kpiConfig.objective.trim()) errors.objective = t("Please Enter Objective.");
+    if (!kpiConfig.description.trim()) errors.description = t("Please Enter Description.");
+    if (!kpiConfig.dataSource.trim()) errors.dataSource = t("Please Enter Data Source.");
+    if (!kpiConfig.formula.trim()) errors.formula = t("Please Enter the Calculated Formula.");
+    if (!kpiConfig.expectedValue) errors.expectedValue = t("Please Enter the Expected Score.");
+    if (Object.keys(errors).length > 0) {
+      setKpiErrors(errors);
+      return;
+    }
+    setKpiErrors({});
+    setKpiSaving(true);
+    try {
+      const res = await fetch(`/api/process-kpi/${selectedKPIProcess?.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: kpiConfig }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("KPI configuration saved successfully") });
+        setIsKPIModalOpen(false);
+      } else {
+        toast({ title: t("Error"), description: t("Failed to save KPI configuration"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to save KPI configuration"), variant: "destructive" });
+    }
+    setKpiSaving(false);
   };
 
   // BIA columns
@@ -2909,7 +2946,7 @@ export default function ProcessPage() {
       {/* KPI Details Modal */}
       <Dialog open={isKPIModalOpen} onOpenChange={(open) => {
         setIsKPIModalOpen(open);
-        if (!open) setSelectedKPIProcess(null);
+        if (!open) { setSelectedKPIProcess(null); setKpiErrors({}); }
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           {/* Fixed Header */}
@@ -2999,27 +3036,97 @@ export default function ProcessPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("KPI Objective")}</Label>
-                    <Input placeholder={t("Enter Objective")} className="mt-1.5 bg-white" />
+                    <Input
+                      placeholder={t("Enter Objective")}
+                      value={kpiConfig.objective}
+                      onChange={(e) => {
+                        setKpiConfig({ ...kpiConfig, objective: e.target.value });
+                        if (kpiErrors.objective) setKpiErrors((prev) => { const { objective, ...rest } = prev; return rest; });
+                      }}
+                      className={`mt-1.5 bg-white ${kpiErrors.objective ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    />
+                    {kpiErrors.objective && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{kpiErrors.objective}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("KPI Description")}</Label>
-                    <Input placeholder={t("Enter Description")} className="mt-1.5 bg-white" />
+                    <Input
+                      placeholder={t("Enter Description")}
+                      value={kpiConfig.description}
+                      onChange={(e) => {
+                        setKpiConfig({ ...kpiConfig, description: e.target.value });
+                        if (kpiErrors.description) setKpiErrors((prev) => { const { description, ...rest } = prev; return rest; });
+                      }}
+                      className={`mt-1.5 bg-white ${kpiErrors.description ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    />
+                    {kpiErrors.description && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{kpiErrors.description}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("KPI Data Source")}</Label>
-                    <Input placeholder={t("Enter Data Source")} className="mt-1.5 bg-white" />
+                    <Input
+                      placeholder={t("Enter Data Source")}
+                      value={kpiConfig.dataSource}
+                      onChange={(e) => {
+                        setKpiConfig({ ...kpiConfig, dataSource: e.target.value });
+                        if (kpiErrors.dataSource) setKpiErrors((prev) => { const { dataSource, ...rest } = prev; return rest; });
+                      }}
+                      className={`mt-1.5 bg-white ${kpiErrors.dataSource ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    />
+                    {kpiErrors.dataSource && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{kpiErrors.dataSource}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("KPI Measurement Formula")}</Label>
-                    <Input placeholder={t("Enter the KPI Calculation Formula")} className="mt-1.5 bg-white" />
+                    <Input
+                      placeholder={t("Enter the KPI Calculation Formula")}
+                      value={kpiConfig.formula}
+                      onChange={(e) => {
+                        setKpiConfig({ ...kpiConfig, formula: e.target.value });
+                        if (kpiErrors.formula) setKpiErrors((prev) => { const { formula, ...rest } = prev; return rest; });
+                      }}
+                      className={`mt-1.5 bg-white ${kpiErrors.formula ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    />
+                    {kpiErrors.formula && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{kpiErrors.formula}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Expected Value")}</Label>
-                    <Input type="number" defaultValue={80} className="mt-1.5 bg-white" />
+                    <Input
+                      type="number"
+                      value={kpiConfig.expectedValue || ""}
+                      onChange={(e) => {
+                        setKpiConfig({ ...kpiConfig, expectedValue: parseInt(e.target.value) || 0 });
+                        if (kpiErrors.expectedValue) setKpiErrors((prev) => { const { expectedValue, ...rest } = prev; return rest; });
+                      }}
+                      className={`mt-1.5 bg-white ${kpiErrors.expectedValue ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    />
+                    {kpiErrors.expectedValue && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{kpiErrors.expectedValue}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Targeted Achieved Value")}</Label>
-                    <Input type="number" defaultValue={100} className="mt-1.5 bg-white" />
+                    <Input
+                      type="number"
+                      value={kpiConfig.targetedAchievedValue || ""}
+                      onChange={(e) => setKpiConfig({ ...kpiConfig, targetedAchievedValue: parseInt(e.target.value) || 0 })}
+                      className="mt-1.5 bg-white"
+                    />
                   </div>
                 </div>
               </div>
@@ -3037,11 +3144,11 @@ export default function ProcessPage() {
           )}
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsKPIModalOpen(false)}>
+            <Button variant="outline" onClick={() => { setKpiErrors({}); setIsKPIModalOpen(false); }}>
               {t("Close")}
             </Button>
-            <Button>
-              {t("Save")}
+            <Button type="button" onClick={handleSaveKpi} disabled={kpiSaving}>
+              {kpiSaving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>

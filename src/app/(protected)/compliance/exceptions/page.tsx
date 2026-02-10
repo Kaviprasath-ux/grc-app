@@ -39,13 +39,9 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  ArrowLeft,
-  ClipboardList,
-  Layers,
-  Building2,
+  Eye,
   Home,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -215,6 +211,8 @@ export default function ExceptionsPage() {
     endDate: "",
   });
 
+  const [exceptionErrors, setExceptionErrors] = useState<Record<string, string>>({});
+
   // Edit form
   const [editForm, setEditForm] = useState({
     name: "",
@@ -331,6 +329,16 @@ export default function ExceptionsPage() {
   }, [editForm.frameworkId, fetchRequirements]);
 
   const handleCreate = async () => {
+    const errors: Record<string, string> = {};
+    if (!createForm.name.trim()) errors.name = t("Please enter the exception name");
+    if (!createForm.category) errors.category = t("Please select a category");
+    if (!createForm.description.trim()) errors.description = t("Please enter the reason for exception");
+    if (!createForm.endDate) errors.endDate = t("Please select the enddate");
+    if (Object.keys(errors).length > 0) {
+      setExceptionErrors(errors);
+      return;
+    }
+    setExceptionErrors({});
     setSaving(true);
     try {
       const response = await fetch("/api/exceptions", {
@@ -400,6 +408,7 @@ export default function ExceptionsPage() {
       approverId: "",
       endDate: "",
     });
+    setExceptionErrors({});
   };
 
   const handleSelectApprover = (user: User) => {
@@ -561,10 +570,7 @@ export default function ExceptionsPage() {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-        </div>
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -584,7 +590,7 @@ export default function ExceptionsPage() {
               <Home className="h-4 w-4" />
               <span>{t("GRC")}</span>
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             <span className="text-slate-500">{t("Compliance")}</span>
           </>
         ) : (
@@ -593,7 +599,7 @@ export default function ExceptionsPage() {
             <span>{t("Compliance")}</span>
           </Link>
         )}
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Exceptions")}</span>
       </nav>
 
@@ -603,21 +609,21 @@ export default function ExceptionsPage() {
       </div>
 
       {/* Create Exception Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+      <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setExceptionErrors({}); } setCreateDialogOpen(open); }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Exception")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("New Exception")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-6 py-5">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Exception Code")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Code")}</Label>
                   <Input
                     value={t("Auto-generated")}
                     disabled
@@ -625,21 +631,29 @@ export default function ExceptionsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Exception Name")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Name")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={createForm.name}
-                    onChange={(e) =>
-                      setCreateForm({ ...createForm, name: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setCreateForm({ ...createForm, name: e.target.value });
+                      if (exceptionErrors.name) {
+                        setExceptionErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                      }
+                    }}
                     placeholder={t("Enter exception name")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${exceptionErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                   />
+                  {exceptionErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{exceptionErrors.name}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Requested By")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requested By")}</Label>
                   <Input
                     value={currentUserName}
                     disabled
@@ -647,10 +661,10 @@ export default function ExceptionsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Category")} <span className="text-red-500">*</span></Label>
                   <Select
                     value={createForm.category}
-                    onValueChange={(value) =>
+                    onValueChange={(value) => {
                       setCreateForm({
                         ...createForm,
                         category: value,
@@ -659,10 +673,13 @@ export default function ExceptionsPage() {
                         riskId: "",
                         frameworkId: "",
                         requirementId: "",
-                      })
-                    }
+                      });
+                      if (exceptionErrors.category) {
+                        setExceptionErrors((prev) => { const { category, ...rest } = prev; return rest; });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${exceptionErrors.category ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -673,13 +690,18 @@ export default function ExceptionsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {exceptionErrors.category && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{exceptionErrors.category}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Category-specific reference selection */}
               {createForm.category === "Control" && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Select Control")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Control")}</Label>
                   <Select
                     value={createForm.controlId}
                     onValueChange={(value) =>
@@ -702,7 +724,7 @@ export default function ExceptionsPage() {
 
               {createForm.category === "Policy" && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Select Policy")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Policy")}</Label>
                   <Select
                     value={createForm.policyId}
                     onValueChange={(value) =>
@@ -725,7 +747,7 @@ export default function ExceptionsPage() {
 
               {createForm.category === "Risk" && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Select Risk")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Risk")}</Label>
                   <Select
                     value={createForm.riskId}
                     onValueChange={(value) =>
@@ -749,7 +771,7 @@ export default function ExceptionsPage() {
               {createForm.category === "Compliance" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework")} *</Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Integrated Framework")} *</Label>
                     <Select
                       value={createForm.frameworkId}
                       onValueChange={(value) =>
@@ -771,7 +793,7 @@ export default function ExceptionsPage() {
 
                   {createForm.frameworkId && (
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Requirement")} *</Label>
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")} *</Label>
                       <Select
                         value={createForm.requirementId}
                         onValueChange={(value) =>
@@ -795,24 +817,32 @@ export default function ExceptionsPage() {
               )}
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Reason For Exception")}</Label>
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Reason For Exception")}</Label>
                 <Textarea
                   value={createForm.description}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setCreateForm({
                       ...createForm,
                       description: e.target.value,
-                    })
-                  }
+                    });
+                    if (exceptionErrors.description) {
+                      setExceptionErrors((prev) => { const { description, ...rest } = prev; return rest; });
+                    }
+                  }}
                   placeholder={t("Enter reason for exception")}
                   rows={3}
-                  className="mt-1.5 w-full bg-white"
+                  className={`mt-1.5 w-full bg-white ${exceptionErrors.description ? "border-red-500 focus:ring-red-500" : ""}`}
                 />
+                {exceptionErrors.description && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{exceptionErrors.description}</p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")} <span className="text-red-500">*</span></Label>
                   <Select
                     value={createForm.departmentId}
                     onValueChange={(value) =>
@@ -832,7 +862,7 @@ export default function ExceptionsPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Select Approver")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Approver")} <span className="text-red-500">*</span></Label>
                   <Select
                     value={createForm.approverId}
                     onValueChange={(value) =>
@@ -869,34 +899,43 @@ export default function ExceptionsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
                   <Input value={t("Pending")} disabled className="mt-1.5 w-full bg-slate-50" />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("End Date")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("End Date")} <span className="text-red-500">*</span></Label>
                   <div className="mt-1.5">
                     <DatePicker
                       value={createForm.endDate}
-                      onChange={(date) =>
+                      onChange={(date) => {
                         setCreateForm({
                           ...createForm,
                           endDate: date ? date.toISOString().split("T")[0] : "",
-                        })
-                      }
+                        });
+                        if (exceptionErrors.endDate) {
+                          setExceptionErrors((prev) => { const { endDate, ...rest } = prev; return rest; });
+                        }
+                      }}
                       placeholder={t("Select end date")}
                       className="w-full bg-white"
                     />
                   </div>
+                  {exceptionErrors.endDate && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{exceptionErrors.endDate}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
+                setExceptionErrors({});
                 setCreateDialogOpen(false);
                 resetCreateForm();
               }}
@@ -905,7 +944,7 @@ export default function ExceptionsPage() {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!createForm.name || !createForm.category || saving}
+              disabled={saving}
             >
               {saving ? t("Saving...") : t("Save")}
             </Button>
@@ -915,33 +954,40 @@ export default function ExceptionsPage() {
 
       {/* Approver Selection Dialog */}
       <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Select Approver")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Select Approver")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <p className="text-sm text-slate-500 mb-4">
-              {t("Double-click to select an approver")}
-            </p>
-            <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Name")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Email")}</TableHead>
+                  <TableRow className="bg-slate-50 border-b border-slate-100">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((user) => (
                     <TableRow
                       key={user.id}
-                      className="cursor-pointer hover:bg-slate-50"
-                      onDoubleClick={() => handleSelectApprover(user)}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                     >
-                      <TableCell className="text-slate-600">{user.fullName || user.userName || user.name || "-"}</TableCell>
-                      <TableCell className="text-slate-600">{user.email || "-"}</TableCell>
+                      <TableCell className="py-3 pl-5 text-sm text-slate-700">{user.fullName || user.userName || user.name || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{user.email || "-"}</TableCell>
+                      <TableCell className="py-3 pr-5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSelectApprover(user)}
+                          className="h-7 text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+                        >
+                          {t("Select")}
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -955,13 +1001,7 @@ export default function ExceptionsPage() {
       <div className="grid grid-cols-3 gap-6">
         {/* Status Pie Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
-              <ClipboardList className="h-5 w-5" />
-            </div>
-            <h3 className="text-sm font-medium text-slate-500">{t("Status")}</h3>
-            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
-          </div>
+          <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Status")}</h3>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -1024,13 +1064,7 @@ export default function ExceptionsPage() {
 
         {/* Type/Category Pie Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
-              <Layers className="h-5 w-5" />
-            </div>
-            <h3 className="text-sm font-medium text-slate-500">{t("Type")}</h3>
-            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
-          </div>
+          <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Type")}</h3>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -1085,13 +1119,7 @@ export default function ExceptionsPage() {
 
         {/* Department Pie Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <h3 className="text-sm font-medium text-slate-500">{t("Department")}</h3>
-            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
-          </div>
+          <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Department")}</h3>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -1145,54 +1173,11 @@ export default function ExceptionsPage() {
         </div>
       </div>
 
-      {/* Search, Filters, and Action Button Row */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder={t("Search by name, code or requester...")}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm h-9 border-slate-200 bg-white"
-        />
-        <Select
-          value={filters.status || "all"}
-          onValueChange={(value) =>
-            setFilters({ ...filters, status: value === "all" ? "" : value })
-          }
-        >
-          <SelectTrigger className="w-[160px] bg-white">
-            <SelectValue placeholder={t("All Statuses")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">{t("All Statuses")}</SelectItem>
-            {statuses.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={filters.category || "all"}
-          onValueChange={(value) =>
-            setFilters({ ...filters, category: value === "all" ? "" : value })
-          }
-        >
-          <SelectTrigger className="w-[160px] bg-white">
-            <SelectValue placeholder={t("All Categories")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">{t("All Categories")}</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
+      {/* Action Button */}
+      <div className="flex items-center justify-end gap-2">
         <PermissionGate resource="compliance.exceptions" action="create">
           <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("New Exception")}
           </Button>
         </PermissionGate>
@@ -1200,50 +1185,105 @@ export default function ExceptionsPage() {
 
       {/* Exceptions Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="relative h-8 w-8">
-            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-          </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          {/* Search & Filters Toolbar */}
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100">
+            <div className="relative">
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder={t("Search by name, code or requester...")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              />
+            </div>
+            <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-3">
+              <Select
+                value={filters.status || "all"}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, status: value === "all" ? "" : value })
+                }
+              >
+                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectValue placeholder={t("All Statuses")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4}>
+                  <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                  {statuses.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={filters.category || "all"}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, category: value === "all" ? "" : value })
+                }
+              >
+                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectValue placeholder={t("All Categories")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4}>
+                  <SelectItem value="all">{t("All Categories")}</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-100 bg-slate-50/80">
-                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Exception Code")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Exception")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Category")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Reference")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Requester")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("End Date")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Actions")}</TableHead>
+              <TableRow className="bg-slate-50 border-b border-slate-100">
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Exception Code")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Exception")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Reference")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Requester")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("End Date")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {exceptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
-                    <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-slate-300" />
-                    <p className="text-slate-500">{t("No exceptions found")}</p>
+                  <TableCell colSpan={9} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center">
+                        <AlertTriangle className="h-6 w-6 text-primary-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">{t("No exceptions found")}</p>
+                        <p className="text-xs text-slate-500 mt-1">{t("Create a new exception to get started")}</p>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 exceptions.map((exception) => (
                   <TableRow
                     key={exception.id}
-                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer"
-                    onClick={() => router.push(`/compliance/exceptions/${exception.id}`)}
+                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                   >
-                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">
+                    <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">
                       {exception.exceptionCode}
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       <span className="line-clamp-1">{exception.name}</span>
                     </TableCell>
-                    <TableCell className="py-4 text-sm">
+                    <TableCell className="py-3 text-sm">
                       <Badge
                         className={
                           categoryColors[exception.category] || "bg-slate-100 text-slate-600"
@@ -1252,22 +1292,22 @@ export default function ExceptionsPage() {
                         {exception.category}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">{getReference(exception)}</TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">
+                    <TableCell className="py-3 text-sm text-slate-700">{getReference(exception)}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {exception.requester?.fullName ||
                         exception.requester?.userName ||
                         exception.requester?.name ||
                         "-"}
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {exception.endDate
                         ? new Date(exception.endDate).toLocaleDateString(
                             "en-GB"
                           )
                         : "-"}
                     </TableCell>
-                    <TableCell className="py-4 text-sm text-slate-700">{exception.department?.name || "-"}</TableCell>
-                    <TableCell className="py-4 text-sm">
+                    <TableCell className="py-3 text-sm text-slate-700">{exception.department?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm">
                       <Badge
                         className={
                           statusColors[exception.status] || "bg-slate-100 text-slate-600"
@@ -1276,17 +1316,26 @@ export default function ExceptionsPage() {
                         {exception.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-4 text-sm">
+                    <TableCell className="py-3 pr-5 text-sm">
                       <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => router.push(`/compliance/exceptions/${exception.id}`)}
+                          title={t("View")}
+                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
                         <PermissionGate resource="compliance.exceptions" action="edit">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={(e) => handleOpenEdit(exception, e)}
                             title={t("Edit")}
-                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-3.5 w-3.5" />
                           </Button>
                         </PermissionGate>
                         <PermissionGate resource="compliance.exceptions" action="delete">
@@ -1295,9 +1344,9 @@ export default function ExceptionsPage() {
                             size="icon"
                             onClick={(e) => handleOpenDelete(exception, e)}
                             title={t("Delete")}
-                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                            className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </PermissionGate>
                       </div>
@@ -1309,8 +1358,8 @@ export default function ExceptionsPage() {
           </Table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-sm text-slate-500">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">
               {exceptions.length > 0 ? `${t("Showing")} 1 ${t("to")} ${exceptions.length} ${t("of")} ${exceptions.length}` : t("No exceptions")}
             </span>
             <div className="flex items-center gap-1">
@@ -1318,33 +1367,17 @@ export default function ExceptionsPage() {
                 variant="ghost"
                 size="icon"
                 disabled={true}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
-                <ChevronsLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 disabled={true}
-                className="h-8 w-8"
+                className="h-7 w-7 text-slate-400 hover:text-slate-600"
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={true}
-                className="h-8 w-8"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={true}
-                className="h-8 w-8"
-              >
-                <ChevronsRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
@@ -1353,11 +1386,11 @@ export default function ExceptionsPage() {
 
       {/* Edit Exception Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Exception")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Exception")}</DialogTitle>
               {selectedException?.status === "Approved" && (
                 <p className="text-sm text-green-600 mt-1">
                   {t("This exception has been approved and cannot be edited.")}
@@ -1367,11 +1400,11 @@ export default function ExceptionsPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-6 py-5">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Exception Code")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Code")}</Label>
                   <Input
                     value={selectedException?.exceptionCode || ""}
                     disabled
@@ -1379,7 +1412,7 @@ export default function ExceptionsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Exception Name")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Name")} *</Label>
                   <Input
                     value={editForm.name}
                     onChange={(e) =>
@@ -1394,7 +1427,7 @@ export default function ExceptionsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Requested By")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requested By")}</Label>
                   <Select
                     value={editForm.requesterId}
                     onValueChange={(value) =>
@@ -1415,7 +1448,7 @@ export default function ExceptionsPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Category")} *</Label>
                   <Select
                     value={editForm.category}
                     onValueChange={(value) =>
@@ -1448,7 +1481,7 @@ export default function ExceptionsPage() {
               {/* Category-specific reference selection */}
               {editForm.category === "Control" && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Select Control")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Control")}</Label>
                   <Select
                     value={editForm.controlId}
                     onValueChange={(value) =>
@@ -1472,7 +1505,7 @@ export default function ExceptionsPage() {
 
               {editForm.category === "Policy" && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Select Policy")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Policy")}</Label>
                   <Select
                     value={editForm.policyId}
                     onValueChange={(value) =>
@@ -1496,7 +1529,7 @@ export default function ExceptionsPage() {
 
               {editForm.category === "Risk" && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Select Risk")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Risk")}</Label>
                   <Select
                     value={editForm.riskId}
                     onValueChange={(value) =>
@@ -1521,7 +1554,7 @@ export default function ExceptionsPage() {
               {editForm.category === "Compliance" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework")} *</Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Integrated Framework")} *</Label>
                     <Select
                       value={editForm.frameworkId}
                       onValueChange={(value) =>
@@ -1544,7 +1577,7 @@ export default function ExceptionsPage() {
 
                   {editForm.frameworkId && (
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Requirement")} *</Label>
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")} *</Label>
                       <Select
                         value={editForm.requirementId}
                         onValueChange={(value) =>
@@ -1569,7 +1602,7 @@ export default function ExceptionsPage() {
               )}
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Reason For Exception")}</Label>
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Reason For Exception")}</Label>
                 <Textarea
                   value={editForm.description}
                   onChange={(e) =>
@@ -1587,7 +1620,7 @@ export default function ExceptionsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
                   <Select
                     value={editForm.departmentId}
                     onValueChange={(value) =>
@@ -1608,7 +1641,7 @@ export default function ExceptionsPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Select Approver")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Approver")}</Label>
                   <Select
                     value={editForm.approverId}
                     onValueChange={(value) =>
@@ -1645,7 +1678,7 @@ export default function ExceptionsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
                   <Select
                     value={editForm.status}
                     onValueChange={(value) =>
@@ -1666,7 +1699,7 @@ export default function ExceptionsPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("End Date")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("End Date")}</Label>
                   <div className="mt-1.5">
                     <DatePicker
                       value={editForm.endDate}
@@ -1687,7 +1720,7 @@ export default function ExceptionsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1711,14 +1744,14 @@ export default function ExceptionsPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("Delete Exception")}</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
+          <AlertDialogHeader className="px-6 py-4 border-b border-slate-100">
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete Exception")}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500">
               {t("Are you sure you want to delete exception")} &quot;{selectedException?.exceptionCode} - {selectedException?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel onClick={() => setSelectedException(null)}>
               {t("Cancel")}
             </AlertDialogCancel>

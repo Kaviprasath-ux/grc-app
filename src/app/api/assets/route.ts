@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all assets - filtered by customer account
 export const GET = withAuth(
@@ -137,6 +137,7 @@ export const POST = withAuth(
           assetCode: asset.assetId,
           assetName: asset.name,
           role: 'owner',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
       // Notify custodian if different from creator
@@ -149,6 +150,7 @@ export const POST = withAuth(
           assetCode: asset.assetId,
           assetName: asset.name,
           role: 'custodian',
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

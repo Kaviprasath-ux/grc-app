@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// Card components replaced with plain divs for design consistency
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { useGovernanceAIReview } from "@/hooks/useGovernanceAIReview";
 import { PermissionGate } from "@/components/ui/permission-gate";
@@ -64,7 +64,6 @@ import {
   Upload,
   Download,
   Calendar,
-  ChevronLeft,
   Layers,
   Home,
   ChevronRight,
@@ -76,6 +75,8 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 import { toast } from "sonner";
 
 interface Policy {
@@ -259,20 +260,20 @@ interface AIReviewResponse {
 }
 
 const statusColors: Record<string, string> = {
-  "Not Uploaded": "bg-gray-100 text-gray-800",
-  Draft: "bg-yellow-100 text-yellow-800",
-  "Under Review": "bg-blue-100 text-blue-800",
-  Approved: "bg-green-100 text-green-800",
+  "Not Uploaded": "bg-slate-100 text-slate-600",
+  Draft: "bg-warning-light text-warning-dark",
+  "Under Review": "bg-info-light text-info-dark",
+  Approved: "bg-success-light text-success-dark",
   Published: "bg-purple-100 text-purple-800",
-  "Needs Review": "bg-orange-100 text-orange-800",
-  Archived: "bg-gray-100 text-gray-800",
+  "Needs Review": "bg-error-light text-error-dark",
+  Archived: "bg-slate-100 text-slate-600",
 };
 
 const aiStatusColors: Record<string, string> = {
-  Pending: "bg-gray-100 text-gray-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  Completed: "bg-green-100 text-green-800",
-  Failed: "bg-red-100 text-red-800",
+  Pending: "bg-slate-100 text-slate-600",
+  "In Progress": "bg-info-light text-info-dark",
+  Completed: "bg-success-light text-success-dark",
+  Failed: "bg-error-light text-error-dark",
 };
 
 const typeLabels: Record<string, string> = {
@@ -1085,7 +1086,7 @@ export default function GovernanceDetailPage() {
       );
     }
     return (
-      <div className="w-8 h-8 bg-gray-400 rounded flex items-center justify-center">
+      <div className="w-8 h-8 bg-slate-400 rounded flex items-center justify-center">
         <File className="h-4 w-4 text-white" />
       </div>
     );
@@ -1194,16 +1195,19 @@ export default function GovernanceDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
       </div>
     );
   }
 
   if (!policy) {
     return (
-      <div className="p-6">
-        <div className="text-center text-gray-500">
-          {t("Governance document not found")}
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+            <FileText className="h-6 w-6 text-primary-400" />
+          </div>
+          <p className="text-sm font-medium text-slate-600 mb-1">{t("Governance document not found")}</p>
         </div>
       </div>
     );
@@ -1261,39 +1265,33 @@ export default function GovernanceDetailPage() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Back Button and Breadcrumb */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="flex items-center gap-1 text-slate-600 hover:text-slate-900"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {t("Back")}
-        </Button>
-        <nav className="flex items-center gap-1.5 text-sm">
-          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-            <Home className="h-4 w-4" />
-            <span>{t("Compliance")}</span>
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <Link href="/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
-            {t("Governance")}
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">{policy.code}</span>
-        </nav>
-      </div>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Governance")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{policy.code}</span>
+      </nav>
 
       {/* Header */}
       <div className="flex items-center justify-between">
-
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-800">{policy.name}</h1>
+          <Badge className={statusColors[policy.status] || "bg-slate-100 text-slate-600"}>
+            {t(policy.status)}
+          </Badge>
+        </div>
         <div className="flex items-center gap-2">
           {/* Approve Button - CustomerAdmin or assigned Approver can see when status is Draft */}
           {canShowApproveButton && (
             <Button variant="outline" onClick={handleApprove}>
-              <Check className="h-4 w-4 mr-2" />
+              <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Approve")}
             </Button>
           )}
@@ -1301,7 +1299,7 @@ export default function GovernanceDetailPage() {
           {/* Publish Button - Only when Approved, visible to Assignee or CustomerAdmin */}
           {canShowPublishButton && (
             <Button onClick={openSignatureDialog}>
-              <Check className="h-4 w-4 mr-2" />
+              <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Publish")}
             </Button>
           )}
@@ -1340,164 +1338,167 @@ export default function GovernanceDetailPage() {
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Edit")}
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{t("Edit")} {t(typeLabels[policy.documentType])}</DialogTitle>
+            <DialogContent className="max-w-[900px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+              <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit")} {t(typeLabels[policy.documentType])}</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="col-span-2">
-                  <Label>{t("Name")}</Label>
-                  <Input
-                    value={editForm.name}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label>{t("Description")}</Label>
-                  <Textarea
-                    value={editForm.description}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, description: e.target.value })
-                    }
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label>{t("Type")}</Label>
-                  <Select
-                    value={editForm.documentType}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, documentType: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Policy">{t("Policy")}</SelectItem>
-                      <SelectItem value="Standard">{t("Standard")}</SelectItem>
-                      <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Status")}</Label>
-                  <Select
-                    value={editForm.status}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, status: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
-                      <SelectItem value="Draft">{t("Draft")}</SelectItem>
-                      <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
-                      <SelectItem value="Approved">{t("Approved")}</SelectItem>
-                      <SelectItem value="Published">{t("Published")}</SelectItem>
-                      <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
-                      <SelectItem value="Archived">{t("Archived")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Version")}</Label>
-                  <Input
-                    value={editForm.version}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, version: e.target.value })
-                    }
-                    placeholder={t("e.g., 1.0")}
-                  />
-                </div>
-                <div>
-                  <Label>{t("Recurrence")}</Label>
-                  <Select
-                    value={editForm.recurrence}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, recurrence: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select recurrence")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RECURRENCE_OPTIONS.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Framework")}</Label>
-                  <Select
-                    value={editForm.frameworkId}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, frameworkId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select framework")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {frameworks.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          {f.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Department")}</Label>
-                  <Select
-                    value={editForm.departmentId}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, departmentId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select department")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Effective Date")}</Label>
-                  <Input
-                    type="date"
-                    value={editForm.effectiveDate}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, effectiveDate: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>{t("Review Date")}</Label>
-                  <Input
-                    type="date"
-                    value={editForm.reviewDate}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, reviewDate: e.target.value })
-                    }
-                  />
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Name")}</Label>
+                    <Input
+                      value={editForm.name}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
+                    <Textarea
+                      value={editForm.description}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, description: e.target.value })
+                      }
+                      rows={3}
+                      className="focus-visible:ring-2 focus-visible:ring-primary-500/20 focus-visible:ring-offset-0 focus-visible:border-primary-300"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Type")}</Label>
+                    <Select
+                      value={editForm.documentType}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, documentType: value })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                        <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                        <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
+                    <Select
+                      value={editForm.status}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, status: value })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
+                        <SelectItem value="Draft">{t("Draft")}</SelectItem>
+                        <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
+                        <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                        <SelectItem value="Published">{t("Published")}</SelectItem>
+                        <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
+                        <SelectItem value="Archived">{t("Archived")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Version")}</Label>
+                    <Input
+                      value={editForm.version}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, version: e.target.value })
+                      }
+                      placeholder={t("e.g., 1.0")}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</Label>
+                    <Select
+                      value={editForm.recurrence}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, recurrence: value })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select recurrence")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RECURRENCE_OPTIONS.map((r) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Framework")}</Label>
+                    <Select
+                      value={editForm.frameworkId}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, frameworkId: value })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select framework")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {frameworks.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
+                    <Select
+                      value={editForm.departmentId}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, departmentId: value })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select department")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Effective Date")}</Label>
+                    <DatePicker
+                      value={editForm.effectiveDate || undefined}
+                      onChange={(date) =>
+                        setEditForm({ ...editForm, effectiveDate: date ? format(date, "yyyy-MM-dd") : "" })
+                      }
+                      placeholder={t("Select date")}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review Date")}</Label>
+                    <DatePicker
+                      value={editForm.reviewDate || undefined}
+                      onChange={(date) =>
+                        setEditForm({ ...editForm, reviewDate: date ? format(date, "yyyy-MM-dd") : "" })
+                      }
+                      placeholder={t("Select date")}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                 <Button
                   variant="outline"
                   onClick={() => setEditDialogOpen(false)}
@@ -1511,60 +1512,42 @@ export default function GovernanceDetailPage() {
           </PermissionGate>
         </div>
       </div>
-
-      {/* Policy Name and Status */}
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{policy.name}</h1>
-          <Badge className={statusColors[policy.status] || "bg-gray-100"}>
-            {policy.status}
-          </Badge>
-        </div>
-        <p className="text-slate-400">{policy.code}</p>
-      </div>
+      <p className="text-slate-500">{policy.code}</p>
 
 
-      {/* Status Workflow Steps - Visual display of current state */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            {STATUS_WORKFLOW.map((step, index) => {
-              // Determine step state based on status
-              const isStepActive =
-                (step.key === "Upload" && stepStates.upload) ||
-                (step.key === "Draft" && stepStates.draft) ||
-                (step.key === "Publish" && stepStates.publish);
+      {/* Status Workflow Steps */}
+      <div className="flex items-center justify-center gap-4 py-4 bg-slate-50 rounded-xl border border-slate-200">
+        {STATUS_WORKFLOW.map((step, index) => {
+          const isStepActive =
+            (step.key === "Upload" && stepStates.upload) ||
+            (step.key === "Draft" && stepStates.draft) ||
+            (step.key === "Publish" && stepStates.publish);
 
-              // Determine if connecting line should be green
-              const isLineGreen =
-                (index === 0 && stepStates.upload) ||
-                (index === 1 && stepStates.draft);
+          const isLineActive =
+            (index === 0 && stepStates.upload) ||
+            (index === 1 && stepStates.draft);
 
-              const Icon = step.icon;
+          const Icon = step.icon;
 
-              return (
-                <div key={step.key} className="flex items-center flex-1">
-                  <div
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
-                      isStepActive
-                        ? "bg-green-100 text-green-800"
-                        : "bg-muted text-slate-400"
-                    }`}
-                  >
-                    <Icon className="h-6 w-6" />
-                    <span className="text-sm font-medium">{t(step.label)}</span>
-                  </div>
-                  {index < STATUS_WORKFLOW.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 ${
-                      isLineGreen ? "bg-green-500" : "bg-muted"
-                    }`} />
-                  )}
+          return (
+            <div key={step.key} className="flex items-center">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                    isStepActive ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
+                  }`}
+                >
+                  {isStepActive ? <Check className="h-6 w-6" /> : <Icon className="h-5 w-5" />}
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                <span className={`text-sm ${isStepActive ? "text-slate-800" : "text-slate-400"}`}>{t(step.label)}</span>
+              </div>
+              {index < STATUS_WORKFLOW.length - 1 && (
+                <div className={`w-24 h-0.5 ltr:ml-4 rtl:mr-4 ${isLineActive ? "bg-primary-600" : "bg-slate-300"}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Linked Frameworks Indicator */}
       {(() => {
@@ -1581,9 +1564,9 @@ export default function GovernanceDetailPage() {
           <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-                  <Layers className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-700">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors">
+                  <Layers className="h-4 w-4 text-primary-600" />
+                  <span className="text-sm font-medium text-primary-700">
                     {t("Linked Frameworks")}: {frameworkCount}
                   </span>
                 </div>
@@ -1604,15 +1587,15 @@ export default function GovernanceDetailPage() {
       })()}
 
       {/* Policy Details - Inline Editable (with permission check) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("Policy Details")}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-100">
+          <h3 className="text-base font-semibold text-slate-800">{t("Policy Details")}</h3>
+        </div>
+        <div className="p-5">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {/* Department - Inline Dropdown (editable only with permission) */}
-            <div>
-              <Label className="text-slate-400 text-sm">{t("Department")}</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
               {canEdit ? (
                 <Select
                   value={selectedDepartmentId}
@@ -1621,7 +1604,7 @@ export default function GovernanceDetailPage() {
                     handleInlineUpdate("departmentId", value);
                   }}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1631,15 +1614,15 @@ export default function GovernanceDetailPage() {
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="font-medium mt-1">{policy.department?.name || "-"}</p>
+                <p className="text-sm text-slate-700">{policy.department?.name || "-"}</p>
               )}
             </div>
 
             {/* Assigned To - With Edit Button (only with edit permission) */}
-            <div>
-              <Label className="text-slate-400 text-sm">{t("Assigned To")}</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="font-medium">{policy.assignee?.fullName || "-"}</span>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assigned To")}</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-700">{policy.assignee?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
                   <Dialog open={assigneeDialogOpen} onOpenChange={setAssigneeDialogOpen}>
                     <DialogTrigger asChild>
@@ -1647,33 +1630,35 @@ export default function GovernanceDetailPage() {
                         <Edit className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{t("Edit Assignee")}</DialogTitle>
+                    <DialogContent className="p-0 gap-0 overflow-hidden">
+                      <DialogHeader className="px-6 py-4 border-b border-slate-100">
+                        <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Assignee")}</DialogTitle>
                       </DialogHeader>
-                      <div className="py-4">
-                        <Label>{t("Select Assignee")}</Label>
-                        <p className="text-xs text-slate-500 mt-1 mb-2">
-                          {t("Only Department Contributors and Department Reviewers from the assigned department are shown.")}
-                        </p>
-                        <Select value={selectedAssigneeId} onValueChange={setSelectedAssigneeId}>
-                          <SelectTrigger className="mt-2">
-                            <SelectValue placeholder={t("Select assignee")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {filteredAssigneeUsers.length > 0 ? (
-                              filteredAssigneeUsers.map((u) => (
-                                <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                              ))
-                            ) : (
-                              <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                                {t("No eligible users found in this department")}
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
+                      <div className="px-6 py-5">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Assignee")}</Label>
+                          <p className="text-xs text-slate-400 mb-2">
+                            {t("Only Department Contributors and Department Reviewers from the assigned department are shown.")}
+                          </p>
+                          <Select value={selectedAssigneeId} onValueChange={setSelectedAssigneeId}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder={t("Select assignee")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {filteredAssigneeUsers.length > 0 ? (
+                                filteredAssigneeUsers.map((u) => (
+                                  <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                                ))
+                              ) : (
+                                <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                  {t("No eligible users found in this department")}
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                         <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
                           {t("Cancel")}
                         </Button>
@@ -1686,10 +1671,10 @@ export default function GovernanceDetailPage() {
             </div>
 
             {/* Approvers - With Add Button (only with edit permission) */}
-            <div>
-              <Label className="text-slate-400 text-sm">{t("Approvers")}</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="font-medium">{policy.approver?.fullName || "-"}</span>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approvers")}</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-700">{policy.approver?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
                   <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
                     <DialogTrigger asChild>
@@ -1697,33 +1682,35 @@ export default function GovernanceDetailPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{t("Add Approver")}</DialogTitle>
+                    <DialogContent className="p-0 gap-0 overflow-hidden">
+                      <DialogHeader className="px-6 py-4 border-b border-slate-100">
+                        <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Approver")}</DialogTitle>
                       </DialogHeader>
-                      <div className="py-4">
-                        <Label>{t("Select Approver")}</Label>
-                        <p className="text-xs text-slate-500 mt-1 mb-2">
-                          {t("Only Department Reviewers from the assigned department are shown.")}
-                        </p>
-                        <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
-                          <SelectTrigger className="mt-2">
-                            <SelectValue placeholder={t("Select approver")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {filteredApproverUsers.length > 0 ? (
-                              filteredApproverUsers.map((u) => (
-                                <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                              ))
-                            ) : (
-                              <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                                {t("No Department Reviewers found in this department")}
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
+                      <div className="px-6 py-5">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Approver")}</Label>
+                          <p className="text-xs text-slate-400 mb-2">
+                            {t("Only Department Reviewers from the assigned department are shown.")}
+                          </p>
+                          <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder={t("Select approver")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {filteredApproverUsers.length > 0 ? (
+                                filteredApproverUsers.map((u) => (
+                                  <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                                ))
+                              ) : (
+                                <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                  {t("No Department Reviewers found in this department")}
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                         <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
                           {t("Cancel")}
                         </Button>
@@ -1736,8 +1723,8 @@ export default function GovernanceDetailPage() {
             </div>
 
             {/* Recurrence - Inline Dropdown (editable only with permission) */}
-            <div>
-              <Label className="text-slate-400 text-sm">{t("Recurrence")}</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</Label>
               {canEdit ? (
                 <Select
                   value={selectedRecurrence}
@@ -1746,7 +1733,7 @@ export default function GovernanceDetailPage() {
                     handleInlineUpdate("recurrence", value);
                   }}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder={t("Select recurrence")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1756,14 +1743,14 @@ export default function GovernanceDetailPage() {
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="font-medium mt-1">{policy.recurrence || "-"}</p>
+                <p className="text-sm text-slate-700">{policy.recurrence || "-"}</p>
               )}
             </div>
 
             {/* Review Date - Inline Date Picker (editable only with permission) */}
-            <div>
-              <Label className="text-slate-400 text-sm">{t("Review Date")}</Label>
-              <div className="flex items-center gap-2 mt-1">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review Date")}</Label>
+              <div className="flex items-center gap-2">
                 {canEdit ? (
                   <Input
                     type="date"
@@ -1775,59 +1762,61 @@ export default function GovernanceDetailPage() {
                     className="w-full"
                   />
                 ) : (
-                  <p className="font-medium">{policy.reviewDate ? new Date(policy.reviewDate).toLocaleDateString() : "-"}</p>
+                  <p className="text-sm text-slate-700">{policy.reviewDate ? new Date(policy.reviewDate).toLocaleDateString() : "-"}</p>
                 )}
               </div>
             </div>
 
             {/* Version - Read-only */}
-            <div>
-              <Label className="text-slate-400 text-sm">{t("Version")}</Label>
-              <p className="font-medium mt-1">{policy.version || "-"}</p>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Version")}</Label>
+              <p className="text-sm text-slate-700">{policy.version || "-"}</p>
             </div>
           </div>
 
           {policy.description && (
-            <div className="mt-6">
-              <Label className="text-slate-400 text-sm">{t("Description")}</Label>
-              <p className="mt-1">{policy.description}</p>
+            <div className="mt-6 space-y-2">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
+              <p className="text-sm text-slate-700">{policy.description}</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* AI Review Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            {t("AI Review")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
+          <Sparkles className="h-5 w-5 text-primary-600" />
+          <h3 className="text-base font-semibold text-slate-800">{t("AI Review")}</h3>
+        </div>
+        <div className="p-5">
           {!policy.aiReviewStatus || policy.aiReviewStatus === "Pending" ? (
-            <div className="text-center py-4 text-slate-400">
-              <p>{t("AI Review has not been performed yet")}</p>
+            <div className="py-10 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <Sparkles className="h-6 w-6 text-primary-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("AI Review has not been performed yet")}</p>
+              <p className="text-xs text-slate-400">{t("Start an AI review to analyze this document")}</p>
             </div>
           ) : policy.aiReviewStatus === "In Progress" ? (
             <div className="flex items-center justify-center gap-4 py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-              <p>{t("AI Review in progress...")}</p>
+              <div className="w-6 h-6 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+              <p className="text-sm text-slate-600">{t("AI Review in progress...")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-6">
-              <div>
-                <Label className="text-slate-400 text-sm">{t("Status")}</Label>
-                <div className="mt-1">
-                  <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-gray-100"}>
-                    {policy.aiReviewStatus}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
+                <div>
+                  <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-slate-100 text-slate-600"}>
+                    {t(policy.aiReviewStatus)}
                   </Badge>
                 </div>
               </div>
               {policy.aiReviewScore !== null && (
-                <div>
-                  <Label className="text-slate-400 text-sm">{t("Score")}</Label>
-                  <div className="mt-1">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Score")}</Label>
+                  <div>
                     <span className={`text-2xl font-bold ${
                       policy.aiReviewScore >= 80
                         ? "text-green-600"
@@ -1841,9 +1830,9 @@ export default function GovernanceDetailPage() {
                 </div>
               )}
               {policy.aiReviewJustification && (
-                <div className="col-span-3">
-                  <Label className="text-slate-400 text-sm">{t("Justification")}</Label>
-                  <p className="mt-1 p-3 bg-muted rounded-lg">{policy.aiReviewJustification}</p>
+                <div className="col-span-3 space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Justification")}</Label>
+                  <p className="text-sm text-slate-700 p-3 bg-slate-50 rounded-lg">{policy.aiReviewJustification}</p>
                 </div>
               )}
               {/* View More Button */}
@@ -1853,47 +1842,47 @@ export default function GovernanceDetailPage() {
                     variant="outline"
                     onClick={() => setAiReviewDetailsOpen(true)}
                   >
-                    <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2 text-blue-500" />
+                    <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2 text-primary-600" />
                     {t("View More")}
                   </Button>
                 </div>
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* AI Review Details Modal */}
       <Dialog open={aiReviewDetailsOpen} onOpenChange={setAiReviewDetailsOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+            <DialogTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
               {t("AI Review Details")}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             {aiReviewResult?.raw_response?.controls_response?.map((control, index) => (
               <div
                 key={index}
-                className="bg-slate-50 dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700"
+                className="bg-slate-50 rounded-lg p-6 border border-slate-200"
               >
                 <div className="grid grid-cols-2 gap-6">
                   {/* Left Column */}
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                         {t("Control Code")}
                       </p>
-                      <p className="text-slate-700 dark:text-slate-300">
+                      <p className="text-sm text-slate-700">
                         {control.control_code}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                         {t("Question")}
                       </p>
-                      <p className="text-slate-700 dark:text-slate-300">
+                      <p className="text-sm text-slate-700">
                         {control.question || "-"}
                       </p>
                     </div>
@@ -1901,26 +1890,26 @@ export default function GovernanceDetailPage() {
                   {/* Right Column */}
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                         {t("Status")}
                       </p>
                       <Badge
                         className={
                           control.status?.toLowerCase() === "compliant"
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-success-light text-success-dark"
                             : control.status?.toLowerCase() === "non-compliant"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
+                            ? "bg-error-light text-error-dark"
+                            : "bg-warning-light text-warning-dark"
                         }
                       >
                         {control.status ? control.status.charAt(0).toUpperCase() + control.status.slice(1) : "-"}
                       </Badge>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                         {t("Answer")}
                       </p>
-                      <p className="text-slate-700 dark:text-slate-300">
+                      <p className="text-sm text-slate-700">
                         {control.answer || "-"}
                       </p>
                     </div>
@@ -1930,8 +1919,11 @@ export default function GovernanceDetailPage() {
             ))}
             {(!aiReviewResult?.raw_response?.controls_response ||
               aiReviewResult.raw_response.controls_response.length === 0) && (
-              <div className="text-center py-8 text-slate-400">
-                <p>{t("No detailed review data available")}</p>
+              <div className="py-10 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <Sparkles className="h-6 w-6 text-primary-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No detailed review data available")}</p>
               </div>
             )}
           </div>
@@ -1940,12 +1932,12 @@ export default function GovernanceDetailPage() {
 
       {/* Published Section - Only show when status is Published */}
       {policy.status === "Published" && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <Check className="h-5 w-5 text-green-600" />
               {t("Published")}
-            </CardTitle>
+            </h3>
             <div className="flex items-center gap-2">
               {/* Download Published Document Button */}
               {(attachments.length > 0 || linkedVaultDocuments.length > 0) && (
@@ -1960,7 +1952,7 @@ export default function GovernanceDetailPage() {
                     }
                   }}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Download")}
                 </Button>
               )}
@@ -1976,15 +1968,15 @@ export default function GovernanceDetailPage() {
                 </Button>
               </PermissionGate>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column - Published Info */}
               <div className="space-y-4">
                 {/* Published On */}
-                <div>
-                  <Label className="text-slate-400 text-sm">{t("Published On")}</Label>
-                  <p className="font-medium mt-1">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Published On")}</Label>
+                  <p className="text-sm text-slate-700">
                     {(() => {
                       // Try to get stored publishedAt from localStorage, fallback to updatedAt
                       const storedPublishedAt = localStorage.getItem(`policy-publishedAt-${policy.id}`);
@@ -2003,29 +1995,29 @@ export default function GovernanceDetailPage() {
                 </div>
 
                 {/* Published Document */}
-                <div>
-                  <Label className="text-slate-400 text-sm">{t("Published Document")}</Label>
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Published Document")}</Label>
                   {attachments.length > 0 ? (
-                    <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
                       <FileText className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium">{attachments[0].fileName}</span>
+                      <span className="text-sm font-medium text-slate-700">{attachments[0].fileName}</span>
                     </div>
                   ) : linkedVaultDocuments.length > 0 ? (
-                    <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
                       {getFileTypeIcon(linkedVaultDocuments[0].document.fileType)}
-                      <span className="font-medium">{linkedVaultDocuments[0].document.fileName}</span>
+                      <span className="text-sm font-medium text-slate-700">{linkedVaultDocuments[0].document.fileName}</span>
                     </div>
                   ) : (
-                    <p className="text-slate-400 mt-1">{t("No document attached")}</p>
+                    <p className="text-sm text-slate-400">{t("No document attached")}</p>
                   )}
                 </div>
 
                 {/* Approver Details */}
-                <div>
-                  <Label className="text-slate-400 text-sm">{t("Approved By")}</Label>
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approved By")}</Label>
                   {policy.approver ? (
-                    <div className="mt-1 p-3 bg-muted rounded-lg space-y-1">
-                      <p className="font-medium">{policy.approver.fullName}</p>
+                    <div className="p-3 bg-slate-50 rounded-lg space-y-1">
+                      <p className="text-sm font-medium text-slate-700">{policy.approver.fullName}</p>
                       {(() => {
                         // Find the approver in users array to get full details
                         const approverUser = users.find(u => u.id === policy.approverId);
@@ -2046,14 +2038,14 @@ export default function GovernanceDetailPage() {
                       })()}
                     </div>
                   ) : (
-                    <p className="text-slate-400 mt-1">-</p>
+                    <p className="text-sm text-slate-400">-</p>
                   )}
                 </div>
               </div>
 
               {/* Right Column - Signature */}
-              <div>
-                <Label className="text-slate-400 text-sm">{t("Signature")}</Label>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Signature")}</Label>
                 <div className="mt-1 border rounded-lg p-4 bg-white min-h-[150px] flex items-center justify-center">
                   {storedSignature ? (
                     <img
@@ -2067,8 +2059,8 @@ export default function GovernanceDetailPage() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Unpublish Confirmation Dialog */}
@@ -2090,11 +2082,11 @@ export default function GovernanceDetailPage() {
       </AlertDialog>
 
       {/* Attachments Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("Attachments")}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-100">
+          <h3 className="text-base font-semibold text-slate-800">{t("Attachments")}</h3>
+        </div>
+        <div className="p-5">
           {isCustomerAdmin ? (
             /* Customer Admin: 3 Card Options */
             <div className="space-y-6">
@@ -2116,30 +2108,30 @@ export default function GovernanceDetailPage() {
                         <div
                           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                             hasDocument
-                              ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
-                              : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                              ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
+                              : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
                           }`}
                         >
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                            hasDocument ? "bg-gray-100" : "bg-blue-100"
+                            hasDocument ? "bg-slate-100" : "bg-primary-50"
                           }`}>
-                            <Upload className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-blue-600"}`} />
+                            <Upload className={`h-6 w-6 ${hasDocument ? "text-slate-400" : "text-primary-500"}`} />
                           </div>
-                          <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
+                          <h3 className={`font-medium ${hasDocument ? "text-slate-400" : "text-slate-800"}`}>
                             {t("Upload Existing File")}
                           </h3>
-                          <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
+                          <p className={`text-sm mt-1 ${hasDocument ? "text-slate-300" : "text-slate-500"}`}>
                             {hasDocument
                               ? t("Delete existing file to upload new")
                               : t("Upload document from your device")}
                           </p>
                         </div>
                       </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>{t("Upload Existing File")}</DialogTitle>
+                  <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-6 py-4 border-b border-slate-100">
+                      <DialogTitle className="text-base font-semibold text-slate-800">{t("Upload Existing File")}</DialogTitle>
                     </DialogHeader>
-                    <div className="py-4 space-y-4">
+                    <div className="px-6 py-5 space-y-4">
                       {/* Drag and Drop Area */}
                       <div
                         onDragOver={handleDragOver}
@@ -2147,8 +2139,8 @@ export default function GovernanceDetailPage() {
                         onDrop={handleDrop}
                         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                           isDragOver
-                            ? "border-primary bg-primary/10"
-                            : "border-gray-300 hover:border-gray-400"
+                            ? "border-primary-400 bg-primary-50"
+                            : "border-slate-300 hover:border-slate-400"
                         }`}
                       >
                         <input
@@ -2158,10 +2150,10 @@ export default function GovernanceDetailPage() {
                           className="hidden"
                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
                         />
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Upload className="h-8 w-8 text-blue-600" />
+                        <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Upload className="h-8 w-8 text-primary-500" />
                         </div>
-                        <p className="text-gray-600 mb-2">
+                        <p className="text-slate-600 mb-2">
                           {t("Drag and drop your file here, or")}
                         </p>
                         <Button
@@ -2171,17 +2163,17 @@ export default function GovernanceDetailPage() {
                         >
                           {t("Browse Files")}
                         </Button>
-                        <p className="text-xs text-gray-400 mt-3">
+                        <p className="text-xs text-slate-400 mt-3">
                           {t("Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT")}
                         </p>
                       </div>
 
                       {/* Selected File Preview */}
                       {uploadFile && (
-                        <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                           {getFileTypeIcon(uploadFile.name.split(".").pop() || "")}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{uploadFile.name}</p>
+                            <p className="text-sm font-medium text-slate-800 truncate">{uploadFile.name}</p>
                             <p className="text-xs text-slate-400">
                               {(uploadFile.size / 1024).toFixed(2)} KB
                             </p>
@@ -2196,7 +2188,7 @@ export default function GovernanceDetailPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex justify-end gap-2">
+                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -2213,7 +2205,7 @@ export default function GovernanceDetailPage() {
                       >
                         {uploading ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" />
                             {t("Uploading...")}
                           </>
                         ) : (
@@ -2243,19 +2235,19 @@ export default function GovernanceDetailPage() {
                         <div
                           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                             isDisabled
-                              ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
-                              : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                              ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
+                              : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
                           }`}
                         >
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                            isDisabled ? "bg-gray-100" : "bg-purple-100"
+                            isDisabled ? "bg-slate-100" : "bg-purple-100"
                           }`}>
-                            <Sparkles className={`h-6 w-6 ${isDisabled ? "text-gray-400" : "text-purple-600"}`} />
+                            <Sparkles className={`h-6 w-6 ${isDisabled ? "text-slate-400" : "text-purple-600"}`} />
                           </div>
-                          <h3 className={`font-medium ${isDisabled ? "text-gray-400" : "text-gray-900"}`}>
+                          <h3 className={`font-medium ${isDisabled ? "text-slate-400" : "text-slate-800"}`}>
                             {t("Generate Policy Using AI")}
                           </h3>
-                          <p className={`text-sm mt-1 ${isDisabled ? "text-gray-300" : "text-gray-500"}`}>
+                          <p className={`text-sm mt-1 ${isDisabled ? "text-slate-300" : "text-slate-500"}`}>
                             {hasDocument
                               ? t("Delete existing file to use AI")
                               : !hasLinkedControls
@@ -2264,27 +2256,27 @@ export default function GovernanceDetailPage() {
                           </p>
                         </div>
                       </DialogTrigger>
-                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>{t("Generate Policy Using AI")}</DialogTitle>
+                      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                        <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                          <DialogTitle className="text-base font-semibold text-slate-800">{t("Generate Policy Using AI")}</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-4 py-4">
+                        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
                           <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label>{t("Policy Name")}</Label>
-                              <Input value={policy?.name || ""} disabled className="bg-gray-50 mt-1" />
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Policy Name")}</Label>
+                              <Input value={policy?.name || ""} disabled className="bg-slate-50" />
                             </div>
-                            <div>
-                              <Label>{t("Document Type")}</Label>
-                              <Input value={policy?.documentType || "Policy"} disabled className="bg-gray-50 mt-1" />
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Document Type")}</Label>
+                              <Input value={policy?.documentType || "Policy"} disabled className="bg-slate-50" />
                             </div>
                           </div>
 
                           {/* Template Selection */}
                           <div>
-                            <Label className="flex items-center gap-2">
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-2">
                               {t("Select Template")} <span className="text-red-500">*</span>
-                              <span className="text-xs text-gray-500">(.docx only)</span>
+                              <span className="text-xs text-slate-400 normal-case tracking-normal">(.docx only)</span>
                             </Label>
                             <div className="mt-2 space-y-3">
                               {templates.length > 0 ? (
@@ -2292,8 +2284,8 @@ export default function GovernanceDetailPage() {
                                   {templates.map((template) => (
                                     <div
                                       key={template.id}
-                                      className={`p-3 cursor-pointer border-b last:border-b-0 hover:bg-gray-50 ${
-                                        selectedTemplateId === template.id ? "bg-purple-50 border-purple-200" : ""
+                                      className={`p-3 cursor-pointer border-b last:border-b-0 hover:bg-slate-50 ${
+                                        selectedTemplateId === template.id ? "bg-primary-50 border-primary-200" : ""
                                       }`}
                                       onClick={() => setSelectedTemplateId(template.id)}
                                     >
@@ -2303,17 +2295,17 @@ export default function GovernanceDetailPage() {
                                             type="radio"
                                             checked={selectedTemplateId === template.id}
                                             onChange={() => setSelectedTemplateId(template.id)}
-                                            className="text-purple-600"
+                                            className="text-primary-600"
                                           />
-                                          <FileText className="h-4 w-4 text-blue-600" />
-                                          <span className="font-medium text-sm">{template.name}</span>
+                                          <FileText className="h-4 w-4 text-primary-500" />
+                                          <span className="font-medium text-sm text-slate-800">{template.name}</span>
                                         </div>
-                                        <span className="text-xs text-gray-500">
+                                        <span className="text-xs text-slate-500">
                                           {template.fileSize ? `${(template.fileSize / 1024).toFixed(1)} KB` : ""}
                                         </span>
                                       </div>
                                       {template.uploadedBy && (
-                                        <p className="text-xs text-gray-500 ml-6 mt-1">
+                                        <p className="text-xs text-slate-400 ltr:ml-6 rtl:mr-6 mt-1">
                                           {t("Uploaded by")}: {template.uploadedBy.fullName}
                                         </p>
                                       )}
@@ -2321,16 +2313,16 @@ export default function GovernanceDetailPage() {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="border-2 border-dashed rounded-lg p-4 text-center text-gray-500">
-                                  <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                <div className="border-2 border-dashed rounded-lg p-4 text-center text-slate-500">
+                                  <FileText className="h-8 w-8 mx-auto mb-2 text-slate-400" />
                                   <p className="text-sm">{t("No templates available")}</p>
-                                  <p className="text-xs">{t("Upload a .docx template below")}</p>
+                                  <p className="text-xs text-slate-400">{t("Upload a .docx template below")}</p>
                                 </div>
                               )}
 
                               {/* Upload New Template */}
-                              <div className="border rounded-lg p-3 bg-gray-50">
-                                <Label className="text-sm font-medium">{t("Or upload a new template")}</Label>
+                              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                                <Label className="text-sm font-medium text-slate-700">{t("Or upload a new template")}</Label>
                                 <div className="mt-2 flex gap-2">
                                   <Input
                                     type="file"
@@ -2360,7 +2352,7 @@ export default function GovernanceDetailPage() {
                                       ) : (
                                         <Upload className="h-4 w-4" />
                                       )}
-                                      <span className="ml-1">{t("Upload")}</span>
+                                      <span className="ltr:ml-1 rtl:mr-1">{t("Upload")}</span>
                                     </Button>
                                   </div>
                                 )}
@@ -2370,12 +2362,12 @@ export default function GovernanceDetailPage() {
 
                           {/* Linked Controls */}
                           <div>
-                            <Label>{t("Linked Controls")} ({policy?.policyControls?.length || 0})</Label>
-                            <div className="mt-2 border rounded-lg max-h-32 overflow-y-auto">
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Linked Controls")} ({policy?.policyControls?.length || 0})</Label>
+                            <div className="mt-2 border border-slate-200 rounded-lg max-h-32 overflow-y-auto">
                               {policy?.policyControls && policy.policyControls.length > 0 ? (
-                                <div className="divide-y">
+                                <div className="divide-y divide-slate-100">
                                   {policy.policyControls.map((pc) => (
-                                    <div key={pc.control.id} className="p-2 hover:bg-gray-50">
+                                    <div key={pc.control.id} className="p-2 hover:bg-slate-50">
                                       <div className="flex items-center gap-2">
                                         <Badge variant="outline" className="text-xs font-mono">
                                           {pc.control.controlCode}
@@ -2386,20 +2378,20 @@ export default function GovernanceDetailPage() {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="p-4 text-center text-gray-500">
+                                <div className="p-4 text-center text-slate-500">
                                   {t("No controls linked to this policy")}
                                 </div>
                               )}
                             </div>
                           </div>
 
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <p className="text-sm text-blue-800">
+                          <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
+                            <p className="text-sm text-primary-800">
                               <strong>{t("Note")}:</strong> {t("The AI will use the selected template and linked controls to generate a comprehensive policy document.")}
                             </p>
                           </div>
                         </div>
-                        <div className="flex justify-end gap-2">
+                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                           <Button variant="outline" onClick={() => {
                             setGeneratePolicyDialogOpen(false);
                             setSelectedTemplateId("");
@@ -2414,12 +2406,12 @@ export default function GovernanceDetailPage() {
                           >
                             {generatingPolicy ? (
                               <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" />
                                 {t("Generating...")}
                               </>
                             ) : (
                               <>
-                                <Sparkles className="h-4 w-4 mr-2" />
+                                <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                                 {t("Generate Policy")}
                               </>
                             )}
@@ -2446,47 +2438,50 @@ export default function GovernanceDetailPage() {
                         <div
                           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                             hasDocument
-                              ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
-                              : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                              ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
+                              : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
                           }`}
                         >
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                            hasDocument ? "bg-gray-100" : "bg-green-100"
+                            hasDocument ? "bg-slate-100" : "bg-green-100"
                           }`}>
-                            <Link2 className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-green-600"}`} />
+                            <Link2 className={`h-6 w-6 ${hasDocument ? "text-slate-400" : "text-green-600"}`} />
                           </div>
-                          <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
+                          <h3 className={`font-medium ${hasDocument ? "text-slate-400" : "text-slate-800"}`}>
                             {t("Link from Vault")}
                           </h3>
-                          <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
+                          <p className={`text-sm mt-1 ${hasDocument ? "text-slate-300" : "text-slate-500"}`}>
                             {hasDocument
                               ? t("Delete existing file to link")
                               : t("Link existing vault documents")}
                           </p>
                         </div>
                       </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh]">
-                    <DialogHeader>
-                      <DialogTitle>{t("Link from Vault")}</DialogTitle>
+                  <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                      <DialogTitle className="text-base font-semibold text-slate-800">{t("Link from Vault")}</DialogTitle>
                     </DialogHeader>
-                    <div className="py-4 space-y-4">
+                    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
                       {/* Search Bar */}
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                           placeholder={t("Search documents...")}
                           value={vaultSearchQuery}
                           onChange={(e) => setVaultSearchQuery(e.target.value)}
-                          className="pl-10"
+                          className="ltr:pl-10 rtl:pr-10"
                         />
                       </div>
 
                       {/* Document List */}
                       <div className="border rounded-lg max-h-[400px] overflow-y-auto">
                         {filteredVaultDocuments.length === 0 ? (
-                          <div className="text-center py-8 text-gray-400">
-                            <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                            <p>{t("No documents found in vault")}</p>
+                          <div className="py-10 text-center">
+                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                              <FileText className="h-6 w-6 text-primary-400" />
+                            </div>
+                            <p className="text-sm font-medium text-slate-600 mb-1">{t("No documents found in vault")}</p>
+                            <p className="text-xs text-slate-400">{t("Upload documents to the vault first")}</p>
                           </div>
                         ) : (
                           <div className="divide-y">
@@ -2497,8 +2492,8 @@ export default function GovernanceDetailPage() {
                               return (
                                 <div
                                   key={doc.id}
-                                  className={`flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer ${
-                                    isSelected ? "bg-blue-50" : ""
+                                  className={`flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer ${
+                                    isSelected ? "bg-primary-50" : ""
                                   } ${isAlreadyLinked ? "opacity-50" : ""}`}
                                   onClick={() => !isAlreadyLinked && handleVaultDocSelect(doc.id)}
                                 >
@@ -2506,8 +2501,8 @@ export default function GovernanceDetailPage() {
                                   <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${
                                     isSelected
                                       ? "bg-primary border-primary"
-                                      : "border-gray-300"
-                                  } ${isAlreadyLinked ? "bg-gray-200 border-gray-200" : ""}`}>
+                                      : "border-slate-300"
+                                  } ${isAlreadyLinked ? "bg-slate-200 border-slate-200" : ""}`}>
                                     {(isSelected || isAlreadyLinked) && (
                                       <Check className="h-3 w-3 text-white" />
                                     )}
@@ -2518,8 +2513,8 @@ export default function GovernanceDetailPage() {
 
                                   {/* Document Info */}
                                   <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-gray-900 truncate">{doc.name}</p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="font-medium text-slate-800 truncate">{doc.name}</p>
+                                    <p className="text-xs text-slate-500">
                                       {doc.documentId} • {doc.type.toUpperCase()} • {new Date(doc.uploadedAt).toLocaleDateString()}
                                     </p>
                                   </div>
@@ -2539,12 +2534,12 @@ export default function GovernanceDetailPage() {
 
                       {/* Selected Count */}
                       {selectedVaultDocIds.length > 0 && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-slate-600">
                           {selectedVaultDocIds.length} {t("document(s) selected")}
                         </p>
                       )}
                     </div>
-                    <div className="flex justify-end gap-2">
+                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -2562,12 +2557,12 @@ export default function GovernanceDetailPage() {
                       >
                         {linkingVaultDocs ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" />
                             {t("Linking...")}
                           </>
                         ) : (
                           <>
-                            <Link2 className="h-4 w-4 mr-2" />
+                            <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                             {t("Link Artifact")}
                           </>
                         )}
@@ -2582,7 +2577,7 @@ export default function GovernanceDetailPage() {
               {/* Uploaded Attachments */}
               {attachments.length > 0 && (
                 <div className="mt-6">
-                  <h4 className="font-medium text-gray-900 mb-3">{t("Uploaded Files")}</h4>
+                  <h4 className="text-sm font-semibold text-slate-800 mb-3">{t("Uploaded Files")}</h4>
                   <div className="space-y-2">
                     {attachments.map((att) => (
                       <div
@@ -2632,7 +2627,7 @@ export default function GovernanceDetailPage() {
               {/* Linked Vault Documents */}
               {linkedVaultDocuments.length > 0 && (
                 <div className="mt-6">
-                  <h4 className="font-medium text-gray-900 mb-3">{t("Linked from Vault")}</h4>
+                  <h4 className="text-sm font-semibold text-slate-800 mb-3">{t("Linked from Vault")}</h4>
                   <div className="space-y-2">
                     {linkedVaultDocuments.map((link) => (
                       <div
@@ -2684,49 +2679,53 @@ export default function GovernanceDetailPage() {
               <PermissionGate resource="compliance.governance" action="edit">
                 <div className="mb-4">
                   <Button size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Upload")}
                   </Button>
                 </div>
               </PermissionGate>
               {attachments.length === 0 && linkedVaultDocuments.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">
-                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>{t("No attachments uploaded")}</p>
+                <div className="py-16 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                    <FileText className="h-6 w-6 text-primary-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No attachments uploaded")}</p>
+                  <p className="text-xs text-slate-400">{t("Upload or link documents to get started")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {/* Uploaded Attachments */}
                   {attachments.length > 0 && (
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">{t("Uploaded Files")}</h4>
+                      <h4 className="text-sm font-semibold text-slate-800 mb-3">{t("Uploaded Files")}</h4>
                       <Table>
                         <TableHeader>
-                          <TableRow>
-                            <TableHead>{t("File Name")}</TableHead>
-                            <TableHead>{t("Type")}</TableHead>
-                            <TableHead>{t("Uploaded")}</TableHead>
-                            <TableHead className="w-[100px]">{t("Actions")}</TableHead>
+                          <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("File Name")}</TableHead>
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Uploaded")}</TableHead>
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {attachments.map((att) => (
-                            <TableRow key={att.id}>
-                              <TableCell className="font-medium">{att.fileName}</TableCell>
-                              <TableCell>{att.fileType}</TableCell>
-                              <TableCell>{new Date(att.uploadedAt).toLocaleDateString()}</TableCell>
-                              <TableCell>
+                            <TableRow key={att.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                              <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{att.fileName}</TableCell>
+                              <TableCell className="py-3 text-sm text-slate-700">{att.fileType}</TableCell>
+                              <TableCell className="py-3 text-sm text-slate-700">{new Date(att.uploadedAt).toLocaleDateString()}</TableCell>
+                              <TableCell className="py-3 pe-5">
                                 <div className="flex gap-1">
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                                     onClick={() => window.open(att.filePath, "_blank")}
                                   >
-                                    <Download className="h-4 w-4" />
+                                    <Download className="h-3.5 w-3.5" />
                                   </Button>
                                   <PermissionGate resource="compliance.governance" action="delete">
-                                    <Button variant="ghost" size="icon">
-                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50">
+                                      <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
                                   </PermissionGate>
                                 </div>
@@ -2741,30 +2740,31 @@ export default function GovernanceDetailPage() {
                   {/* Linked Vault Documents */}
                   {linkedVaultDocuments.length > 0 && (
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">{t("Linked from Vault")}</h4>
+                      <h4 className="text-sm font-semibold text-slate-800 mb-3">{t("Linked from Vault")}</h4>
                       <Table>
                         <TableHeader>
-                          <TableRow>
-                            <TableHead>{t("File Name")}</TableHead>
-                            <TableHead>{t("Type")}</TableHead>
-                            <TableHead>{t("Uploaded")}</TableHead>
-                            <TableHead className="w-[100px]">{t("Actions")}</TableHead>
+                          <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("File Name")}</TableHead>
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Uploaded")}</TableHead>
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {linkedVaultDocuments.map((link) => (
-                            <TableRow key={link.id}>
-                              <TableCell className="font-medium">{link.document.fileName}</TableCell>
-                              <TableCell>{link.document.fileType}</TableCell>
-                              <TableCell>{new Date(link.document.uploadedAt).toLocaleDateString()}</TableCell>
-                              <TableCell>
+                            <TableRow key={link.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                              <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{link.document.fileName}</TableCell>
+                              <TableCell className="py-3 text-sm text-slate-700">{link.document.fileType}</TableCell>
+                              <TableCell className="py-3 text-sm text-slate-700">{new Date(link.document.uploadedAt).toLocaleDateString()}</TableCell>
+                              <TableCell className="py-3 pe-5">
                                 <div className="flex gap-1">
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                                     onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
                                   >
-                                    <Download className="h-4 w-4" />
+                                    <Download className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
                               </TableCell>
@@ -2778,28 +2778,28 @@ export default function GovernanceDetailPage() {
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Signature Publish Dialog */}
       <Dialog open={signatureDialogOpen} onOpenChange={(open) => {
         setSignatureDialogOpen(open);
         if (!open) clearSignature();
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t(typeLabels[policy.documentType] || "Policy")} {t("signature Publish")}</DialogTitle>
+        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t(typeLabels[policy.documentType] || "Policy")} {t("signature Publish")}</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            <p className="text-sm text-slate-400">
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm text-slate-500">
               {t("Please sign below to publish this")} {(policy.documentType || "document").toLowerCase()}.
             </p>
-            <div className="border rounded-lg p-2 bg-white">
+            <div className="border border-slate-200 rounded-lg p-2 bg-white">
               <canvas
                 ref={canvasRef}
                 width={400}
                 height={150}
-                className="w-full border border-dashed border-gray-300 rounded cursor-crosshair"
+                className="w-full border border-dashed border-slate-300 rounded cursor-crosshair"
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
@@ -2820,7 +2820,7 @@ export default function GovernanceDetailPage() {
               </span>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setSignatureDialogOpen(false);
               clearSignature();
@@ -2835,35 +2835,33 @@ export default function GovernanceDetailPage() {
       </Dialog>
 
       {/* Tabs */}
-      <div className="border-b">
-        <div className="flex gap-4">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-              {tab.count !== null && (
-                <Badge variant="secondary" className="ml-1">
-                  {tab.count}
-                </Badge>
-              )}
-            </button>
-          ))}
-        </div>
+      <div className="flex border-b">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 ${
+              activeTab === tab.id
+                ? "border-b-2 border-primary-600 text-primary-600"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+            {tab.count !== null && (
+              <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full ltr:ml-1 rtl:mr-1">
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Tab Content */}
       {activeTab === "controls" && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t("Linked Control")}</CardTitle>
+        <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <h3 className="text-base font-semibold text-slate-800">{t("Linked Control")}</h3>
             <PermissionGate resource="compliance.governance" action="edit">
               <Dialog open={linkControlDialogOpen} onOpenChange={(open) => {
                 setLinkControlDialogOpen(open);
@@ -2877,19 +2875,19 @@ export default function GovernanceDetailPage() {
               }}>
                 <DialogTrigger asChild>
                   <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Link Control")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                   <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
-                    <DialogTitle className="text-lg font-semibold text-primary-700">{t("Link Control")}</DialogTitle>
+                    <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Control")}</DialogTitle>
                   </DialogHeader>
-                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                  <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
                     {/* Filters */}
                     <div className="grid grid-cols-3 gap-3">
                       <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
-                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                        <SelectTrigger className="w-full bg-slate-50 border-slate-200 text-sm">
                           <SelectValue placeholder={t("Domain")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -2900,7 +2898,7 @@ export default function GovernanceDetailPage() {
                         </SelectContent>
                       </Select>
                       <Select value={controlFunctionalGroupingFilter} onValueChange={setControlFunctionalGroupingFilter}>
-                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                        <SelectTrigger className="w-full bg-slate-50 border-slate-200 text-sm">
                           <SelectValue placeholder={t("Functional Grouping")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -2911,7 +2909,7 @@ export default function GovernanceDetailPage() {
                         </SelectContent>
                       </Select>
                       <Select value={controlFrameworkFilter} onValueChange={setControlFrameworkFilter}>
-                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                        <SelectTrigger className="w-full bg-slate-50 border-slate-200 text-sm">
                           <SelectValue placeholder={t("Framework")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -2925,17 +2923,17 @@ export default function GovernanceDetailPage() {
 
                     {/* Search input */}
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         placeholder={t("Search By Control Code , Name")}
                         value={controlSearchQuery}
                         onChange={(e) => setControlSearchQuery(e.target.value)}
-                        className="pl-10 pr-10 bg-white border-2 border-primary-200 rounded-full"
+                        className="ltr:pl-9 rtl:pr-9 ltr:pr-9 rtl:pl-9 bg-slate-50 border-slate-200 rounded-lg"
                       />
                       {controlSearchQuery && (
                         <button
                           onClick={() => setControlSearchQuery("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -2943,12 +2941,12 @@ export default function GovernanceDetailPage() {
                     </div>
 
                     {/* Control cards list */}
-                    <div className="border-2 border-primary-200 rounded-xl max-h-[350px] overflow-y-auto">
+                    <div className="border border-slate-200 rounded-lg max-h-[350px] overflow-y-auto">
                       {getFilteredControlsForLinking().map((control) => (
                         <div
                           key={control.id}
-                          className={`flex items-start gap-3 p-4 border-b-2 border-primary-100 last:border-b-0 cursor-pointer hover:bg-primary-50 transition-colors ${
-                            selectedControlIds.includes(control.id) ? "bg-primary-50" : ""
+                          className={`flex items-start gap-3 p-3.5 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50/60 transition-colors ${
+                            selectedControlIds.includes(control.id) ? "bg-primary-50/50" : ""
                           }`}
                           onClick={() => {
                             setSelectedControlIds((prev) =>
@@ -2958,7 +2956,7 @@ export default function GovernanceDetailPage() {
                             );
                           }}
                         >
-                          <div onClick={(e) => e.stopPropagation()} className="pt-1">
+                          <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
                             <Checkbox
                               checked={selectedControlIds.includes(control.id)}
                               onCheckedChange={() => {
@@ -2970,37 +2968,41 @@ export default function GovernanceDetailPage() {
                               }}
                             />
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-primary-700">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium text-slate-800">
                                 {control.controlCode} : {control.name}
                               </span>
-                              <Badge className="bg-primary-600 text-white rounded-full px-3">
+                              <Badge className="bg-slate-100 text-slate-600 text-xs shrink-0">
                                 {control.entities || "Organization Wide"}
                               </Badge>
                             </div>
                             {control.description && (
-                              <p className="text-sm text-slate-500 mt-1 line-clamp-2">{control.description}</p>
+                              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{control.description}</p>
                             )}
                           </div>
                         </div>
                       ))}
                       {getFilteredControlsForLinking().length === 0 && (
-                        <div className="p-8 text-center text-slate-400">
-                          {controlSearchQuery.trim() || controlDomainFilter !== "all" || controlFunctionalGroupingFilter !== "all" || controlFrameworkFilter !== "all"
-                            ? t("No controls found matching your filters")
-                            : t("No available controls to link")}
+                        <div className="py-10 text-center">
+                          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                            <Search className="h-6 w-6 text-primary-400" />
+                          </div>
+                          <p className="text-sm font-medium text-slate-600 mb-1">
+                            {controlSearchQuery.trim() || controlDomainFilter !== "all" || controlFunctionalGroupingFilter !== "all" || controlFrameworkFilter !== "all"
+                              ? t("No controls found matching your filters")
+                              : t("No available controls to link")}
+                          </p>
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white flex-shrink-0">
+                  <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                     <Button
                       onClick={handleLinkControl}
                       disabled={selectedControlIds.length === 0}
-                      className="rounded-lg"
                     >
                       {t("Link Control")}
                     </Button>
@@ -3008,97 +3010,111 @@ export default function GovernanceDetailPage() {
                 </DialogContent>
               </Dialog>
             </PermissionGate>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             {linkedControls.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">
-                <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>{t("No controls linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <Link2 className="h-6 w-6 text-primary-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+                <p className="text-xs text-slate-400">{t("Link controls to track compliance")}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Control ID")}</TableHead>
-                    <TableHead>{t("Name")}</TableHead>
-                    <TableHead>{t("Domain")}</TableHead>
-                    <TableHead>{t("Status")}</TableHead>
-                    <TableHead className="w-[80px]">{t("Actions")}</TableHead>
+                  <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Control ID")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {linkedControls.map((pc) => (
                     <TableRow
                       key={pc.control.id}
-                      className="cursor-pointer hover:bg-slate-50"
-                      onClick={() => router.push(`/compliance/control/${pc.control.id}`)}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                     >
-                      <TableCell className="font-medium">{pc.control.controlCode}</TableCell>
-                      <TableCell>{pc.control.name}</TableCell>
-                      <TableCell>{pc.control.domain?.name || "-"}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[pc.control.status] || "bg-gray-100"}>
-                          {pc.control.status}
+                      <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{pc.control.controlCode}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{pc.control.name}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{pc.control.domain?.name || "-"}</TableCell>
+                      <TableCell className="py-3">
+                        <Badge className={statusColors[pc.control.status] || "bg-slate-100 text-slate-600"}>
+                          {t(pc.control.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <PermissionGate resource="compliance.governance" action="edit">
+                      <TableCell className="py-3 pe-5">
+                        <div className="flex gap-1">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUnlinkControl(pc.control.id);
-                            }}
-                            className="text-red-500 hover:text-red-700"
+                            size="icon"
+                            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                            onClick={() => router.push(`/compliance/control/${pc.control.id}`)}
                           >
-                            {t("Unlink")}
+                            <Eye className="h-3.5 w-3.5" />
                           </Button>
-                        </PermissionGate>
+                          <PermissionGate resource="compliance.governance" action="edit">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnlinkControl(pc.control.id);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </PermissionGate>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {activeTab === "exceptions" && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t("Linked Exception")}</CardTitle>
+        <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <h3 className="text-base font-semibold text-slate-800">{t("Linked Exception")}</h3>
             {isCustomerAdmin && (
               <Dialog open={linkExceptionDialogOpen} onOpenChange={setLinkExceptionDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Link Exception")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{t("Link Exception")}</DialogTitle>
+                <DialogContent className="p-0 gap-0 overflow-hidden">
+                  <DialogHeader className="px-6 py-4 border-b border-slate-100">
+                    <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Exception")}</DialogTitle>
                   </DialogHeader>
-                  <div className="py-4">
-                    <Label>{t("Select Exception")}</Label>
-                    <Select value={selectedExceptionId} onValueChange={setSelectedExceptionId}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder={t("Select an exception")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableExceptions
-                          .filter((e) => !linkedExceptions.find((le) => le.exception.id === e.id))
-                          .map((exception) => (
-                            <SelectItem key={exception.id} value={exception.id}>
-                              {exception.exceptionCode} - {exception.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="px-6 py-5">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Exception")}</Label>
+                      <Select value={selectedExceptionId} onValueChange={setSelectedExceptionId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("Select an exception")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableExceptions
+                            .filter((e) => !linkedExceptions.find((le) => le.exception.id === e.id))
+                            .map((exception) => (
+                              <SelectItem key={exception.id} value={exception.id}>
+                                {exception.exceptionCode} - {exception.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="flex justify-end gap-2">
+                  <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                     <Button variant="outline" onClick={() => setLinkExceptionDialogOpen(false)}>
                       {t("Cancel")}
                     </Button>
@@ -3109,52 +3125,64 @@ export default function GovernanceDetailPage() {
                 </DialogContent>
               </Dialog>
             )}
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             {linkedExceptions.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>{t("No exceptions linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <AlertTriangle className="h-6 w-6 text-primary-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No exceptions linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+                <p className="text-xs text-slate-400">{t("Link exceptions to track deviations")}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Exception Code")}</TableHead>
-                    <TableHead>{t("Name")}</TableHead>
-                    <TableHead>{t("Category")}</TableHead>
-                    <TableHead>{t("Status")}</TableHead>
-                    {isCustomerAdmin && <TableHead className="w-[80px]">{t("Actions")}</TableHead>}
+                  <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Exception Code")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    {isCustomerAdmin && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {linkedExceptions.map((pe) => (
                     <TableRow
                       key={pe.exception.id}
-                      className="cursor-pointer hover:bg-slate-50"
-                      onClick={() => router.push(`/compliance/exceptions/${pe.exception.id}`)}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                     >
-                      <TableCell className="font-medium">{pe.exception.exceptionCode}</TableCell>
-                      <TableCell>{pe.exception.name}</TableCell>
-                      <TableCell>{pe.exception.category}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[pe.exception.status] || "bg-gray-100"}>
-                          {pe.exception.status}
+                      <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{pe.exception.exceptionCode}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{pe.exception.name}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{pe.exception.category}</TableCell>
+                      <TableCell className="py-3">
+                        <Badge className={statusColors[pe.exception.status] || "bg-slate-100 text-slate-600"}>
+                          {t(pe.exception.status)}
                         </Badge>
                       </TableCell>
                       {isCustomerAdmin && (
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUnlinkException(pe.exception.id);
-                            }}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            {t("Unlink")}
-                          </Button>
+                        <TableCell className="py-3 pe-5">
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                              onClick={() => router.push(`/compliance/exceptions/${pe.exception.id}`)}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnlinkException(pe.exception.id);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
@@ -3162,20 +3190,23 @@ export default function GovernanceDetailPage() {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {activeTab === "documents" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("Linked Documents")}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100">
+            <h3 className="text-base font-semibold text-slate-800">{t("Linked Documents")}</h3>
+          </div>
+          <div className="p-5">
             {linkedDocuments.length === 0 && linkedVaultDocuments.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">
-                <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>{t("No documents linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <FileText className="h-6 w-6 text-primary-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No documents linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+                <p className="text-xs text-slate-400">{t("Documents linked to this policy will appear here")}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -3240,20 +3271,20 @@ export default function GovernanceDetailPage() {
                 {linkedDocuments.length > 0 && (
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("Code")}</TableHead>
-                        <TableHead>{t("Name")}</TableHead>
-                        <TableHead>{t("Type")}</TableHead>
-                        <TableHead className="w-[80px]">{t("Actions")}</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Code")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {linkedDocuments.map((doc) => (
-                        <TableRow key={doc.id}>
-                          <TableCell className="font-medium">{doc.code}</TableCell>
-                          <TableCell>{doc.name}</TableCell>
-                          <TableCell>{doc.type}</TableCell>
-                          <TableCell>
+                        <TableRow key={doc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                          <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{doc.code}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{doc.name}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{doc.type}</TableCell>
+                          <TableCell className="py-3 pe-5">
                             <PermissionGate resource="compliance.governance" action="edit">
                               <Button variant="ghost" size="sm" className="text-red-500">
                                 {t("Unlink")}
@@ -3267,8 +3298,8 @@ export default function GovernanceDetailPage() {
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

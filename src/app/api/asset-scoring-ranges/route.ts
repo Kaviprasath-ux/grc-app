@@ -74,7 +74,7 @@ export const POST = withAuth(
         where: {
           customerAccountId,
           calculationType,
-        } as Record<string, unknown>,
+        },
         _max: { sortOrder: true },
       });
 
@@ -87,7 +87,7 @@ export const POST = withAuth(
           color: color || "#000000",
           sortOrder: (maxSortOrder._max.sortOrder || 0) + 1,
           customerAccountId,
-        } as Record<string, unknown>,
+        },
       });
 
       return NextResponse.json(range, { status: 201 });

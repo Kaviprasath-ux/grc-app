@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -14,57 +14,115 @@ export const GET = withAuth(
       const { id } = await context.params;
       const tenantFilter = getTenantFilter(session);
 
-      const control = await prisma.control.findFirst({
-        where: { id, ...tenantFilter },
-        include: {
-          domain: true,
-          framework: true,
-          department: true,
-          owner: true,
-          assignee: true,
-          evidences: {
-            include: {
-              assignee: true,
-              attachments: true,
-            },
+      const controlInclude = {
+        domain: true,
+        framework: true,
+        department: true,
+        owner: true,
+        assignee: true,
+        evidences: {
+          include: {
+            assignee: true,
+            attachments: true,
           },
-          evidenceControls: {
-            include: {
-              evidence: {
-                include: {
-                  assignee: true,
-                  attachments: true,
-                },
+        },
+        evidenceControls: {
+          include: {
+            evidence: {
+              include: {
+                assignee: true,
+                attachments: true,
               },
-            },
-          },
-          exceptions: true,
-          requirements: {
-            include: {
-              requirement: {
-                include: {
-                  framework: true,
-                },
-              },
-            },
-          },
-          controlRisks: {
-            include: {
-              risk: {
-                include: {
-                  category: true,
-                  owner: true,
-                },
-              },
-            },
-          },
-          policyControls: {
-            include: {
-              policy: true,
             },
           },
         },
+        exceptions: true,
+        requirements: {
+          include: {
+            requirement: {
+              include: {
+                framework: true,
+              },
+            },
+          },
+        },
+        controlRisks: {
+          include: {
+            risk: {
+              include: {
+                category: true,
+                owner: true,
+              },
+            },
+          },
+        },
+        policyControls: {
+          include: {
+            policy: true,
+          },
+        },
+      };
+
+      // First try with tenant filter (fast path for same-tenant controls)
+      let control = await prisma.control.findFirst({
+        where: { id, ...tenantFilter },
+        include: controlInclude,
       });
+
+      // If not found, try without tenant filter and validate access through linked framework
+      if (!control) {
+        control = await prisma.control.findFirst({
+          where: { id },
+          include: controlInclude,
+        });
+
+        if (control) {
+          // Check if user can access this control through a linked framework
+          const linkedFramework = await prisma.framework.findFirst({
+            where: {
+              OR: [
+                { controls: { some: { id: control.id } } },
+                { requirements: { some: { controls: { some: { controlId: control.id } } } } },
+              ],
+            },
+            select: { id: true, customerAccountId: true },
+          });
+
+          if (!linkedFramework) {
+            // Control exists but user has no access path to it
+            return NextResponse.json(
+              { error: "Control not found" },
+              { status: 404 }
+            );
+          }
+
+          // Check if user can access the linked framework
+          // GRCAdministrators can access all frameworks
+          // Other users must be in the same tenant or the framework must be a master template
+          let hasFrameworkAccess = false;
+          if (session.roles.includes("GRCAdministrator")) {
+            hasFrameworkAccess = true;
+          } else if (linkedFramework.customerAccountId === session.customerAccountId) {
+            hasFrameworkAccess = true;
+          } else if (linkedFramework.customerAccountId) {
+            // Check if the framework is from a GRC Admin account (master framework)
+            const frameworkAccount = await prisma.customerAccount.findUnique({
+              where: { id: linkedFramework.customerAccountId },
+              select: { code: true },
+            });
+            if (frameworkAccount?.code?.startsWith("GRC_ADMIN_")) {
+              hasFrameworkAccess = true;
+            }
+          }
+
+          if (!hasFrameworkAccess) {
+            return NextResponse.json(
+              { error: "Control not found" },
+              { status: 404 }
+            );
+          }
+        }
+      }
 
       if (!control) {
         return NextResponse.json(
@@ -209,19 +267,8 @@ export const PUT = withAuth(
       }
     }
 
-    // Notify new owner if changed and different from actor
-    if (ownerId && ownerId !== existing.ownerId && ownerId !== session.id && session.customerAccountId) {
-      await notificationService.notifyControlAssigned({
-        customerAccountId: session.customerAccountId,
-        actorId: session.id,
-        ownerId: ownerId,
-        controlId: control.id,
-        controlCode: control.controlCode,
-        controlName: control.name,
-      });
-    }
-    // Notify new assignee if changed, different from actor, and different from owner
-    if (assigneeId && assigneeId !== existing.assigneeId && assigneeId !== session.id && assigneeId !== ownerId && session.customerAccountId) {
+    // Notify new assignee/reviewer if changed (owner notifications removed per requirements)
+    if (assigneeId && assigneeId !== existing.assigneeId && assigneeId !== session.id && session.customerAccountId) {
       await notificationService.notifyControlAssigned({
         customerAccountId: session.customerAccountId,
         actorId: session.id,
@@ -229,6 +276,7 @@ export const PUT = withAuth(
         controlId: control.id,
         controlCode: control.controlCode,
         controlName: control.name,
+        channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
       });
     }
 

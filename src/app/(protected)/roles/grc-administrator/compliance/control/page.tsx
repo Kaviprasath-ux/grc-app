@@ -158,6 +158,7 @@ export default function GRCAdminControlListPage() {
     ownerId: "",
     assigneeId: "",
   });
+  const [controlErrors, setControlErrors] = useState<Record<string, string>>({});
 
   // Import dialog
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -473,13 +474,13 @@ export default function GRCAdminControlListPage() {
             </Button>
           </PermissionGate>
           {isGRCAdmin ? (
-            <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+            <Button size="sm" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Control")}
             </Button>
           ) : (
             <PermissionGate resource="compliance.controls" action="create">
-              <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+              <Button size="sm" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("New Control")}
               </Button>
@@ -727,7 +728,7 @@ export default function GRCAdminControlListPage() {
       </div>
 
       {/* Create Control Dialog - 3 Step Wizard */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateDialogOpen(false); setCreateStep(1); setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); } else { setIsCreateDialogOpen(true); } }}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
@@ -763,9 +764,9 @@ export default function GRCAdminControlListPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")}</Label>
-                      <Select value={newControl.domainId} onValueChange={(v) => setNewControl({ ...newControl, domainId: v })}>
-                        <SelectTrigger className="mt-1.5 bg-white w-full">
+                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")} <span className="text-error">*</span></Label>
+                      <Select value={newControl.domainId} onValueChange={(v) => { setNewControl({ ...newControl, domainId: v }); if (controlErrors.domainId) setControlErrors((prev) => { const { domainId, ...rest } = prev; return rest; }); }}>
+                        <SelectTrigger className={`mt-1.5 bg-white w-full ${controlErrors.domainId ? "border-red-500 focus:ring-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select domain")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -774,11 +775,16 @@ export default function GRCAdminControlListPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {controlErrors.domainId && (
+                        <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                          <p className="text-sm text-red-600">{controlErrors.domainId}</p>
+                        </div>
+                      )}
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Function Grouping")}</Label>
-                      <Select value={newControl.functionalGrouping} onValueChange={(v) => setNewControl({ ...newControl, functionalGrouping: v })}>
-                        <SelectTrigger className="mt-1.5 bg-white w-full">
+                      <Label className="text-sm font-medium text-slate-700">{t("Function Grouping")} <span className="text-error">*</span></Label>
+                      <Select value={newControl.functionalGrouping} onValueChange={(v) => { setNewControl({ ...newControl, functionalGrouping: v }); if (controlErrors.functionalGrouping) setControlErrors((prev) => { const { functionalGrouping, ...rest } = prev; return rest; }); }}>
+                        <SelectTrigger className={`mt-1.5 bg-white w-full ${controlErrors.functionalGrouping ? "border-red-500 focus:ring-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select grouping")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -787,16 +793,26 @@ export default function GRCAdminControlListPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {controlErrors.functionalGrouping && (
+                        <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                          <p className="text-sm text-red-600">{controlErrors.functionalGrouping}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Control Name")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Control Name")} <span className="text-error">*</span></Label>
                     <Input
                       value={newControl.name}
-                      onChange={(e) => setNewControl({ ...newControl, name: e.target.value })}
+                      onChange={(e) => { setNewControl({ ...newControl, name: e.target.value }); if (controlErrors.name) setControlErrors((prev) => { const { name, ...rest } = prev; return rest; }); }}
                       placeholder={t("Enter control name")}
-                      className="mt-1.5 bg-white"
+                      className={`mt-1.5 bg-white ${controlErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                     />
+                    {controlErrors.name && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.name}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -808,13 +824,18 @@ export default function GRCAdminControlListPage() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Control Question")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Control Question")} <span className="text-error">*</span></Label>
                     <Input
                       value={newControl.controlQuestion}
-                      onChange={(e) => setNewControl({ ...newControl, controlQuestion: e.target.value })}
+                      onChange={(e) => { setNewControl({ ...newControl, controlQuestion: e.target.value }); if (controlErrors.controlQuestion) setControlErrors((prev) => { const { controlQuestion, ...rest } = prev; return rest; }); }}
                       placeholder={t("Enter control question")}
-                      className="mt-1.5 bg-white"
+                      className={`mt-1.5 bg-white ${controlErrors.controlQuestion ? "border-red-500 focus:ring-red-500" : ""}`}
                     />
+                    {controlErrors.controlQuestion && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.controlQuestion}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -824,9 +845,9 @@ export default function GRCAdminControlListPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
-                      <Select value={newControl.departmentId} onValueChange={(v) => setNewControl({ ...newControl, departmentId: v, assigneeId: "" })}>
-                        <SelectTrigger className="mt-1.5 bg-white w-full">
+                      <Label className="text-sm font-medium text-slate-700">{t("Department")} <span className="text-error">*</span></Label>
+                      <Select value={newControl.departmentId} onValueChange={(v) => { setNewControl({ ...newControl, departmentId: v, assigneeId: "" }); if (controlErrors.departmentId) setControlErrors((prev) => { const { departmentId, ...rest } = prev; return rest; }); }}>
+                        <SelectTrigger className={`mt-1.5 bg-white w-full ${controlErrors.departmentId ? "border-red-500 focus:ring-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select department")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -835,6 +856,11 @@ export default function GRCAdminControlListPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {controlErrors.departmentId && (
+                        <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                          <p className="text-sm text-red-600">{controlErrors.departmentId}</p>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Owner")}</Label>
@@ -851,9 +877,9 @@ export default function GRCAdminControlListPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
-                    <Select value={newControl.assigneeId} onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}>
-                      <SelectTrigger className="mt-1.5 bg-white w-full">
+                    <Label className="text-sm font-medium text-slate-700">{t("Assignee")} <span className="text-error">*</span></Label>
+                    <Select value={newControl.assigneeId} onValueChange={(v) => { setNewControl({ ...newControl, assigneeId: v }); if (controlErrors.assigneeId) setControlErrors((prev) => { const { assigneeId, ...rest } = prev; return rest; }); }}>
+                      <SelectTrigger className={`mt-1.5 bg-white w-full ${controlErrors.assigneeId ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select assignee")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -862,6 +888,11 @@ export default function GRCAdminControlListPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {controlErrors.assigneeId && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.assigneeId}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -913,11 +944,32 @@ export default function GRCAdminControlListPage() {
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
-              else setIsCreateDialogOpen(false);
+              else {
+                setIsCreateDialogOpen(false);
+                setCreateStep(1);
+                setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" });
+                setControlErrors({});
+              }
             }}>
               {createStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             <Button onClick={() => {
+              if (createStep === 1) {
+                const errors: Record<string, string> = {};
+                if (!newControl.domainId) errors.domainId = t("Please select the Control Domain");
+                if (!newControl.name.trim()) errors.name = t("Please enter name");
+                if (!newControl.controlQuestion?.trim()) errors.controlQuestion = t("Please enter the question");
+                if (!newControl.functionalGrouping) errors.functionalGrouping = t("Please select the Functional Grouping");
+                if (Object.keys(errors).length > 0) { setControlErrors(errors); return; }
+                setControlErrors({});
+              }
+              if (createStep === 2) {
+                const errors: Record<string, string> = {};
+                if (!newControl.departmentId) errors.departmentId = t("Please select the Department");
+                if (!newControl.assigneeId) errors.assigneeId = t("Please select the assignee");
+                if (Object.keys(errors).length > 0) { setControlErrors(errors); return; }
+                setControlErrors({});
+              }
               if (createStep < 3) setCreateStep(createStep + 1);
               else handleCreateControl();
             }}>

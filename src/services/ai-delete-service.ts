@@ -58,8 +58,8 @@ export async function deleteFromRunPod(params: DeleteFromRunPodParams): Promise<
     params_form.append('document_id', documentId);
     params_form.append('file_name', fileName);
 
-    // Call RunPod grc_delete
-    const response = await aiApiClient.post(AI_ENDPOINTS.DELETE, params_form, {
+    // Call RunPod grc_delete - must convert URLSearchParams to string
+    const response = await aiApiClient.post(AI_ENDPOINTS.DELETE, params_form.toString(), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -194,6 +194,10 @@ export async function resetPolicyAIStatus(policyId: string): Promise<void> {
 
 /**
  * Delete all AI documents for an evidence from RunPod
+ *
+ * IMPORTANT: Uses correct document_id and file_name that match what was sent during ingest:
+ * - document_id: evidence.id (sent as document_id during ingest)
+ * - file_name: actual attachment file name (stored in ingestJob.ingestedFileName)
  */
 export async function deleteAllForEvidence(evidenceId: string, userId?: string): Promise<DeleteResult[]> {
   console.log(`[AI Delete] Cleaning up all AI documents for evidence: ${evidenceId}`);
@@ -201,7 +205,7 @@ export async function deleteAllForEvidence(evidenceId: string, userId?: string):
   // Get evidence details including customerAccountId (to match ingest)
   const evidence = await prisma.evidence.findUnique({
     where: { id: evidenceId },
-    select: { evidenceCode: true, name: true, customerAccountId: true },
+    select: { id: true, evidenceCode: true, name: true, customerAccountId: true },
   });
 
   if (!evidence) {
@@ -210,25 +214,63 @@ export async function deleteAllForEvidence(evidenceId: string, userId?: string):
   }
 
   const results: DeleteResult[] = [];
+  const processedDocumentIds = new Set<string>(); // Track to avoid duplicate deletes
 
-  // Find all EvidenceAIReview records with documentIds
+  // Priority 1: Use EvidenceAIIngestJob records (most reliable - tracks what was actually sent)
+  const ingestJobs = await prisma.evidenceAIIngestJob.findMany({
+    where: { evidenceId },
+  });
+
+  console.log(`[AI Delete] Found ${ingestJobs.length} AI ingest jobs for evidence ${evidence.evidenceCode}`);
+
+  for (const job of ingestJobs) {
+    // Use sentDocumentId (what we sent as document_id during ingest), NOT runpodJobId
+    const documentId = job.sentDocumentId || evidence.id;
+
+    // Skip if already processed
+    if (processedDocumentIds.has(documentId)) continue;
+    processedDocumentIds.add(documentId);
+
+    // Use stored file name if available, fallback to evidenceCode
+    const fileName = job.ingestedFileName || evidence.evidenceCode || evidence.name || 'evidence-doc';
+
+    const result = await deleteFromRunPod({
+      baseId: evidence.customerAccountId,
+      docType: 'evidence',
+      documentId: documentId,
+      fileName: fileName,
+      userId,
+    });
+
+    results.push(result);
+  }
+
+  // Priority 2: Check EvidenceAIReview records (for reviews created with evidenceDocumentId)
   const reviews = await prisma.evidenceAIReview.findMany({
     where: {
       evidenceId,
-      documentId: { not: null },
+      OR: [
+        { evidenceDocumentId: { not: null } },
+        { documentId: { not: null } }, // Legacy field
+      ],
     },
   });
 
   console.log(`[AI Delete] Found ${reviews.length} AI review documents for evidence ${evidence.evidenceCode}`);
 
-  // Delete each review document from RunPod
   for (const review of reviews) {
-    if (!review.documentId) continue;
+    // Use evidenceDocumentId (new field) or fallback to deprecated documentId
+    const documentId = review.evidenceDocumentId || review.documentId;
+    if (!documentId) continue;
+
+    // Skip if already processed via ingest jobs
+    if (processedDocumentIds.has(documentId)) continue;
+    processedDocumentIds.add(documentId);
 
     const result = await deleteFromRunPod({
-      baseId: evidence.customerAccountId, // Use customerAccountId to match ingest
+      baseId: evidence.customerAccountId,
       docType: 'evidence',
-      documentId: review.documentId,
+      documentId: documentId,
       fileName: evidence.evidenceCode || evidence.name || 'evidence-doc',
       userId,
     });
@@ -236,25 +278,16 @@ export async function deleteAllForEvidence(evidenceId: string, userId?: string):
     results.push(result);
   }
 
-  // Also check EvidenceAIIngestJob for any job IDs that might need cleanup
-  const ingestJobs = await prisma.evidenceAIIngestJob.findMany({
-    where: { evidenceId },
-  });
-
-  console.log(`[AI Delete] Found ${ingestJobs.length} AI ingest jobs for evidence ${evidence.evidenceCode}`);
-
-  // Delete ingest job documents from RunPod
-  for (const job of ingestJobs) {
-    if (!job.runpodJobId) continue;
-
+  // Fallback: If no jobs or reviews found, try deleting with evidence.id (what ingest sends)
+  if (results.length === 0) {
+    console.log(`[AI Delete] No tracked documents found, attempting delete with evidence.id: ${evidence.id}`);
     const result = await deleteFromRunPod({
-      baseId: evidence.customerAccountId, // Use customerAccountId to match ingest
+      baseId: evidence.customerAccountId,
       docType: 'evidence',
-      documentId: job.runpodJobId,
+      documentId: evidence.id,
       fileName: evidence.evidenceCode || evidence.name || 'evidence-doc',
       userId,
     });
-
     results.push(result);
   }
 

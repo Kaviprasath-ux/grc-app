@@ -675,8 +675,8 @@ export default function AuditReportViewPage({ params }: PageProps) {
                     const defaultObjective = "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements.";
                     const defaultScope = "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report.";
                     const defaultRecommendations = "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency.";
-                    const targetDate = new Date(report.engagement.actualEndDate || report.engagement.plannedEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    const processName = report.engagement.process?.name || report.title;
+                    const targetDate = new Date(report.engagement.actualEndDate || report.engagement.plannedEndDate || new Date()).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const processName = (report.engagement as { process?: { name?: string } })?.process?.name || report.title;
                     const defaultConclusion = `Based on the audit procedures performed and the evidence obtained, Internal Audit concludes that the system of internal control over ${processName} as of the audit period.\n\nThe control environment supports the integrity, accuracy, and reliability of the organization's financial data within the audited areas.\n\nAccordingly, this audit engagement is formally closed as of ${targetDate}.`;
 
                     setEditForm({

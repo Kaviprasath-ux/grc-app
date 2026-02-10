@@ -157,6 +157,10 @@ export default function UsersPage() {
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Validation error states
+  const [userFormErrors, setUserFormErrors] = useState<Record<string, string>>({});
+  const [changePasswordErrors, setChangePasswordErrors] = useState<Record<string, string>>({});
+
   // Form state
   const [userForm, setUserForm] = useState({
     userName: "",
@@ -212,14 +216,25 @@ export default function UsersPage() {
 
   // User CRUD
   const handleAddUser = async () => {
-    if (!userForm.userName || !userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName || !userForm.fullName || !userForm.function || !userForm.role) {
-      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+    const errors: Record<string, string> = {};
+    if (!userForm.firstName.trim()) errors.firstName = t("Please Enter the First Name");
+    if (!userForm.lastName.trim()) errors.lastName = t("Please Enter the Last Name");
+    if (!userForm.fullName.trim()) errors.fullName = t("Please Enter the Name");
+    if (!userForm.userName.trim()) errors.userName = t("Please Enter the UserName");
+    if (!userForm.email.trim()) errors.email = t("Please Enter the Email");
+    if (!userForm.function) errors.function = t("Please Select the Function");
+    if (!userForm.role) errors.role = t("Please Select the Role");
+    if (!userForm.departmentId) errors.departmentId = t("Please Select the Department");
+    if (!userForm.password) errors.password = t("Password can not be empty");
+    if (!userForm.confirmPassword) errors.confirmPassword = t("Password can not be empty");
+    if (userForm.password && userForm.confirmPassword && userForm.password !== userForm.confirmPassword) {
+      errors.confirmPassword = t("Passwords do not match");
+    }
+    if (Object.keys(errors).length > 0) {
+      setUserFormErrors(errors);
       return;
     }
-    if (userForm.password !== userForm.confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
-      return;
-    }
+    setUserFormErrors({});
 
     // Auto-generate User ID
     const userId = `USR-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
@@ -285,23 +300,17 @@ export default function UsersPage() {
   const handleChangePassword = async () => {
     if (!editingUser) return;
 
-    if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
+    const errors: Record<string, string> = {};
+    if (!changePasswordForm.newPassword) errors.newPassword = t("Password can not be empty");
+    if (!changePasswordForm.confirmPassword) errors.confirmPassword = t("Password can not be empty");
+    if (changePasswordForm.newPassword && changePasswordForm.confirmPassword && changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
+      errors.confirmPassword = t("Passwords do not match");
+    }
+    if (Object.keys(errors).length > 0) {
+      setChangePasswordErrors(errors);
       return;
     }
-
-    if (!changePasswordForm.newPassword) {
-      toast({
-        title: "Error",
-        description: "Please enter a new password",
-        variant: "destructive",
-      });
-      return;
-    }
+    setChangePasswordErrors({});
 
     setChangingPassword(true);
     try {
@@ -977,6 +986,7 @@ export default function UsersPage() {
       <Dialog open={isAddUserOpen} onOpenChange={(open) => {
         setIsAddUserOpen(open);
         if (!open) {
+          setUserFormErrors({});
           setUserForm({
             userName: "",
             email: "",
@@ -1016,10 +1026,11 @@ export default function UsersPage() {
                   <Input
                     id="userName"
                     value={userForm.userName}
-                    onChange={(e) => setUserForm({ ...userForm, userName: e.target.value })}
+                    onChange={(e) => { setUserForm({ ...userForm, userName: e.target.value }); if (userFormErrors.userName) setUserFormErrors((prev) => { const { userName, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter username")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${userFormErrors.userName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {userFormErrors.userName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.userName}</p></div>)}
                 </div>
                 {/* Email - full width */}
                 <div className="col-span-2">
@@ -1028,10 +1039,11 @@ export default function UsersPage() {
                     id="email"
                     type="email"
                     value={userForm.email}
-                    onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                    onChange={(e) => { setUserForm({ ...userForm, email: e.target.value }); if (userFormErrors.email) setUserFormErrors((prev) => { const { email, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter email")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${userFormErrors.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {userFormErrors.email && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.email}</p></div>)}
                 </div>
                 {/* Password and Confirm Password - side by side */}
                 <div>
@@ -1040,11 +1052,12 @@ export default function UsersPage() {
                     id="password"
                     type="password"
                     value={userForm.password}
-                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    onChange={(e) => { setUserForm({ ...userForm, password: e.target.value }); if (userFormErrors.password) setUserFormErrors((prev) => { const { password, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter password")}
                     autoComplete="new-password"
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${userFormErrors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {userFormErrors.password && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.password}</p></div>)}
                 </div>
                 <div>
                   <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">{t("Confirm Password")} *</Label>
@@ -1052,11 +1065,12 @@ export default function UsersPage() {
                     id="confirmPassword"
                     type="password"
                     value={userForm.confirmPassword}
-                    onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
+                    onChange={(e) => { setUserForm({ ...userForm, confirmPassword: e.target.value }); if (userFormErrors.confirmPassword) setUserFormErrors((prev) => { const { confirmPassword, ...rest } = prev; return rest; }); }}
                     placeholder={t("Confirm password")}
                     autoComplete="new-password"
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${userFormErrors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {userFormErrors.confirmPassword && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.confirmPassword}</p></div>)}
                 </div>
               </div>
             </div>
@@ -1075,10 +1089,12 @@ export default function UsersPage() {
                       const newFirstName = e.target.value;
                       const autoFullName = `${newFirstName} ${userForm.lastName}`.trim();
                       setUserForm({ ...userForm, firstName: newFirstName, fullName: autoFullName });
+                      if (userFormErrors.firstName) setUserFormErrors((prev) => { const { firstName, fullName, ...rest } = prev; return rest; });
                     }}
                     placeholder={t("Enter first name")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${userFormErrors.firstName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {userFormErrors.firstName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.firstName}</p></div>)}
                 </div>
                 <div>
                   <Label htmlFor="lastName" className="text-sm font-medium text-slate-700">{t("Last Name")} *</Label>
@@ -1089,10 +1105,12 @@ export default function UsersPage() {
                       const newLastName = e.target.value;
                       const autoFullName = `${userForm.firstName} ${newLastName}`.trim();
                       setUserForm({ ...userForm, lastName: newLastName, fullName: autoFullName });
+                      if (userFormErrors.lastName) setUserFormErrors((prev) => { const { lastName, fullName, ...rest } = prev; return rest; });
                     }}
                     placeholder={t("Enter last name")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${userFormErrors.lastName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {userFormErrors.lastName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.lastName}</p></div>)}
                 </div>
                 {/* Full Name - full width */}
                 <div className="col-span-2">
@@ -1100,10 +1118,11 @@ export default function UsersPage() {
                   <Input
                     id="fullName"
                     value={userForm.fullName}
-                    onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
+                    onChange={(e) => { setUserForm({ ...userForm, fullName: e.target.value }); if (userFormErrors.fullName) setUserFormErrors((prev) => { const { fullName, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter full name")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${userFormErrors.fullName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {userFormErrors.fullName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.fullName}</p></div>)}
                 </div>
               </div>
             </div>
@@ -1120,9 +1139,10 @@ export default function UsersPage() {
                     onValueChange={(value) => {
                       setUserForm({ ...userForm, function: value, role: "", reportingManagerId: "" });
                       fetchReportingManagers(value);
+                      if (userFormErrors.function) setUserFormErrors((prev) => { const { function: _, ...rest } = prev; return rest; });
                     }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${userFormErrors.function ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select function")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
@@ -1131,6 +1151,7 @@ export default function UsersPage() {
                       <SelectItem value="Audit">{t("Audit")}</SelectItem>
                     </SelectContent>
                   </Select>
+                  {userFormErrors.function && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.function}</p></div>)}
                 </div>
                 {/* Role - full width */}
                 <div className="col-span-2">
@@ -1141,10 +1162,10 @@ export default function UsersPage() {
                         <div>
                           <Select
                             value={userForm.role}
-                            onValueChange={(value) => setUserForm({ ...userForm, role: value })}
+                            onValueChange={(value) => { setUserForm({ ...userForm, role: value }); if (userFormErrors.role) setUserFormErrors((prev) => { const { role, ...rest } = prev; return rest; }); }}
                             disabled={!userForm.function}
                           >
-                            <SelectTrigger className={`mt-1.5 w-full bg-white ${!userForm.function ? "cursor-not-allowed opacity-50" : ""}`}>
+                            <SelectTrigger className={`mt-1.5 w-full bg-white ${!userForm.function ? "cursor-not-allowed opacity-50" : ""} ${userFormErrors.role ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                               <SelectValue placeholder={userForm.function ? t("Select role") : t("Select function first")} />
                             </SelectTrigger>
                             <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
@@ -1173,15 +1194,16 @@ export default function UsersPage() {
                       )}
                     </Tooltip>
                   </TooltipProvider>
+                  {userFormErrors.role && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.role}</p></div>)}
                 </div>
                 {/* Department and Designation - side by side */}
                 <div>
-                  <Label htmlFor="department" className="text-sm font-medium text-slate-700">{t("Department")}</Label>
+                  <Label htmlFor="department" className="text-sm font-medium text-slate-700">{t("Department")} *</Label>
                   <Select
                     value={userForm.departmentId}
-                    onValueChange={(value) => setUserForm({ ...userForm, departmentId: value })}
+                    onValueChange={(value) => { setUserForm({ ...userForm, departmentId: value }); if (userFormErrors.departmentId) setUserFormErrors((prev) => { const { departmentId, ...rest } = prev; return rest; }); }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${userFormErrors.departmentId ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
@@ -1192,6 +1214,7 @@ export default function UsersPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {userFormErrors.departmentId && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.departmentId}</p></div>)}
                 </div>
                 <div>
                   <Label htmlFor="designation" className="text-sm font-medium text-slate-700">{t("Designation")}</Label>
@@ -1345,6 +1368,7 @@ export default function UsersPage() {
           <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsAddUserOpen(false);
+              setUserFormErrors({});
               setUserForm({
                 userName: "",
                 email: "",
@@ -1914,6 +1938,7 @@ export default function UsersPage() {
           setIsChangePasswordOpen(open);
           if (!open) {
             setChangePasswordForm({ newPassword: "", confirmPassword: "" });
+            setChangePasswordErrors({});
           }
         }}
       >
@@ -1935,16 +1960,15 @@ export default function UsersPage() {
                 id="newPassword"
                 type="password"
                 value={changePasswordForm.newPassword}
-                onChange={(e) =>
-                  setChangePasswordForm({
-                    ...changePasswordForm,
-                    newPassword: e.target.value,
-                  })
-                }
+                onChange={(e) => {
+                  setChangePasswordForm({ ...changePasswordForm, newPassword: e.target.value });
+                  if (changePasswordErrors.newPassword) setChangePasswordErrors((prev) => { const { newPassword, ...rest } = prev; return rest; });
+                }}
                 placeholder={t("Enter new password")}
                 autoComplete="new-password"
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${changePasswordErrors.newPassword ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {changePasswordErrors.newPassword && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{changePasswordErrors.newPassword}</p></div>)}
             </div>
             <div>
               <Label htmlFor="confirmNewPassword" className="text-sm font-medium text-slate-700">{t("Confirm Password")} *</Label>
@@ -1952,16 +1976,15 @@ export default function UsersPage() {
                 id="confirmNewPassword"
                 type="password"
                 value={changePasswordForm.confirmPassword}
-                onChange={(e) =>
-                  setChangePasswordForm({
-                    ...changePasswordForm,
-                    confirmPassword: e.target.value,
-                  })
-                }
+                onChange={(e) => {
+                  setChangePasswordForm({ ...changePasswordForm, confirmPassword: e.target.value });
+                  if (changePasswordErrors.confirmPassword) setChangePasswordErrors((prev) => { const { confirmPassword, ...rest } = prev; return rest; });
+                }}
                 placeholder={t("Confirm new password")}
                 autoComplete="new-password"
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${changePasswordErrors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {changePasswordErrors.confirmPassword && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{changePasswordErrors.confirmPassword}</p></div>)}
             </div>
           </div>
           {/* Fixed Footer */}
@@ -1971,6 +1994,7 @@ export default function UsersPage() {
               onClick={() => {
                 setIsChangePasswordOpen(false);
                 setChangePasswordForm({ newPassword: "", confirmPassword: "" });
+                setChangePasswordErrors({});
               }}
             >
               {t("Cancel")}

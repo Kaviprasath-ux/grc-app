@@ -886,6 +886,7 @@ export default function FrameworkDetailPage({
     requirementType: "Mandatory",
     chapterType: "Domain",
   });
+  const [reqErrors, setReqErrors] = useState<Record<string, string>>({});
 
   // Link Controls
   const [controls, setControls] = useState<Control[]>([]);
@@ -905,6 +906,7 @@ export default function FrameworkDetailPage({
     status: "Pending",
     endDate: "",
   });
+  const [excErrors, setExcErrors] = useState<Record<string, string>>({});
 
   // SOA Pagination
   const [soaPage, setSoaPage] = useState(0);
@@ -1045,6 +1047,15 @@ export default function FrameworkDetailPage({
   };
 
   const handleAddRequirement = async () => {
+    const errors: Record<string, string> = {};
+    if (!newRequirement.name.trim()) errors.name = t("Requirement name should not be empty.");
+    if (!newRequirement.category.trim()) errors.category = t("Requirement category should not be empty.");
+    if (!newRequirement.code.trim()) errors.code = t("Requirement code should not be empty.");
+    if (Object.keys(errors).length > 0) {
+      setReqErrors(errors);
+      return;
+    }
+    setReqErrors({});
     try {
       const response = await fetch("/api/requirements", {
         method: "POST",
@@ -1065,6 +1076,7 @@ export default function FrameworkDetailPage({
           requirementType: "Mandatory",
           chapterType: "Domain",
         });
+        setReqErrors({});
         fetchFramework();
       }
     } catch (error) {
@@ -1268,6 +1280,15 @@ export default function FrameworkDetailPage({
   };
 
   const handleAddException = async () => {
+    const errors: Record<string, string> = {};
+    if (!newException.name.trim()) errors.name = t("Please enter the exception name");
+    if (!newException.description.trim()) errors.description = t("Please enter the reason for exception");
+    if (!newException.endDate) errors.endDate = t("Please select the enddate");
+    if (Object.keys(errors).length > 0) {
+      setExcErrors(errors);
+      return;
+    }
+    setExcErrors({});
     if (!selectedRequirement) return;
 
     try {
@@ -1292,6 +1313,7 @@ export default function FrameworkDetailPage({
           status: "Pending",
           endDate: "",
         });
+        setExcErrors({});
         setSelectedRequirement(null);
       }
     } catch (error) {
@@ -1371,7 +1393,7 @@ export default function FrameworkDetailPage({
 
     const requirements = framework.requirements && framework.requirements.length > 0
       ? framework.requirements
-      : flattenRequirements(dummyRequirements);
+      : [];
 
     // Create CSV content
     const headers = [
@@ -1459,7 +1481,7 @@ export default function FrameworkDetailPage({
   const requirementHierarchy = useMemo(() => {
     return hasApiRequirements && framework
       ? buildHierarchy(requirementsToUse)
-      : dummyRequirements;
+      : [];
   }, [hasApiRequirements, requirementsToUse, framework]);
 
   const filteredHierarchy = filterRequirements(requirementHierarchy);
@@ -1467,7 +1489,7 @@ export default function FrameworkDetailPage({
   const flatRequirements = useMemo(() => {
     return hasApiRequirements && framework
       ? requirementsToUse
-      : flattenRequirements(dummyRequirements);
+      : [];
   }, [hasApiRequirements, requirementsToUse, framework]);
 
   const soaTotalPages = Math.ceil(flatRequirements.length / SOA_PAGE_SIZE);
@@ -1647,12 +1669,20 @@ export default function FrameworkDetailPage({
                                     </TableHeader>
                                     <TableBody>
                                       {requirement.controls.map((rc) => (
-                                        <TableRow key={rc.id}>
+                                        <TableRow
+                                          key={rc.id}
+                                          className="cursor-pointer hover:bg-slate-50 transition-colors"
+                                          onClick={() => router.push(`/compliance/control/${rc.control.id}`)}
+                                        >
                                           <TableCell>
-                                            {rc.control.controlCode}
+                                            <span className="text-primary-600 hover:underline">
+                                              {rc.control.controlCode}
+                                            </span>
                                           </TableCell>
                                           <TableCell>
-                                            {rc.control.name}
+                                            <span className="text-primary-600 hover:underline">
+                                              {rc.control.name}
+                                            </span>
                                           </TableCell>
                                           <TableCell>
                                             <span
@@ -1672,12 +1702,13 @@ export default function FrameworkDetailPage({
                                             <Button
                                               variant="ghost"
                                               size="sm"
-                                              onClick={() =>
+                                              onClick={(e) => {
+                                                e.stopPropagation();
                                                 handleUnlinkControl(
                                                   requirement.id,
                                                   rc.control.id
-                                                )
-                                              }
+                                                );
+                                              }}
                                             >
                                               {t("Unlink")}
                                             </Button>
@@ -1805,7 +1836,7 @@ export default function FrameworkDetailPage({
       </Tabs>
 
       {/* Add Requirement Dialog */}
-      <Dialog open={isAddRequirementOpen} onOpenChange={setIsAddRequirementOpen}>
+      <Dialog open={isAddRequirementOpen} onOpenChange={(open) => { if (!open) { setReqErrors({}); } setIsAddRequirementOpen(open); }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -1821,42 +1852,66 @@ export default function FrameworkDetailPage({
             </p>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Name")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Name")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.name}
-                onChange={(e) =>
-                  setNewRequirement({ ...newRequirement, name: e.target.value })
-                }
+                onChange={(e) => {
+                  setNewRequirement({ ...newRequirement, name: e.target.value });
+                  if (reqErrors.name) {
+                    setReqErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                  }
+                }}
                 placeholder={t("Enter Name")}
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${reqErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {reqErrors.name && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{reqErrors.name}</p>
+                </div>
+              )}
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Category")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Category")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.category}
-                onChange={(e) =>
+                onChange={(e) => {
                   setNewRequirement({
                     ...newRequirement,
                     category: e.target.value,
-                  })
-                }
+                  });
+                  if (reqErrors.category) {
+                    setReqErrors((prev) => { const { category, ...rest } = prev; return rest; });
+                  }
+                }}
                 placeholder={t("Enter Category")}
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${reqErrors.category ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {reqErrors.category && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{reqErrors.category}</p>
+                </div>
+              )}
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.code}
-                onChange={(e) =>
-                  setNewRequirement({ ...newRequirement, code: e.target.value })
-                }
+                onChange={(e) => {
+                  setNewRequirement({ ...newRequirement, code: e.target.value });
+                  if (reqErrors.code) {
+                    setReqErrors((prev) => { const { code, ...rest } = prev; return rest; });
+                  }
+                }}
                 placeholder={t("Enter Code")}
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${reqErrors.code ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {reqErrors.code && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{reqErrors.code}</p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -1916,13 +1971,12 @@ export default function FrameworkDetailPage({
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
-              onClick={() => setIsAddRequirementOpen(false)}
+              onClick={() => { setReqErrors({}); setIsAddRequirementOpen(false); }}
             >
               {t("Cancel")}
             </Button>
             <Button
               onClick={handleAddRequirement}
-              disabled={!newRequirement.name || !newRequirement.code}
             >
               {t("Add Requirement")}
             </Button>
@@ -2056,7 +2110,7 @@ export default function FrameworkDetailPage({
       </Dialog>
 
       {/* Add Exception Dialog */}
-      <Dialog open={isAddExceptionOpen} onOpenChange={setIsAddExceptionOpen}>
+      <Dialog open={isAddExceptionOpen} onOpenChange={(open) => { if (!open) { setExcErrors({}); } setIsAddExceptionOpen(open); }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -2073,14 +2127,20 @@ export default function FrameworkDetailPage({
                 <Input disabled value={t("Auto-generated")} className="mt-1.5 bg-slate-50" />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Exception Name")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Exception Name")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={newException.name}
-                  onChange={(e) =>
-                    setNewException({ ...newException, name: e.target.value })
-                  }
-                  className="mt-1.5 bg-white"
+                  onChange={(e) => {
+                    setNewException({ ...newException, name: e.target.value });
+                    if (excErrors.name) { setExcErrors((prev) => { const { name, ...rest } = prev; return rest; }); }
+                  }}
+                  className={`mt-1.5 bg-white ${excErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                 />
+                {excErrors.name && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{excErrors.name}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -2100,17 +2160,23 @@ export default function FrameworkDetailPage({
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Description/Justification")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description/Justification")} <span className="text-red-500">*</span></Label>
               <Textarea
                 value={newException.description}
-                onChange={(e) =>
+                onChange={(e) => {
                   setNewException({
                     ...newException,
                     description: e.target.value,
-                  })
-                }
-                className="mt-1.5 bg-white"
+                  });
+                  if (excErrors.description) { setExcErrors((prev) => { const { description, ...rest } = prev; return rest; }); }
+                }}
+                className={`mt-1.5 bg-white ${excErrors.description ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {excErrors.description && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{excErrors.description}</p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -2139,15 +2205,21 @@ export default function FrameworkDetailPage({
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("End Date")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("End Date")} <span className="text-red-500">*</span></Label>
               <Input
                 type="date"
                 value={newException.endDate}
-                onChange={(e) =>
-                  setNewException({ ...newException, endDate: e.target.value })
-                }
-                className="mt-1.5 bg-white"
+                onChange={(e) => {
+                  setNewException({ ...newException, endDate: e.target.value });
+                  if (excErrors.endDate) { setExcErrors((prev) => { const { endDate, ...rest } = prev; return rest; }); }
+                }}
+                className={`mt-1.5 bg-white ${excErrors.endDate ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {excErrors.endDate && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{excErrors.endDate}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2156,6 +2228,7 @@ export default function FrameworkDetailPage({
             <Button
               variant="outline"
               onClick={() => {
+                setExcErrors({});
                 setIsAddExceptionOpen(false);
                 setSelectedRequirement(null);
               }}

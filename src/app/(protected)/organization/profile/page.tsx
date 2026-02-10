@@ -158,6 +158,8 @@ function ProfilePageContent() {
   const [serviceItems, setServiceItems] = useState<string[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newItemName, setNewItemName] = useState("");
+  const [categoryNameError, setCategoryNameError] = useState("");
+  const [itemNameError, setItemNameError] = useState("");
 
   // Search & pagination states
   const [serviceSearch, setServiceSearch] = useState("");
@@ -170,13 +172,15 @@ function ProfilePageContent() {
 
   // Form states
   const [newDepartmentName, setNewDepartmentName] = useState("");
+  const [departmentNameError, setDepartmentNameError] = useState("");
   const [newService, setNewService] = useState({
     title: "",
     description: "",
-    serviceUser: "Internal",
+    serviceUser: "",
     serviceCategory: "",
     serviceItem: "",
   });
+  const [serviceErrors, setServiceErrors] = useState<Record<string, string>>({});
   const [newRegulation, setNewRegulation] = useState({
     name: "",
     version: "",
@@ -189,6 +193,7 @@ function ProfilePageContent() {
   });
   const [documentFiles, setDocumentFiles] = useState<File[]>([]);
   const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
+  const [regulationErrors, setRegulationErrors] = useState<Record<string, string>>({});
   const [isEditRegulationOpen, setIsEditRegulationOpen] = useState(false);
   const [editingRegulation, setEditingRegulation] = useState<Regulation | null>(null);
 
@@ -229,7 +234,8 @@ function ProfilePageContent() {
 
   // Department CRUD
   const handleAddDepartment = async () => {
-    if (!newDepartmentName.trim()) return;
+    if (!newDepartmentName.trim()) { setDepartmentNameError(t("Please enter department name")); return; }
+    setDepartmentNameError("");
     try {
       const res = await fetch("/api/departments", {
         method: "POST",
@@ -286,7 +292,16 @@ function ProfilePageContent() {
 
   // Service CRUD
   const handleAddService = async () => {
-    if (!newService.title.trim()) return;
+    const errors: Record<string, string> = {};
+    if (!newService.title.trim()) errors.title = t("Please enter the title");
+    if (!newService.serviceUser) errors.serviceUser = t("Please select service user");
+    if (!newService.serviceCategory) errors.serviceCategory = t("Please select the category");
+    if (!newService.serviceItem) errors.serviceItem = t("Please select the service title");
+    if (Object.keys(errors).length > 0) {
+      setServiceErrors(errors);
+      return;
+    }
+    setServiceErrors({});
     try {
       const res = await fetch("/api/services", {
         method: "POST",
@@ -299,7 +314,7 @@ function ProfilePageContent() {
         setNewService({
           title: "",
           description: "",
-          serviceUser: "Internal",
+          serviceUser: "",
           serviceCategory: "",
           serviceItem: "",
         });
@@ -388,7 +403,11 @@ function ProfilePageContent() {
 
   // Regulation CRUD
   const handleAddRegulation = async () => {
-    if (!newRegulation.name.trim()) return;
+    const errors: Record<string, string> = {};
+    if (!newRegulation.name.trim()) errors.name = t("Please enter the name");
+    if (!newRegulation.version.trim()) errors.version = t("Please enter the version");
+    if (Object.keys(errors).length > 0) { setRegulationErrors(errors); return; }
+    setRegulationErrors({});
     try {
       const res = await fetch("/api/regulations", {
         method: "POST",
@@ -502,7 +521,8 @@ function ProfilePageContent() {
 
   // Add new service category
   const handleAddCategory = () => {
-    if (!newCategoryName.trim()) return;
+    if (!newCategoryName.trim()) { setCategoryNameError(t("Please enter category name")); return; }
+    setCategoryNameError("");
     if (!serviceCategories.includes(newCategoryName)) {
       setServiceCategories([...serviceCategories, newCategoryName]);
       setNewService({ ...newService, serviceCategory: newCategoryName });
@@ -513,7 +533,8 @@ function ProfilePageContent() {
 
   // Add new service item
   const handleAddItem = () => {
-    if (!newItemName.trim()) return;
+    if (!newItemName.trim()) { setItemNameError(t("Please enter item name")); return; }
+    setItemNameError("");
     if (!serviceItems.includes(newItemName)) {
       setServiceItems([...serviceItems, newItemName]);
       setNewService({ ...newService, serviceItem: newItemName });
@@ -791,7 +812,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => setIsAddServiceOpen(true)}>
+            <Button size="sm" onClick={() => { setServiceErrors({}); setIsAddServiceOpen(true); }}>
               <Plus className="h-4 w-4 me-2" />
               {t("Add Service")}
             </Button>
@@ -937,7 +958,7 @@ function ProfilePageContent() {
               <p className="text-sm text-slate-500 mb-6">
                 {t("Add services your organization provides.")}
               </p>
-              <Button onClick={() => setIsAddServiceOpen(true)}>
+              <Button onClick={() => { setServiceErrors({}); setIsAddServiceOpen(true); }}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("Add Service")}
               </Button>
@@ -957,7 +978,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => setIsAddRegulationOpen(true)}>
+            <Button size="sm" onClick={() => { setRegulationErrors({}); setIsAddRegulationOpen(true); }}>
               <Plus className="h-4 w-4 me-2" />
               {t("Add Regulation")}
             </Button>
@@ -1092,7 +1113,7 @@ function ProfilePageContent() {
               <p className="text-sm text-slate-500 mb-6">
                 {t("Add regulations that apply to your organization.")}
               </p>
-              <Button onClick={() => setIsAddRegulationOpen(true)}>
+              <Button onClick={() => { setRegulationErrors({}); setIsAddRegulationOpen(true); }}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("Add Regulation")}
               </Button>
@@ -1112,7 +1133,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => setIsAddDepartmentOpen(true)}>
+            <Button size="sm" onClick={() => { setDepartmentNameError(""); setIsAddDepartmentOpen(true); }}>
               <Plus className="h-4 w-4 me-2" />
               {t("Add Department")}
             </Button>
@@ -1234,7 +1255,7 @@ function ProfilePageContent() {
               <p className="text-sm text-slate-500 mb-6">
                 {t("Add departments to organize your team structure.")}
               </p>
-              <Button onClick={() => setIsAddDepartmentOpen(true)}>
+              <Button onClick={() => { setDepartmentNameError(""); setIsAddDepartmentOpen(true); }}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("Add Department")}
               </Button>
@@ -1256,7 +1277,7 @@ function ProfilePageContent() {
       </Tabs>
 
       {/* Add Department Dialog */}
-      <Dialog open={isAddDepartmentOpen} onOpenChange={setIsAddDepartmentOpen}>
+      <Dialog open={isAddDepartmentOpen} onOpenChange={(open) => { if (!open) { setIsAddDepartmentOpen(false); setDepartmentNameError(""); } }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -1270,15 +1291,20 @@ function ProfilePageContent() {
             <Label className="text-sm font-medium text-slate-700">{t("Department Name")}</Label>
             <Input
               value={newDepartmentName}
-              onChange={(e) => setNewDepartmentName(e.target.value)}
+              onChange={(e) => { setNewDepartmentName(e.target.value); if (departmentNameError) setDepartmentNameError(""); }}
               placeholder={t("Enter department name")}
-              className="mt-1.5"
+              className={`mt-1.5 ${departmentNameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             />
+            {departmentNameError && (
+              <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-sm text-red-600">{departmentNameError}</p>
+              </div>
+            )}
           </div>
 
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAddDepartmentOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsAddDepartmentOpen(false); setDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleAddDepartment}>{t("Save")}</Button>
@@ -1320,7 +1346,7 @@ function ProfilePageContent() {
       </Dialog>
 
       {/* Add Service Dialog */}
-      <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
+      <Dialog open={isAddServiceOpen} onOpenChange={(open) => { if (!open) { setIsAddServiceOpen(false); setServiceErrors({}); } }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -1336,10 +1362,15 @@ function ProfilePageContent() {
               <Label className="text-sm font-medium text-slate-700">{t("Service Title")}</Label>
               <Input
                 value={newService.title}
-                onChange={(e) => setNewService({ ...newService, title: e.target.value })}
+                onChange={(e) => { setNewService({ ...newService, title: e.target.value }); if (serviceErrors.title) setServiceErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                 placeholder={t("Enter service title")}
-                className="mt-1.5"
+                className={`mt-1.5 ${serviceErrors.title ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {serviceErrors.title && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{serviceErrors.title}</p>
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -1364,13 +1395,18 @@ function ProfilePageContent() {
                       type="radio"
                       name="addServiceUser"
                       checked={newService.serviceUser === userType}
-                      onChange={() => setNewService({ ...newService, serviceUser: userType })}
+                      onChange={() => { setNewService({ ...newService, serviceUser: userType }); if (serviceErrors.serviceUser) setServiceErrors((prev) => { const { serviceUser, ...rest } = prev; return rest; }); }}
                       className="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
                     />
                     <span className="text-sm text-slate-600">{t(userType)}</span>
                   </label>
                 ))}
               </div>
+              {serviceErrors.serviceUser && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{serviceErrors.serviceUser}</p>
+                </div>
+              )}
             </div>
 
             {/* Service Category */}
@@ -1379,9 +1415,9 @@ function ProfilePageContent() {
               <div className="flex gap-2 mt-1.5">
                 <Select
                   value={newService.serviceCategory}
-                  onValueChange={(value) => setNewService({ ...newService, serviceCategory: value })}
+                  onValueChange={(value) => { setNewService({ ...newService, serviceCategory: value }); if (serviceErrors.serviceCategory) setServiceErrors((prev) => { const { serviceCategory, ...rest } = prev; return rest; }); }}
                 >
-                  <SelectTrigger className="flex-1">
+                  <SelectTrigger className={`flex-1 ${serviceErrors.serviceCategory ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                     <SelectValue placeholder={t("Select category")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1402,6 +1438,11 @@ function ProfilePageContent() {
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
+              {serviceErrors.serviceCategory && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{serviceErrors.serviceCategory}</p>
+                </div>
+              )}
             </div>
 
             {/* Service Item */}
@@ -1410,9 +1451,9 @@ function ProfilePageContent() {
               <div className="flex gap-2 mt-1.5">
                 <Select
                   value={newService.serviceItem}
-                  onValueChange={(value) => setNewService({ ...newService, serviceItem: value })}
+                  onValueChange={(value) => { setNewService({ ...newService, serviceItem: value }); if (serviceErrors.serviceItem) setServiceErrors((prev) => { const { serviceItem, ...rest } = prev; return rest; }); }}
                 >
-                  <SelectTrigger className="flex-1">
+                  <SelectTrigger className={`flex-1 ${serviceErrors.serviceItem ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                     <SelectValue placeholder={t("Select item")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1433,12 +1474,17 @@ function ProfilePageContent() {
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
+              {serviceErrors.serviceItem && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{serviceErrors.serviceItem}</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAddServiceOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsAddServiceOpen(false); setServiceErrors({}); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleAddService}>{t("Save")}</Button>
@@ -1576,7 +1622,7 @@ function ProfilePageContent() {
       </Dialog>
 
       {/* Add Regulation Dialog */}
-      <Dialog open={isAddRegulationOpen} onOpenChange={setIsAddRegulationOpen}>
+      <Dialog open={isAddRegulationOpen} onOpenChange={(open) => { if (!open) { setIsAddRegulationOpen(false); setRegulationErrors({}); } }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
@@ -1594,19 +1640,29 @@ function ProfilePageContent() {
                   <Label className="text-sm font-medium text-slate-700">{t("Regulation Name")} <span className="text-error">*</span></Label>
                   <Input
                     value={newRegulation.name}
-                    onChange={(e) => setNewRegulation({ ...newRegulation, name: e.target.value })}
+                    onChange={(e) => { setNewRegulation({ ...newRegulation, name: e.target.value }); if (regulationErrors.name) setRegulationErrors((prev) => { const { name, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter regulation name")}
-                    className="mt-1.5"
+                    className={`mt-1.5 ${regulationErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {regulationErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{regulationErrors.name}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Version")} <span className="text-error">*</span></Label>
                   <Input
                     value={newRegulation.version}
-                    onChange={(e) => setNewRegulation({ ...newRegulation, version: e.target.value })}
+                    onChange={(e) => { setNewRegulation({ ...newRegulation, version: e.target.value }); if (regulationErrors.version) setRegulationErrors((prev) => { const { version, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter version")}
-                    className="mt-1.5"
+                    className={`mt-1.5 ${regulationErrors.version ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {regulationErrors.version && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{regulationErrors.version}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1736,7 +1792,7 @@ function ProfilePageContent() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAddRegulationOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsAddRegulationOpen(false); setRegulationErrors({}); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleAddRegulation}>{t("Save")}</Button>
@@ -1934,7 +1990,7 @@ function ProfilePageContent() {
       </Dialog>
 
       {/* Add Service Category Dialog */}
-      <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+      <Dialog open={isAddCategoryOpen} onOpenChange={(open) => { if (!open) { setIsAddCategoryOpen(false); setCategoryNameError(""); } }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -1948,15 +2004,20 @@ function ProfilePageContent() {
             <Label className="text-sm font-medium text-slate-700">{t("Category Name")}</Label>
             <Input
               value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
+              onChange={(e) => { setNewCategoryName(e.target.value); if (categoryNameError) setCategoryNameError(""); }}
               placeholder={t("Enter category name")}
-              className="mt-1.5"
+              className={`mt-1.5 ${categoryNameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             />
+            {categoryNameError && (
+              <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-sm text-red-600">{categoryNameError}</p>
+              </div>
+            )}
           </div>
 
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsAddCategoryOpen(false); setCategoryNameError(""); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleAddCategory}>{t("Save")}</Button>
@@ -1965,7 +2026,7 @@ function ProfilePageContent() {
       </Dialog>
 
       {/* Add Service Item Dialog */}
-      <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+      <Dialog open={isAddItemOpen} onOpenChange={(open) => { if (!open) { setIsAddItemOpen(false); setItemNameError(""); } }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -1979,15 +2040,20 @@ function ProfilePageContent() {
             <Label className="text-sm font-medium text-slate-700">{t("Item Name")}</Label>
             <Input
               value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
+              onChange={(e) => { setNewItemName(e.target.value); if (itemNameError) setItemNameError(""); }}
               placeholder={t("Enter item name")}
-              className="mt-1.5"
+              className={`mt-1.5 ${itemNameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             />
+            {itemNameError && (
+              <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-sm text-red-600">{itemNameError}</p>
+              </div>
+            )}
           </div>
 
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsAddItemOpen(false); setItemNameError(""); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleAddItem}>{t("Save")}</Button>

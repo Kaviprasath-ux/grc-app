@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, ArrowLeft, Search, Upload, Download, FolderTree, Clock, Settings2, Lock, CheckCircle, RefreshCw, Layers, FolderOpen, Group, Home, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Download, FolderTree, Clock, Settings2, Lock, CheckCircle, RefreshCw, Layers, FolderOpen, Group, Home, ChevronRight, ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -21,18 +19,17 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AssetCategory {
@@ -239,6 +236,14 @@ export default function AssetSettingsPage() {
   const [isScoringEditOpen, setIsScoringEditOpen] = useState(false);
   const [isScoringDeleteOpen, setIsScoringDeleteOpen] = useState(false);
   const [selectedScoringConfig, setSelectedScoringConfig] = useState<ScoringConfig | null>(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchData();
@@ -1305,275 +1310,7 @@ export default function AssetSettingsPage() {
     }
   };
 
-  // Column definitions - Asset Category (matching UAT: Title, Status, Action)
-  const categoryColumns: ColumnDef<AssetCategory>[] = [
-    { accessorKey: "name", header: t("Title") },
-    {
-      accessorKey: "status",
-      header: t("Status"),
-      cell: ({ row }) => (
-        <Badge variant={row.getValue("status") === "Active" ? "default" : "secondary"}>
-          {row.getValue("status") as string}
-        </Badge>
-      ),
-    },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setSelectedItem(row.original);
-              setCategoryForm({
-                name: row.original.name,
-                description: row.original.description || "",
-                status: row.original.status,
-              });
-              setIsEditOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setSelectedItem(row.original);
-              setIsDeleteOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  // Asset Sub Category columns matching UAT
-  const subCategoryColumns: ColumnDef<AssetSubCategory>[] = [
-    { accessorKey: "category.name", header: t("Asset Category"), cell: ({ row }) => row.original.category?.name || "-" },
-    { accessorKey: "name", header: t("Asset Sub-Category") },
-    { accessorKey: "description", header: t("Description"), cell: ({ row }) => row.getValue("description") || "-" },
-    {
-      accessorKey: "status",
-      header: t("Status"),
-      cell: ({ row }) => (
-        <Badge variant={row.getValue("status") === "Active" ? "default" : "secondary"}>
-          {row.getValue("status") as string}
-        </Badge>
-      ),
-    },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setSelectedItem(row.original);
-              setSubCategoryForm({
-                name: row.original.name,
-                description: row.original.description || "",
-                categoryId: row.original.categoryId,
-                status: row.original.status,
-              });
-              setIsEditOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setSelectedItem(row.original);
-              setIsDeleteOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const groupColumns: ColumnDef<AssetGroup>[] = [
-    { accessorKey: "name", header: t("Name") },
-    { accessorKey: "description", header: t("Description"), cell: ({ row }) => row.getValue("description") || "-" },
-    {
-      accessorKey: "status",
-      header: t("Status"),
-      cell: ({ row }) => (
-        <Badge variant={(row.original as any).status === "Active" ? "default" : "secondary"}>
-          {(row.original as any).status || "Active"}
-        </Badge>
-      ),
-    },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setSelectedItem(row.original);
-              setGroupForm({
-                name: row.original.name,
-                description: row.original.description || "",
-                status: (row.original as any).status || "Active",
-                subCategoryId: (row.original as any).subCategoryId || "",
-              });
-              setIsEditOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setSelectedItem(row.original);
-              setIsDeleteOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const sensitivityColumns: ColumnDef<AssetSensitivity>[] = [
-    { accessorKey: "name", header: t("Name") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setSelectedItem(row.original as any);
-              setSensitivityForm({
-                name: row.original.name,
-                description: row.original.description || "",
-              });
-              setIsEditOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setSelectedItem(row.original as any);
-              setIsDeleteOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  // Asset list columns for settings view (matching UAT)
-  const assetSettingsColumns: ColumnDef<Asset>[] = [
-    { accessorKey: "name", header: t("Name") },
-    { accessorKey: "assetId", header: t("ID") },
-    { accessorKey: "location", header: t("Location"), cell: ({ row }) => row.getValue("location") || "-" },
-    { accessorKey: "value", header: t("Value"), cell: ({ row }) => row.getValue("value") || "-" },
-    {
-      accessorKey: "acquisitionDate",
-      header: t("Acquisition date"),
-      cell: ({ row }) => row.original.acquisitionDate
-        ? new Date(row.original.acquisitionDate).toLocaleDateString('en-GB')
-        : "-"
-    },
-    {
-      accessorKey: "lifecycleStatus.name",
-      header: t("Status"),
-      cell: ({ row }) => row.original.lifecycleStatus?.name || "-"
-    },
-    {
-      accessorKey: "nextReviewDate",
-      header: t("Next review date"),
-      cell: ({ row }) => row.original.nextReviewDate
-        ? new Date(row.original.nextReviewDate).toLocaleDateString('en-GB')
-        : "-"
-    },
-    {
-      accessorKey: "sensitivity.name",
-      header: t("Asset sensitivity"),
-      cell: ({ row }) => row.original.sensitivity?.name || "-"
-    },
-    {
-      id: "actions",
-      header: "",
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon">
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-destructive">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  // Lifecycle columns matching UAT (Name, Action only)
-  const lifecycleColumns: ColumnDef<AssetLifecycleStatus>[] = [
-    { accessorKey: "name", header: t("Name") },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setSelectedItem(row.original);
-              setLifecycleForm({
-                name: row.original.name,
-                description: row.original.description || "",
-                order: row.original.order,
-              });
-              setIsEditOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setSelectedItem(row.original);
-              setIsDeleteOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  // Column definitions removed - rendering tables directly in JSX
 
   // Get current category info
   const currentCategory = settingCategories.find((c) => c.id === activeCategory);
@@ -1643,23 +1380,6 @@ export default function AssetSettingsPage() {
       }
     };
 
-    const getColumns = () => {
-      switch (entitySubTab) {
-        case "asset-list":
-          return assetSettingsColumns;
-        case "categories":
-          return categoryColumns;
-        case "subcategories":
-          return subCategoryColumns;
-        case "groups":
-          return groupColumns;
-        case "sensitivity":
-          return sensitivityColumns;
-        default:
-          return [];
-      }
-    };
-
     const getAddButtonLabel = () => {
       switch (entitySubTab) {
         case "asset-list": return t("New Asset");
@@ -1671,6 +1391,10 @@ export default function AssetSettingsPage() {
       }
     };
 
+    const allData = getData();
+    const totalPages = Math.ceil(allData.length / itemsPerPage);
+    const paginatedData = allData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
       <div className="space-y-6">
         {/* Breadcrumb */}
@@ -1679,11 +1403,11 @@ export default function AssetSettingsPage() {
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <button onClick={() => setEntitySubTab(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <button onClick={() => { setEntitySubTab(null); setCurrentPage(1); }} className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{currentEntitySub?.title || t("Settings")}</span>
         </nav>
 
@@ -1692,115 +1416,313 @@ export default function AssetSettingsPage() {
           <h1 className="text-2xl font-bold text-slate-800">{currentEntitySub?.title || t("Settings")}</h1>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder={t("Search...")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px] bg-white border-slate-200"
+        {/* Action Buttons - ABOVE the card */}
+        <div className="flex items-center justify-end gap-2">
+          <label>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={getImportHandler()}
+              className="hidden"
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <label>
+            <Button variant="outline" size="sm" asChild>
+              <span>
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
+              </span>
+            </Button>
+          </label>
+          <Button variant="outline" size="sm" onClick={getExportHandler()}>
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Export")}
+          </Button>
+          <Button size="sm" onClick={() => {
+            if (entitySubTab === "categories") {
+              setCategoryForm({ name: "", description: "", status: "Active" });
+            } else if (entitySubTab === "subcategories") {
+              setSubCategoryForm({ name: "", description: "", categoryId: "", status: "Active" });
+            } else if (entitySubTab === "groups") {
+              setGroupForm({ name: "", description: "", status: "Active", subCategoryId: "" });
+            } else if (entitySubTab === "sensitivity") {
+              setSensitivityForm({ name: "", description: "" });
+            } else if (entitySubTab === "asset-list") {
+              setAssetForm({
+                name: "",
+                assetId: "",
+                location: "",
+                categoryId: "",
+                subCategoryId: "",
+                groupId: "",
+                sensitivityId: "",
+                lifecycleStatusId: "",
+                value: 0
+              });
+            }
+            setIsAddOpen(true);
+          }}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {getAddButtonLabel()}
+          </Button>
+        </div>
+
+        {/* Card with search toolbar + table + pagination */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          {/* Search Toolbar */}
+          <div className="flex items-center px-5 py-3 border-b border-slate-100">
+            <div className="relative">
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
-                type="file"
-                accept=".csv"
-                onChange={getImportHandler()}
-                className="hidden"
+                type="text"
+                placeholder={t("Search...")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
-              <Button variant="outline" size="sm" asChild>
-                <span>
-                  <Download className="h-4 w-4 mr-2" />
-                  {t("Import")}
-                </span>
+            </div>
+          </div>
+
+          {/* Table */}
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50 border-b border-slate-100 hover:bg-slate-50">
+                {entitySubTab === "asset-list" && (
+                  <>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("ID")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Location")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Value")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Sensitivity")}</TableHead>
+                  </>
+                )}
+                {entitySubTab === "categories" && (
+                  <>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                  </>
+                )}
+                {entitySubTab === "subcategories" && (
+                  <>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Asset Category")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Asset Sub-Category")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                  </>
+                )}
+                {entitySubTab === "groups" && (
+                  <>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                  </>
+                )}
+                {entitySubTab === "sensitivity" && (
+                  <>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                  </>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center">
+                        <FolderOpen className="h-6 w-6 text-primary-600" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-800">{t("No items found")}</p>
+                      <p className="text-xs text-slate-500">{t("Try adjusting your search or add a new item")}</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : entitySubTab === "asset-list" ? (
+                (paginatedData as Asset[]).map((item) => (
+                  <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{item.assetId}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{item.location || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{item.value || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{item.lifecycleStatus?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700 pr-5">{item.sensitivity?.name || "-"}</TableCell>
+                  </TableRow>
+                ))
+              ) : entitySubTab === "categories" ? (
+                (paginatedData as AssetCategory[]).map((item) => (
+                  <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
+                      <Badge variant={item.status === "Active" ? "default" : "secondary"}>{item.status}</Badge>
+                    </TableCell>
+                    <TableCell className="py-3 pr-5">
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
+                          setSelectedItem(item);
+                          setCategoryForm({ name: item.name, description: item.description || "", status: item.status });
+                          setIsEditOpen(true);
+                        }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => {
+                          setSelectedItem(item);
+                          setIsDeleteOpen(true);
+                        }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : entitySubTab === "subcategories" ? (
+                (paginatedData as AssetSubCategory[]).map((item) => (
+                  <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.category?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{item.description || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
+                      <Badge variant={item.status === "Active" ? "default" : "secondary"}>{item.status}</Badge>
+                    </TableCell>
+                    <TableCell className="py-3 pr-5">
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
+                          setSelectedItem(item);
+                          setSubCategoryForm({ name: item.name, description: item.description || "", categoryId: item.categoryId, status: item.status });
+                          setIsEditOpen(true);
+                        }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => {
+                          setSelectedItem(item);
+                          setIsDeleteOpen(true);
+                        }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : entitySubTab === "groups" ? (
+                (paginatedData as AssetGroup[]).map((item) => (
+                  <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{item.description || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
+                      <Badge variant={(item as any).status === "Active" ? "default" : "secondary"}>{(item as any).status || "Active"}</Badge>
+                    </TableCell>
+                    <TableCell className="py-3 pr-5">
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
+                          setSelectedItem(item);
+                          setGroupForm({ name: item.name, description: item.description || "", status: (item as any).status || "Active", subCategoryId: (item as any).subCategoryId || "" });
+                          setIsEditOpen(true);
+                        }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => {
+                          setSelectedItem(item);
+                          setIsDeleteOpen(true);
+                        }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : entitySubTab === "sensitivity" ? (
+                (paginatedData as AssetSensitivity[]).map((item) => (
+                  <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                    <TableCell className="py-3 pr-5">
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
+                          setSelectedItem(item as any);
+                          setSensitivityForm({ name: item.name, description: item.description || "" });
+                          setIsEditOpen(true);
+                        }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => {
+                          setSelectedItem(item as any);
+                          setIsDeleteOpen(true);
+                        }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : null}
+            </TableBody>
+          </Table>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">
+              {t("Showing")} {allData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, allData.length)} {t("of")} {allData.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-            </label>
-            <Button variant="outline" size="sm" onClick={getExportHandler()}>
-              <Upload className="h-4 w-4 mr-2" />
-              {t("Export")}
-            </Button>
-            <Button size="sm" onClick={() => {
-              if (entitySubTab === "categories") {
-                setCategoryForm({ name: "", description: "", status: "Active" });
-              } else if (entitySubTab === "subcategories") {
-                setSubCategoryForm({ name: "", description: "", categoryId: "", status: "Active" });
-              } else if (entitySubTab === "groups") {
-                setGroupForm({ name: "", description: "", status: "Active", subCategoryId: "" });
-              } else if (entitySubTab === "sensitivity") {
-                setSensitivityForm({ name: "", description: "" });
-              } else if (entitySubTab === "asset-list") {
-                setAssetForm({
-                  name: "",
-                  assetId: "",
-                  location: "",
-                  categoryId: "",
-                  subCategoryId: "",
-                  groupId: "",
-                  sensitivityId: "",
-                  lifecycleStatusId: "",
-                  value: 0
-                });
-              }
-              setIsAddOpen(true);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              {getAddButtonLabel()}
-            </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(currentPage + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        <DataGrid
-          columns={getColumns() as ColumnDef<AssetCategory | AssetSubCategory | AssetGroup | AssetSensitivity | Asset>[]}
-          data={getData()}
-          hideSearch={true}
-        />
-
         {/* Add Dialog for Entity List */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <DialogHeader>
-              <DialogTitle>
-                {t("Add")} {entitySubTab === "categories" ? t("Category") :
-                     entitySubTab === "subcategories" ? t("Sub Category") :
-                     entitySubTab === "groups" ? t("Group") :
-                     entitySubTab === "sensitivity" ? t("Sensitivity") :
-                     entitySubTab === "asset-list" ? t("Asset") : t("Item")}
-              </DialogTitle>
-              <DialogDescription>
-                {t("Enter the details for the new item")}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+          <DialogContent className="sm:max-w-[700px] max-h-[85vh] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <div className="px-6 py-4 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-base font-semibold text-slate-800">
+                  {t("Add")} {entitySubTab === "categories" ? t("Category") :
+                       entitySubTab === "subcategories" ? t("Sub Category") :
+                       entitySubTab === "groups" ? t("Group") :
+                       entitySubTab === "sensitivity" ? t("Sensitivity") :
+                       entitySubTab === "asset-list" ? t("Asset") : t("Item")}
+                </DialogTitle>
+                <DialogDescription>
+                  {t("Enter the details for the new item")}
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
               {entitySubTab === "asset-list" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t("Asset ID")} *</Label>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Asset ID")} *</Label>
                       <Input
                         value={assetForm.assetId}
                         onChange={(e) => setAssetForm({ ...assetForm, assetId: e.target.value })}
                         placeholder={t("e.g., AST-001")}
+                        className="mt-1.5"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>{t("Name")} *</Label>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                       <Input
                         value={assetForm.name}
                         onChange={(e) => setAssetForm({ ...assetForm, name: e.target.value })}
                         placeholder={t("e.g., Production Server 1")}
+                        className="mt-1.5"
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t("Category")}</Label>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
                       <Select
                         value={assetForm.categoryId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, categoryId: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1.5 w-full">
                           <SelectValue placeholder={t("Select category")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -1812,13 +1734,13 @@ export default function AssetSettingsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>{t("Sub Category")}</Label>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Sub Category")}</Label>
                       <Select
                         value={assetForm.subCategoryId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, subCategoryId: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1.5 w-full">
                           <SelectValue placeholder={t("Select sub category")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -1834,13 +1756,13 @@ export default function AssetSettingsPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t("Group")}</Label>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Group")}</Label>
                       <Select
                         value={assetForm.groupId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, groupId: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1.5 w-full">
                           <SelectValue placeholder={t("Select group")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -1852,13 +1774,13 @@ export default function AssetSettingsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>{t("Sensitivity")}</Label>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Sensitivity")}</Label>
                       <Select
                         value={assetForm.sensitivityId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, sensitivityId: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1.5 w-full">
                           <SelectValue placeholder={t("Select sensitivity")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -1872,13 +1794,13 @@ export default function AssetSettingsPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t("Lifecycle Status")}</Label>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Lifecycle Status")}</Label>
                       <Select
                         value={assetForm.lifecycleStatusId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, lifecycleStatusId: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1.5 w-full">
                           <SelectValue placeholder={t("Select status")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -1890,22 +1812,24 @@ export default function AssetSettingsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>{t("Value")}</Label>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Value")}</Label>
                       <Input
                         type="number"
                         value={assetForm.value || ""}
                         onChange={(e) => setAssetForm({ ...assetForm, value: parseFloat(e.target.value) || 0 })}
                         placeholder={t("e.g., 10000")}
+                        className="mt-1.5"
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("Location")}</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Location")}</Label>
                     <Input
                       value={assetForm.location}
                       onChange={(e) => setAssetForm({ ...assetForm, location: e.target.value })}
                       placeholder={t("e.g., Data Center 1")}
+                      className="mt-1.5"
                     />
                   </div>
                 </>
@@ -1913,21 +1837,22 @@ export default function AssetSettingsPage() {
 
               {entitySubTab === "categories" && (
                 <>
-                  <div className="space-y-2">
-                    <Label>{t("Name")} *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                     <Input
                       value={categoryForm.name}
                       onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                       placeholder={t("e.g., Hardware, Software, Data")}
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("Status")}</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
                     <Select
                       value={categoryForm.status}
                       onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1.5 w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1941,13 +1866,13 @@ export default function AssetSettingsPage() {
 
               {entitySubTab === "subcategories" && (
                 <>
-                  <div className="space-y-2">
-                    <Label>{t("Category")} *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
                     <Select
                       value={subCategoryForm.categoryId}
                       onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1.5 w-full">
                         <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -1959,21 +1884,22 @@ export default function AssetSettingsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("Name")} *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                     <Input
                       value={subCategoryForm.name}
                       onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
                       placeholder={t("e.g., Server, Firewall, Router")}
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("Description")}</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <textarea
                       value={subCategoryForm.description}
                       onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
                       placeholder={t("Enter description")}
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                      className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
                 </>
@@ -1981,26 +1907,27 @@ export default function AssetSettingsPage() {
 
               {entitySubTab === "groups" && (
                 <>
-                  <div className="space-y-2">
-                    <Label>{t("Name")} *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                     <Input
                       value={groupForm.name}
                       onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
                       placeholder={t("e.g., Security Tools, Payment Systems")}
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("Description")}</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <textarea
                       value={groupForm.description}
                       onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
                       placeholder={t("Enter description")}
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                      className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("Status")} *</Label>
-                    <div className="flex items-center gap-6">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Status")} *</Label>
+                    <div className="flex items-center gap-6 mt-1.5">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="radio"
@@ -2023,13 +1950,13 @@ export default function AssetSettingsPage() {
                       </label>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("Asset Sub Category")} *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} *</Label>
                     <Select
                       value={groupForm.subCategoryId}
                       onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1.5 w-full">
                         <SelectValue placeholder={t("Select sub category")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -2045,17 +1972,18 @@ export default function AssetSettingsPage() {
               )}
 
               {entitySubTab === "sensitivity" && (
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={sensitivityForm.name}
                     onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
                     placeholder={t("e.g., High, Medium, Low")}
+                    className="mt-1.5"
                   />
                 </div>
               )}
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2074,17 +2002,16 @@ export default function AssetSettingsPage() {
               }}>
                 {t("Save")}
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Edit Dialog for Entity List */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-            {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">
+                <DialogTitle className="text-base font-semibold text-slate-800">
                   {t("Edit")} {entitySubTab === "categories" ? t("Category") :
                         entitySubTab === "subcategories" ? t("Sub Category") :
                         entitySubTab === "groups" ? t("Group") :
@@ -2219,7 +2146,7 @@ export default function AssetSettingsPage() {
                       value={groupForm.subCategoryId}
                       onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
                     >
-                      <SelectTrigger className="mt-1.5">
+                      <SelectTrigger className="mt-1.5 w-full">
                         <SelectValue placeholder={t("Select sub category")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -2248,7 +2175,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2271,11 +2198,11 @@ export default function AssetSettingsPage() {
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
                 <DialogDescription>
                   {t("Are you sure you want to delete this item? This action cannot be undone.")}
                 </DialogDescription>
@@ -2283,7 +2210,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2317,11 +2244,11 @@ export default function AssetSettingsPage() {
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Asset Settings")}</span>
         </nav>
 
@@ -2330,43 +2257,30 @@ export default function AssetSettingsPage() {
           <h1 className="text-2xl font-bold text-slate-800">{t("Asset Settings")}</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {entitySubCategories.map((sub) => {
             const Icon = sub.icon;
-            const itemCount = getEntitySubCount(sub.id);
 
             return (
-              <div
+              <button
                 key={sub.id}
-                className="bg-white rounded-xl border border-slate-200 p-5"
+                className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
+                onClick={() => {
+                  setEntitySubTab(sub.id);
+                  setSearchTerm("");
+                }}
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <Icon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-semibold text-slate-800">{sub.title}</h4>
-                    <p className="text-sm text-slate-500">
-                      {sub.description}
-                    </p>
-                  </div>
+                <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0">
+                  <Icon className="h-5 w-5 text-primary-600" />
                 </div>
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                  <span className="text-sm text-slate-500">
-                    {itemCount} {itemCount === 1 ? t("item") : t("items")}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEntitySubTab(sub.id);
-                      setSearchTerm("");
-                    }}
-                  >
-                    {t("Manage")}
-                  </Button>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-semibold text-slate-800">{sub.title}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                    {sub.description}
+                  </p>
                 </div>
-              </div>
+                <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 ltr:rotate-0 rtl:rotate-180" />
+              </button>
             );
           })}
         </div>
@@ -2379,6 +2293,8 @@ export default function AssetSettingsPage() {
     const filteredData = lifecycleStatuses.filter(l =>
       l.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const lcTotalPages = Math.ceil(filteredData.length / itemsPerPage);
+    const lcPaginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
       <div className="space-y-6">
@@ -2388,11 +2304,11 @@ export default function AssetSettingsPage() {
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <button onClick={() => { setActiveCategory(null); setCurrentPage(1); }} className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Lifecycle Status")}</span>
         </nav>
 
@@ -2401,58 +2317,119 @@ export default function AssetSettingsPage() {
           <h1 className="text-2xl font-bold text-slate-800">{t("Lifecycle Status")}</h1>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t("Search...")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px] bg-white border-slate-200"
+        {/* Action Buttons - ABOVE the card */}
+        <div className="flex items-center justify-end gap-2">
+          <label>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleImportLifecycleStatuses}
+              className="hidden"
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <label>
+            <Button variant="outline" size="sm" asChild>
+              <span>
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
+              </span>
+            </Button>
+          </label>
+          <Button variant="outline" size="sm" onClick={handleExportLifecycleStatuses}>
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Export")}
+          </Button>
+          <Button size="sm" onClick={() => {
+            setLifecycleForm({ name: "", description: "", order: lifecycleStatuses.length });
+            setIsAddOpen(true);
+          }}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Add New")}
+          </Button>
+        </div>
+
+        {/* Card with search + table + pagination */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          {/* Search Toolbar */}
+          <div className="flex items-center px-5 py-3 border-b border-slate-100">
+            <div className="relative">
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
-                type="file"
-                accept=".csv"
-                onChange={handleImportLifecycleStatuses}
-                className="hidden"
+                type="text"
+                placeholder={t("Search...")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
-              <Button variant="outline" size="sm" asChild>
-                <span>
-                  <Download className="h-4 w-4 mr-2" />
-                  {t("Import")}
-                </span>
+            </div>
+          </div>
+
+          {/* Table */}
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50 border-b border-slate-100 hover:bg-slate-50">
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {lcPaginatedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center">
+                        <Clock className="h-6 w-6 text-primary-600" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-800">{t("No lifecycle statuses found")}</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : lcPaginatedData.map((item) => (
+                <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
+                        setSelectedItem(item);
+                        setLifecycleForm({ name: item.name, description: item.description || "", order: item.order });
+                        setIsEditOpen(true);
+                      }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => {
+                        setSelectedItem(item);
+                        setIsDeleteOpen(true);
+                      }}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">
+              {t("Showing")} {filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredData.length)} {t("of")} {filteredData.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-            </label>
-            <Button variant="outline" size="sm" onClick={handleExportLifecycleStatuses}>
-              <Upload className="h-4 w-4 mr-2" />
-              {t("Export")}
-            </Button>
-            <Button size="sm" onClick={() => {
-              setLifecycleForm({ name: "", description: "", order: lifecycleStatuses.length });
-              setIsAddOpen(true);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("Add New")}
-            </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" disabled={currentPage >= lcTotalPages} onClick={() => setCurrentPage(currentPage + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        <DataGrid
-          columns={lifecycleColumns}
-          data={filteredData}
-          hideSearch={true}
-        />
-
         {/* Add Lifecycle Status Dialog */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="sm:max-w-[400px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
                   {t("Enter the details for the new lifecycle status")}
                 </DialogDescription>
@@ -2473,7 +2450,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2486,11 +2463,11 @@ export default function AssetSettingsPage() {
 
         {/* Edit Lifecycle Status Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Lifecycle Status")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
                   {t("Update the lifecycle status details")}
                 </DialogDescription>
@@ -2528,7 +2505,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2541,11 +2518,11 @@ export default function AssetSettingsPage() {
 
         {/* Delete Lifecycle Status Dialog */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Lifecycle Status")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Delete Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
                   {t("Are you sure you want to delete this lifecycle status? This action cannot be undone.")}
                 </DialogDescription>
@@ -2553,7 +2530,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2577,11 +2554,11 @@ export default function AssetSettingsPage() {
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </button>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("CIA Configuration")}</span>
         </nav>
 
@@ -2590,323 +2567,201 @@ export default function AssetSettingsPage() {
           <h1 className="text-2xl font-bold text-slate-800">{t("CIA Configuration")}</h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Confidentiality */}
-          <Card>
-            <CardHeader className="pb-3">
+        <div className="grid grid-cols-1 gap-6">
+          {/* CIA Rating Card Helper */}
+          {[
+            { key: "Confidentiality", icon: Lock, iconColor: "text-primary-600", ratings: confidentialityRatings },
+            { key: "Integrity", icon: CheckCircle, iconColor: "text-green-600", ratings: integrityRatings },
+            { key: "Availability", icon: RefreshCw, iconColor: "text-purple-600", ratings: availabilityRatings },
+          ].map(({ key, icon: Icon, iconColor, ratings: ratingsList }) => (
+            <div key={key} className="space-y-3">
+              {/* Section header + action button */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Lock className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-lg">{t("Confidentiality")}</CardTitle>
+                  <Icon className={`h-5 w-5 ${iconColor}`} />
+                  <h3 className="text-base font-semibold text-slate-800">{t(key)}</h3>
                 </div>
                 <Button size="sm" onClick={() => {
-                  setCiaRatingType("Confidentiality");
+                  setCiaRatingType(key);
                   setCiaRatingForm({ label: "", value: 0 });
                   setIsCiaAddOpen(true);
                 }}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("New Confidentiality")}
+                  <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                  {t(`New ${key}`)}
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg">
+              {/* Card with table */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Label")}</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Value")}</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">{t("Actions")}</th>
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="pl-5 pr-3 py-2.5 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Label")}</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Value")}</th>
+                      <th className="pl-3 pr-5 py-2.5 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {confidentialityRatings.map((r) => (
-                      <tr key={r.id} className="border-t">
-                        <td className="px-4 py-2 text-sm">{r.label}</td>
-                        <td className="px-4 py-2 text-sm">{r.value}</td>
-                        <td className="px-4 py-2 text-right">
+                    {ratingsList.map((r) => (
+                      <tr key={r.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                        <td className="pl-5 pr-3 py-3 text-sm font-medium text-slate-800">{r.label}</td>
+                        <td className="px-3 py-3 text-sm text-slate-700">{r.value}</td>
+                        <td className="pl-3 pr-5 py-3 text-right">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                               setSelectedCiaRating(r);
                               setCiaRatingForm({ label: r.label, value: r.value });
                               setIsCiaEditOpen(true);
                             }}>
-                              <Pencil className="h-3 w-3" />
+                              <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => {
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => {
                               setSelectedCiaRating(r);
                               setIsCiaDeleteOpen(true);
                             }}>
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </td>
                       </tr>
                     ))}
-                    {confidentialityRatings.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">{t("No ratings defined")}</td></tr>
+                    {ratingsList.length === 0 && (
+                      <tr><td colSpan={3} className="px-5 py-8 text-center text-sm text-slate-500">{t("No ratings defined")}</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Integrity */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <CardTitle className="text-lg">{t("Integrity")}</CardTitle>
-                </div>
-                <Button size="sm" onClick={() => {
-                  setCiaRatingType("Integrity");
-                  setCiaRatingForm({ label: "", value: 0 });
-                  setIsCiaAddOpen(true);
-                }}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("New Integrity")}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Label")}</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Value")}</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">{t("Actions")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {integrityRatings.map((r) => (
-                      <tr key={r.id} className="border-t">
-                        <td className="px-4 py-2 text-sm">{r.label}</td>
-                        <td className="px-4 py-2 text-sm">{r.value}</td>
-                        <td className="px-4 py-2 text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                              setSelectedCiaRating(r);
-                              setCiaRatingForm({ label: r.label, value: r.value });
-                              setIsCiaEditOpen(true);
-                            }}>
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => {
-                              setSelectedCiaRating(r);
-                              setIsCiaDeleteOpen(true);
-                            }}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {integrityRatings.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">{t("No ratings defined")}</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Availability */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5 text-purple-600" />
-                  <CardTitle className="text-lg">{t("Availability")}</CardTitle>
-                </div>
-                <Button size="sm" onClick={() => {
-                  setCiaRatingType("Availability");
-                  setCiaRatingForm({ label: "", value: 0 });
-                  setIsCiaAddOpen(true);
-                }}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("New Availability")}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Label")}</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Value")}</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">{t("Actions")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {availabilityRatings.map((r) => (
-                      <tr key={r.id} className="border-t">
-                        <td className="px-4 py-2 text-sm">{r.label}</td>
-                        <td className="px-4 py-2 text-sm">{r.value}</td>
-                        <td className="px-4 py-2 text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                              setSelectedCiaRating(r);
-                              setCiaRatingForm({ label: r.label, value: r.value });
-                              setIsCiaEditOpen(true);
-                            }}>
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => {
-                              setSelectedCiaRating(r);
-                              setIsCiaDeleteOpen(true);
-                            }}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {availabilityRatings.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">{t("No ratings defined")}</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
+            </div>
+          ))}
         </div>
 
-        {/* Scoring Configuration Grid */}
-        <Card className="mt-6">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">{t("Scoring Configuration")}</CardTitle>
-                <CardDescription>
-                  {scoringCalculationType === "high_of_all"
-                    ? t("Define the high range value for each criticality rating")
-                    : t("Define low and high range values for each criticality rating")}
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={scoringCalculationType} onValueChange={handleCalculationTypeChange}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SCORING_CALCULATION_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={() => {
-                    setScoringConfigForm({ level: "", minScore: 0, maxScore: 0, color: "#16A34A" });
-                    setIsScoringAddOpen(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Scoring Configuration
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium">{t("Rating")}</th>
-                    {scoringCalculationType === "high_of_all" ? (
-                      <th className="px-4 py-3 text-left text-sm font-medium">{t("High range")}</th>
-                    ) : (
-                      <>
-                        <th className="px-4 py-3 text-left text-sm font-medium">{t("Low range")}</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">{t("High range")}</th>
-                      </>
-                    )}
-                    <th className="px-4 py-3 text-right text-sm font-medium">{t("Actions")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getCurrentConfigs().map((config) => (
-                    <tr key={config.id} className="border-t">
-                      <td className="px-4 py-3 text-sm font-medium">{config.level}</td>
-                      {scoringCalculationType === "high_of_all" ? (
-                        <td className="px-4 py-3 text-sm">{config.maxScore}</td>
-                      ) : (
-                        <>
-                          <td className="px-4 py-3 text-sm">{config.minScore}</td>
-                          <td className="px-4 py-3 text-sm">{config.maxScore}</td>
-                        </>
-                      )}
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => {
-                              setSelectedScoringConfig(config);
-                              setScoringConfigForm({
-                                level: config.level,
-                                minScore: config.minScore,
-                                maxScore: config.maxScore,
-                                color: config.color,
-                              });
-                              setIsScoringEditOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => {
-                              setSelectedScoringConfig(config);
-                              setIsScoringDeleteOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {getCurrentConfigs().length === 0 && (
-                    <tr className="border-t">
-                      <td colSpan={scoringCalculationType === "high_of_all" ? 3 : 4} className="px-4 py-8 text-center text-muted-foreground">
-                        {t("No scoring configurations. Click \"New Scoring Configuration\" to add one.")}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">{t("How scoring works:")}</h4>
-              <p className="text-sm text-muted-foreground">
-                {scoringCalculationType === "high_of_all" &&
-                  t("The highest value among Confidentiality, Integrity, and Availability is used as the final score.")}
-                {scoringCalculationType === "addition_of_all" &&
-                  t("All three CIA values are added together to calculate the final score.")}
-                {scoringCalculationType === "product_of_all" &&
-                  t("All three CIA values are multiplied together to calculate the final score.")}
+        {/* Scoring Configuration */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-slate-800">{t("Scoring Configuration")}</h3>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {scoringCalculationType === "high_of_all"
+                  ? t("Define the high range value for each criticality rating")
+                  : t("Define low and high range values for each criticality rating")}
               </p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-2">
+              <Select value={scoringCalculationType} onValueChange={handleCalculationTypeChange}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SCORING_CALCULATION_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setScoringConfigForm({ level: "", minScore: 0, maxScore: 0, color: "#16A34A" });
+                  setIsScoringAddOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                {t("New Scoring Configuration")}
+              </Button>
+            </div>
+          </div>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="pl-5 pr-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Rating")}</th>
+                {scoringCalculationType === "high_of_all" ? (
+                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("High range")}</th>
+                ) : (
+                  <>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Low range")}</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("High range")}</th>
+                  </>
+                )}
+                <th className="pl-3 pr-5 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {getCurrentConfigs().map((config) => (
+                <tr key={config.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <td className="pl-5 pr-3 py-3 text-sm font-medium text-slate-800">{config.level}</td>
+                  {scoringCalculationType === "high_of_all" ? (
+                    <td className="px-3 py-3 text-sm text-slate-700">{config.maxScore}</td>
+                  ) : (
+                    <>
+                      <td className="px-3 py-3 text-sm text-slate-700">{config.minScore}</td>
+                      <td className="px-3 py-3 text-sm text-slate-700">{config.maxScore}</td>
+                    </>
+                  )}
+                  <td className="pl-3 pr-5 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => {
+                          setSelectedScoringConfig(config);
+                          setScoringConfigForm({
+                            level: config.level,
+                            minScore: config.minScore,
+                            maxScore: config.maxScore,
+                            color: config.color,
+                          });
+                          setIsScoringEditOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          setSelectedScoringConfig(config);
+                          setIsScoringDeleteOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {getCurrentConfigs().length === 0 && (
+                <tr>
+                  <td colSpan={scoringCalculationType === "high_of_all" ? 3 : 4} className="px-5 py-8 text-center text-sm text-slate-500">
+                    {t("No scoring configurations. Click \"New Scoring Configuration\" to add one.")}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <div className="mx-5 my-4 p-4 bg-slate-50 rounded-lg">
+            <h4 className="text-sm font-medium text-slate-700 mb-2">{t("How scoring works:")}</h4>
+            <p className="text-sm text-slate-500">
+              {scoringCalculationType === "high_of_all" &&
+                t("The highest value among Confidentiality, Integrity, and Availability is used as the final score.")}
+              {scoringCalculationType === "addition_of_all" &&
+                t("All three CIA values are added together to calculate the final score.")}
+              {scoringCalculationType === "product_of_all" &&
+                t("All three CIA values are multiplied together to calculate the final score.")}
+            </p>
+          </div>
+        </div>
+        </div>
 
         {/* Scoring Config Edit Dialog */}
         <Dialog open={isScoringEditOpen} onOpenChange={setIsScoringEditOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Scoring Configuration")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
                   {t("Update the score range and color for this criticality level")}
                 </DialogDescription>
@@ -2959,7 +2814,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringEditOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2970,11 +2825,11 @@ export default function AssetSettingsPage() {
 
         {/* Scoring Config Add Dialog */}
         <Dialog open={isScoringAddOpen} onOpenChange={setIsScoringAddOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Scoring Configuration")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
                   {t("Add a new scoring configuration for criticality rating")}
                 </DialogDescription>
@@ -3027,7 +2882,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringAddOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3038,11 +2893,11 @@ export default function AssetSettingsPage() {
 
         {/* Scoring Config Delete Dialog */}
         <Dialog open={isScoringDeleteOpen} onOpenChange={setIsScoringDeleteOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Scoring Configuration")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Delete Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
                   {`${t("Are you sure you want to delete the")} "${selectedScoringConfig?.level}" ${t("scoring configuration? This action cannot be undone.")}`}
                 </DialogDescription>
@@ -3050,7 +2905,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringDeleteOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3061,11 +2916,11 @@ export default function AssetSettingsPage() {
 
         {/* CIA Rating Add Dialog */}
         <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("New")} {t(ciaRatingType)}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("New")} {t(ciaRatingType)}</DialogTitle>
                 <DialogDescription>
                   {`${t("Add a new")} ${t(ciaRatingType.toLowerCase())} ${t("rating level")}`}
                 </DialogDescription>
@@ -3096,7 +2951,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3107,11 +2962,11 @@ export default function AssetSettingsPage() {
 
         {/* CIA Rating Edit Dialog */}
         <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Rating")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Rating")}</DialogTitle>
                 <DialogDescription>
                   {t("Update the rating details")}
                 </DialogDescription>
@@ -3140,7 +2995,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3151,11 +3006,11 @@ export default function AssetSettingsPage() {
 
         {/* CIA Rating Delete Dialog */}
         <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
+                <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
                 <DialogDescription>
                   {t("Are you sure you want to delete this rating? This action cannot be undone.")}
                 </DialogDescription>
@@ -3163,7 +3018,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3186,7 +3041,7 @@ export default function AssetSettingsPage() {
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Settings")}</span>
       </nav>
 
@@ -3195,79 +3050,69 @@ export default function AssetSettingsPage() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Asset Settings")}</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {settingCategories.map((category) => {
           const Icon = category.icon;
-          const itemCount = getItemCount(category.id);
 
           return (
-            <div
+            <button
               key={category.id}
-              className="bg-white rounded-xl border border-slate-200 p-5"
+              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
+              onClick={() => {
+                setActiveCategory(category.id);
+                setSearchTerm("");
+              }}
             >
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <Icon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="text-base font-semibold text-slate-800">{category.title}</h4>
-                  <p className="text-sm text-slate-500">
-                    {category.description}
-                  </p>
-                </div>
+              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0">
+                <Icon className="h-5 w-5 text-primary-600" />
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <span className="text-sm text-slate-500">
-                  {itemCount} {itemCount === 1 ? t("item") : t("items")}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setActiveCategory(category.id);
-                    setSearchTerm("");
-                  }}
-                >
-                  {t("Manage")}
-                </Button>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-slate-800">{category.title}</h4>
+                <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  {category.description}
+                </p>
               </div>
-            </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 ltr:rotate-0 rtl:rotate-180" />
+            </button>
           );
         })}
       </div>
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {t("Add")} {entitySubTab === "categories" ? t("Category") :
-                   entitySubTab === "subcategories" ? t("Sub Category") :
-                   entitySubTab === "groups" ? t("Group") :
-                   activeCategory === "lifecycle" ? t("Lifecycle Status") : t("Item")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("Enter the details for the new item")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">
+                {t("Add")} {entitySubTab === "categories" ? t("Category") :
+                     entitySubTab === "subcategories" ? t("Sub Category") :
+                     entitySubTab === "groups" ? t("Group") :
+                     activeCategory === "lifecycle" ? t("Lifecycle Status") : t("Item")}
+              </DialogTitle>
+              <DialogDescription>
+                {t("Enter the details for the new item")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
             {entitySubTab === "categories" && (
               <>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                     placeholder={t("e.g., Hardware, Software, Data")}
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Status")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
                   <Select
                     value={categoryForm.status}
                     onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3281,13 +3126,13 @@ export default function AssetSettingsPage() {
 
             {entitySubTab === "subcategories" && (
               <>
-                <div className="space-y-2">
-                  <Label>{t("Category")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
                   <Select
                     value={subCategoryForm.categoryId}
                     onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder={t("Select category")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -3299,21 +3144,22 @@ export default function AssetSettingsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={subCategoryForm.name}
                     onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
                     placeholder={t("e.g., Server, Firewall, Router")}
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Description")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <textarea
                     value={subCategoryForm.description}
                     onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
                     placeholder={t("Enter description")}
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                    className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
               </>
@@ -3321,26 +3167,27 @@ export default function AssetSettingsPage() {
 
             {entitySubTab === "groups" && (
               <>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={groupForm.name}
                     onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
                     placeholder={t("e.g., Security Tools, Payment Systems")}
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Description")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <textarea
                     value={groupForm.description}
                     onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
                     placeholder={t("Enter description")}
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                    className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Status")} *</Label>
-                  <div className="flex items-center gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Status")} *</Label>
+                  <div className="flex items-center gap-6 mt-1.5">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
@@ -3363,13 +3210,13 @@ export default function AssetSettingsPage() {
                     </label>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Asset Sub Category")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} *</Label>
                   <Select
                     value={groupForm.subCategoryId}
                     onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder={t("Select sub category")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -3385,47 +3232,50 @@ export default function AssetSettingsPage() {
             )}
 
             {entitySubTab === "sensitivity" && (
-              <div className="space-y-2">
-                <Label>{t("Name")} *</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                 <Input
                   value={sensitivityForm.name}
                   onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
                   placeholder={t("e.g., high, medium, low")}
+                  className="mt-1.5"
                 />
               </div>
             )}
 
             {activeCategory === "lifecycle" && (
               <>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={lifecycleForm.name}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
                     placeholder={t("e.g., Active, In Use, Retired")}
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Description")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <textarea
                     value={lifecycleForm.description}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
                     placeholder={t("Enter description")}
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                    className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Order")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Order")}</Label>
                   <Input
                     type="number"
                     value={lifecycleForm.order}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
+                    className="mt-1.5"
                   />
                 </div>
               </>
             )}
           </div>
-          <DialogFooter>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3444,36 +3294,39 @@ export default function AssetSettingsPage() {
             }}>
               {t("Add")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("Edit Item")}</DialogTitle>
-            <DialogDescription>
-              {t("Update the item details")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Item")}</DialogTitle>
+              <DialogDescription>
+                {t("Update the item details")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
             {entitySubTab === "categories" && (
               <>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Status")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
                   <Select
                     value={categoryForm.status}
                     onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3487,13 +3340,13 @@ export default function AssetSettingsPage() {
 
             {entitySubTab === "subcategories" && (
               <>
-                <div className="space-y-2">
-                  <Label>{t("Category")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
                   <Select
                     value={subCategoryForm.categoryId}
                     onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3505,19 +3358,20 @@ export default function AssetSettingsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={subCategoryForm.name}
                     onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Description")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <textarea
                     value={subCategoryForm.description}
                     onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                    className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
               </>
@@ -3525,24 +3379,25 @@ export default function AssetSettingsPage() {
 
             {entitySubTab === "groups" && (
               <>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={groupForm.name}
                     onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Description")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <textarea
                     value={groupForm.description}
                     onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                    className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Status")} *</Label>
-                  <div className="flex items-center gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Status")} *</Label>
+                  <div className="flex items-center gap-6 mt-1.5">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
@@ -3565,13 +3420,13 @@ export default function AssetSettingsPage() {
                     </label>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Asset Sub Category")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} *</Label>
                   <Select
                     value={groupForm.subCategoryId}
                     onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder={t("Select sub category")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -3587,44 +3442,47 @@ export default function AssetSettingsPage() {
             )}
 
             {entitySubTab === "sensitivity" && (
-              <div className="space-y-2">
-                <Label>{t("Name")} *</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                 <Input
                   value={sensitivityForm.name}
                   onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
+                  className="mt-1.5"
                 />
               </div>
             )}
 
             {activeCategory === "lifecycle" && (
               <>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input
                     value={lifecycleForm.name}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Description")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <textarea
                     value={lifecycleForm.description}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                    className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("Order")}</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Order")}</Label>
                   <Input
                     type="number"
                     value={lifecycleForm.order}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
+                    className="mt-1.5"
                   />
                 </div>
               </>
             )}
           </div>
-          <DialogFooter>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3643,20 +3501,22 @@ export default function AssetSettingsPage() {
             }}>
               {t("Save Changes")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("Confirm Delete")}</DialogTitle>
-            <DialogDescription>
-              {t("Are you sure you want to delete this item? This action cannot be undone.")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-4 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
+              <DialogDescription>
+                {t("Are you sure you want to delete this item? This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3675,17 +3535,17 @@ export default function AssetSettingsPage() {
             }}>
               {t("Delete")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* CIA Rating Add Dialog */}
       <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New")} {t(ciaRatingType)}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("New")} {t(ciaRatingType)}</DialogTitle>
               <DialogDescription>
                 {`${t("Add a new")} ${t(ciaRatingType.toLowerCase())} ${t("rating level")}`}
               </DialogDescription>
@@ -3716,7 +3576,7 @@ export default function AssetSettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3727,11 +3587,11 @@ export default function AssetSettingsPage() {
 
       {/* CIA Rating Edit Dialog */}
       <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Rating")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Rating")}</DialogTitle>
               <DialogDescription>
                 {t("Update the rating details")}
               </DialogDescription>
@@ -3760,7 +3620,7 @@ export default function AssetSettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3771,11 +3631,11 @@ export default function AssetSettingsPage() {
 
       {/* CIA Rating Delete Dialog */}
       <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
+              <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription>
                 {t("Are you sure you want to delete this rating? This action cannot be undone.")}
               </DialogDescription>
@@ -3783,7 +3643,7 @@ export default function AssetSettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
               {t("Cancel")}
             </Button>
