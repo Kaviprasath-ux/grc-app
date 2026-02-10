@@ -136,6 +136,7 @@ export default function ControlsMasterDataPage() {
   const limit = 20;
 
   const [wizardStep, setWizardStep] = useState(1);
+  const [controlErrors, setControlErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     controlCode: "",
@@ -380,6 +381,7 @@ export default function ControlsMasterDataPage() {
       continuouslyImproving: "",
     });
     setWizardStep(1);
+    setControlErrors({});
   };
 
   const handleExport = () => {
@@ -597,6 +599,7 @@ export default function ControlsMasterDataPage() {
             setCreateDialogOpen(open);
             if (!open) {
               resetForm();
+              setControlErrors({});
             }
           }}
         >
@@ -658,18 +661,19 @@ export default function ControlsMasterDataPage() {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      {t("Control Domain")}
+                      {t("Control Domain")} <span className="text-error">*</span>
                     </Label>
                     <Select
                       value={formData.domainId || "none"}
-                      onValueChange={(value) =>
+                      onValueChange={(value) => {
                         setFormData({
                           ...formData,
                           domainId: value === "none" ? "" : value,
-                        })
-                      }
+                        });
+                        if (controlErrors.domainId) setControlErrors((prev) => { const { domainId, ...rest } = prev; return rest; });
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${controlErrors.domainId ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select domain")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -681,19 +685,30 @@ export default function ControlsMasterDataPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {controlErrors.domainId && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.domainId}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      {t("Control Name")} *
+                      {t("Control Name")} <span className="text-error">*</span>
                     </Label>
                     <Input
                       value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        if (controlErrors.name) setControlErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                      }}
                       placeholder={t("Enter control name")}
-                      className="mt-1.5 w-full bg-white"
+                      className={`mt-1.5 w-full bg-white ${controlErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                     />
+                    {controlErrors.name && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.name}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
@@ -711,35 +726,42 @@ export default function ControlsMasterDataPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      {t("Control Question")} *
+                      {t("Control Question")} <span className="text-error">*</span>
                     </Label>
                     <Textarea
                       value={formData.controlQuestion}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           controlQuestion: e.target.value,
-                        })
-                      }
+                        });
+                        if (controlErrors.controlQuestion) setControlErrors((prev) => { const { controlQuestion, ...rest } = prev; return rest; });
+                      }}
                       placeholder={t("Enter control question")}
                       rows={2}
-                      className="mt-1.5 w-full bg-white"
+                      className={`mt-1.5 w-full bg-white ${controlErrors.controlQuestion ? "border-red-500 focus:ring-red-500" : ""}`}
                     />
+                    {controlErrors.controlQuestion && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.controlQuestion}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      {t("Function Grouping")} *
+                      {t("Function Grouping")} <span className="text-error">*</span>
                     </Label>
                     <Select
                       value={formData.functionalGrouping || "none"}
-                      onValueChange={(value) =>
+                      onValueChange={(value) => {
                         setFormData({
                           ...formData,
                           functionalGrouping: value === "none" ? "" : value,
-                        })
-                      }
+                        });
+                        if (controlErrors.functionalGrouping) setControlErrors((prev) => { const { functionalGrouping, ...rest } = prev; return rest; });
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${controlErrors.functionalGrouping ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select grouping")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -751,6 +773,11 @@ export default function ControlsMasterDataPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {controlErrors.functionalGrouping && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.functionalGrouping}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -760,19 +787,20 @@ export default function ControlsMasterDataPage() {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      {t("Department")} *
+                      {t("Department")} <span className="text-error">*</span>
                     </Label>
                     <Select
                       value={formData.departmentId || "none"}
-                      onValueChange={(value) =>
+                      onValueChange={(value) => {
                         setFormData({
                           ...formData,
                           departmentId: value === "none" ? "" : value,
                           assigneeId: "",
-                        })
-                      }
+                        });
+                        if (controlErrors.departmentId) setControlErrors((prev) => { const { departmentId, ...rest } = prev; return rest; });
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${controlErrors.departmentId ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -784,21 +812,27 @@ export default function ControlsMasterDataPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {controlErrors.departmentId && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.departmentId}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      {t("Assignee")} *
+                      {t("Assignee")} <span className="text-error">*</span>
                     </Label>
                     <Select
                       value={formData.assigneeId || "none"}
-                      onValueChange={(value) =>
+                      onValueChange={(value) => {
                         setFormData({
                           ...formData,
                           assigneeId: value === "none" ? "" : value,
-                        })
-                      }
+                        });
+                        if (controlErrors.assigneeId) setControlErrors((prev) => { const { assigneeId, ...rest } = prev; return rest; });
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${controlErrors.assigneeId ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select assignee")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -810,10 +844,10 @@ export default function ControlsMasterDataPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {!formData.assigneeId && formData.departmentId && (
-                      <p className="text-error text-sm mt-1">
-                        {t("Please select the assignee")}
-                      </p>
+                    {controlErrors.assigneeId && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{controlErrors.assigneeId}</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -910,20 +944,32 @@ export default function ControlsMasterDataPage() {
                 onClick={() => {
                   setCreateDialogOpen(false);
                   resetForm();
+                  setControlErrors({});
                 }}
               >
                 {t("Cancel")}
               </Button>
               {wizardStep < 3 ? (
                 <Button
-                  onClick={() => setWizardStep(wizardStep + 1)}
-                  disabled={
-                    wizardStep === 1
-                      ? !formData.name ||
-                        !formData.controlQuestion ||
-                        !formData.functionalGrouping
-                      : !formData.departmentId || !formData.assigneeId
-                  }
+                  onClick={() => {
+                    if (wizardStep === 1) {
+                      const errors: Record<string, string> = {};
+                      if (!formData.domainId) errors.domainId = t("Please select the Control Domain");
+                      if (!formData.name.trim()) errors.name = t("Please enter name");
+                      if (!formData.controlQuestion?.trim()) errors.controlQuestion = t("Please enter the question");
+                      if (!formData.functionalGrouping) errors.functionalGrouping = t("Please select the Functional Grouping");
+                      if (Object.keys(errors).length > 0) { setControlErrors(errors); return; }
+                      setControlErrors({});
+                    }
+                    if (wizardStep === 2) {
+                      const errors: Record<string, string> = {};
+                      if (!formData.departmentId) errors.departmentId = t("Please select the Department");
+                      if (!formData.assigneeId) errors.assigneeId = t("Please select the assignee");
+                      if (Object.keys(errors).length > 0) { setControlErrors(errors); return; }
+                      setControlErrors({});
+                    }
+                    setWizardStep(wizardStep + 1);
+                  }}
                 >
                   {t("Next")}
                 </Button>

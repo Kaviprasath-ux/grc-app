@@ -70,6 +70,8 @@ export default function DomainPage() {
     description: "",
   });
 
+  const [domainErrors, setDomainErrors] = useState<Record<string, string>>({});
+
   // Delete dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState<Domain | null>(null);
@@ -105,6 +107,7 @@ export default function DomainPage() {
   const handleOpenCreate = async () => {
     setEditingDomain(null);
     setFormData({ code: "", name: "", description: "" });
+    setDomainErrors({});
     try {
       const response = await fetch("/api/control-domains/next-code");
       if (response.ok) {
@@ -134,18 +137,15 @@ export default function DomainPage() {
       name: domain.name,
       description: domain.description || "",
     });
+    setDomainErrors({});
     setIsDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast({
-        title: t("Validation Error"),
-        description: t("Domain Name is required"),
-        variant: "destructive",
-      });
-      return;
-    }
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = t("Please enter Domain name");
+    if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
+    setDomainErrors({});
 
     try {
       if (editingDomain) {
@@ -392,7 +392,7 @@ export default function DomainPage() {
       </div>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) { setIsDialogOpen(false); setDomainErrors({}); } else { setIsDialogOpen(true); } }}>
         <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">
@@ -417,10 +417,18 @@ export default function DomainPage() {
               </Label>
               <Input
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (domainErrors.name) setDomainErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                }}
                 placeholder={t("Enter domain name")}
-                className="mt-1.5 w-full bg-white"
+                className={`mt-1.5 w-full bg-white ${domainErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {domainErrors.name && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{domainErrors.name}</p>
+                </div>
+              )}
             </div>
             <div>
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
@@ -433,10 +441,10 @@ export default function DomainPage() {
             </div>
           </div>
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsDialogOpen(false); setDomainErrors({}); }}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={!formData.name}>
+            <Button onClick={handleSave}>
               {editingDomain ? t("Update") : t("Create")}
             </Button>
           </div>

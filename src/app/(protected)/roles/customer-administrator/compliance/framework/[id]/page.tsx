@@ -804,6 +804,7 @@ export default function CustomerAdminFrameworkDetailPage({
     requirementType: "Mandatory",
     chapterType: "Domain",
   });
+  const [reqErrors, setReqErrors] = useState<Record<string, string>>({});
 
   // Link Controls
   const [controls, setControls] = useState<Control[]>([]);
@@ -823,6 +824,7 @@ export default function CustomerAdminFrameworkDetailPage({
     status: "Pending",
     endDate: "",
   });
+  const [excErrors, setExcErrors] = useState<Record<string, string>>({});
 
   // SOA state
   const [soaExpandedCats, setSoaExpandedCats] = useState<string[]>([]);
@@ -966,6 +968,15 @@ export default function CustomerAdminFrameworkDetailPage({
   };
 
   const handleAddRequirement = async () => {
+    const errors: Record<string, string> = {};
+    if (!newRequirement.name.trim()) errors.name = t("Requirement name should not be empty.");
+    if (!newRequirement.category.trim()) errors.category = t("Requirement category should not be empty.");
+    if (!newRequirement.code.trim()) errors.code = t("Requirement code should not be empty.");
+    if (Object.keys(errors).length > 0) {
+      setReqErrors(errors);
+      return;
+    }
+    setReqErrors({});
     try {
       const response = await fetch("/api/requirements", {
         method: "POST",
@@ -986,6 +997,7 @@ export default function CustomerAdminFrameworkDetailPage({
           requirementType: "Mandatory",
           chapterType: "Domain",
         });
+        setReqErrors({});
         fetchFramework();
       }
     } catch (error) {
@@ -1138,6 +1150,15 @@ export default function CustomerAdminFrameworkDetailPage({
   };
 
   const handleAddException = async () => {
+    const errors: Record<string, string> = {};
+    if (!newException.name.trim()) errors.name = t("Please enter the exception name");
+    if (!newException.description.trim()) errors.description = t("Please enter the reason for exception");
+    if (!newException.endDate) errors.endDate = t("Please select the enddate");
+    if (Object.keys(errors).length > 0) {
+      setExcErrors(errors);
+      return;
+    }
+    setExcErrors({});
     if (!selectedRequirement) return;
 
     try {
@@ -1156,6 +1177,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       if (response.ok) {
         setIsAddExceptionOpen(false);
+        setExcErrors({});
         setNewException({
           name: "",
           description: "",
@@ -1266,10 +1288,10 @@ export default function CustomerAdminFrameworkDetailPage({
   const hasApiRequirements = framework.requirements && framework.requirements.length > 0;
   const requirementsToUse = hasApiRequirements ? framework.requirements : [];
 
-  // For display, use dummy data as hierarchy (already structured with children)
+  // Build hierarchy from API data (show empty state if no requirements)
   const requirementHierarchy = hasApiRequirements
     ? buildHierarchy(requirementsToUse)
-    : dummyRequirements;
+    : [];
   const filteredHierarchy = filterRequirements(requirementHierarchy);
 
   // Categories filtered by category dropdown
@@ -1303,7 +1325,7 @@ export default function CustomerAdminFrameworkDetailPage({
   // SOA data - grouped by category with search/filter
   const soaHierarchy = hasApiRequirements
     ? buildHierarchy(requirementsToUse)
-    : dummyRequirements;
+    : [];
 
   // Apply SOA search and status filter, keep category grouping for separator rows
   const soaCategories = soaHierarchy.map(cat => {
@@ -1683,12 +1705,16 @@ export default function CustomerAdminFrameworkDetailPage({
                                       ) : (
                                         <div className="rounded-lg border border-slate-200 overflow-hidden divide-y divide-slate-100">
                                           {req.controls!.map((rc) => (
-                                            <div key={rc.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors group">
+                                            <div
+                                              key={rc.id}
+                                              className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors group cursor-pointer"
+                                              onClick={() => router.push(`/compliance/control/${rc.control.id}`)}
+                                            >
                                               <div className="flex items-center gap-2.5 min-w-0">
                                                 <div className="w-6 h-6 rounded-md bg-primary-50 flex items-center justify-center shrink-0">
                                                   <FileText className="h-3 w-3 text-primary-500" />
                                                 </div>
-                                                <span className="text-sm font-medium text-slate-700">{rc.control.controlCode}</span>
+                                                <span className="text-sm font-medium text-primary-600">{rc.control.controlCode}</span>
                                                 <span className="text-xs text-slate-400 truncate">{rc.control.name}</span>
                                               </div>
                                               <div className="flex items-center gap-2 shrink-0">
@@ -2007,7 +2033,7 @@ export default function CustomerAdminFrameworkDetailPage({
       </Tabs>
 
       {/* Add Requirement Dialog */}
-      <Dialog open={isAddRequirementOpen} onOpenChange={setIsAddRequirementOpen}>
+      <Dialog open={isAddRequirementOpen} onOpenChange={(open) => { if (!open) { setReqErrors({}); } setIsAddRequirementOpen(open); }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
@@ -2023,42 +2049,66 @@ export default function CustomerAdminFrameworkDetailPage({
             </p>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Name")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Name")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.name}
-                onChange={(e) =>
-                  setNewRequirement({ ...newRequirement, name: e.target.value })
-                }
+                onChange={(e) => {
+                  setNewRequirement({ ...newRequirement, name: e.target.value });
+                  if (reqErrors.name) {
+                    setReqErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                  }
+                }}
                 placeholder={t("Enter Name")}
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${reqErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {reqErrors.name && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{reqErrors.name}</p>
+                </div>
+              )}
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Category")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Category")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.category}
-                onChange={(e) =>
+                onChange={(e) => {
                   setNewRequirement({
                     ...newRequirement,
                     category: e.target.value,
-                  })
-                }
+                  });
+                  if (reqErrors.category) {
+                    setReqErrors((prev) => { const { category, ...rest } = prev; return rest; });
+                  }
+                }}
                 placeholder={t("Enter Category")}
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${reqErrors.category ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {reqErrors.category && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{reqErrors.category}</p>
+                </div>
+              )}
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.code}
-                onChange={(e) =>
-                  setNewRequirement({ ...newRequirement, code: e.target.value })
-                }
+                onChange={(e) => {
+                  setNewRequirement({ ...newRequirement, code: e.target.value });
+                  if (reqErrors.code) {
+                    setReqErrors((prev) => { const { code, ...rest } = prev; return rest; });
+                  }
+                }}
                 placeholder={t("Enter Code")}
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${reqErrors.code ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {reqErrors.code && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{reqErrors.code}</p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -2120,13 +2170,12 @@ export default function CustomerAdminFrameworkDetailPage({
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
-              onClick={() => setIsAddRequirementOpen(false)}
+              onClick={() => { setReqErrors({}); setIsAddRequirementOpen(false); }}
             >
               {t("Cancel")}
             </Button>
             <Button
               onClick={handleAddRequirement}
-              disabled={!newRequirement.name || !newRequirement.code}
             >
               {t("Add Requirement")}
             </Button>
@@ -2260,7 +2309,7 @@ export default function CustomerAdminFrameworkDetailPage({
       </Dialog>
 
       {/* Add Exception Dialog */}
-      <Dialog open={isAddExceptionOpen} onOpenChange={setIsAddExceptionOpen}>
+      <Dialog open={isAddExceptionOpen} onOpenChange={(open) => { if (!open) { setExcErrors({}); } setIsAddExceptionOpen(open); }}>
         <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
@@ -2300,27 +2349,39 @@ export default function CustomerAdminFrameworkDetailPage({
               </Label>
               <Input
                 value={newException.name}
-                onChange={(e) =>
-                  setNewException({ ...newException, name: e.target.value })
-                }
+                onChange={(e) => {
+                  setNewException({ ...newException, name: e.target.value });
+                  if (excErrors.name) { setExcErrors((prev) => { const { name, ...rest } = prev; return rest; }); }
+                }}
                 placeholder={t("Enter exception name")}
-                className="mt-1.5 bg-white"
+                className={`mt-1.5 bg-white ${excErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {excErrors.name && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{excErrors.name}</p>
+                </div>
+              )}
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Description/Justification")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description/Justification")} <span className="text-red-500">*</span></Label>
               <Textarea
                 value={newException.description}
-                onChange={(e) =>
+                onChange={(e) => {
                   setNewException({
                     ...newException,
                     description: e.target.value,
-                  })
-                }
+                  });
+                  if (excErrors.description) { setExcErrors((prev) => { const { description, ...rest } = prev; return rest; }); }
+                }}
                 placeholder={t("Provide justification for this exception")}
-                className="mt-1.5 bg-white min-h-[100px]"
+                className={`mt-1.5 bg-white min-h-[100px] ${excErrors.description ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {excErrors.description && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{excErrors.description}</p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -2349,15 +2410,21 @@ export default function CustomerAdminFrameworkDetailPage({
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("End Date")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("End Date")} <span className="text-red-500">*</span></Label>
                 <DatePicker
                   value={newException.endDate}
-                  onChange={(date) =>
-                    setNewException({ ...newException, endDate: date ? date.toISOString().split("T")[0] : "" })
-                  }
+                  onChange={(date) => {
+                    setNewException({ ...newException, endDate: date ? date.toISOString().split("T")[0] : "" });
+                    if (excErrors.endDate) { setExcErrors((prev) => { const { endDate, ...rest } = prev; return rest; }); }
+                  }}
                   placeholder={t("Select date")}
                   className="mt-1.5 bg-white"
                 />
+                {excErrors.endDate && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{excErrors.endDate}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2367,6 +2434,7 @@ export default function CustomerAdminFrameworkDetailPage({
             <Button
               variant="outline"
               onClick={() => {
+                setExcErrors({});
                 setIsAddExceptionOpen(false);
                 setSelectedRequirement(null);
               }}

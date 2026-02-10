@@ -153,6 +153,7 @@ export default function GovernanceMasterDataPage() {
     content: "",
     status: "Not Uploaded",
   });
+  const [policyErrors, setPolicyErrors] = useState<Record<string, string>>({});
 
   // Get users filtered by selected department
   const filteredUsers = formData.departmentId
@@ -369,6 +370,7 @@ export default function GovernanceMasterDataPage() {
       content: "",
       status: "Not Uploaded",
     });
+    setPolicyErrors({});
     setWizardStep(1);
     setSelectedControlIds(new Set());
     setControlCategoryFilter("");
@@ -729,12 +731,18 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Input
                     value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      if (policyErrors.name) setPolicyErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("Enter policy name")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${policyErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                   />
+                  {policyErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.name}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
@@ -742,15 +750,16 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Select
                     value={formData.departmentId || "none"}
-                    onValueChange={(value) =>
+                    onValueChange={(value) => {
                       setFormData({
                         ...formData,
                         departmentId: value === "none" ? "" : value,
                         assigneeId: "",
-                      })
-                    }
+                      });
+                      if (policyErrors.departmentId) setPolicyErrors((prev) => { const { departmentId, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.departmentId ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -762,6 +771,11 @@ export default function GovernanceMasterDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {policyErrors.departmentId && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.departmentId}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
@@ -769,11 +783,12 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Select
                     value={formData.documentType || "none"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, documentType: value === "none" ? "" : value })
-                    }
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, documentType: value === "none" ? "" : value });
+                      if (policyErrors.documentType) setPolicyErrors((prev) => { const { documentType, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.documentType ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select document type")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -785,6 +800,11 @@ export default function GovernanceMasterDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {policyErrors.documentType && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.documentType}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
@@ -792,11 +812,12 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Select
                     value={formData.recurrence || "none"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, recurrence: value === "none" ? "" : value })
-                    }
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, recurrence: value === "none" ? "" : value });
+                      if (policyErrors.recurrence) setPolicyErrors((prev) => { const { recurrence, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.recurrence ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -808,8 +829,10 @@ export default function GovernanceMasterDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {!formData.recurrence && formData.name && (
-                    <p className="text-red-500 text-sm mt-1">{t("Please select the recurrence")}</p>
+                  {policyErrors.recurrence && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.recurrence}</p>
+                    </div>
                   )}
                 </div>
                 <div>
@@ -818,11 +841,12 @@ export default function GovernanceMasterDataPage() {
                   </Label>
                   <Select
                     value={formData.assigneeId || "none"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, assigneeId: value === "none" ? "" : value })
-                    }
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, assigneeId: value === "none" ? "" : value });
+                      if (policyErrors.assigneeId) setPolicyErrors((prev) => { const { assigneeId, ...rest } = prev; return rest; });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.assigneeId ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select assignee")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -834,8 +858,10 @@ export default function GovernanceMasterDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {!formData.assigneeId && formData.departmentId && (
-                    <p className="text-red-500 text-sm mt-1">{t("Please select the assignee")}</p>
+                  {policyErrors.assigneeId && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{policyErrors.assigneeId}</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1021,14 +1047,25 @@ export default function GovernanceMasterDataPage() {
                 {t("Previous")}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setCreateDialogOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => { resetForm(); setCreateDialogOpen(false); }}>
               {t("Cancel")}
             </Button>
             {wizardStep < 3 ? (
               <Button
                 size="sm"
-                onClick={() => setWizardStep(wizardStep + 1)}
-                disabled={wizardStep === 1 && (!formData.name || !formData.departmentId || !formData.documentType || !formData.recurrence || !formData.assigneeId)}
+                onClick={() => {
+                  if (wizardStep === 1) {
+                    const errors: Record<string, string> = {};
+                    if (!formData.name) errors.name = t("Please enter the policy name");
+                    if (!formData.departmentId) errors.departmentId = t("Please select the Department");
+                    if (!formData.documentType) errors.documentType = t("Please select the document type");
+                    if (!formData.recurrence) errors.recurrence = t("Please select the recurrence");
+                    if (!formData.assigneeId) errors.assigneeId = t("Please select the assignee");
+                    if (Object.keys(errors).length > 0) { setPolicyErrors(errors); return; }
+                    setPolicyErrors({});
+                  }
+                  setWizardStep(wizardStep + 1);
+                }}
               >
                 {t("Next")}
               </Button>

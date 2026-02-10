@@ -64,6 +64,7 @@ export default function DomainMasterDataPage() {
     code: "",
     name: "",
   });
+  const [domainErrors, setDomainErrors] = useState<Record<string, string>>({});
 
   const fetchDomains = useCallback(async () => {
     try {
@@ -84,6 +85,12 @@ export default function DomainMasterDataPage() {
   }, [fetchDomains]);
 
   const handleCreate = async () => {
+    const errors: Record<string, string> = {};
+    if (!formData.code.trim()) errors.code = t("Please enter Domain Code");
+    if (!formData.name.trim()) errors.name = t("Please enter Domain name");
+    if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
+    setDomainErrors({});
+
     try {
       const response = await fetch("/api/control-domains", {
         method: "POST",
@@ -103,6 +110,12 @@ export default function DomainMasterDataPage() {
 
   const handleEdit = async () => {
     if (!selectedDomain) return;
+    const errors: Record<string, string> = {};
+    if (!formData.code.trim()) errors.code = t("Please enter Domain Code");
+    if (!formData.name.trim()) errors.name = t("Please enter Domain name");
+    if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
+    setDomainErrors({});
+
     try {
       const response = await fetch(`/api/control-domains/${selectedDomain.id}`, {
         method: "PUT",
@@ -164,6 +177,7 @@ export default function DomainMasterDataPage() {
       code: domain.code || "",
       name: domain.name,
     });
+    setDomainErrors({});
     setEditDialogOpen(true);
   };
 
@@ -313,9 +327,9 @@ export default function DomainMasterDataPage() {
           <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
         </Button>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); setDomainErrors({}); } else { setCreateDialogOpen(true); } }}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button size="sm" onClick={() => setDomainErrors({})}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Domain")}
             </Button>
@@ -326,15 +340,23 @@ export default function DomainMasterDataPage() {
               </div>
               <div className="px-6 py-5 space-y-4">
                 <div>
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Domain Code")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    {t("Domain Code")} <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, code: e.target.value });
+                      if (domainErrors.code) setDomainErrors((prev) => { const { code, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("e.g., GOV")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${domainErrors.code ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {domainErrors.code && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{domainErrors.code}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -342,12 +364,18 @@ export default function DomainMasterDataPage() {
                   </Label>
                   <Input
                     value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      if (domainErrors.name) setDomainErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("e.g., Governance")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${domainErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {domainErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{domainErrors.name}</p>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
@@ -356,11 +384,12 @@ export default function DomainMasterDataPage() {
                   onClick={() => {
                     setCreateDialogOpen(false);
                     resetForm();
+                    setDomainErrors({});
                   }}
                 >
                   {t("Cancel")}
                 </Button>
-                <Button onClick={handleCreate} disabled={!formData.name}>
+                <Button onClick={handleCreate}>
                   {t("Create")}
                 </Button>
               </div>
@@ -467,21 +496,29 @@ export default function DomainMasterDataPage() {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { if (!open) { setEditDialogOpen(false); setDomainErrors({}); } else { setEditDialogOpen(true); } }}>
         <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Domain")}</DialogTitle>
           </div>
           <div className="px-6 py-5 space-y-4">
             <div>
-              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Domain Code")}</Label>
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {t("Domain Code")} <span className="text-red-500">*</span>
+              </Label>
               <Input
                 value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
-                className="mt-1.5 w-full bg-white"
+                onChange={(e) => {
+                  setFormData({ ...formData, code: e.target.value });
+                  if (domainErrors.code) setDomainErrors((prev) => { const { code, ...rest } = prev; return rest; });
+                }}
+                className={`mt-1.5 w-full bg-white ${domainErrors.code ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {domainErrors.code && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{domainErrors.code}</p>
+                </div>
+              )}
             </div>
             <div>
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -489,11 +526,17 @@ export default function DomainMasterDataPage() {
               </Label>
               <Input
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="mt-1.5 w-full bg-white"
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (domainErrors.name) setDomainErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                }}
+                className={`mt-1.5 w-full bg-white ${domainErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {domainErrors.name && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{domainErrors.name}</p>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
@@ -503,11 +546,12 @@ export default function DomainMasterDataPage() {
                 setEditDialogOpen(false);
                 setSelectedDomain(null);
                 resetForm();
+                setDomainErrors({});
               }}
             >
               {t("Cancel")}
             </Button>
-            <Button onClick={handleEdit} disabled={!formData.name}>
+            <Button onClick={handleEdit}>
               {t("Save")}
             </Button>
           </div>

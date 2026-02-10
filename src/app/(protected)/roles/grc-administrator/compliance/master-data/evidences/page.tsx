@@ -645,7 +645,7 @@ export default function EvidencesMasterDataPage() {
             <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Button size="sm" onClick={() => setIsNewDialogOpen(true)}>
+          <Button size="sm" onClick={() => { resetNewForm(); setIsNewDialogOpen(true); }}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("New Evidence")}
           </Button>
@@ -807,7 +807,9 @@ export default function EvidencesMasterDataPage() {
                     className={`mt-1.5 w-full bg-white ${newFormErrors.name ? "border-red-500" : ""}`}
                   />
                   {newFormErrors.name && (
-                    <p className="text-sm text-red-500 mt-1">{newFormErrors.name}</p>
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{newFormErrors.name}</p>
+                    </div>
                   )}
                 </div>
 
@@ -836,7 +838,9 @@ export default function EvidencesMasterDataPage() {
                       </SelectContent>
                     </Select>
                     {newFormErrors.recurrence && (
-                      <p className="text-sm text-red-500 mt-1">{newFormErrors.recurrence}</p>
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{newFormErrors.recurrence}</p>
+                      </div>
                     )}
                   </div>
 
@@ -865,7 +869,9 @@ export default function EvidencesMasterDataPage() {
                       </SelectContent>
                     </Select>
                     {newFormErrors.departmentId && (
-                      <p className="text-sm text-red-500 mt-1">{newFormErrors.departmentId}</p>
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{newFormErrors.departmentId}</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -895,7 +901,9 @@ export default function EvidencesMasterDataPage() {
                     </SelectContent>
                   </Select>
                   {newFormErrors.assigneeId && (
-                    <p className="text-sm text-red-500 mt-1">{newFormErrors.assigneeId}</p>
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{newFormErrors.assigneeId}</p>
+                    </div>
                   )}
                 </div>
 
@@ -1075,7 +1083,7 @@ export default function EvidencesMasterDataPage() {
                 {t("Previous")}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setIsNewDialogOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => { resetNewForm(); setIsNewDialogOpen(false); }}>
               {t("Cancel")}
             </Button>
             {newStep < 3 ? (

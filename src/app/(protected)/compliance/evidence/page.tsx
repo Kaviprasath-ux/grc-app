@@ -286,6 +286,7 @@ export default function EvidencePage() {
 
   // Step 2 - Control selection
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
+  const [evidenceErrors, setEvidenceErrors] = useState<Record<string, string>>({});
   const [controlFilters, setControlFilters] = useState({
     domainId: "",
     frameworkId: "",
@@ -455,6 +456,7 @@ export default function EvidencePage() {
       functionalGrouping: "",
       search: "",
     });
+    setEvidenceErrors({});
   };
 
   const handleDeleteAll = async () => {
@@ -1218,50 +1220,79 @@ export default function EvidencePage() {
             {/* Step 1: Basic Information */}
             {createStep === 1 && (
               <div className="space-y-4">
-                
+
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Evidence Requirement")} *</Label>
                   <Input
                     value={createForm.name}
-                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setCreateForm({ ...createForm, name: e.target.value });
+                      if (evidenceErrors.name) setEvidenceErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("Enter evidence requirement")}
-                    className="mt-1.5 w-full"
+                    className={`mt-1.5 w-full ${evidenceErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                   />
+                  {evidenceErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{evidenceErrors.name}</p>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")} *</Label>
-                  <Select value={createForm.recurrence} onValueChange={(v) => setCreateForm({ ...createForm, recurrence: v })}>
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder={t("Select recurrence")} />
-                    </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      {recurrenceOptions.map((r) => (
-                        <SelectItem key={r} value={r}>{t(r)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")} *</Label>
-                  <Select value={createForm.departmentId} onValueChange={(v) => setCreateForm({ ...createForm, departmentId: v, assigneeId: "" })}>
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder={t("Select department")} />
-                    </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      {getCustomerScopedDepartments().map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")} *</Label>
+                    <Select value={createForm.recurrence} onValueChange={(v) => {
+                      setCreateForm({ ...createForm, recurrence: v });
+                      if (evidenceErrors.recurrence) setEvidenceErrors((prev) => { const { recurrence, ...rest } = prev; return rest; });
+                    }}>
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${evidenceErrors.recurrence ? "border-red-500 focus:ring-red-500" : ""}`}>
+                        <SelectValue placeholder={t("Select recurrence")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                        {recurrenceOptions.map((r) => (
+                          <SelectItem key={r} value={r}>{t(r)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {evidenceErrors.recurrence && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{evidenceErrors.recurrence}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")} *</Label>
+                    <Select value={createForm.departmentId} onValueChange={(v) => {
+                      setCreateForm({ ...createForm, departmentId: v, assigneeId: "" });
+                      if (evidenceErrors.departmentId) setEvidenceErrors((prev) => { const { departmentId, ...rest } = prev; return rest; });
+                    }}>
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${evidenceErrors.departmentId ? "border-red-500 focus:ring-red-500" : ""}`}>
+                        <SelectValue placeholder={t("Select department")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                        {getCustomerScopedDepartments().map((d) => (
+                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {evidenceErrors.departmentId && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{evidenceErrors.departmentId}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assignee")} *</Label>
                   <Select
                     value={createForm.assigneeId}
-                    onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })}
+                    onValueChange={(v) => {
+                      setCreateForm({ ...createForm, assigneeId: v });
+                      if (evidenceErrors.assigneeId) setEvidenceErrors((prev) => { const { assigneeId, ...rest } = prev; return rest; });
+                    }}
                     disabled={!createForm.departmentId}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${evidenceErrors.assigneeId ? "border-red-500 focus:ring-red-500" : ""}`}>
                       <SelectValue placeholder={
                         !createForm.departmentId
                           ? t("Select department first")
@@ -1280,6 +1311,11 @@ export default function EvidencePage() {
                       )}
                     </SelectContent>
                   </Select>
+                  {evidenceErrors.assigneeId && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{evidenceErrors.assigneeId}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
@@ -1445,10 +1481,18 @@ export default function EvidencePage() {
             </Button>
             <Button
               onClick={() => {
+                if (createStep === 1) {
+                  const errors: Record<string, string> = {};
+                  if (!createForm.name) errors.name = t("Please enter the evidence name");
+                  if (!createForm.recurrence) errors.recurrence = t("Please select the recurrence");
+                  if (!createForm.departmentId) errors.departmentId = t("Please select the Department");
+                  if (!createForm.assigneeId) errors.assigneeId = t("Please select the assignee");
+                  if (Object.keys(errors).length > 0) { setEvidenceErrors(errors); return; }
+                  setEvidenceErrors({});
+                }
                 if (createStep < 3) setCreateStep(createStep + 1);
                 else handleCreate();
               }}
-              disabled={createStep === 1 && !canProceedStep1}
             >
               {createStep === 3 ? t("Create Evidence") : t("Next")}
             </Button>

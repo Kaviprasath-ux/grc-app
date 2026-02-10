@@ -95,6 +95,7 @@ export default function GovernanceTemplatesPage() {
   });
   const [dragOver, setDragOver] = useState(false);
   const [fileError, setFileError] = useState("");
+  const [templateErrors, setTemplateErrors] = useState<Record<string, string>>({});
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -122,6 +123,7 @@ export default function GovernanceTemplatesPage() {
       return;
     }
     setFileError("");
+    if (templateErrors.file) setTemplateErrors((prev) => { const { file, ...rest } = prev; return rest; });
     setFormData({ ...formData, file });
   };
 
@@ -149,6 +151,7 @@ export default function GovernanceTemplatesPage() {
         return;
       }
       setFileError("");
+      if (templateErrors.file) setTemplateErrors((prev) => { const { file, ...rest } = prev; return rest; });
       setFormData({ ...formData, file });
     }
   };
@@ -171,7 +174,11 @@ export default function GovernanceTemplatesPage() {
   };
 
   const handleCreate = async () => {
-    if (!formData.file || !formData.governanceType) return;
+    const errors: Record<string, string> = {};
+    if (!formData.governanceType) errors.governanceType = t("Please select the template");
+    if (!formData.file) errors.file = t("Please upload a template file");
+    if (Object.keys(errors).length > 0) { setTemplateErrors(errors); return; }
+    setTemplateErrors({});
 
     try {
       const form = new FormData();
@@ -357,9 +364,9 @@ export default function GovernanceTemplatesPage() {
             <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); resetForm(); setTemplateErrors({}); setFileError(""); } else { setCreateDialogOpen(true); } }}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setTemplateErrors({})}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("New Template")}
               </Button>
@@ -378,11 +385,12 @@ export default function GovernanceTemplatesPage() {
                     </Label>
                     <Select
                       value={formData.governanceType}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, governanceType: value })
-                      }
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, governanceType: value });
+                        if (templateErrors.governanceType) setTemplateErrors((prev) => { const { governanceType, ...rest } = prev; return rest; });
+                      }}
                     >
-                      <SelectTrigger className="w-full bg-white">
+                      <SelectTrigger className={`w-full bg-white ${templateErrors.governanceType ? "border-red-500 focus:ring-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select type")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -391,6 +399,11 @@ export default function GovernanceTemplatesPage() {
                         <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {templateErrors.governanceType && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{templateErrors.governanceType}</p>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
@@ -400,7 +413,7 @@ export default function GovernanceTemplatesPage() {
                       className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
                         dragOver
                           ? "border-primary bg-primary/5"
-                          : fileError
+                          : fileError || templateErrors.file
                             ? "border-red-400 bg-red-50"
                             : "border-slate-300 hover:border-slate-400"
                       }`}
@@ -455,6 +468,11 @@ export default function GovernanceTemplatesPage() {
                     {fileError && (
                       <p className="text-sm text-red-500 mt-1">{fileError}</p>
                     )}
+                    {templateErrors.file && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{templateErrors.file}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -464,13 +482,13 @@ export default function GovernanceTemplatesPage() {
                   onClick={() => {
                     setCreateDialogOpen(false);
                     resetForm();
+                    setTemplateErrors({});
                   }}
                 >
                   {t("Cancel")}
                 </Button>
                 <Button
                   onClick={handleCreate}
-                  disabled={!formData.file || !formData.governanceType}
                 >
                   {t("Save")}
                 </Button>
