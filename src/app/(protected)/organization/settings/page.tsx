@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, ChevronRight, Home, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, ChevronRight, Home, Package, Mail } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Switch } from "@/components/ui/switch";
 
 interface SettingItem {
   id: string;
@@ -89,6 +90,10 @@ export default function OrganizationSettingsPage() {
   const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(initialSettingsData);
   const [loadingData, setLoadingData] = useState(false);
 
+  // Email notifications toggle state
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
+  const [emailToggleLoading, setEmailToggleLoading] = useState(false);
+
   // Dialog states
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
@@ -129,6 +134,56 @@ export default function OrganizationSettingsPage() {
       fetchCategoryData(activeCategory);
     }
   }, [activeCategory, fetchCategoryData]);
+
+  // Fetch email notifications setting on mount
+  useEffect(() => {
+    const fetchEmailNotificationsSetting = async () => {
+      try {
+        const res = await fetch("/api/organization-settings/email-notifications");
+        if (res.ok) {
+          const data = await res.json();
+          setEmailNotificationsEnabled(data.emailNotificationsEnabled);
+        }
+      } catch (error) {
+        console.error("Error fetching email notifications setting:", error);
+      }
+    };
+    fetchEmailNotificationsSetting();
+  }, []);
+
+  // Handle email notifications toggle
+  const handleEmailNotificationsToggle = async (enabled: boolean) => {
+    setEmailToggleLoading(true);
+    try {
+      const res = await fetch("/api/organization-settings/email-notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emailNotificationsEnabled: enabled }),
+      });
+      if (res.ok) {
+        setEmailNotificationsEnabled(enabled);
+        toast({
+          title: t("Success"),
+          description: enabled
+            ? t("Email notifications enabled")
+            : t("Email notifications disabled"),
+        });
+      } else {
+        toast({
+          title: t("Error"),
+          description: t("Failed to update email notifications setting"),
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: t("Error"),
+        description: t("Failed to update email notifications setting"),
+        variant: "destructive",
+      });
+    }
+    setEmailToggleLoading(false);
+  };
 
   // Get current category data
   const currentCategory = settingCategories.find((c) => c.id === activeCategory);
@@ -528,6 +583,27 @@ export default function OrganizationSettingsPage() {
             </button>
           );
         })}
+
+        {/* Email Notifications Toggle Card */}
+        <div
+          className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left transition-all hover:border-primary-200 hover:shadow-md hover:shadow-primary-100/50"
+        >
+          <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors group-hover:bg-primary-100">
+            <Mail className="h-5 w-5 text-primary-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-semibold text-slate-800">{t("Email Notifications")}</h4>
+            <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+              {t("Enable or disable email notifications")}
+            </p>
+          </div>
+          <Switch
+            checked={emailNotificationsEnabled}
+            onCheckedChange={handleEmailNotificationsToggle}
+            disabled={emailToggleLoading}
+            className="flex-shrink-0"
+          />
+        </div>
       </div>
     </div>
   );

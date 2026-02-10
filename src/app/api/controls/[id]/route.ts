@@ -267,19 +267,8 @@ export const PUT = withAuth(
       }
     }
 
-    // Notify new owner if changed and different from actor
-    if (ownerId && ownerId !== existing.ownerId && ownerId !== session.id && session.customerAccountId) {
-      await notificationService.notifyControlAssigned({
-        customerAccountId: session.customerAccountId,
-        actorId: session.id,
-        ownerId: ownerId,
-        controlId: control.id,
-        controlCode: control.controlCode,
-        controlName: control.name,
-      });
-    }
-    // Notify new assignee if changed, different from actor, and different from owner
-    if (assigneeId && assigneeId !== existing.assigneeId && assigneeId !== session.id && assigneeId !== ownerId && session.customerAccountId) {
+    // Notify new assignee/reviewer if changed (owner notifications removed per requirements)
+    if (assigneeId && assigneeId !== existing.assigneeId && assigneeId !== session.id && session.customerAccountId) {
       await notificationService.notifyControlAssigned({
         customerAccountId: session.customerAccountId,
         actorId: session.id,

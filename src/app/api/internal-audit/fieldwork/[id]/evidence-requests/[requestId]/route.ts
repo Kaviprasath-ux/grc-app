@@ -129,16 +129,15 @@ export const PATCH = withAuth(
       const customerAccountId = existingRequest.engagement?.customerAccountId;
       const auditeeId = updatedRequest.auditeeId || existingRequest.auditeeId;
 
-      // Notify auditee about clarification request (feedback requested)
+      // Notify auditee about clarification request (aiReviewStatus: Needs Attention)
       if (isClarificationRequest && auditeeId && auditeeId !== session.id && customerAccountId) {
-        await notificationService.notifyFeedbackRequested({
+        await notificationService.notifyClarificationRequested({
           customerAccountId,
           actorId: session.id,
-          feedbackProviderId: auditeeId,
-          entityType: 'Evidence Request',
-          entityId: updatedRequest.id,
-          entityName: updatedRequest.title,
-          description: body.clarificationComment ? body.clarificationComment.substring(0, 100) : 'Clarification needed',
+          auditeeId,
+          requestId: updatedRequest.id,
+          requestName: updatedRequest.title,
+          clarificationComment: body.clarificationComment ? body.clarificationComment.substring(0, 100) : undefined,
           link: `/internal-audit/fieldwork/${engagementId}`,
         });
       }

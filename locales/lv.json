@@ -794,5 +794,10 @@
   "assets": "aktīvi",
   "lifecycle statuses": "dzīves cikla statusi",
   "failed": "neizdevās",
-  "category not found": "kategorija nav atrasta"
+  "category not found": "kategorija nav atrasta",
+  "Email Notifications": "E-pasta paziņojumi",
+  "Enable or disable email notifications": "Iespējot vai atspējot e-pasta paziņojumus",
+  "Email notifications enabled": "E-pasta paziņojumi iespējoti",
+  "Email notifications disabled": "E-pasta paziņojumi atspējoti",
+  "Failed to update email notifications setting": "Neizdevās atjaunināt e-pasta paziņojumu iestatījumus"
 }

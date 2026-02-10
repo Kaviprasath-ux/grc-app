@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
+import { notificationService } from '@/lib/notification-service';
 
 // GET /api/internal-audit/engagements - Get all audit engagements
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -216,6 +217,32 @@ export const POST = withAuth(
             data: { engagementId: engagement.id }
           });
         }
+      }
+
+      // Notify assigned auditor if different from creator
+      if (auditorId && auditorId !== session.id && customerAccountId) {
+        await notificationService.notifyEngagementAssigned({
+          customerAccountId,
+          actorId: session.id,
+          assigneeId: auditorId,
+          engagementId: engagement.id,
+          engagementCode: engagement.auditId,
+          engagementName: engagement.engagementTitle || engagement.auditId,
+          role: 'Auditor',
+        });
+      }
+
+      // Notify assigned auditee if different from creator and auditor
+      if (auditeeId && auditeeId !== session.id && auditeeId !== auditorId && customerAccountId) {
+        await notificationService.notifyEngagementAssigned({
+          customerAccountId,
+          actorId: session.id,
+          assigneeId: auditeeId,
+          engagementId: engagement.id,
+          engagementCode: engagement.auditId,
+          engagementName: engagement.engagementTitle || engagement.auditId,
+          role: 'Auditee',
+        });
       }
 
       return NextResponse.json(engagement, { status: 201 });

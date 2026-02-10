@@ -180,19 +180,8 @@ export const POST = withAuth(
         },
       });
 
-      // Notify owner if different from creator
-      if (ownerId && ownerId !== session.id && session.customerAccountId) {
-        await notificationService.notifyControlAssigned({
-          customerAccountId: session.customerAccountId,
-          actorId: session.id,
-          ownerId: ownerId,
-          controlId: control.id,
-          controlCode: control.controlCode,
-          controlName: control.name,
-        });
-      }
-      // Notify assignee if different from creator and owner
-      if (assigneeId && assigneeId !== session.id && assigneeId !== ownerId && session.customerAccountId) {
+      // Notify assignee/reviewer if different from creator (owner notifications removed per requirements)
+      if (assigneeId && assigneeId !== session.id && session.customerAccountId) {
         await notificationService.notifyControlAssigned({
           customerAccountId: session.customerAccountId,
           actorId: session.id,

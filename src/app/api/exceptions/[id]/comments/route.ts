@@ -88,22 +88,27 @@ export const POST = withAuth(
         },
       });
 
-      // Notify the requester about the comment (if different from commenter)
-      if (exception.requesterId && exception.requesterId !== session.id && exception.customerAccountId) {
-        await notificationService.notifyCommentAdded({
+      // Determine if commenter is the approver or requester
+      const isApproverCommenting = session.id === exception.approverId;
+      const isRequesterCommenting = session.id === exception.requesterId;
+
+      // When APPROVER comments → notify REQUESTER with "Sent back" title
+      if (isApproverCommenting && exception.requesterId && exception.requesterId !== session.id && exception.customerAccountId) {
+        await notificationService.send({
           customerAccountId: exception.customerAccountId,
           actorId: session.id,
           recipientId: exception.requesterId,
-          entityType: "Exception",
-          entityId: exception.id,
-          entityName: exception.name,
-          commentPreview: content.substring(0, 100),
+          event: 'COMMENT_ADDED',
+          title: 'Sent back',
+          message: `New comment on Exception "${exception.name}": ${content.substring(0, 100)}`,
+          relatedEntityType: 'Exception',
+          relatedEntityId: exception.id,
           link: `/compliance/exceptions/${exception.id}`,
         });
       }
 
-      // Also notify the approver about the comment (if different from commenter and requester)
-      if (exception.approverId && exception.approverId !== session.id && exception.approverId !== exception.requesterId && exception.customerAccountId) {
+      // When REQUESTER comments → notify APPROVER with "New comment" title
+      if (isRequesterCommenting && exception.approverId && exception.approverId !== session.id && exception.customerAccountId) {
         await notificationService.notifyCommentAdded({
           customerAccountId: exception.customerAccountId,
           actorId: session.id,
@@ -114,6 +119,36 @@ export const POST = withAuth(
           commentPreview: content.substring(0, 100),
           link: `/compliance/exceptions/${exception.id}`,
         });
+      }
+
+      // If someone else comments (not approver or requester), notify both
+      if (!isApproverCommenting && !isRequesterCommenting && exception.customerAccountId) {
+        // Notify requester
+        if (exception.requesterId && exception.requesterId !== session.id) {
+          await notificationService.notifyCommentAdded({
+            customerAccountId: exception.customerAccountId,
+            actorId: session.id,
+            recipientId: exception.requesterId,
+            entityType: "Exception",
+            entityId: exception.id,
+            entityName: exception.name,
+            commentPreview: content.substring(0, 100),
+            link: `/compliance/exceptions/${exception.id}`,
+          });
+        }
+        // Notify approver
+        if (exception.approverId && exception.approverId !== session.id && exception.approverId !== exception.requesterId) {
+          await notificationService.notifyCommentAdded({
+            customerAccountId: exception.customerAccountId,
+            actorId: session.id,
+            recipientId: exception.approverId,
+            entityType: "Exception",
+            entityId: exception.id,
+            entityName: exception.name,
+            commentPreview: content.substring(0, 100),
+            link: `/compliance/exceptions/${exception.id}`,
+          });
+        }
       }
 
       return NextResponse.json(comment, { status: 201 });

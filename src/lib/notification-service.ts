@@ -239,9 +239,23 @@ class NotificationService {
   /**
    * Send email notification using the email service.
    * Maps notification events to email template codes.
+   * Respects customer account email notifications toggle (non-mandatory emails).
    */
   private async sendEmailNotification(payload: NotificationPayload): Promise<void> {
     try {
+      // Check if customer account has email notifications enabled
+      const customerAccount = await prisma.customerAccount.findUnique({
+        where: { id: payload.customerAccountId },
+        select: { emailNotificationsEnabled: true },
+      });
+
+      // If email notifications are disabled for this customer, skip sending
+      // Note: All notifications are currently non-mandatory
+      if (customerAccount && !customerAccount.emailNotificationsEnabled) {
+        console.log('[NotificationService] Email notifications disabled for customer account:', payload.customerAccountId);
+        return;
+      }
+
       // Get recipient info
       const userInfo = await getUserInfo(payload.recipientId);
       if (!userInfo) {
@@ -309,6 +323,7 @@ class NotificationService {
       [NOTIFICATION_EVENTS.SYSTEM_ANNOUNCEMENT]: 'GENERIC_NOTIFICATION',
       [NOTIFICATION_EVENTS.USER_CREATED]: 'GENERIC_NOTIFICATION',
       [NOTIFICATION_EVENTS.CUSTOMER_ONBOARDED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.ISSUE_EVIDENCE]: 'GENERIC_NOTIFICATION',
     };
 
     return templateMap[event] || 'GENERIC_NOTIFICATION';
@@ -605,7 +620,7 @@ class NotificationService {
 
   /**
    * Notify when feedback is requested from a user.
-   * Use cases: Evidence requests, review requests, clarification requests, etc.
+   * Use cases: Evidence requests, review requests, etc.
    */
   async notifyFeedbackRequested(params: {
     customerAccountId: string;
@@ -628,6 +643,35 @@ class NotificationService {
         : `Your feedback is requested for ${params.entityType} "${params.entityName}"`,
       relatedEntityType: params.entityType,
       relatedEntityId: params.entityId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.NORMAL,
+    });
+  }
+
+  /**
+   * Notify when clarification is requested for an evidence request.
+   * Triggered when aiReviewStatus changes to "Needs Attention".
+   */
+  async notifyClarificationRequested(params: {
+    customerAccountId: string;
+    actorId: string;
+    auditeeId: string;
+    requestId: string;
+    requestName: string;
+    clarificationComment?: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.auditeeId,
+      event: NOTIFICATION_EVENTS.FEEDBACK_REQUESTED,
+      title: 'Feedback requested',
+      message: params.clarificationComment
+        ? `Clarification requested for Evidence Request "${params.requestName}": ${params.clarificationComment}`
+        : `Clarification requested for Evidence Request "${params.requestName}"`,
+      relatedEntityType: 'Evidence Request',
+      relatedEntityId: params.requestId,
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.NORMAL,
     });
@@ -683,6 +727,37 @@ class NotificationService {
       title: 'Welcome to GRC Platform',
       message: `Welcome ${params.userName}! Your account has been created successfully.`,
       link: '/dashboard',
+    });
+  }
+
+  /**
+   * Notify when an issue is created from AI evidence review.
+   * Triggered when AI identifies non-compliance during evidence review.
+   */
+  async notifyIssueCreatedFromEvidence(params: {
+    customerAccountId: string;
+    actorId: string;
+    assigneeId: string;
+    evidenceId: string;
+    evidenceName: string;
+    issueId?: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.assigneeId,
+      event: NOTIFICATION_EVENTS.ISSUE_EVIDENCE,
+      title: 'Issue created from evidence review',
+      message: `Evidence "${params.evidenceName}" review generated an issue that has been assigned to you`,
+      relatedEntityType: 'evidence',
+      relatedEntityId: params.evidenceId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      metadata: {
+        issueId: params.issueId,
+        evidenceName: params.evidenceName,
+      },
     });
   }
 

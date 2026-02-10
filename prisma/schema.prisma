@@ -21,6 +21,7 @@ model CustomerAccount {
   name                   String                   // Customer organization name
   logoUrl                String?                  // Customer logo
   isActive               Boolean                  @default(true)
+  emailNotificationsEnabled Boolean               @default(true) // Toggle for non-mandatory email notifications
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   // Relations - all data belonging to this customer
