@@ -100,6 +100,9 @@ export default function BIASettingsPage() {
   const [newRange, setNewRange] = useState<{ label: string; lowValue: number | ""; highValue: number | "" | null }>({ label: "", lowValue: "", highValue: "" });
   const [newBcp, setNewBcp] = useState({ name: "", type: "RTO", hours: 0, description: "", isActive: true });
 
+  // Inline validation errors
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -132,6 +135,14 @@ export default function BIASettingsPage() {
 
   // ==================== Category CRUD ====================
   const handleSaveCategory = async () => {
+    const name = editingCategory ? editingCategory.name : newCategory.name;
+    const errors: Record<string, string> = {};
+    if (!name?.trim()) errors.categoryName = t("Please enter the name");
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     try {
       const isEditing = !!editingCategory;
       const url = isEditing ? `/api/bia-categories/${editingCategory.id}` : "/api/bia-categories";
@@ -164,10 +175,14 @@ export default function BIASettingsPage() {
   const handleSaveRating = async () => {
     const label = editingRating ? editingRating.label : newRating.label;
     const score = editingRating ? editingRating.score : newRating.score;
-    if (!label?.trim() || score === "" || score === undefined || score === null) {
-      toast({ title: t("Validation Error"), description: t("Rating and Score are required fields"), variant: "destructive" });
+    const errors: Record<string, string> = {};
+    if (!label?.trim()) errors.ratingLabel = t("Please enter the rating");
+    if (score === "" || score === undefined || score === null) errors.ratingScore = t("Please enter the score");
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
+    setFormErrors({});
     try {
       const isEditing = !!editingRating;
       const url = isEditing ? `/api/bia-ratings/${editingRating.id}` : "/api/bia-ratings";
@@ -201,10 +216,15 @@ export default function BIASettingsPage() {
     const rangeLabel = editingRange ? editingRange.label : newRange.label;
     const highValue = editingRange ? editingRange.highValue : newRange.highValue;
     const lowValue = editingRange ? editingRange.lowValue : newRange.lowValue;
-    if (!rangeLabel?.trim() || highValue === "" || highValue === null || highValue === undefined || lowValue === "" || lowValue === undefined) {
-      toast({ title: t("Validation Error"), description: t("Rating, High Range Value and Low Range Value are required fields"), variant: "destructive" });
+    const errors: Record<string, string> = {};
+    if (!rangeLabel?.trim()) errors.rangeLabel = t("Please enter the rating");
+    if (highValue === "" || highValue === null || highValue === undefined) errors.rangeHigh = t("Please enter the high range");
+    if (lowValue === "" || lowValue === undefined) errors.rangeLow = t("Please enter the low range");
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
+    setFormErrors({});
     try {
       const isEditing = !!editingRange;
       const url = isEditing ? `/api/bia-scoring-ranges/${editingRange.id}` : "/api/bia-scoring-ranges";
@@ -237,6 +257,14 @@ export default function BIASettingsPage() {
 
   // ==================== BCP Label CRUD ====================
   const handleSaveBcp = async () => {
+    const bcpName = editingBcp ? editingBcp.name : newBcp.name;
+    const errors: Record<string, string> = {};
+    if (!bcpName?.trim()) errors.bcpName = t("Please enter the name");
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     try {
       const isEditing = !!editingBcp;
       const url = isEditing ? `/api/bcp-labels/${editingBcp.id}` : "/api/bcp-labels";
@@ -327,6 +355,7 @@ export default function BIASettingsPage() {
             className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingCategory(row.original);
+              setFormErrors({});
               setIsCategoryDialogOpen(true);
             }}
           >
@@ -374,6 +403,7 @@ export default function BIASettingsPage() {
             className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingRating(row.original);
+              setFormErrors({});
               setIsRatingDialogOpen(true);
             }}
           >
@@ -419,6 +449,7 @@ export default function BIASettingsPage() {
             className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingRange(row.original);
+              setFormErrors({});
               setIsRangeDialogOpen(true);
             }}
           >
@@ -475,6 +506,7 @@ export default function BIASettingsPage() {
             className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingBcp(row.original);
+              setFormErrors({});
               setIsBcpDialogOpen(true);
             }}
           >
@@ -550,6 +582,7 @@ export default function BIASettingsPage() {
               onClick={() => {
                 setEditingCategory(null);
                 setNewCategory({ name: "", description: "" });
+                setFormErrors({});
                 setIsCategoryDialogOpen(true);
               }}
             >
@@ -573,6 +606,7 @@ export default function BIASettingsPage() {
                 onClick={() => {
                   setEditingRating(null);
                   setNewRating({ label: "", score: "", description: "" });
+                  setFormErrors({});
                   setIsRatingDialogOpen(true);
                 }}
               >
@@ -612,6 +646,7 @@ export default function BIASettingsPage() {
                     onClick={() => {
                       setEditingRange(null);
                       setNewRange({ label: "", lowValue: "", highValue: "" });
+                      setFormErrors({});
                       setIsRangeDialogOpen(true);
                     }}
                   >
@@ -633,6 +668,7 @@ export default function BIASettingsPage() {
               onClick={() => {
                 setEditingBcp(null);
                 setNewBcp({ name: "", type: "RTO", hours: 0, description: "", isActive: true });
+                setFormErrors({});
                 setIsBcpDialogOpen(true);
               }}
             >
@@ -665,14 +701,20 @@ export default function BIASettingsPage() {
                 </Label>
                 <Input
                   value={editingCategory?.name || newCategory.name}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    if (formErrors.categoryName) setFormErrors((prev) => { const { categoryName, ...rest } = prev; return rest; });
                     editingCategory
                       ? setEditingCategory({ ...editingCategory, name: e.target.value })
-                      : setNewCategory({ ...newCategory, name: e.target.value })
-                  }
+                      : setNewCategory({ ...newCategory, name: e.target.value });
+                  }}
                   placeholder={t("Enter category name")}
-                  className="mt-1.5 bg-white"
+                  className={`mt-1.5 bg-white ${formErrors.categoryName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {formErrors.categoryName && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{formErrors.categoryName}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -721,14 +763,20 @@ export default function BIASettingsPage() {
                 </Label>
                 <Input
                   value={editingRating?.label || newRating.label}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    if (formErrors.ratingLabel) setFormErrors((prev) => { const { ratingLabel, ...rest } = prev; return rest; });
                     editingRating
                       ? setEditingRating({ ...editingRating, label: e.target.value })
-                      : setNewRating({ ...newRating, label: e.target.value })
-                  }
+                      : setNewRating({ ...newRating, label: e.target.value });
+                  }}
                   placeholder={t("e.g., High, Medium, Low")}
-                  className="mt-1.5 bg-white"
+                  className={`mt-1.5 bg-white ${formErrors.ratingLabel ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {formErrors.ratingLabel && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{formErrors.ratingLabel}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
@@ -737,14 +785,20 @@ export default function BIASettingsPage() {
                 <Input
                   type="number"
                   value={editingRating?.score ?? newRating.score}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    if (formErrors.ratingScore) setFormErrors((prev) => { const { ratingScore, ...rest } = prev; return rest; });
                     editingRating
                       ? setEditingRating({ ...editingRating, score: parseInt(e.target.value) || 0 })
-                      : setNewRating({ ...newRating, score: parseInt(e.target.value) || 0 })
-                  }
+                      : setNewRating({ ...newRating, score: parseInt(e.target.value) || 0 });
+                  }}
                   placeholder={t("e.g., 100")}
-                  className="mt-1.5 bg-white"
+                  className={`mt-1.5 bg-white ${formErrors.ratingScore ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {formErrors.ratingScore && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{formErrors.ratingScore}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -793,14 +847,20 @@ export default function BIASettingsPage() {
                 </Label>
                 <Input
                   value={editingRange?.label || newRange.label}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    if (formErrors.rangeLabel) setFormErrors((prev) => { const { rangeLabel, ...rest } = prev; return rest; });
                     editingRange
                       ? setEditingRange({ ...editingRange, label: e.target.value })
-                      : setNewRange({ ...newRange, label: e.target.value })
-                  }
+                      : setNewRange({ ...newRange, label: e.target.value });
+                  }}
                   placeholder={t("e.g., Critical, High, Medium, Low")}
-                  className="mt-1.5 bg-white"
+                  className={`mt-1.5 bg-white ${formErrors.rangeLabel ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {formErrors.rangeLabel && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{formErrors.rangeLabel}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
@@ -810,6 +870,7 @@ export default function BIASettingsPage() {
                   type="number"
                   value={(editingRange ? editingRange.highValue : newRange.highValue) ?? ""}
                   onChange={(e) => {
+                    if (formErrors.rangeHigh) setFormErrors((prev) => { const { rangeHigh, ...rest } = prev; return rest; });
                     const rawValue = e.target.value;
                     const numValue = rawValue === "" ? null : Number(rawValue);
                     if (editingRange) {
@@ -819,8 +880,13 @@ export default function BIASettingsPage() {
                     }
                   }}
                   placeholder={t("e.g., 500")}
-                  className="mt-1.5 bg-white"
+                  className={`mt-1.5 bg-white ${formErrors.rangeHigh ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {formErrors.rangeHigh && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{formErrors.rangeHigh}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
@@ -830,6 +896,7 @@ export default function BIASettingsPage() {
                   type="number"
                   value={(editingRange ? editingRange.lowValue : newRange.lowValue) ?? ""}
                   onChange={(e) => {
+                    if (formErrors.rangeLow) setFormErrors((prev) => { const { rangeLow, ...rest } = prev; return rest; });
                     const rawValue = e.target.value;
                     const numValue = rawValue === "" ? null : Number(rawValue);
                     if (editingRange) {
@@ -839,8 +906,13 @@ export default function BIASettingsPage() {
                     }
                   }}
                   placeholder={t("e.g., 250")}
-                  className="mt-1.5 bg-white"
+                  className={`mt-1.5 bg-white ${formErrors.rangeLow ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {formErrors.rangeLow && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{formErrors.rangeLow}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -876,14 +948,20 @@ export default function BIASettingsPage() {
                 </Label>
                 <Input
                   value={editingBcp?.name || newBcp.name}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    if (formErrors.bcpName) setFormErrors((prev) => { const { bcpName, ...rest } = prev; return rest; });
                     editingBcp
                       ? setEditingBcp({ ...editingBcp, name: e.target.value })
-                      : setNewBcp({ ...newBcp, name: e.target.value })
-                  }
+                      : setNewBcp({ ...newBcp, name: e.target.value });
+                  }}
                   placeholder={t("e.g., Critical, High, RTO")}
-                  className="mt-1.5 bg-white"
+                  className={`mt-1.5 bg-white ${formErrors.bcpName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {formErrors.bcpName && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{formErrors.bcpName}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>

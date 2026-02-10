@@ -40,6 +40,7 @@ export const RESOURCES = {
   'organization.settings.bia-categories': '/organization/settings/bia-categories',
   'organization.settings.bia-methodology': '/organization/settings/bia-methodology',
   'organization.settings.bcp-labels': '/organization/settings/bcp-labels',
+  'organization.bia': '/organization/settings/bia',
 
   // Compliance Module
   'compliance.dashboard': '/compliance',

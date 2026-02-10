@@ -97,6 +97,8 @@ export default function OrganizationSettingsPage() {
 
   // Form state
   const [newItem, setNewItem] = useState({ name: "", description: "" });
+  const [addNameError, setAddNameError] = useState("");
+  const [editNameError, setEditNameError] = useState("");
 
   // Fetch data from API when a category with an API endpoint is selected
   const fetchCategoryData = useCallback(async (categoryId: string) => {
@@ -160,6 +162,7 @@ export default function OrganizationSettingsPage() {
             className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingItem(row.original);
+              setEditNameError("");
               setIsEditItemOpen(true);
             }}
           >
@@ -180,10 +183,12 @@ export default function OrganizationSettingsPage() {
 
   // CRUD operations
   const handleAddItem = async () => {
-    if (!activeCategory || !newItem.name.trim()) {
-      toast({ title: t("Error"), description: t("Please enter a name"), variant: "destructive" });
+    if (!activeCategory) return;
+    if (!newItem.name.trim()) {
+      setAddNameError(t("Please enter the name"));
       return;
     }
+    setAddNameError("");
 
     const apiEndpoint = categoryApiEndpoints[activeCategory];
     if (apiEndpoint) {
@@ -219,6 +224,11 @@ export default function OrganizationSettingsPage() {
 
   const handleEditItem = async () => {
     if (!activeCategory || !editingItem) return;
+    if (!editingItem.name.trim()) {
+      setEditNameError(t("Please enter the name"));
+      return;
+    }
+    setEditNameError("");
 
     const apiEndpoint = categoryApiEndpoints[activeCategory];
     if (apiEndpoint) {
@@ -313,7 +323,7 @@ export default function OrganizationSettingsPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-slate-800">{currentCategory ? t(currentCategory.title) : ""}</h1>
           </div>
-          <Button size="sm" onClick={() => setIsAddItemOpen(true)}>
+          <Button size="sm" onClick={() => { setNewItem({ name: "", description: "" }); setAddNameError(""); setIsAddItemOpen(true); }}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Add")} {currentCategory ? t(currentCategory.title) : ""}
           </Button>
@@ -328,7 +338,7 @@ export default function OrganizationSettingsPage() {
         />
 
         {/* Add Item Dialog */}
-        <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+        <Dialog open={isAddItemOpen} onOpenChange={(open) => { setIsAddItemOpen(open); if (!open) setAddNameError(""); }}>
           <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
@@ -348,10 +358,15 @@ export default function OrganizationSettingsPage() {
                   </Label>
                   <Input
                     value={newItem.name}
-                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    onChange={(e) => { setNewItem({ ...newItem, name: e.target.value }); if (addNameError) setAddNameError(""); }}
                     placeholder={t("Enter name")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${addNameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {addNameError && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{addNameError}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
@@ -369,7 +384,7 @@ export default function OrganizationSettingsPage() {
 
             {/* Fixed Footer */}
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-              <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
+              <Button variant="outline" onClick={() => { setAddNameError(""); setIsAddItemOpen(false); }}>
                 {t("Cancel")}
               </Button>
               <Button onClick={handleAddItem}>{t("Save")}</Button>
@@ -378,7 +393,7 @@ export default function OrganizationSettingsPage() {
         </Dialog>
 
         {/* Edit Item Dialog */}
-        <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
+        <Dialog open={isEditItemOpen} onOpenChange={(open) => { setIsEditItemOpen(open); if (!open) setEditNameError(""); }}>
           <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
@@ -399,9 +414,14 @@ export default function OrganizationSettingsPage() {
                     </Label>
                     <Input
                       value={editingItem.name}
-                      onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                      className="mt-1.5 bg-white"
+                      onChange={(e) => { setEditingItem({ ...editingItem, name: e.target.value }); if (editNameError) setEditNameError(""); }}
+                      className={`mt-1.5 bg-white ${editNameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
+                    {editNameError && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{editNameError}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
@@ -419,7 +439,7 @@ export default function OrganizationSettingsPage() {
 
             {/* Fixed Footer */}
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-              <Button variant="outline" onClick={() => setIsEditItemOpen(false)}>
+              <Button variant="outline" onClick={() => { setEditNameError(""); setIsEditItemOpen(false); }}>
                 {t("Cancel")}
               </Button>
               <Button onClick={handleEditItem}>{t("Save")}</Button>
