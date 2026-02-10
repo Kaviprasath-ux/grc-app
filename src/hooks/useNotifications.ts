@@ -246,8 +246,8 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
   };
 }
 
-// Re-export notification events from service for consistency
-export { NOTIFICATION_EVENTS } from '@/lib/notification-service';
+// Re-export notification events from constants (client-safe, no server dependencies)
+export { NOTIFICATION_EVENTS } from '@/lib/notification-constants';
 
 // Helper to get icon and color based on notification type
 export function getNotificationStyle(type: string): {

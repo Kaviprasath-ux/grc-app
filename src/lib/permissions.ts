@@ -26,6 +26,9 @@ export const RESOURCES = {
   'grc.configuration.email': '/grc/configuration/email',
   'grc.configuration.pdf-report': '/grc/configuration/pdf-report',
   'grc.configuration.sso': '/grc/configuration/sso',
+  // Email configuration (GRCAdministrator only)
+  'grc.email-settings': '/grc/email-settings',
+  'grc.email-templates': '/grc/email-templates',
 
   // Organization Module (CustomerAdministrator territory)
   'organization.dashboard': '/organization',
@@ -155,6 +158,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'grc', actions: ['*'], scope: 'all' },
     { resource: 'grc.customer-accounts', actions: ['*'], scope: 'all' },
     { resource: 'grc.customers', actions: ['*'], scope: 'all' },
+    // Email configuration - GRCAdministrator manages email settings for all customers
+    { resource: 'grc.email-settings', actions: ['*'], scope: 'all' },
+    { resource: 'grc.email-templates', actions: ['*'], scope: 'all' },
     // Compliance module - specific resources only (Frameworks, Controls, Governance, Evidence, Domain)
     { resource: 'compliance.framework', actions: ['*'], scope: 'all' },
     { resource: 'compliance.controls', actions: ['*'], scope: 'all' },
