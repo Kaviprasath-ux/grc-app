@@ -163,10 +163,10 @@ export function buildEvidencePayload(
   user_id: string;
   evidence_id: string;
   doc_type: string;
-  evidences: Array<{ evidence_code: string; evidence_description: string; evidence_artifact: string }>;
+  evidences: Array<{ evidence_code: string; evidence_artifact: string }>;
 } {
-  // Get artifact name from first attachment (required by RunPod API)
-  const artifactName = evidence.attachments?.[0]?.fileName || '';
+  // Use evidence description as artifact field
+  const evidenceArtifact = evidence.description || '';
 
   return {
     user_id: customerAccountId,
@@ -175,8 +175,7 @@ export function buildEvidencePayload(
     evidences: [
       {
         evidence_code: evidence.evidenceCode,
-        evidence_description: evidence.description || '',
-        evidence_artifact: artifactName,
+        evidence_artifact: evidenceArtifact,
       },
     ],
   };
