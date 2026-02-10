@@ -66,7 +66,8 @@ export const POST = withAuth(
       formData.append("document_id", evidence.id);
       formData.append("doc_type", "evidence"); // Consistent doc_type for all evidence documents
 
-      // Attach files
+      // Attach files and track file names for delete
+      const ingestedFileNames: string[] = [];
       for (const attachment of evidence.attachments) {
         const filePath = path.join(process.cwd(), attachment.filePath);
 
@@ -81,6 +82,7 @@ export const POST = withAuth(
         const file = new File([blob], attachment.fileName, { type: attachment.fileType || "application/octet-stream" });
 
         formData.append("files", file);
+        ingestedFileNames.push(attachment.fileName);
       }
       console.log("[Evidence Ingest] Submitting to AI service");
 
@@ -98,7 +100,7 @@ export const POST = withAuth(
         return errorResponse("No job_id returned from AI service", 502);
       }
 
-      // Create ingest job record with document ID tracking
+      // Create ingest job record with document ID and file name tracking
       const ingestJob = await prisma.evidenceAIIngestJob.create({
         data: {
           evidenceId: evidence.id,
@@ -106,6 +108,7 @@ export const POST = withAuth(
           runpodJobId: jobId,
           sentDocumentId: evidence.id,        // Track what we sent as document_id
           returnedDocumentId: returnedDocumentId,  // Track what RunPod returned
+          ingestedFileName: ingestedFileNames[0] || null, // Track actual file name for delete
           status: status,
         },
       });

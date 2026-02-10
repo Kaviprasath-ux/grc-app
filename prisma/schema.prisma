@@ -2987,6 +2987,7 @@ model EvidenceAIIngestJob {
   // Document ID tracking: what we sent vs what RunPod returned
   sentDocumentId     String?   // The document_id we sent (evidence.id or artifact.id)
   returnedDocumentId String?   // The document_id RunPod returned (if any)
+  ingestedFileName   String?   // Actual file name sent to RunPod (for proper delete matching)
 
   status        String    @default("queued") // queued, processing, completed, failed
   error         String?   @db.Text

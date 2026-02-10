@@ -1,33 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withAuth, getTenantFilter } from "@/lib/api-auth";
 
 // GET all BCP labels
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type"); // RTO or RPO
+export const GET = withAuth(
+  async (req, _context, session) => {
+    try {
+      const { searchParams } = new URL(req.url);
+      const type = searchParams.get("type"); // RTO or RPO
+      const tenantFilter = getTenantFilter(session);
 
-    const where = type ? { type } : {};
+      const where = { ...tenantFilter, ...(type ? { type } : {}) };
 
-    const labels = await prisma.bCPLabel.findMany({
-      where,
-      orderBy: { sortOrder: "asc" },
-    });
-    return NextResponse.json(labels);
-  } catch (error) {
-    console.error("Error fetching BCP labels:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch BCP labels" },
-      { status: 500 }
-    );
-  }
-}
+      const labels = await prisma.bCPLabel.findMany({
+        where,
+        orderBy: { sortOrder: "asc" },
+      });
+      return NextResponse.json(labels);
+    } catch (error) {
+      console.error("Error fetching BCP labels:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch BCP labels" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "organization.bia", action: "view" }
+);
 
 // POST create new BCP label
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { name, type, hours, description, sortOrder, isActive } = body;
+export const POST = withAuth(
+  async (req, _context, session) => {
+    try {
+      const body = await req.json();
+      const { name, type, hours, description, sortOrder, isActive } = body;
+      const customerAccountId = session.customerAccountId;
+
+    if (!customerAccountId) {
+      return NextResponse.json(
+        { error: "Customer account not found" },
+        { status: 400 }
+      );
+    }
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -51,6 +65,7 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         sortOrder: sortOrder ?? 0,
         isActive: isActive ?? true,
+        customerAccountId,
       },
     });
 
@@ -68,4 +83,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  { resource: "organization.bia", action: "create" }
+);

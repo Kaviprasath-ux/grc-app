@@ -2158,6 +2158,7 @@ CREATE TABLE "EvidenceAIIngestJob" (
     "runpodJobId" TEXT NOT NULL,
     "sentDocumentId" TEXT,
     "returnedDocumentId" TEXT,
+    "ingestedFileName" TEXT,
     "status" TEXT NOT NULL DEFAULT 'queued',
     "error" TEXT,
     "result" TEXT,

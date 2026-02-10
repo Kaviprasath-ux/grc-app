@@ -254,7 +254,7 @@ export default function BIASettingsPage() {
         fetchAllData();
         setIsBcpDialogOpen(false);
         setEditingBcp(null);
-        setNewBcp({ name: "", type: "RTO", hours: 0, description: "" });
+        setNewBcp({ name: "", type: "RTO", hours: 0, description: "", isActive: true });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to save BCP label"), variant: "destructive" });
@@ -632,7 +632,7 @@ export default function BIASettingsPage() {
               size="sm"
               onClick={() => {
                 setEditingBcp(null);
-                setNewBcp({ name: "", type: "RTO", hours: 0, description: "" });
+                setNewBcp({ name: "", type: "RTO", hours: 0, description: "", isActive: true });
                 setIsBcpDialogOpen(true);
               }}
             >
@@ -739,8 +739,8 @@ export default function BIASettingsPage() {
                   value={editingRating?.score ?? newRating.score}
                   onChange={(e) =>
                     editingRating
-                      ? setEditingRating({ ...editingRating, score: e.target.value === "" ? "" : (parseInt(e.target.value) || 0) })
-                      : setNewRating({ ...newRating, score: e.target.value === "" ? "" : (parseInt(e.target.value) || 0) })
+                      ? setEditingRating({ ...editingRating, score: parseInt(e.target.value) || 0 })
+                      : setNewRating({ ...newRating, score: parseInt(e.target.value) || 0 })
                   }
                   placeholder={t("e.g., 100")}
                   className="mt-1.5 bg-white"

@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
 
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
 // GET single BCP label - with tenant isolation
 export const GET = withAuth(
-  async (req, context, session) => {
+  async (req, context: RouteContext, session) => {
     try {
       const { id } = await context.params;
       const tenantFilter = getTenantFilter(session);
@@ -34,7 +38,7 @@ export const GET = withAuth(
 
 // PUT update BCP label - with tenant isolation
 export const PUT = withAuth(
-  async (req, context, session) => {
+  async (req, context: RouteContext, session) => {
     try {
       const { id } = await context.params;
       const body = await req.json();
@@ -85,7 +89,7 @@ export const PUT = withAuth(
 
 // DELETE BCP label - with tenant isolation
 export const DELETE = withAuth(
-  async (req, context, session) => {
+  async (req, context: RouteContext, session) => {
     try {
       const { id } = await context.params;
       const tenantFilter = getTenantFilter(session);
