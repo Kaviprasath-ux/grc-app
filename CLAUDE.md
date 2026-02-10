@@ -133,6 +133,42 @@ const form = useForm<FormValues>({
 ### File Uploads
 Files are stored in `uploads/` directory. API routes handle multipart form data with `formData.getAll('files')`.
 
+### Cron Jobs / Scheduled Tasks
+
+The app uses scheduled API endpoints for automated tasks. These are configured in `vercel.json` for Vercel Cron.
+
+**Due Date Reminders** (`/api/cron/due-reminders`):
+- Runs daily at 8:00 AM UTC
+- Sends notifications for items due within the next 24 hours:
+  - Evidence items due soon (to assignees)
+  - CAPA/Findings due soon (to responsible persons or auditees)
+  - Policy reviews due soon (to assignees)
+
+**Local Testing:**
+```bash
+# Test the cron endpoint locally (no auth required in dev)
+curl http://localhost:3000/api/cron/due-reminders
+```
+
+**Production Security:**
+Set the `CRON_SECRET` environment variable in Vercel to protect the endpoint:
+```bash
+# In production, the endpoint requires Bearer token authentication
+curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api/cron/due-reminders
+```
+
+**Vercel Cron Configuration** (`vercel.json`):
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/due-reminders",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
+```
+
 ## Git Workflow Rules (ALL CONTRIBUTORS)
 
 ### MANDATORY: Pull Before Commit

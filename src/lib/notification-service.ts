@@ -570,6 +570,36 @@ class NotificationService {
   }
 
   /**
+   * Notify when feedback is requested from a user.
+   * Use cases: Evidence requests, review requests, clarification requests, etc.
+   */
+  async notifyFeedbackRequested(params: {
+    customerAccountId: string;
+    actorId: string;
+    feedbackProviderId: string;
+    entityType: string;
+    entityId: string;
+    entityName: string;
+    description?: string;
+    link: string;
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.feedbackProviderId,
+      event: NOTIFICATION_EVENTS.FEEDBACK_REQUESTED,
+      title: 'Feedback requested',
+      message: params.description
+        ? `Your feedback is requested for ${params.entityType} "${params.entityName}": ${params.description}`
+        : `Your feedback is requested for ${params.entityType} "${params.entityName}"`,
+      relatedEntityType: params.entityType,
+      relatedEntityId: params.entityId,
+      link: params.link,
+      priority: NOTIFICATION_PRIORITIES.NORMAL,
+    });
+  }
+
+  /**
    * Send due date reminder (system-triggered).
    * Note: actorId should be 'system' or the system user ID.
    */

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string; requestId: string }>;
@@ -63,13 +64,20 @@ export const GET = withAuth(
 
 // PATCH /api/internal-audit/fieldwork/[id]/evidence-requests/[requestId] - Update an evidence request
 export const PATCH = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId, requestId } = await context.params;
       const body = await req.json();
 
       const existingRequest = await prisma.fieldworkEvidenceRequest.findUnique({
         where: { id: requestId },
+        include: {
+          engagement: {
+            select: {
+              customerAccountId: true,
+            },
+          },
+        },
       });
 
       if (!existingRequest || existingRequest.engagementId !== engagementId) {
@@ -91,6 +99,17 @@ export const PATCH = withAuth(
         }
       }
 
+      // Detect if this is a clarification request (status changing to Pending with aiReviewStatus Needs Attention)
+      const isClarificationRequest =
+        body.aiReviewStatus === 'Needs Attention' &&
+        body.status === 'Pending' &&
+        existingRequest.status !== 'Pending';
+
+      // Detect if auditee is being newly assigned
+      const isNewAuditeeAssignment =
+        body.auditeeId &&
+        body.auditeeId !== existingRequest.auditeeId;
+
       // NOTE: Clarification fields are not in the schema yet - excluded from update
       const updatedRequest = await prisma.fieldworkEvidenceRequest.update({
         where: { id: requestId },
@@ -106,6 +125,37 @@ export const PATCH = withAuth(
           aiReviewComment: body.aiReviewComment !== undefined ? body.aiReviewComment : undefined,
         },
       });
+
+      const customerAccountId = existingRequest.engagement?.customerAccountId;
+      const auditeeId = updatedRequest.auditeeId || existingRequest.auditeeId;
+
+      // Notify auditee about clarification request (feedback requested)
+      if (isClarificationRequest && auditeeId && auditeeId !== session.id && customerAccountId) {
+        await notificationService.notifyFeedbackRequested({
+          customerAccountId,
+          actorId: session.id,
+          feedbackProviderId: auditeeId,
+          entityType: 'Evidence Request',
+          entityId: updatedRequest.id,
+          entityName: updatedRequest.title,
+          description: body.clarificationComment ? body.clarificationComment.substring(0, 100) : 'Clarification needed',
+          link: `/internal-audit/fieldwork/${engagementId}`,
+        });
+      }
+
+      // Notify newly assigned auditee about the evidence request
+      if (isNewAuditeeAssignment && body.auditeeId !== session.id && customerAccountId) {
+        await notificationService.notifyFeedbackRequested({
+          customerAccountId,
+          actorId: session.id,
+          feedbackProviderId: body.auditeeId,
+          entityType: 'Evidence Request',
+          entityId: updatedRequest.id,
+          entityName: updatedRequest.title,
+          description: updatedRequest.description ? updatedRequest.description.substring(0, 100) : undefined,
+          link: `/internal-audit/fieldwork/${engagementId}`,
+        });
+      }
 
       return NextResponse.json({
         id: updatedRequest.id,

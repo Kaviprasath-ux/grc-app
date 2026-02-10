@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -62,7 +63,7 @@ export const GET = withAuth(
 
 // POST /api/internal-audit/fieldwork/[id]/evidence-requests - Create a new evidence request
 export const POST = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId } = await context.params;
       const body = await req.json();
@@ -70,6 +71,11 @@ export const POST = withAuth(
       // Verify engagement exists
       const engagement = await prisma.auditEngagement.findUnique({
         where: { id: engagementId },
+        select: {
+          id: true,
+          engagementTitle: true,
+          customerAccountId: true,
+        },
       });
 
       if (!engagement) {
@@ -104,6 +110,21 @@ export const POST = withAuth(
           sampleSize: body.numberOfSamples ? String(body.numberOfSamples) : null,
         },
       });
+
+      // Notify the auditee that feedback is requested (evidence request)
+      // Only notify if auditee is different from the actor (person creating the request)
+      if (body.auditeeId && body.auditeeId !== session.id && engagement.customerAccountId) {
+        await notificationService.notifyFeedbackRequested({
+          customerAccountId: engagement.customerAccountId,
+          actorId: session.id,
+          feedbackProviderId: body.auditeeId,
+          entityType: 'Evidence Request',
+          entityId: evidenceRequest.id,
+          entityName: evidenceRequest.title,
+          description: body.description ? body.description.substring(0, 100) : undefined,
+          link: `/internal-audit/fieldwork/${engagementId}`,
+        });
+      }
 
       return NextResponse.json({
         id: evidenceRequest.id,

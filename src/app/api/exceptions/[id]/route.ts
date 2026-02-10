@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -124,7 +125,14 @@ export const PUT = withAuth(
       // First, verify the exception belongs to the user's customer account
       const existing = await prisma.exception.findUnique({
         where: { id },
-        select: { customerAccountId: true, departmentId: true },
+        select: {
+          customerAccountId: true,
+          departmentId: true,
+          status: true,
+          name: true,
+          exceptionCode: true,
+          requesterId: true,
+        },
       });
 
       if (!existing) {
@@ -222,6 +230,51 @@ export const PUT = withAuth(
           },
         },
       });
+
+      // Notify requester when their exception is rejected
+      if (
+        status === "Rejected" &&
+        existing.status !== "Rejected" &&
+        existing.requesterId &&
+        existing.requesterId !== session.id &&
+        session.customerAccountId
+      ) {
+        // Get the most recent comment (usually the rejection reason)
+        const latestComment = exception.comments?.[0];
+        const rejectionReason = latestComment?.content?.startsWith("[Send Back]")
+          ? latestComment.content.replace("[Send Back] ", "")
+          : undefined;
+
+        await notificationService.notifyApprovalDenied({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          requesterId: existing.requesterId,
+          entityType: "Exception",
+          entityId: id,
+          entityName: existing.name,
+          reason: rejectionReason,
+          link: `/compliance/exceptions/${id}`,
+        });
+      }
+
+      // Notify requester when their exception is approved
+      if (
+        status === "Approved" &&
+        existing.status !== "Approved" &&
+        existing.requesterId &&
+        existing.requesterId !== session.id &&
+        session.customerAccountId
+      ) {
+        await notificationService.notifyApprovalGranted({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          requesterId: existing.requesterId,
+          entityType: "Exception",
+          entityId: id,
+          entityName: existing.name,
+          link: `/compliance/exceptions/${id}`,
+        });
+      }
 
       return NextResponse.json(exception);
     } catch (error: unknown) {

@@ -91,10 +91,11 @@ export function Header({ onMenuClick }: HeaderProps) {
     if (!notification.isRead) {
       await markAsRead(notification.id);
     }
-    // Navigate to the link if provided
-    if (notification.link) {
-      router.push(notification.link);
-    }
+    // Navigation disabled for now - links lead to 404 pages
+    // TODO: Enable navigation once all notification link routes are implemented
+    // if (notification.link) {
+    //   router.push(notification.link);
+    // }
   };
 
   // Format notification time

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getAuditHeadId, getTenantFilter } from '@/lib/api-auth';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -169,6 +170,18 @@ export const POST = withAuth(
           department: true,
         },
       });
+
+      // Send CAPA_ASSIGNED notification if a responsible person was assigned
+      if (finding.responsiblePersonId && finding.responsiblePersonId !== session.id) {
+        await notificationService.notifyCAPAAssigned({
+          customerAccountId,
+          actorId: session.id,
+          assigneeId: finding.responsiblePersonId,
+          capaId: finding.id,
+          capaCode: finding.findingId,
+          capaTitle: finding.finding,
+        });
+      }
 
       return NextResponse.json({
         id: finding.id,
