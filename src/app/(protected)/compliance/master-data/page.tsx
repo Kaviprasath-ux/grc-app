@@ -90,10 +90,10 @@ export default function MasterDataPage() {
           return (
             <button
               key={category.href}
-              className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 ltr:text-left rtl:text-right transition-all hover:border-primary-200 hover:shadow-md hover:shadow-primary-100/50 cursor-pointer"
+              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
               onClick={() => router.push(category.href)}
             >
-              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors group-hover:bg-primary-100">
+              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0">
                 <Icon className="h-5 w-5 text-primary-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -102,7 +102,7 @@ export default function MasterDataPage() {
                   {category.description}
                 </p>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:text-primary-500 ltr:group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 ltr:rotate-0 rtl:rotate-180" />
+              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 ltr:rotate-0 rtl:rotate-180" />
             </button>
           );
         })}
