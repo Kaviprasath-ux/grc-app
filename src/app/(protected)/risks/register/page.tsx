@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ColumnDef } from "@tanstack/react-table";
-import { DataGrid } from "@/components/shared";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/usePagination";
 import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
@@ -167,6 +166,8 @@ function RiskRegisterContent() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [newRiskDialogOpen, setNewRiskDialogOpen] = useState(false);
   const [riskToEdit, setRiskToEdit] = useState<Risk | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const fetchRisks = useCallback(async () => {
     try {
@@ -338,111 +339,6 @@ function RiskRegisterContent() {
     }
   };
 
-  const columns: ColumnDef<Risk>[] = [
-    {
-      accessorKey: "riskId",
-      header: t("Risk ID"),
-      cell: ({ row }) => (
-        <span className="font-medium text-slate-800">{row.getValue("riskId")}</span>
-      ),
-    },
-    {
-      accessorKey: "name",
-      header: t("Risk Name"),
-      cell: ({ row }) => (
-        <div className="max-w-[200px] truncate" title={row.getValue("name")}>
-          {row.getValue("name")}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "description",
-      header: t("Risk Description"),
-      cell: ({ row }) => (
-        <div className="max-w-[250px] truncate" title={row.original.description || ""}>
-          {row.original.description || "-"}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "category",
-      header: t("Risk Category"),
-      cell: ({ row }) => {
-        const category = row.original.category;
-        return category?.name || t("No items found");
-      },
-    },
-    {
-      accessorKey: "owner",
-      header: t("Risk Owner"),
-      cell: ({ row }) => {
-        const owner = row.original.owner;
-        return owner?.fullName || t("No items found");
-      },
-    },
-    {
-      accessorKey: "riskRating",
-      header: t("Risk Rating"),
-      cell: ({ row }) => <RiskRatingBadge rating={row.getValue("riskRating")} />,
-    },
-    {
-      accessorKey: "type",
-      header: t("Risk Type"),
-      cell: ({ row }) => {
-        const type = row.original.type;
-        return type?.name || "-";
-      },
-    },
-    {
-      id: "actions",
-      header: t("Action"),
-      cell: ({ row }) => {
-        const risk = row.original;
-        return (
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewRisk(risk);
-              }}
-              className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            {canEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEditRisk(risk);
-                }}
-                className="h-8 w-8 text-slate-400 hover:text-slate-600"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
-            {canDelete && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteClick(risk);
-                }}
-                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        );
-      },
-    },
-  ];
-
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
@@ -459,6 +355,18 @@ function RiskRegisterContent() {
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access Risk Register.")} />;
   }
+
+  // Filter risks for department-scoped roles
+  const displayRisks = isDepartmentRole && userDepartmentId
+    ? risks.filter(r => r.department?.id === userDepartmentId)
+    : risks;
+
+  // Calculate pagination
+  const totalPages = Math.ceil(displayRisks.length / ITEMS_PER_PAGE);
+  const paginatedRisks = displayRisks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="space-y-6">
@@ -555,82 +463,31 @@ function RiskRegisterContent() {
         </button>
       </div>
 
-      {/* Filters and Actions - All in one row */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t("Search risks...")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 w-[200px] bg-white"
-            />
-          </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[150px] bg-white">
-              <SelectValue placeholder={t("All Categories")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Categories")}</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder={t("All Types")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Types")}</SelectItem>
-              {riskTypes.map((type) => (
-                <SelectItem key={type.id} value={type.id}>
-                  {type.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={ratingFilter} onValueChange={setRatingFilter}>
-            <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder={t("All Ratings")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">{t("All Ratings")}</SelectItem>
-              <SelectItem value="Catastrophic">{t("Catastrophic")}</SelectItem>
-              <SelectItem value="Very high">{t("Very high")}</SelectItem>
-              <SelectItem value="High">{t("High")}</SelectItem>
-              <SelectItem value="Low Risk">{t("Low Risk")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <PermissionGate resource="risk.register" action="create">
-            <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              {t("Import")}
-            </Button>
-          </PermissionGate>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            {t("Export")}
+      {/* Action Buttons */}
+      <div className="flex items-center justify-end gap-2">
+        <PermissionGate resource="risk.register" action="create">
+          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Import")}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleActivityLogOpen}>
-            <Activity className="h-4 w-4 mr-2" />
-            {t("Activity Log")}
+        </PermissionGate>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleActivityLogOpen}>
+          <Activity className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Activity Log")}
+        </Button>
+        <PermissionGate resource="risk.register" action="create">
+          <Button size="sm" onClick={handleNewRisk} className="bg-primary-600 hover:bg-primary-700">
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New Risk")}
           </Button>
-          <PermissionGate resource="risk.register" action="create">
-            <Button size="sm" onClick={handleNewRisk}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("New Risk")}
-            </Button>
-          </PermissionGate>
-        </div>
+        </PermissionGate>
       </div>
 
-      {/* Data Grid */}
+      {/* Data Table with Search and Filters */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="relative h-8 w-8">
@@ -638,15 +495,148 @@ function RiskRegisterContent() {
             <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
         </div>
+      ) : displayRisks.length > 0 || search || categoryFilter !== "all" || typeFilter !== "all" || ratingFilter !== "all" ? (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          {/* Search and Filters */}
+          <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+            <div className="relative flex-1 min-w-[280px] max-w-md">
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder={t("Search risks...")}
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectValue placeholder={t("Category")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4}>
+                  <SelectItem value="all">{t("All Categories")}</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectValue placeholder={t("Type")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4}>
+                  <SelectItem value="all">{t("All Types")}</SelectItem>
+                  {riskTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={ratingFilter} onValueChange={(v) => { setRatingFilter(v); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectValue placeholder={t("Rating")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4}>
+                  <SelectItem value="all">{t("All Ratings")}</SelectItem>
+                  <SelectItem value="Catastrophic">{t("Catastrophic")}</SelectItem>
+                  <SelectItem value="Very high">{t("Very high")}</SelectItem>
+                  <SelectItem value="High">{t("High")}</SelectItem>
+                  <SelectItem value="Low Risk">{t("Low Risk")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Column Headers */}
+          <div className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider`}>
+            <span>{t("Risk ID")}</span>
+            <span>{t("Risk Name")}</span>
+            <span>{t("Risk Description")}</span>
+            <span>{t("Risk Category")}</span>
+            <span>{t("Risk Owner")}</span>
+            <span>{t("Risk Rating")}</span>
+            {(canEdit || canDelete) && <span className="text-end">{t("Actions")}</span>}
+          </div>
+
+          {/* Rows */}
+          <div className="divide-y divide-slate-100">
+            {paginatedRisks.map((risk) => (
+              <div
+                key={risk.id}
+                className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors cursor-pointer`}
+                onClick={() => handleViewRisk(risk)}
+              >
+                <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
+                <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
+                <span className="text-sm text-slate-600 truncate" title={risk.description || ""}>{risk.description || "-"}</span>
+                <span className="text-sm text-slate-600 truncate">{risk.category?.name || "-"}</span>
+                <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>
+                <div>
+                  <RiskRatingBadge rating={risk.riskRating} />
+                </div>
+                {(canEdit || canDelete) && (
+                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewRisk(risk);
+                      }}
+                      className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditRisk(risk);
+                        }}
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(risk);
+                        }}
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={displayRisks.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
+        </div>
       ) : (
-        <DataGrid
-          columns={columns}
-          data={isDepartmentRole && userDepartmentId
-            ? risks.filter(r => r.department?.id === userDepartmentId)
-            : risks}
-          hideSearch
-          pageSize={20}
-        />
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl border border-slate-200">
+          <Shield className="h-12 w-12 text-slate-300 mb-3" />
+          <p className="text-slate-500">{t("No risks found")}</p>
+        </div>
       )}
 
       {/* Risk Detail Dialog */}

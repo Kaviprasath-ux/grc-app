@@ -364,7 +364,7 @@ export function RiskDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-lg font-semibold text-slate-800 mb-2">
@@ -435,28 +435,29 @@ export function RiskDetailDialog({
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
           {/* Risk Overview Section */}
           {activeSection === 0 && (
             <div className="space-y-5">
               {editMode ? (
                 <>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="name">Risk Name *</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium text-slate-700">Risk Name *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Department</Label>
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Department</Label>
                       <Select
                         value={formData.departmentId}
                         onValueChange={(value) => handleInputChange("departmentId", value)}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full mt-1.5">
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent>
@@ -468,13 +469,13 @@ export function RiskDetailDialog({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Risk Owner</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Risk Owner</Label>
                       <Select
                         value={formData.ownerId}
                         onValueChange={(value) => handleInputChange("ownerId", value)}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full mt-1.5">
                           <SelectValue placeholder="Select owner" />
                         </SelectTrigger>
                         <SelectContent>
@@ -487,13 +488,13 @@ export function RiskDetailDialog({
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Status</Label>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Status</Label>
                     <Select
                       value={formData.status}
                       onValueChange={(value) => handleInputChange("status", value)}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full mt-1.5">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -563,33 +564,35 @@ export function RiskDetailDialog({
             <div className="space-y-5">
               {editMode ? (
                 <>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="description">Risk Description</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="text-sm font-medium text-slate-700">Risk Description</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => handleInputChange("description", e.target.value)}
                       rows={4}
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="riskSources">Risk Sources</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="riskSources" className="text-sm font-medium text-slate-700">Risk Sources</Label>
                     <Textarea
                       id="riskSources"
                       value={formData.riskSources}
                       onChange={(e) => handleInputChange("riskSources", e.target.value)}
                       rows={2}
                       placeholder="Enter risk sources..."
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Risk Category</Label>
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Risk Category</Label>
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => handleInputChange("categoryId", value)}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full mt-1.5">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -601,8 +604,8 @@ export function RiskDetailDialog({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Risk Type</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Risk Type</Label>
                       <Select
                         value={formData.typeId}
                         onValueChange={(value) => {
@@ -616,7 +619,7 @@ export function RiskDetailDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full mt-1.5">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -631,13 +634,13 @@ export function RiskDetailDialog({
                   </div>
                   {/* Impacted Asset or Process based on Risk Type */}
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
-                    <div className="space-y-1.5">
-                      <Label>Impacted Asset</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Impacted Asset</Label>
                       <Select
                         value={formData.impactedAssetId}
                         onValueChange={(value) => handleInputChange("impactedAssetId", value)}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full mt-1.5">
                           <SelectValue placeholder="Select impacted asset" />
                         </SelectTrigger>
                         <SelectContent>
@@ -651,13 +654,13 @@ export function RiskDetailDialog({
                     </div>
                   )}
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
-                    <div className="space-y-1.5">
-                      <Label>Impacted Process</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Impacted Process</Label>
                       <Select
                         value={formData.impactedProcessId}
                         onValueChange={(value) => handleInputChange("impactedProcessId", value)}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full mt-1.5">
                           <SelectValue placeholder="Select impacted process" />
                         </SelectTrigger>
                         <SelectContent>
@@ -767,7 +770,7 @@ export function RiskDetailDialog({
               {editMode ? (
                 <>
                   <div className="space-y-2">
-                    <Label>
+                    <Label className="text-sm font-medium text-slate-700">
                       Likelihood: {formData.likelihood} - {likelihoodLabels[formData.likelihood]}
                     </Label>
                     <Slider
@@ -783,7 +786,7 @@ export function RiskDetailDialog({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>
+                    <Label className="text-sm font-medium text-slate-700">
                       Impact: {formData.impact} - {impactLabels[formData.impact]}
                     </Label>
                     <Slider
@@ -985,13 +988,13 @@ export function RiskDetailDialog({
             <div className="space-y-5">
               {editMode ? (
                 <>
-                  <div className="space-y-1.5">
-                    <Label>Response Strategy</Label>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Response Strategy</Label>
                     <Select
                       value={formData.responseStrategy}
                       onValueChange={(value) => handleInputChange("responseStrategy", value)}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full mt-1.5">
                         <SelectValue placeholder="Select strategy" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1002,21 +1005,23 @@ export function RiskDetailDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Treatment Plan</Label>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Treatment Plan</Label>
                     <Textarea
                       value={formData.treatmentPlan}
                       onChange={(e) => handleInputChange("treatmentPlan", e.target.value)}
                       rows={4}
                       placeholder="Describe the treatment plan..."
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Treatment Due Date</Label>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Treatment Due Date</Label>
                     <Input
                       type="date"
                       value={formData.treatmentDueDate}
                       onChange={(e) => handleInputChange("treatmentDueDate", e.target.value)}
+                      className="mt-1.5"
                     />
                   </div>
                 </>
@@ -1136,7 +1141,7 @@ export function RiskDetailDialog({
         </div>
 
         {/* Footer with section indicators */}
-        <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-center">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-center">
           <p className="text-sm text-slate-500">
             {activeSection + 1} of {sections.length}: {sections[activeSection].label}
           </p>

@@ -1027,7 +1027,7 @@ export default function InternalAuditDashboard() {
                         const isInRange = monthIndex >= audit.startMonth && monthIndex <= audit.endMonth;
                         const isStart = monthIndex === audit.startMonth;
                         return (
-                          <TableCell key={month} className="py-3 px-1">
+                          <TableCell key={month} className="py-3 px-1 text-center">
                             {isStart ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 whitespace-nowrap">
                                 {audit.durationDays} {t("Days")}
@@ -1083,7 +1083,7 @@ export default function InternalAuditDashboard() {
                         );
                         const isStart = assignment && monthIndex === assignment.startMonth;
                         return (
-                          <TableCell key={month} className="py-3 px-1">
+                          <TableCell key={month} className="py-3 px-1 text-center">
                             {isStart ? (
                               <span
                                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700 whitespace-nowrap ${canDrillDown ? "cursor-pointer hover:bg-primary-200" : ""}`}
