@@ -53,9 +53,10 @@ export const PUT = withAuth(
       const body = await req.json();
       const tenantFilter = getTenantFilter(session);
 
-      // Verify engagement exists and belongs to tenant
+      // Verify engagement exists and belongs to tenant (include current assignments for change detection)
       const existingEngagement = await prisma.auditEngagement.findFirst({
         where: { id, ...tenantFilter },
+        select: { id: true, assignedAuditorId: true, auditeeId: true },
       });
 
       if (!existingEngagement) {
@@ -117,8 +118,8 @@ export const PUT = withAuth(
         }
       });
 
-      // Notify assigned auditor
-      if (auditorId && auditorId !== session.id && session.customerAccountId) {
+      // Notify assigned auditor only if assignment actually changed
+      if (auditorId && auditorId !== existingEngagement.assignedAuditorId && auditorId !== session.id && session.customerAccountId) {
         await notificationService.notifyEngagementAssigned({
           customerAccountId: session.customerAccountId,
           actorId: session.id,
@@ -129,8 +130,8 @@ export const PUT = withAuth(
           role: 'Auditor',
         });
       }
-      // Notify auditee
-      if (auditeeId && auditeeId !== session.id && session.customerAccountId) {
+      // Notify auditee only if assignment actually changed
+      if (auditeeId && auditeeId !== existingEngagement.auditeeId && auditeeId !== session.id && session.customerAccountId) {
         await notificationService.notifyEngagementAssigned({
           customerAccountId: session.customerAccountId,
           actorId: session.id,

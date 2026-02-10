@@ -204,21 +204,32 @@ export function Header({ onMenuClick }: HeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel className="flex items-center justify-between py-3">
-              <span className="text-base font-semibold text-slate-800">{t("Notifications")}</span>
-              {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-primary-600 hover:text-primary-700 h-auto p-0"
+            <DropdownMenuLabel className="flex items-center justify-between py-2">
+              <span className="text-sm font-semibold text-slate-800">{t("Notifications")}</span>
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button
+                    className="text-xs text-slate-500 hover:text-primary-600 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      markAllAsRead();
+                    }}
+                  >
+                    {t("Mark all read")}
+                  </button>
+                )}
+                <button
+                  className="text-xs text-primary-600 hover:text-primary-700 hover:underline transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
-                    markAllAsRead();
+                    e.stopPropagation();
+                    router.push('/notifications');
                   }}
                 >
-                  {t("Mark all read")}
-                </Button>
-              )}
+                  {t("View all")}
+                </button>
+              </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="max-h-80 overflow-y-auto">
@@ -263,16 +274,6 @@ export function Header({ onMenuClick }: HeaderProps) {
                   );
                 })
               )}
-            </div>
-            <DropdownMenuSeparator />
-            <div className="p-2">
-              <Button
-                variant="ghost"
-                className="w-full text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50"
-                onClick={() => router.push('/notifications')}
-              >
-                {t("View all notifications")}
-              </Button>
             </div>
           </DropdownMenuContent>
         </DropdownMenu>

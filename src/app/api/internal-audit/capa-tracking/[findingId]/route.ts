@@ -162,11 +162,37 @@ export const PATCH = withAuth(
         }
       }
 
-      // Notify auditee when finding is assigned/reassigned (via engagement)
+      // Notify Audit Heads when auditee submits a finding for review
       if (isAuditeeSubmission && session.customerAccountId) {
-        // When auditee submits, notify the Audit Head (find audit heads in the org)
-        // For now, we rely on the submission changing status to "Under Review"
-        // The Audit Head will see it in their dashboard
+        // Find all Audit Heads in this customer account
+        const auditHeads = await prisma.user.findMany({
+          where: {
+            customerAccountId: session.customerAccountId,
+            userRoles: {
+              some: {
+                role: {
+                  name: 'AuditHead',
+                },
+              },
+            },
+          },
+          select: { id: true },
+        });
+
+        // Notify each Audit Head (except if they're the submitter)
+        for (const auditHead of auditHeads) {
+          if (auditHead.id !== session.id) {
+            await notificationService.notifyApprovalRequested({
+              customerAccountId: session.customerAccountId,
+              actorId: session.id,
+              approverId: auditHead.id,
+              entityType: 'Finding',
+              entityId: findingId,
+              entityName: updatedFinding.finding || `Finding #${updatedFinding.findingId}`,
+              link: `/internal-audit/capa-tracking/${findingId}`,
+            });
+          }
+        }
       }
 
       return NextResponse.json(updatedFinding);
