@@ -173,17 +173,50 @@ export default function ReportsPage() {
     fetchFrameworks();
   }, []);
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     setIsGenerating(true);
-    // Simulate report generation
-    setTimeout(() => {
-      setIsGenerating(false);
+    try {
+      const res = await fetch("/api/reports/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportType: selectedReport,
+          format: reportFormat,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Download failed" }));
+        throw new Error(err.error || "Failed to generate report");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      // Extract filename from Content-Disposition header or build one
+      const disposition = res.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename="?([^"]+)"?/);
+      a.download = match?.[1] || `report.${reportFormat === "excel" ? "xlsx" : reportFormat}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
       setIsGenerateDialogOpen(false);
       toast({
         title: t("Success"),
-        description: t("Report generated successfully"),
+        description: t("Report downloaded successfully"),
       });
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: t("Error"),
+        description: error instanceof Error ? error.message : t("Failed to generate report"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleShowManagementReport = () => {
