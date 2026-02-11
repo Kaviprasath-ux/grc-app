@@ -15,7 +15,7 @@ async function addHistoricalRisks() {
 
     const itOps = await prisma.department.findFirst({
       where: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         name: 'IT Operations'
       }
     });
@@ -34,7 +34,7 @@ async function addHistoricalRisks() {
     // 1. Closed risk from current year (2026) - SHOULD appear in Historical Risks
     const risk1 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID007',
         riskName: 'Software License Compliance Risk',
         riskDescription: 'Risk of unlicensed software usage (Closed - Current Year)',
@@ -55,7 +55,7 @@ async function addHistoricalRisks() {
     // 2. Closed risk from last year (2025) - SHOULD appear in Historical Risks
     const risk2 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID008',
         riskName: 'Hardware Maintenance Risk',
         riskDescription: 'Risk of hardware failure (Closed - Last Year)',
@@ -76,7 +76,7 @@ async function addHistoricalRisks() {
     // 3. Closed risk from 2 years ago (2024) - should NOT appear in Historical Risks
     const risk3 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID009',
         riskName: 'Old System Migration Risk',
         riskDescription: 'Risk of system migration issues (Closed - 2 Years Ago)',

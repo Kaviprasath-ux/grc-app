@@ -103,7 +103,7 @@ export default function RiskAssessmentPage() {
   const [typeFilter, setTypeFilter] = useState("all");
 
   // Pagination
-  const ITEMS_PER_PAGE = 20;
+  const ITEMS_PER_PAGE = 10;
 
   // Assessment modal state
   const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
@@ -409,7 +409,7 @@ export default function RiskAssessmentPage() {
                   key={risk.id}
                   className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-5 py-3 items-center hover:bg-slate-50/50 transition-colors"
                 >
-                  <span className="text-sm font-medium text-primary-600">{risk.riskId}</span>
+                  <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                   <span className="text-sm text-slate-700 truncate">{risk.name}</span>
                   <span className="text-sm text-slate-500 truncate">{risk.description || "-"}</span>
                   <span>

@@ -108,9 +108,7 @@ async function main() {
   for (const cia of ciaClassifications) {
     const subCategoryId = subCategoryMap[cia.subCategory];
     const groupId = groupMap[cia.group];
-    const sensitivityId = sensitivityMap[cia.sensitivity];
-
-    if (!subCategoryId || !groupId || !sensitivityId) {
+    if (!subCategoryId || !groupId) {
       console.log(
         `⚠️  Skipping ${cia.subCategory} - ${cia.group}: missing references`
       );
@@ -133,7 +131,6 @@ async function main() {
         data: {
           subCategoryId,
           groupId,
-          sensitivityId,
           confidentiality: cia.c,
           confidentialityScore: cia.cScore,
           integrity: cia.i,

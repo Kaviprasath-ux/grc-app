@@ -14,11 +14,11 @@ async function addTestRisks() {
     }
 
     console.log('Found Abhishek (AuditHead):', abhishek.fullName);
-    console.log('Customer Account ID:', abhishek.customerAccountId);
+    console.log('Customer Account ID:', abhishek.customerAccountId!);
 
     // Get departments
     const departments = await prisma.department.findMany({
-      where: { customerAccountId: abhishek.customerAccountId },
+      where: { customerAccountId: abhishek.customerAccountId! },
       select: { id: true, name: true }
     });
 
@@ -38,7 +38,7 @@ async function addTestRisks() {
     // Create risks for IT Operations (2 Open, 1 Closed)
     const risk1 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID001',
         riskName: 'Server Downtime Risk',
         riskDescription: 'Risk of server downtime affecting business operations',
@@ -57,7 +57,7 @@ async function addTestRisks() {
 
     const risk2 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID002',
         riskName: 'Data Breach Risk',
         riskDescription: 'Risk of unauthorized access to sensitive data',
@@ -76,7 +76,7 @@ async function addTestRisks() {
 
     const risk3 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID003',
         riskName: 'Network Security Risk',
         riskDescription: 'Risk of network vulnerabilities',
@@ -100,7 +100,7 @@ async function addTestRisks() {
     // Create risks for Compliance (2 Open)
     const risk4 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID004',
         riskName: 'Regulatory Compliance Risk',
         riskDescription: 'Risk of non-compliance with regulatory requirements',
@@ -119,7 +119,7 @@ async function addTestRisks() {
 
     const risk5 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID005',
         riskName: 'Audit Findings Risk',
         riskDescription: 'Risk of unresolved audit findings',
@@ -142,7 +142,7 @@ async function addTestRisks() {
     // Create risk for Human Resources (1 Open)
     const risk6 = await prisma.internalAuditRisk.create({
       data: {
-        customerAccountId: abhishek.customerAccountId,
+        customerAccountId: abhishek.customerAccountId!,
         riskId: 'RID006',
         riskName: 'Employee Turnover Risk',
         riskDescription: 'Risk of high employee turnover affecting operations',
