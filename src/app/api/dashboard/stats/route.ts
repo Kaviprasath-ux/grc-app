@@ -69,15 +69,17 @@ export const GET = withAuth(
       });
 
       const riskCategories = ["Low Risk", "High", "Very high", "Catastrophic"];
-      const riskAssessmentData = riskCategories.map((category) => {
-        const categoryRisks = risks.filter((r) => r.riskRating === category);
-        const closedRisks = categoryRisks.filter((r) => r.status === "Closed");
-        return {
-          category,
-          total: categoryRisks.length,
-          closed: closedRisks.length,
-        };
-      });
+      const riskAssessmentData = riskCategories
+        .map((category) => {
+          const categoryRisks = risks.filter((r) => r.riskRating === category);
+          const closedRisks = categoryRisks.filter((r) => r.status === "Closed");
+          return {
+            category,
+            total: categoryRisks.length,
+            closed: closedRisks.length,
+          };
+        })
+        .filter((item) => item.total > 0);
 
       // Fetch issues by category
       const issues = await prisma.issue.findMany({
@@ -164,64 +166,67 @@ export const GET = withAuth(
       });
 
       const governanceTypes = ["Policy", "Procedure", "Standard"];
-      const governanceStatusData = governanceTypes.map((type) => {
-        const typePolicies = policies.filter((p) => p.documentType === type);
-        return {
-          type,
-          notUploaded: typePolicies.filter((p) => !p.status || p.status === "Not Uploaded").length,
-          draft: typePolicies.filter((p) => p.status === "Draft").length,
-          approved: typePolicies.filter((p) => p.status === "Approved").length,
-          needsReview: typePolicies.filter((p) => p.status === "Needs Review").length,
-          published: typePolicies.filter((p) => p.status === "Published").length,
-        };
-      });
+      const governanceStatusData = governanceTypes
+        .map((type) => {
+          const typePolicies = policies.filter((p) => p.documentType === type);
+          return {
+            type,
+            notUploaded: typePolicies.filter((p) => !p.status || p.status === "Not Uploaded").length,
+            draft: typePolicies.filter((p) => p.status === "Draft").length,
+            approved: typePolicies.filter((p) => p.status === "Approved").length,
+            needsReview: typePolicies.filter((p) => p.status === "Needs Review").length,
+            published: typePolicies.filter((p) => p.status === "Published").length,
+          };
+        })
+        .filter((item) => item.notUploaded + item.draft + item.approved + item.needsReview + item.published > 0);
 
       // Fetch exception status
       const exceptionTypes = ["Control", "Compliance", "Policy"];
-      const exceptionStatusData = exceptionTypes.map((type) => {
-        const typeExceptions = exceptions.filter((e) => e.category === type);
-        return {
-          type,
-          pending: typeExceptions.filter((e) => e.status === "Pending").length,
-          approved: typeExceptions.filter((e) => e.status === "Approved").length,
-          authorized: typeExceptions.filter((e) => e.status === "Authorised").length,
-          closed: typeExceptions.filter((e) => e.status === "Closed").length,
-          overdue: typeExceptions.filter((e) => e.status === "Overdue").length,
-        };
-      });
+      const exceptionStatusData = exceptionTypes
+        .map((type) => {
+          const typeExceptions = exceptions.filter((e) => e.category === type);
+          return {
+            type,
+            pending: typeExceptions.filter((e) => e.status === "Pending").length,
+            approved: typeExceptions.filter((e) => e.status === "Approved").length,
+            authorized: typeExceptions.filter((e) => e.status === "Authorised").length,
+            closed: typeExceptions.filter((e) => e.status === "Closed").length,
+            overdue: typeExceptions.filter((e) => e.status === "Overdue").length,
+          };
+        })
+        .filter((item) => item.pending + item.approved + item.authorized + item.closed + item.overdue > 0);
 
-      // Evidence KPI - real data from database with tenant filtering
-      const evidences = await prisma.evidence.findMany({
-        where: tenantFilter,
+      // Evidence KPI - KPIs from the KPI model (linked to evidence)
+      const allKPIs = await prisma.kPI.findMany({
+        where: {
+          ...tenantFilter,
+          evidenceId: { not: null },
+        },
         select: {
           status: true,
-          dueDate: true,
           departmentId: true,
           department: { select: { name: true } },
         },
       });
 
-      const now = new Date();
       const evidenceByDeptMap = new Map<string, { achieved: number; scheduled: number; missed: number; overdue: number }>();
 
-      evidences.forEach((evidence) => {
-        const deptName = evidence.department?.name || "Unassigned";
+      allKPIs.forEach((kpi) => {
+        const deptName = kpi.department?.name || "Unassigned";
         if (!evidenceByDeptMap.has(deptName)) {
           evidenceByDeptMap.set(deptName, { achieved: 0, scheduled: 0, missed: 0, overdue: 0 });
         }
         const deptStats = evidenceByDeptMap.get(deptName)!;
 
-        // Categorize evidence by status
-        if (evidence.status === "Published" || evidence.status === "Validated") {
+        // Categorize KPI by status
+        if (kpi.status === "Achieved") {
           deptStats.achieved++;
-        } else if (evidence.status === "Need Attention") {
-          deptStats.missed++;
-        } else if (evidence.dueDate && new Date(evidence.dueDate) < now &&
-                   evidence.status !== "Published" && evidence.status !== "Validated") {
-          deptStats.overdue++;
-        } else {
-          // Draft, Not Uploaded - scheduled
+        } else if (kpi.status === "Scheduled") {
           deptStats.scheduled++;
+        } else if (kpi.status === "Missed") {
+          deptStats.missed++;
+        } else if (kpi.status === "Overdue") {
+          deptStats.overdue++;
         }
       });
 
@@ -232,8 +237,9 @@ export const GET = withAuth(
         })
       );
 
-      // Process KPI - real data from database with tenant filtering
-      const processes = await prisma.process.findMany({
+      // Process KPI - Processes with KPI Measurement Required enabled
+      // Data source: Organization > Process > Performance Dashboard
+      const kpiProcesses = await prisma.process.findMany({
         where: {
           ...tenantFilter,
           kpiMeasurementRequired: true,
@@ -246,9 +252,10 @@ export const GET = withAuth(
         },
       });
 
+      const now = new Date();
       const processByDeptMap = new Map<string, { achieved: number; scheduled: number; missed: number; overdue: number }>();
 
-      processes.forEach((process) => {
+      kpiProcesses.forEach((process) => {
         const deptName = process.department?.name || "Unassigned";
         if (!processByDeptMap.has(deptName)) {
           processByDeptMap.set(deptName, { achieved: 0, scheduled: 0, missed: 0, overdue: 0 });
@@ -265,6 +272,7 @@ export const GET = withAuth(
         } else if (process.reviewDate && new Date(process.reviewDate) < now && process.status !== "Active") {
           deptStats.overdue++;
         } else {
+          // Default to scheduled for active processes without review date
           deptStats.scheduled++;
         }
       });

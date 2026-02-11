@@ -72,6 +72,11 @@ export function StackedBarChart({
       </div>
 
       {/* Chart */}
+      {data.length === 0 ? (
+        <div className="flex items-center justify-center h-[200px] text-sm text-slate-400">
+          No data available
+        </div>
+      ) : (
       <div style={{ height: `${chartHeight}px` }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -147,6 +152,7 @@ export function StackedBarChart({
           </BarChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 }

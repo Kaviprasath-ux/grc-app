@@ -189,7 +189,8 @@ export default function ContextPage() {
   // Get user's department ID for department-scoped filtering
   const userDepartmentId = session?.user?.departmentId;
 
-  const [activeTab, setActiveTab] = useState("stakeholder");
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabParam === "issuelist" ? "issuelist" : "stakeholder");
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);

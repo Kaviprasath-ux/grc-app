@@ -255,6 +255,7 @@ export default function DashboardPage() {
             { dataKey: "missed", fill: "#F59E0B", name: t("Missed") },
             { dataKey: "overdue", fill: "#EF4444", name: t("Overdue") },
           ]}
+          onClick={() => router.push("/compliance/kpis?from=dashboard")}
         />
         <StackedBarChart
           title={t("Process KPI")}
@@ -266,6 +267,7 @@ export default function DashboardPage() {
             { dataKey: "missed", fill: "#F59E0B", name: t("Missed") },
             { dataKey: "overdue", fill: "#EF4444", name: t("Overdue") },
           ]}
+          onClick={() => router.push("/compliance/kpis?from=dashboard")}
         />
       </div>
 

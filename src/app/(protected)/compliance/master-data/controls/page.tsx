@@ -56,6 +56,7 @@ import {
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useHasRole } from "@/hooks/usePermissions";
 
 interface ControlDomain {
   id: string;
@@ -116,7 +117,9 @@ export default function ControlsMasterDataPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [controls, setControls] = useState<Control[]>([]);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [domains, setDomains] = useState<ControlDomain[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -323,6 +326,26 @@ export default function ControlsMasterDataPage() {
       }
     } catch (error) {
       console.error("Error deleting control:", error);
+    }
+  };
+
+  const confirmDeleteAll = async () => {
+    try {
+      const response = await fetch("/api/controls/delete-all", {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchControls();
+        toast({ title: t("Success"), description: t("All controls deleted successfully") });
+      } else {
+        toast({ title: t("Error"), description: t("Failed to delete controls"), variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error deleting all controls:", error);
+      toast({ title: t("Error"), description: t("Failed to delete controls"), variant: "destructive" });
+    } finally {
+      setDeleteAllDialogOpen(false);
     }
   };
 
@@ -585,6 +608,12 @@ export default function ControlsMasterDataPage() {
 
       {/* Action Buttons above the card */}
       <div className="flex items-center justify-end gap-2">
+        {isCustomerAdmin && (
+          <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(true)}>
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}
@@ -1509,6 +1538,27 @@ export default function ControlsMasterDataPage() {
               className="bg-red-600 hover:bg-red-700 text-white h-9"
             >
               {t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Confirmation */}
+      <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
+          <AlertDialogHeader className="px-6 py-4">
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete All Controls")}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
+              {t("Are you sure you want to delete all controls? This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteAll}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {t("Delete All")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

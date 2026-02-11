@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, ChevronLeft, ChevronRight, Plus, Trash2, Upload, X } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
@@ -117,9 +117,10 @@ export function EditProfileWizard({
     cloudProviders: [],
   });
 
-  // Initialize form data when organization changes
-  useState(() => {
-    if (organization) {
+  // Reset step and form data when dialog opens
+  useEffect(() => {
+    if (open && organization) {
+      setCurrentStep(1);
       setFormData({
         ...organization,
         email: organization.email || "",
@@ -137,7 +138,7 @@ export function EditProfileWizard({
         cloudProviders: organization.cloudProviders || [],
       });
     }
-  });
+  }, [open, organization]);
 
   // Reset form when dialog opens with new organization
   const handleOpenChange = (newOpen: boolean) => {

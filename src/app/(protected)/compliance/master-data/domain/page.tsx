@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useHasRole } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +44,7 @@ interface ControlDomain {
 export default function DomainMasterDataPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [domains, setDomains] = useState<ControlDomain[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -313,10 +315,12 @@ export default function DomainMasterDataPage() {
 
       {/* Action Buttons - Above Card */}
       <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={handleDeleteAll}>
-          <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Delete All")}
-        </Button>
+        {isCustomerAdmin && (
+          <Button variant="outline" size="sm" onClick={handleDeleteAll}>
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}
