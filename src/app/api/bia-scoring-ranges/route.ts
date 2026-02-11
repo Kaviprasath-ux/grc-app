@@ -31,6 +31,47 @@ export const GET = withAuth(
   { resource: "organization.bia", action: "view" }
 );
 
+// Helper function to check for overlapping ranges
+async function checkOverlappingRanges(
+  tenantFilter: Record<string, unknown>,
+  calculationType: string,
+  lowValue: number,
+  highValue: number | null,
+  excludeId?: string
+): Promise<{ hasOverlap: boolean; conflictingRange?: { label: string; lowValue: number; highValue: number | null } }> {
+  // Get all existing ranges for this calculation type
+  const existingRanges = await prisma.bIAScoringRange.findMany({
+    where: {
+      ...tenantFilter,
+      calculationType,
+      ...(excludeId && { id: { not: excludeId } }),
+    },
+    select: { id: true, label: true, lowValue: true, highValue: true },
+  });
+
+  // Check for overlaps
+  for (const existing of existingRanges) {
+    const existingLow = existing.lowValue;
+    const existingHigh = existing.highValue ?? Number.MAX_SAFE_INTEGER;
+    const newLow = lowValue;
+    const newHigh = highValue ?? Number.MAX_SAFE_INTEGER;
+
+    // Two ranges overlap if: newLow <= existingHigh AND newHigh >= existingLow
+    if (newLow <= existingHigh && newHigh >= existingLow) {
+      return {
+        hasOverlap: true,
+        conflictingRange: {
+          label: existing.label,
+          lowValue: existing.lowValue,
+          highValue: existing.highValue,
+        },
+      };
+    }
+  }
+
+  return { hasOverlap: false };
+}
+
 // POST create new BIA scoring range - with tenant isolation
 export const POST = withAuth(
   async (req, context, session) => {
@@ -47,13 +88,50 @@ export const POST = withAuth(
         );
       }
 
+      // Validate lowValue and highValue
+      const low = lowValue ?? 0;
+      const high = highValue ?? null;
+
+      if (low < 0) {
+        return NextResponse.json(
+          { error: "Min Score cannot be negative" },
+          { status: 400 }
+        );
+      }
+
+      if (high !== null && high < 0) {
+        return NextResponse.json(
+          { error: "Max Score cannot be negative" },
+          { status: 400 }
+        );
+      }
+
+      if (high !== null && low > high) {
+        return NextResponse.json(
+          { error: "Min Score cannot be greater than Max Score" },
+          { status: 400 }
+        );
+      }
+
+      // Check for overlapping ranges
+      const calcType = calculationType || "High of all";
+      const overlapCheck = await checkOverlappingRanges(tenantFilter, calcType, low, high);
+      if (overlapCheck.hasOverlap && overlapCheck.conflictingRange) {
+        const conflictRange = overlapCheck.conflictingRange;
+        const conflictHighDisplay = conflictRange.highValue !== null ? conflictRange.highValue : "∞";
+        return NextResponse.json(
+          { error: `Range ${low}-${high ?? '∞'} overlaps with existing range "${conflictRange.label}" (${conflictRange.lowValue}-${conflictHighDisplay})` },
+          { status: 400 }
+        );
+      }
+
       // Get the max sortOrder if not provided
       let order = sortOrder;
       if (order === undefined) {
         const maxOrder = await prisma.bIAScoringRange.findFirst({
           where: {
             ...tenantFilter,
-            calculationType: calculationType || "High of all"
+            calculationType: calcType
           },
           orderBy: { sortOrder: "desc" },
           select: { sortOrder: true },
@@ -65,10 +143,10 @@ export const POST = withAuth(
         data: {
           customerAccountId,
           label,
-          lowValue: lowValue ?? 0,
-          highValue: highValue ?? null,
+          lowValue: low,
+          highValue: high,
           color,
-          calculationType: calculationType || "High of all",
+          calculationType: calcType,
           sortOrder: order,
         },
       });

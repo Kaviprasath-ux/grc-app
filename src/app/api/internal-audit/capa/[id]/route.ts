@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -116,13 +117,65 @@ export const PUT = withAuth(
               id: true,
               findingId: true,
               finding: true,
+              responsiblePersonId: true,
               engagement: {
-                select: { auditId: true, engagementTitle: true }
+                select: { auditId: true, engagementTitle: true, customerAccountId: true }
               }
             }
           }
         }
       });
+
+      // Send CAPA notifications based on status changes
+      const customerAccountId = updated.finding?.engagement?.customerAccountId;
+      if (customerAccountId && body.status && body.status !== capa.status) {
+        // Get the responsible person to notify
+        const responsiblePersonId = updated.finding?.responsiblePersonId;
+
+        // Notify when CAPA is closed
+        if (body.status === 'Closed' && responsiblePersonId && responsiblePersonId !== session.id) {
+          await notificationService.send({
+            customerAccountId,
+            actorId: session.id,
+            recipientId: responsiblePersonId,
+            event: NOTIFICATION_EVENTS.FINDINGS_COMPLETED,
+            title: 'CAPA Closed',
+            message: `CAPA "${updated.capaId}: ${updated.title}" has been closed.`,
+            relatedEntityType: 'capa',
+            relatedEntityId: updated.id,
+            link: `/internal-audit/capa/${updated.id}`,
+            metadata: {
+              capaId: updated.capaId,
+              capaTitle: updated.title,
+              findingId: updated.finding?.findingId,
+              closedBy: session.name || 'Auditor',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify when CAPA is assigned/in progress
+        if (body.status === 'In Progress' && responsiblePersonId && responsiblePersonId !== session.id) {
+          await notificationService.send({
+            customerAccountId,
+            actorId: session.id,
+            recipientId: responsiblePersonId,
+            event: NOTIFICATION_EVENTS.CAPA_ASSIGNED,
+            title: 'CAPA In Progress',
+            message: `CAPA "${updated.capaId}: ${updated.title}" is now in progress and requires your action.`,
+            relatedEntityType: 'capa',
+            relatedEntityId: updated.id,
+            link: `/internal-audit/capa/${updated.id}`,
+            metadata: {
+              capaId: updated.capaId,
+              capaTitle: updated.title,
+              findingId: updated.finding?.findingId,
+              targetDate: updated.targetDate,
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+      }
 
       return NextResponse.json(updated);
     } catch (error) {
