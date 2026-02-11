@@ -70,61 +70,67 @@ export function HorizontalBarChart({
       </div>
 
       {/* Chart */}
-      <div style={{ height: `${chartHeight}px` }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            layout="vertical"
-            data={data}
-            margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
-            barCategoryGap="20%"
-            barGap={2}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#e2e8f0"
-              horizontal={false}
-              vertical={true}
-            />
-            <XAxis
-              type="number"
-              tick={{ fontSize: 10, fill: "#94a3b8" }}
-              axisLine={false}
-              tickLine={false}
-              tickCount={5}
-            />
-            <YAxis
-              dataKey={yAxisDataKey}
-              type="category"
-              width={80}
-              tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                fontSize: "12px",
-                padding: "8px 12px",
-              }}
-              itemStyle={{ color: "#334155", padding: "2px 0" }}
-              cursor={{ fill: "rgba(99, 102, 241, 0.05)" }}
-            />
-            {bars.map((bar) => (
-              <Bar
-                key={bar.dataKey}
-                dataKey={bar.dataKey}
-                fill={bar.fill}
-                name={bar.name}
-                barSize={18}
-                radius={[0, 4, 4, 0]}
+      {data.length === 0 ? (
+        <div className="flex items-center justify-center h-[200px] text-sm text-slate-400">
+          No data available
+        </div>
+      ) : (
+        <div style={{ height: `${chartHeight}px` }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              layout="vertical"
+              data={data}
+              margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+              barCategoryGap="20%"
+              barGap={2}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#e2e8f0"
+                horizontal={false}
+                vertical={true}
               />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+              <XAxis
+                type="number"
+                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                axisLine={false}
+                tickLine={false}
+                tickCount={5}
+              />
+              <YAxis
+                dataKey={yAxisDataKey}
+                type="category"
+                width={80}
+                tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "white",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  fontSize: "12px",
+                  padding: "8px 12px",
+                }}
+                itemStyle={{ color: "#334155", padding: "2px 0" }}
+                cursor={{ fill: "rgba(99, 102, 241, 0.05)" }}
+              />
+              {bars.map((bar) => (
+                <Bar
+                  key={bar.dataKey}
+                  dataKey={bar.dataKey}
+                  fill={bar.fill}
+                  name={bar.name}
+                  barSize={18}
+                  radius={[0, 4, 4, 0]}
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }

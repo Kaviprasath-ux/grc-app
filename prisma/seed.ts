@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { seedEmailTemplates } from "./seed-email-templates";
 
 const prisma = new PrismaClient();
 
@@ -1246,19 +1247,26 @@ async function main() {
   for (const evidence of evidences) {
     const frameworkId = createdFrameworks[evidence.framework];
     if (frameworkId) {
-      await prisma.evidence.create({
-        data: {
-          customerAccountId,
-          evidenceCode: `EVD-${String(evidenceIdx++).padStart(3, "0")}`,
-          name: evidence.name,
-          description: evidence.description,
-          frameworkId: frameworkId,
-          departmentId: createdDepts[evidence.department],
-          assigneeId: createdUsers["john.doe"],
-          status: evidence.status,
-          dueDate: new Date(evidence.dueDate),
-        },
+      const evidenceCode = `EVD-${String(evidenceIdx++).padStart(3, "0")}`;
+      // Check if evidence already exists before creating
+      const existingEvidence = await prisma.evidence.findFirst({
+        where: { customerAccountId, evidenceCode },
       });
+      if (!existingEvidence) {
+        await prisma.evidence.create({
+          data: {
+            customerAccountId,
+            evidenceCode,
+            name: evidence.name,
+            description: evidence.description,
+            frameworkId: frameworkId,
+            departmentId: createdDepts[evidence.department],
+            assigneeId: createdUsers["john.doe"],
+            status: evidence.status,
+            dueDate: new Date(evidence.dueDate),
+          },
+        });
+      }
     }
   }
   console.log("✅ Evidence requests created (15 evidence items)");
@@ -1371,18 +1379,25 @@ async function main() {
 
   let exceptionIdx = 1;
   for (const exception of exceptions) {
-    await prisma.exception.create({
-      data: {
-        customerAccountId,
-        exceptionCode: `EXC-${String(exceptionIdx++).padStart(3, "0")}`,
-        name: exception.name,
-        category: exception.category,
-        departmentId: createdDepts[exception.department],
-        status: exception.status,
-        startDate: new Date(exception.startDate),
-        endDate: new Date(exception.endDate),
-      },
+    const exceptionCode = `EXC-${String(exceptionIdx++).padStart(3, "0")}`;
+    // Check if exception already exists before creating
+    const existingException = await prisma.exception.findFirst({
+      where: { customerAccountId, exceptionCode },
     });
+    if (!existingException) {
+      await prisma.exception.create({
+        data: {
+          customerAccountId,
+          exceptionCode,
+          name: exception.name,
+          category: exception.category,
+          departmentId: createdDepts[exception.department],
+          status: exception.status,
+          startDate: new Date(exception.startDate),
+          endDate: new Date(exception.endDate),
+        },
+      });
+    }
   }
   console.log("✅ Exceptions created");
 
@@ -1563,22 +1578,42 @@ async function main() {
 
   // Create Asset Sub Categories
   const assetSubCategories = [
+    // Hardware subcategories
     { name: "Server", description: "Physical and virtual servers", category: "Hardware" },
+    { name: "Application Server", description: "Application hosting servers", category: "Hardware" },
     { name: "Workstation", description: "Desktop computers and laptops", category: "Hardware" },
     { name: "Firewall", description: "Network security devices", category: "Hardware" },
+    { name: "Router", description: "Network routing devices", category: "Hardware" },
+    { name: "Switch", description: "Network switching devices", category: "Hardware" },
     { name: "Router/Switch", description: "Network routing equipment", category: "Hardware" },
     { name: "Storage Device", description: "Data storage hardware", category: "Hardware" },
     { name: "Mobile Device", description: "Smartphones and tablets", category: "Hardware" },
+    { name: "Printer", description: "Printing devices", category: "Hardware" },
+    // Software subcategories
     { name: "Enterprise Application", description: "Business applications", category: "Software" },
     { name: "Operating System", description: "System software", category: "Software" },
     { name: "Database", description: "Database management systems", category: "Software" },
     { name: "Security Software", description: "Security tools and applications", category: "Software" },
+    { name: "IDS/IPS", description: "Intrusion detection/prevention systems", category: "Software" },
+    { name: "Antivirus Software", description: "Antivirus and anti-malware tools", category: "Software" },
+    { name: "VPN", description: "Virtual Private Network software", category: "Software" },
+    { name: "Web Application", description: "Web-based applications", category: "Software" },
+    { name: "Mobile Application", description: "Mobile apps", category: "Software" },
+    { name: "Email System", description: "Email and messaging systems", category: "Software" },
+    { name: "Version Control System", description: "Source code version control", category: "Software" },
+    { name: "Backup Software", description: "Backup and recovery software", category: "Software" },
+    { name: "HRMS", description: "Human Resource Management System", category: "Software" },
+    // Data subcategories
     { name: "Customer Data", description: "Customer information", category: "Data" },
     { name: "Financial Data", description: "Financial records and transactions", category: "Data" },
     { name: "Employee Data", description: "HR and employee information", category: "Data" },
     { name: "Intellectual Property", description: "Patents, trade secrets, source code", category: "Data" },
+    { name: "Source Code", description: "Application source code", category: "Data" },
+    { name: "Test Data", description: "Testing and QA data", category: "Data" },
+    // Network subcategories
     { name: "LAN/WAN", description: "Local and wide area networks", category: "Network" },
     { name: "Cloud Infrastructure", description: "Cloud-based resources", category: "Network" },
+    // Facilities subcategories
     { name: "Data Center", description: "Primary data center facilities", category: "Facilities" },
     { name: "Office Building", description: "Office locations", category: "Facilities" },
   ];
@@ -1615,8 +1650,12 @@ async function main() {
     { name: "Customer Facing", description: "Customer-facing applications" },
     { name: "Internal Operations", description: "Internal business operations" },
     { name: "Development", description: "Development and testing assets" },
+    { name: "Testing", description: "Testing and QA assets" },
     { name: "Infrastructure", description: "Core infrastructure assets" },
     { name: "Communication", description: "Communication systems" },
+    { name: "Human Resources", description: "HR and employee management assets" },
+    { name: "Finance", description: "Financial management assets" },
+    { name: "Backup & Disaster Recovery", description: "Backup and DR assets" },
   ];
 
   const createdAssetGroups: { [key: string]: string } = {};
@@ -1689,15 +1728,71 @@ async function main() {
   }
   console.log("✅ Asset Lifecycle Statuses created");
 
-  // Create CIA Classifications
+  // Create CIA Classifications - Comprehensive dummy data
   const ciaClassifications = [
-    { subCategory: "Server", group: "Infrastructure", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
-    { subCategory: "Server", group: "Core Banking", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
-    { subCategory: "Firewall", group: "Security Tools", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
-    { subCategory: "Database", group: "Core Banking", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
-    { subCategory: "Customer Data", group: "Customer Facing", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
-    { subCategory: "Workstation", group: "Internal Operations", c: "medium", cScore: 5, i: "medium", iScore: 5, a: "low", aScore: 0 },
-    { subCategory: "Enterprise Application", group: "Internal Operations", c: "medium", cScore: 5, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    // Infrastructure Assets
+    { subCategory: "Server", group: "Infrastructure", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Storage Device", group: "Infrastructure", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Router", group: "Infrastructure", sensitivity: "Confidential", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Switch", group: "Infrastructure", sensitivity: "Confidential", c: "medium", cScore: 5, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Application Server", group: "Infrastructure", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Database", group: "Infrastructure", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+
+    // Core Banking Assets
+    { subCategory: "Server", group: "Core Banking", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Database", group: "Core Banking", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Application Server", group: "Core Banking", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Storage Device", group: "Core Banking", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Enterprise Application", group: "Core Banking", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+
+    // Security Tools
+    { subCategory: "Firewall", group: "Security Tools", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "IDS/IPS", group: "Security Tools", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Antivirus Software", group: "Security Tools", sensitivity: "Confidential", c: "medium", cScore: 5, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "VPN", group: "Security Tools", sensitivity: "Confidential", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Server", group: "Security Tools", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+
+    // Customer Facing Assets
+    { subCategory: "Customer Data", group: "Customer Facing", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Database", group: "Customer Facing", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Web Application", group: "Customer Facing", sensitivity: "Confidential", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Mobile Application", group: "Customer Facing", sensitivity: "Confidential", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Server", group: "Customer Facing", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+
+    // Internal Operations
+    { subCategory: "Workstation", group: "Internal Operations", sensitivity: "Internal", c: "medium", cScore: 5, i: "medium", iScore: 5, a: "low", aScore: 0 },
+    { subCategory: "Enterprise Application", group: "Internal Operations", sensitivity: "Confidential", c: "medium", cScore: 5, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Printer", group: "Internal Operations", sensitivity: "Internal", c: "low", cScore: 0, i: "low", iScore: 0, a: "low", aScore: 0 },
+    { subCategory: "Server", group: "Internal Operations", sensitivity: "Confidential", c: "medium", cScore: 5, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Database", group: "Internal Operations", sensitivity: "Confidential", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Email System", group: "Internal Operations", sensitivity: "Confidential", c: "medium", cScore: 5, i: "medium", iScore: 5, a: "medium", aScore: 5 },
+
+    // Development Assets
+    { subCategory: "Server", group: "Development", sensitivity: "Internal", c: "low", cScore: 0, i: "medium", iScore: 5, a: "low", aScore: 0 },
+    { subCategory: "Database", group: "Development", sensitivity: "Internal", c: "low", cScore: 0, i: "low", iScore: 0, a: "low", aScore: 0 },
+    { subCategory: "Workstation", group: "Development", sensitivity: "Internal", c: "medium", cScore: 5, i: "medium", iScore: 5, a: "low", aScore: 0 },
+    { subCategory: "Source Code", group: "Development", sensitivity: "Confidential", c: "high", cScore: 10, i: "high", iScore: 10, a: "low", aScore: 0 },
+    { subCategory: "Version Control System", group: "Development", sensitivity: "Confidential", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+
+    // Testing Assets
+    { subCategory: "Server", group: "Testing", sensitivity: "Internal", c: "low", cScore: 0, i: "medium", iScore: 5, a: "low", aScore: 0 },
+    { subCategory: "Database", group: "Testing", sensitivity: "Internal", c: "low", cScore: 0, i: "low", iScore: 0, a: "low", aScore: 0 },
+    { subCategory: "Test Data", group: "Testing", sensitivity: "Internal", c: "medium", cScore: 5, i: "low", iScore: 0, a: "low", aScore: 0 },
+
+    // Human Resources Assets
+    { subCategory: "HRMS", group: "Human Resources", sensitivity: "Confidential", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Employee Data", group: "Human Resources", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Database", group: "Human Resources", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+
+    // Finance Assets
+    { subCategory: "Financial Data", group: "Finance", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Database", group: "Finance", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Enterprise Application", group: "Finance", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+
+    // Backup & DR Assets
+    { subCategory: "Storage Device", group: "Backup & Disaster Recovery", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Server", group: "Backup & Disaster Recovery", sensitivity: "Restricted", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Backup Software", group: "Backup & Disaster Recovery", sensitivity: "Confidential", c: "medium", cScore: 5, i: "high", iScore: 10, a: "high", aScore: 10 },
   ];
 
   for (const cia of ciaClassifications) {
@@ -1716,6 +1811,7 @@ async function main() {
         data: {
           subCategoryId: createdAssetSubCategories[cia.subCategory],
           groupId: createdAssetGroups[cia.group],
+          sensitivityId: createdSensitivities[cia.sensitivity],
           confidentiality: cia.c,
           confidentialityScore: cia.cScore,
           integrity: cia.i,
@@ -1730,18 +1826,63 @@ async function main() {
   }
   console.log("✅ CIA Classifications created");
 
-  // Create Assets with enhanced fields
+  // Create Assets with enhanced fields - Expanded dummy data
   const assets = [
+    // Infrastructure Assets
     { assetId: "AST-001", name: "Production Database Server", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Server", group: "Infrastructure", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 50000, acquisitionDate: "2023-01-15", nextReviewDate: "2025-06-15" },
     { assetId: "AST-002", name: "Core Banking Application Server", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Server", group: "Core Banking", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 75000, acquisitionDate: "2023-03-01", nextReviewDate: "2025-06-01" },
     { assetId: "AST-003", name: "Perimeter Firewall", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Firewall", group: "Security Tools", sensitivity: "Restricted", lifecycle: "Active", owner: "john.doe", custodian: "david.jones", location: "Data Center A", value: 25000, acquisitionDate: "2023-06-15", nextReviewDate: "2025-03-15" },
     { assetId: "AST-004", name: "Customer Database", assetType: "Information", department: "IT Operations", classification: "Critical", category: "Data", subCategory: "Customer Data", group: "Customer Facing", sensitivity: "Restricted", lifecycle: "Active", owner: "john.doe", custodian: "lisa.taylor", location: "Cloud AWS", value: 100000, acquisitionDate: "2022-01-01", nextReviewDate: "2025-01-01" },
     { assetId: "AST-005", name: "ERP System", assetType: "Software", department: "IT Operations", classification: "High", category: "Software", subCategory: "Enterprise Application", group: "Internal Operations", sensitivity: "Confidential", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "On-Premise", value: 200000, acquisitionDate: "2021-06-01", nextReviewDate: "2025-06-01" },
-    { assetId: "AST-006", name: "HR Management System", assetType: "Software", department: "Human Resources", classification: "High", category: "Software", subCategory: "Enterprise Application", group: "Internal Operations", sensitivity: "Confidential", lifecycle: "Active", owner: "emily.brown", custodian: "david.jones", location: "Cloud Azure", value: 50000, acquisitionDate: "2022-03-15", nextReviewDate: "2025-03-15" },
+    { assetId: "AST-006", name: "HR Management System", assetType: "Software", department: "Human Resources", classification: "High", category: "Software", subCategory: "HRMS", group: "Human Resources", sensitivity: "Confidential", lifecycle: "Active", owner: "emily.brown", custodian: "david.jones", location: "Cloud Azure", value: 50000, acquisitionDate: "2022-03-15", nextReviewDate: "2025-03-15" },
     { assetId: "AST-007", name: "Employee Workstations", assetType: "Hardware", department: "IT Support", classification: "Medium", category: "Hardware", subCategory: "Workstation", group: "Internal Operations", sensitivity: "Internal", lifecycle: "Active", owner: "david.jones", custodian: "david.jones", location: "All Offices", value: 150000, acquisitionDate: "2023-01-01", nextReviewDate: "2025-12-01" },
     { assetId: "AST-008", name: "Development Server", assetType: "Hardware", department: "Product Development", classification: "Medium", category: "Hardware", subCategory: "Server", group: "Development", sensitivity: "Internal", lifecycle: "Active", owner: "lisa.taylor", custodian: "david.jones", location: "Data Center B", value: 30000, acquisitionDate: "2023-09-01", nextReviewDate: "2025-09-01" },
     { assetId: "AST-009", name: "Backup Storage System", assetType: "Hardware", department: "IT Operations", classification: "High", category: "Hardware", subCategory: "Storage Device", group: "Infrastructure", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 80000, acquisitionDate: "2023-04-01", nextReviewDate: "2025-04-01" },
     { assetId: "AST-010", name: "CRM Database", assetType: "Information", department: "Revenue", classification: "High", category: "Data", subCategory: "Customer Data", group: "Customer Facing", sensitivity: "Confidential", lifecycle: "Active", owner: "james.anderson", custodian: "lisa.taylor", location: "Cloud AWS", value: 75000, acquisitionDate: "2022-06-01", nextReviewDate: "2025-06-01" },
+
+    // Security Tools
+    { assetId: "AST-011", name: "IDS/IPS Appliance", assetType: "Software", department: "IT Operations", classification: "Critical", category: "Software", subCategory: "IDS/IPS", group: "Security Tools", sensitivity: "Restricted", lifecycle: "Active", owner: "john.doe", custodian: "david.jones", location: "Data Center A", value: 35000, acquisitionDate: "2023-02-01", nextReviewDate: "2025-08-01" },
+    { assetId: "AST-012", name: "Enterprise Antivirus", assetType: "Software", department: "IT Security", classification: "High", category: "Software", subCategory: "Antivirus Software", group: "Security Tools", sensitivity: "Confidential", lifecycle: "Active", owner: "john.doe", custodian: "david.jones", location: "Cloud", value: 15000, acquisitionDate: "2023-01-01", nextReviewDate: "2025-07-01" },
+    { assetId: "AST-013", name: "VPN Gateway", assetType: "Software", department: "IT Operations", classification: "High", category: "Software", subCategory: "VPN", group: "Security Tools", sensitivity: "Confidential", lifecycle: "Active", owner: "john.doe", custodian: "david.jones", location: "Data Center A", value: 20000, acquisitionDate: "2023-05-01", nextReviewDate: "2025-11-01" },
+
+    // Network Infrastructure
+    { assetId: "AST-014", name: "Core Router", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Router", group: "Infrastructure", sensitivity: "Confidential", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 40000, acquisitionDate: "2022-09-01", nextReviewDate: "2025-03-01" },
+    { assetId: "AST-015", name: "Distribution Switch", assetType: "Hardware", department: "IT Operations", classification: "High", category: "Hardware", subCategory: "Switch", group: "Infrastructure", sensitivity: "Confidential", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 30000, acquisitionDate: "2022-10-01", nextReviewDate: "2025-04-01" },
+
+    // Core Banking
+    { assetId: "AST-016", name: "Core Banking Database", assetType: "Software", department: "IT Operations", classification: "Critical", category: "Software", subCategory: "Database", group: "Core Banking", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "lisa.taylor", location: "Data Center A", value: 150000, acquisitionDate: "2021-12-01", nextReviewDate: "2025-06-01" },
+    { assetId: "AST-017", name: "Transaction Processing Server", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Application Server", group: "Core Banking", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 90000, acquisitionDate: "2022-03-01", nextReviewDate: "2025-09-01" },
+
+    // Customer Facing
+    { assetId: "AST-018", name: "Online Banking Portal", assetType: "Software", department: "Digital Banking", classification: "Critical", category: "Software", subCategory: "Web Application", group: "Customer Facing", sensitivity: "Confidential", lifecycle: "Active", owner: "james.anderson", custodian: "lisa.taylor", location: "Cloud AWS", value: 120000, acquisitionDate: "2022-05-01", nextReviewDate: "2025-05-01" },
+    { assetId: "AST-019", name: "Mobile Banking App", assetType: "Software", department: "Digital Banking", classification: "High", category: "Software", subCategory: "Mobile Application", group: "Customer Facing", sensitivity: "Confidential", lifecycle: "Active", owner: "james.anderson", custodian: "lisa.taylor", location: "Cloud AWS", value: 80000, acquisitionDate: "2022-07-01", nextReviewDate: "2025-07-01" },
+    { assetId: "AST-020", name: "Customer Portal Server", assetType: "Hardware", department: "Digital Banking", classification: "Critical", category: "Hardware", subCategory: "Server", group: "Customer Facing", sensitivity: "Restricted", lifecycle: "Active", owner: "james.anderson", custodian: "david.jones", location: "Cloud AWS", value: 60000, acquisitionDate: "2022-06-01", nextReviewDate: "2025-06-01" },
+
+    // Internal Operations
+    { assetId: "AST-021", name: "Office Printers", assetType: "Hardware", department: "IT Support", classification: "Low", category: "Hardware", subCategory: "Printer", group: "Internal Operations", sensitivity: "Internal", lifecycle: "Active", owner: "david.jones", custodian: "david.jones", location: "All Offices", value: 25000, acquisitionDate: "2023-01-01", nextReviewDate: "2026-01-01" },
+    { assetId: "AST-022", name: "Email Server", assetType: "Software", department: "IT Operations", classification: "High", category: "Software", subCategory: "Email System", group: "Internal Operations", sensitivity: "Confidential", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Cloud Azure", value: 40000, acquisitionDate: "2022-04-01", nextReviewDate: "2025-04-01" },
+    { assetId: "AST-023", name: "Internal Operations Database", assetType: "Software", department: "IT Operations", classification: "High", category: "Software", subCategory: "Database", group: "Internal Operations", sensitivity: "Confidential", lifecycle: "Active", owner: "bts.admin", custodian: "lisa.taylor", location: "On-Premise", value: 55000, acquisitionDate: "2022-08-01", nextReviewDate: "2025-08-01" },
+
+    // Development & Testing
+    { assetId: "AST-024", name: "Source Code Repository", assetType: "Information", department: "Product Development", classification: "High", category: "Data", subCategory: "Source Code", group: "Development", sensitivity: "Confidential", lifecycle: "Active", owner: "lisa.taylor", custodian: "lisa.taylor", location: "Cloud GitHub", value: 100000, acquisitionDate: "2021-01-01", nextReviewDate: "2025-01-01" },
+    { assetId: "AST-025", name: "Git Version Control", assetType: "Software", department: "Product Development", classification: "High", category: "Software", subCategory: "Version Control System", group: "Development", sensitivity: "Confidential", lifecycle: "Active", owner: "lisa.taylor", custodian: "david.jones", location: "Cloud GitHub", value: 12000, acquisitionDate: "2021-01-01", nextReviewDate: "2025-01-01" },
+    { assetId: "AST-026", name: "Testing Environment Server", assetType: "Hardware", department: "Quality Assurance", classification: "Medium", category: "Hardware", subCategory: "Server", group: "Testing", sensitivity: "Internal", lifecycle: "Active", owner: "lisa.taylor", custodian: "david.jones", location: "Data Center B", value: 25000, acquisitionDate: "2023-03-01", nextReviewDate: "2025-09-01" },
+    { assetId: "AST-027", name: "QA Test Data", assetType: "Information", department: "Quality Assurance", classification: "Medium", category: "Data", subCategory: "Test Data", group: "Testing", sensitivity: "Internal", lifecycle: "Active", owner: "lisa.taylor", custodian: "lisa.taylor", location: "Data Center B", value: 5000, acquisitionDate: "2023-04-01", nextReviewDate: "2025-10-01" },
+    { assetId: "AST-028", name: "Testing Database", assetType: "Software", department: "Quality Assurance", classification: "Low", category: "Software", subCategory: "Database", group: "Testing", sensitivity: "Internal", lifecycle: "Active", owner: "lisa.taylor", custodian: "david.jones", location: "Data Center B", value: 8000, acquisitionDate: "2023-03-15", nextReviewDate: "2025-09-15" },
+
+    // Human Resources
+    { assetId: "AST-029", name: "Employee Records Database", assetType: "Information", department: "Human Resources", classification: "Critical", category: "Data", subCategory: "Employee Data", group: "Human Resources", sensitivity: "Restricted", lifecycle: "Active", owner: "emily.brown", custodian: "lisa.taylor", location: "Cloud Azure", value: 60000, acquisitionDate: "2022-01-01", nextReviewDate: "2025-01-01" },
+    { assetId: "AST-030", name: "HRMS Database", assetType: "Software", department: "Human Resources", classification: "High", category: "Software", subCategory: "Database", group: "Human Resources", sensitivity: "Restricted", lifecycle: "Active", owner: "emily.brown", custodian: "david.jones", location: "Cloud Azure", value: 45000, acquisitionDate: "2022-02-01", nextReviewDate: "2025-02-01" },
+
+    // Finance
+    { assetId: "AST-031", name: "Financial Records System", assetType: "Information", department: "Finance", classification: "Critical", category: "Data", subCategory: "Financial Data", group: "Finance", sensitivity: "Restricted", lifecycle: "Active", owner: "james.anderson", custodian: "lisa.taylor", location: "On-Premise", value: 150000, acquisitionDate: "2021-09-01", nextReviewDate: "2025-03-01" },
+    { assetId: "AST-032", name: "Accounting Software", assetType: "Software", department: "Finance", classification: "Critical", category: "Software", subCategory: "Enterprise Application", group: "Finance", sensitivity: "Restricted", lifecycle: "Active", owner: "james.anderson", custodian: "david.jones", location: "On-Premise", value: 85000, acquisitionDate: "2021-10-01", nextReviewDate: "2025-04-01" },
+    { assetId: "AST-033", name: "Finance Database Server", assetType: "Software", department: "Finance", classification: "Critical", category: "Software", subCategory: "Database", group: "Finance", sensitivity: "Restricted", lifecycle: "Active", owner: "james.anderson", custodian: "david.jones", location: "On-Premise", value: 70000, acquisitionDate: "2021-11-01", nextReviewDate: "2025-05-01" },
+
+    // Backup & Disaster Recovery
+    { assetId: "AST-034", name: "DR Site Storage", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Storage Device", group: "Backup & Disaster Recovery", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "DR Site", value: 120000, acquisitionDate: "2022-01-15", nextReviewDate: "2025-07-15" },
+    { assetId: "AST-035", name: "Backup Server", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Server", group: "Backup & Disaster Recovery", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "DR Site", value: 65000, acquisitionDate: "2022-02-01", nextReviewDate: "2025-08-01" },
+    { assetId: "AST-036", name: "Backup & Recovery Software", assetType: "Software", department: "IT Operations", classification: "High", category: "Software", subCategory: "Backup Software", group: "Backup & Disaster Recovery", sensitivity: "Confidential", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Multi-Site", value: 45000, acquisitionDate: "2022-03-01", nextReviewDate: "2025-09-01" },
   ];
 
   for (const asset of assets) {
@@ -3051,8 +3192,64 @@ async function main() {
   const fetchedAuditTypes = await prisma.auditType.findMany();
 
   const internalAuditRisks = [
+    // Human Resources Department
     {
       riskId: "RID001",
+      riskName: "Inadequate Employee Background Verification",
+      department: "Human Resources",
+      sectionProcess: "Recruitment",
+      subProcess: "Pre-employment Screening",
+      activity: "Background Check",
+      category: "Operational Audit",
+      auditType: "Assurance",
+      riskDescription: "Risk of hiring individuals with undisclosed criminal records or false credentials",
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      controlDescription: "Third-party background verification service for all new hires",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID002",
+      riskName: "Payroll Fraud",
+      department: "Human Resources",
+      sectionProcess: "Payroll Processing",
+      subProcess: "Salary Calculation",
+      activity: "Payroll Reconciliation",
+      category: "Financial Audit",
+      auditType: "Assurance",
+      riskDescription: "Risk of unauthorized payments or ghost employees in payroll system",
+      inherentLikelihood: 2,
+      inherentImpact: 4,
+      controlDescription: "Segregation of duties with monthly payroll audits",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID003",
+      riskName: "Non-compliance with Labor Laws",
+      department: "Human Resources",
+      sectionProcess: "Employee Relations",
+      subProcess: "Leave Management",
+      activity: "Leave Policy Adherence",
+      category: "Compliance Audit",
+      auditType: "Compliance Review",
+      riskDescription: "Risk of legal penalties due to violations of labor regulations",
+      inherentLikelihood: 2,
+      inherentImpact: 4,
+      controlDescription: "Automated HRMS with built-in compliance checks",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 3,
+      status: "Closed",
+    },
+    // Revenue Department
+    {
+      riskId: "RID004",
       riskName: "Inadequate Financial Controls",
       department: "Revenue",
       sectionProcess: "Financial Reporting",
@@ -3070,7 +3267,44 @@ async function main() {
       status: "Open",
     },
     {
-      riskId: "RID002",
+      riskId: "RID005",
+      riskName: "Revenue Recognition Errors",
+      department: "Revenue",
+      sectionProcess: "Revenue Accounting",
+      subProcess: "Sales Order Processing",
+      activity: "Revenue Recognition",
+      category: "Financial Audit",
+      auditType: "Assurance",
+      riskDescription: "Risk of premature or delayed revenue recognition affecting financial statements",
+      inherentLikelihood: 3,
+      inherentImpact: 5,
+      controlDescription: "Automated revenue recognition based on ASC 606 standards",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 2,
+      residualImpact: 4,
+      status: "Under Review",
+    },
+    {
+      riskId: "RID006",
+      riskName: "Accounts Receivable Mismanagement",
+      department: "Revenue",
+      sectionProcess: "Collections",
+      subProcess: "Aging Analysis",
+      activity: "Credit Risk Assessment",
+      category: "Financial Audit",
+      auditType: "Consulting",
+      riskDescription: "Risk of bad debts and cash flow issues due to inadequate collections",
+      inherentLikelihood: 3,
+      inherentImpact: 3,
+      controlDescription: "Weekly aging reports with automated dunning process",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 2,
+      status: "Open",
+    },
+    // IT Operations Department
+    {
+      riskId: "RID007",
       riskName: "Access Control Weakness",
       department: "IT Operations",
       sectionProcess: "Identity Management",
@@ -3088,7 +3322,172 @@ async function main() {
       status: "Under Review",
     },
     {
-      riskId: "RID003",
+      riskId: "RID008",
+      riskName: "Inadequate Backup and Recovery",
+      department: "IT Operations",
+      sectionProcess: "Data Management",
+      subProcess: "Backup Operations",
+      activity: "Disaster Recovery Testing",
+      category: "IT Audit",
+      auditType: "Assurance",
+      riskDescription: "Risk of data loss and extended downtime due to inadequate backup procedures",
+      inherentLikelihood: 3,
+      inherentImpact: 5,
+      controlDescription: "Daily automated backups with quarterly DR drills",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 4,
+      status: "Open",
+    },
+    {
+      riskId: "RID009",
+      riskName: "Change Management Failures",
+      department: "IT Operations",
+      sectionProcess: "Release Management",
+      subProcess: "Change Approval",
+      activity: "Production Deployment",
+      category: "IT Audit",
+      auditType: "Assurance",
+      riskDescription: "System outages or data corruption due to unauthorized or poorly tested changes",
+      inherentLikelihood: 4,
+      inherentImpact: 4,
+      controlDescription: "CAB approval required with rollback procedures for all production changes",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 3,
+      residualImpact: 3,
+      status: "Under Review",
+    },
+    {
+      riskId: "RID010",
+      riskName: "Insufficient System Monitoring",
+      department: "IT Operations",
+      sectionProcess: "Infrastructure Monitoring",
+      subProcess: "Performance Monitoring",
+      activity: "Alert Management",
+      category: "IT Audit",
+      auditType: "Consulting",
+      riskDescription: "Undetected system failures or performance degradation affecting business operations",
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      controlDescription: "24/7 NOC with automated monitoring and alerting tools",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Open",
+    },
+    // IT Support Department
+    {
+      riskId: "RID011",
+      riskName: "Data Breach Risk",
+      department: "IT Support",
+      sectionProcess: "Data Protection",
+      subProcess: "Data Classification",
+      activity: "Sensitive Data Handling",
+      category: "IT Audit",
+      auditType: "Special Investigation",
+      riskDescription: "Exposure of sensitive customer data due to inadequate protection",
+      inherentLikelihood: 3,
+      inherentImpact: 5,
+      controlDescription: "Data encryption at rest and in transit, DLP tools deployed",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 2,
+      residualImpact: 4,
+      status: "Under Review",
+    },
+    {
+      riskId: "RID012",
+      riskName: "Inadequate Incident Response",
+      department: "IT Support",
+      sectionProcess: "Incident Management",
+      subProcess: "Ticket Resolution",
+      activity: "Security Incident Handling",
+      category: "IT Audit",
+      auditType: "Assurance",
+      riskDescription: "Extended impact of security incidents due to slow or ineffective response",
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      controlDescription: "CSIRT team with documented incident response playbooks",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID013",
+      riskName: "Phishing and Social Engineering",
+      department: "IT Support",
+      sectionProcess: "Security Awareness",
+      subProcess: "User Training",
+      activity: "Security Education",
+      category: "IT Audit",
+      auditType: "Assurance",
+      riskDescription: "Risk of credential theft and malware infection through phishing attacks",
+      inherentLikelihood: 4,
+      inherentImpact: 4,
+      controlDescription: "Quarterly security awareness training with simulated phishing tests",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 3,
+      residualImpact: 3,
+      status: "Under Review",
+    },
+    // Product Development Department
+    {
+      riskId: "RID014",
+      riskName: "Insecure Code Practices",
+      department: "Product Development",
+      sectionProcess: "Software Development",
+      subProcess: "Code Development",
+      activity: "Security Code Review",
+      category: "IT Audit",
+      auditType: "Assurance",
+      riskDescription: "Security vulnerabilities in production code due to insecure coding practices",
+      inherentLikelihood: 4,
+      inherentImpact: 5,
+      controlDescription: "SAST/DAST tools integrated in CI/CD pipeline with mandatory security training",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 2,
+      residualImpact: 4,
+      status: "Under Review",
+    },
+    {
+      riskId: "RID015",
+      riskName: "Third-Party Library Vulnerabilities",
+      department: "Product Development",
+      sectionProcess: "Dependency Management",
+      subProcess: "Library Updates",
+      activity: "Vulnerability Scanning",
+      category: "IT Audit",
+      auditType: "Assurance",
+      riskDescription: "Exploitation of known vulnerabilities in outdated third-party libraries",
+      inherentLikelihood: 4,
+      inherentImpact: 4,
+      controlDescription: "Automated dependency scanning with monthly update cycles",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID016",
+      riskName: "Inadequate Testing Coverage",
+      department: "Product Development",
+      sectionProcess: "Quality Assurance",
+      subProcess: "Testing",
+      activity: "Test Execution",
+      category: "Operational Audit",
+      auditType: "Consulting",
+      riskDescription: "Production bugs and failures due to insufficient testing before release",
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      controlDescription: "Mandatory 80% code coverage requirement with automated regression tests",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Open",
+    },
+    // Compliance Department
+    {
+      riskId: "RID017",
       riskName: "Regulatory Non-Compliance",
       department: "Compliance",
       sectionProcess: "Regulatory Monitoring",
@@ -3106,7 +3505,44 @@ async function main() {
       status: "Closed",
     },
     {
-      riskId: "RID004",
+      riskId: "RID018",
+      riskName: "Inadequate Privacy Controls",
+      department: "Compliance",
+      sectionProcess: "Privacy Management",
+      subProcess: "GDPR Compliance",
+      activity: "Data Subject Rights",
+      category: "Compliance Audit",
+      auditType: "Assurance",
+      riskDescription: "Non-compliance with data privacy regulations leading to fines and reputational damage",
+      inherentLikelihood: 3,
+      inherentImpact: 5,
+      controlDescription: "Privacy by design framework with automated DSAR workflow",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 4,
+      status: "Open",
+    },
+    {
+      riskId: "RID019",
+      riskName: "Anti-Money Laundering Gaps",
+      department: "Compliance",
+      sectionProcess: "AML Monitoring",
+      subProcess: "Transaction Monitoring",
+      activity: "Suspicious Activity Reporting",
+      category: "Compliance Audit",
+      auditType: "Compliance Review",
+      riskDescription: "Risk of facilitating money laundering due to inadequate monitoring",
+      inherentLikelihood: 2,
+      inherentImpact: 5,
+      controlDescription: "Automated transaction monitoring with quarterly KYC refresh",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 4,
+      status: "Open",
+    },
+    // Procurement Department
+    {
+      riskId: "RID020",
       riskName: "Vendor Performance Issues",
       department: "Procurement",
       sectionProcess: "Vendor Management",
@@ -3124,22 +3560,260 @@ async function main() {
       status: "Open",
     },
     {
-      riskId: "RID005",
-      riskName: "Data Breach Risk",
-      department: "IT Support",
-      sectionProcess: "Data Protection",
-      subProcess: "Data Classification",
-      activity: "Sensitive Data Handling",
-      category: "IT Audit",
+      riskId: "RID021",
+      riskName: "Procurement Fraud",
+      department: "Procurement",
+      sectionProcess: "Purchase Order Processing",
+      subProcess: "Vendor Selection",
+      activity: "Bid Evaluation",
+      category: "Financial Audit",
       auditType: "Special Investigation",
-      riskDescription: "Exposure of sensitive customer data due to inadequate protection",
+      riskDescription: "Risk of kickbacks or favoritism in vendor selection process",
+      inherentLikelihood: 2,
+      inherentImpact: 4,
+      controlDescription: "Three-quote requirement with conflict of interest declarations",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID022",
+      riskName: "Third-Party Risk Exposure",
+      department: "Procurement",
+      sectionProcess: "Vendor Onboarding",
+      subProcess: "Vendor Due Diligence",
+      activity: "Risk Assessment",
+      category: "Operational Audit",
+      auditType: "Assurance",
+      riskDescription: "Business disruption or data breaches through third-party vendors",
       inherentLikelihood: 3,
-      inherentImpact: 5,
-      controlDescription: "Data encryption at rest and in transit, DLP tools deployed",
+      inherentImpact: 4,
+      controlDescription: "Vendor risk assessment program with annual reviews",
       controlEffectiveness: "Partially Effective",
       residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Under Review",
+    },
+    // Operations Department
+    {
+      riskId: "RID023",
+      riskName: "Process Inefficiency",
+      department: "Operations",
+      sectionProcess: "Business Operations",
+      subProcess: "Workflow Management",
+      activity: "Process Optimization",
+      category: "Operational Audit",
+      auditType: "Consulting",
+      riskDescription: "Operational delays and cost overruns due to inefficient processes",
+      inherentLikelihood: 3,
+      inherentImpact: 3,
+      controlDescription: "BPM tools with continuous improvement program",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 2,
+      status: "Open",
+    },
+    {
+      riskId: "RID024",
+      riskName: "Business Continuity Gaps",
+      department: "Operations",
+      sectionProcess: "Business Continuity",
+      subProcess: "BCP Planning",
+      activity: "BCP Testing",
+      category: "Operational Audit",
+      auditType: "Assurance",
+      riskDescription: "Extended business disruption due to inadequate continuity planning",
+      inherentLikelihood: 2,
+      inherentImpact: 5,
+      controlDescription: "Annual BCP testing with documented recovery procedures",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 4,
+      status: "Open",
+    },
+    {
+      riskId: "RID025",
+      riskName: "Capacity Management Issues",
+      department: "Operations",
+      sectionProcess: "Resource Planning",
+      subProcess: "Capacity Planning",
+      activity: "Demand Forecasting",
+      category: "Operational Audit",
+      auditType: "Consulting",
+      riskDescription: "Service degradation during peak periods due to insufficient capacity",
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      controlDescription: "Quarterly capacity reviews with auto-scaling capabilities",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Open",
+    },
+    // Risk Management Department
+    {
+      riskId: "RID026",
+      riskName: "Inadequate Risk Assessment",
+      department: "Risk Management",
+      sectionProcess: "Risk Identification",
+      subProcess: "Risk Analysis",
+      activity: "Risk Scoring",
+      category: "Operational Audit",
+      auditType: "Assurance",
+      riskDescription: "Failure to identify and mitigate critical enterprise risks",
+      inherentLikelihood: 3,
+      inherentImpact: 5,
+      controlDescription: "Quarterly enterprise risk assessments with board reporting",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 4,
+      status: "Open",
+    },
+    {
+      riskId: "RID027",
+      riskName: "Cybersecurity Risk Exposure",
+      department: "Risk Management",
+      sectionProcess: "Cyber Risk Management",
+      subProcess: "Threat Intelligence",
+      activity: "Vulnerability Management",
+      category: "IT Audit",
+      auditType: "Assurance",
+      riskDescription: "Cyber attacks exploiting unpatched vulnerabilities",
+      inherentLikelihood: 4,
+      inherentImpact: 5,
+      controlDescription: "Continuous vulnerability scanning with 30-day patching SLA",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 3,
       residualImpact: 4,
       status: "Under Review",
+    },
+    {
+      riskId: "RID028",
+      riskName: "Fraud Risk Exposure",
+      department: "Risk Management",
+      sectionProcess: "Fraud Prevention",
+      subProcess: "Fraud Detection",
+      activity: "Anomaly Detection",
+      category: "Financial Audit",
+      auditType: "Special Investigation",
+      riskDescription: "Financial losses due to internal or external fraud",
+      inherentLikelihood: 2,
+      inherentImpact: 5,
+      controlDescription: "AI-powered fraud detection system with whistleblower hotline",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 4,
+      status: "Open",
+    },
+    // Quality Assurance Department
+    {
+      riskId: "RID029",
+      riskName: "Quality Control Failures",
+      department: "Quality Assurance",
+      sectionProcess: "Quality Management",
+      subProcess: "Product Testing",
+      activity: "Quality Inspection",
+      category: "Operational Audit",
+      auditType: "Assurance",
+      riskDescription: "Product defects reaching customers due to inadequate quality controls",
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      controlDescription: "Multi-stage inspection process with statistical sampling",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID030",
+      riskName: "Non-compliance with Standards",
+      department: "Quality Assurance",
+      sectionProcess: "Standards Compliance",
+      subProcess: "ISO Certification",
+      activity: "Compliance Verification",
+      category: "Compliance Audit",
+      auditType: "Compliance Review",
+      riskDescription: "Loss of ISO certification due to non-compliance with quality standards",
+      inherentLikelihood: 2,
+      inherentImpact: 4,
+      controlDescription: "Internal audits aligned with ISO 9001 requirements",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID031",
+      riskName: "Customer Complaint Escalation",
+      department: "Quality Assurance",
+      sectionProcess: "Customer Feedback",
+      subProcess: "Complaint Management",
+      activity: "Root Cause Analysis",
+      category: "Operational Audit",
+      auditType: "Consulting",
+      riskDescription: "Reputational damage from unresolved customer complaints",
+      inherentLikelihood: 2,
+      inherentImpact: 3,
+      controlDescription: "CRM-integrated complaint tracking with 48-hour response SLA",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 2,
+      status: "Open",
+    },
+    // Internal Audit Department
+    {
+      riskId: "RID032",
+      riskName: "Audit Coverage Gaps",
+      department: "Internal Audit",
+      sectionProcess: "Audit Planning",
+      subProcess: "Risk-Based Planning",
+      activity: "Audit Universe Review",
+      category: "Operational Audit",
+      auditType: "Assurance",
+      riskDescription: "High-risk areas not covered by internal audit due to inadequate planning",
+      inherentLikelihood: 2,
+      inherentImpact: 4,
+      controlDescription: "Annual risk-based audit plan approved by audit committee",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID033",
+      riskName: "Audit Finding Follow-up Delays",
+      department: "Internal Audit",
+      sectionProcess: "CAPA Tracking",
+      subProcess: "Finding Resolution",
+      activity: "Follow-up Reviews",
+      category: "Operational Audit",
+      auditType: "Assurance",
+      riskDescription: "Unresolved audit findings leading to continued risk exposure",
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      controlDescription: "Automated CAPA tracking with management escalation for overdue items",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Under Review",
+    },
+    {
+      riskId: "RID034",
+      riskName: "Auditor Independence Concerns",
+      department: "Internal Audit",
+      sectionProcess: "Audit Independence",
+      subProcess: "Objectivity Safeguards",
+      activity: "Independence Assessment",
+      category: "Operational Audit",
+      auditType: "Assurance",
+      riskDescription: "Compromised audit objectivity due to conflicts of interest",
+      inherentLikelihood: 1,
+      inherentImpact: 4,
+      controlDescription: "Annual independence declarations with functional reporting to audit committee",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 3,
+      status: "Open",
     },
   ];
 
@@ -3855,6 +4529,11 @@ async function main() {
     }
   }
   console.log("✅ Audit Reports created");
+
+  // ==================== EMAIL TEMPLATES (GLOBAL - SYSTEM DEFAULT) ====================
+  // Seed all 73 English email templates as system defaults
+  // These are available to all customer instances
+  await seedEmailTemplates();
 
   console.log("🎉 Database seeded successfully with all modules!");
 }

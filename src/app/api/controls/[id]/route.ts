@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -182,7 +182,7 @@ export const PUT = withAuth(
       // Also fetch existing owner/assignee for notification comparison
       const existing = await prisma.control.findUnique({
         where: { id },
-        select: { customerAccountId: true, ownerId: true, assigneeId: true, controlCode: true, name: true },
+        select: { customerAccountId: true, ownerId: true, assigneeId: true, controlCode: true, name: true, status: true },
       });
 
       if (!existing) {
@@ -278,6 +278,32 @@ export const PUT = withAuth(
         controlName: control.name,
         channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
       });
+    }
+
+    // Notify on status change to Compliant
+    if (status === "Compliant" && existing.status !== "Compliant" && session.customerAccountId) {
+      // Notify owner/assignee about control becoming compliant
+      const recipientId = control.assigneeId || control.ownerId;
+      if (recipientId && recipientId !== session.id) {
+        await notificationService.send({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          recipientId: recipientId,
+          event: NOTIFICATION_EVENTS.CONTROL_COMPLIANT,
+          title: 'Control Now Compliant',
+          message: `Control "${control.controlCode}: ${control.name}" is now marked as Compliant.`,
+          relatedEntityType: 'control',
+          relatedEntityId: control.id,
+          link: `/compliance/controls/${control.id}`,
+          metadata: {
+            controlCode: control.controlCode,
+            controlName: control.name,
+            previousStatus: existing.status,
+            updatedBy: session.name || 'User',
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+      }
     }
 
       return NextResponse.json(control);

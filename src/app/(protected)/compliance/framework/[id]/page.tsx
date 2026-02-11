@@ -44,7 +44,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
+  Search,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -916,11 +918,144 @@ export default function FrameworkDetailPage({
   const [soaEdits, setSoaEdits] = useState<Record<string, { applicability?: string; justification?: string; implementationStatus?: string }>>({});
   const [soaSaving, setSoaSaving] = useState(false);
 
+  // Audit Logs state
+  interface AuditLogEntry {
+    id: string;
+    changeType: string;
+    entityType: string;
+    entityId: string;
+    userId?: string;
+    userName?: string;
+    changes?: string;
+    createdAt: string;
+  }
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [auditLogsLoading, setAuditLogsLoading] = useState(false);
+  const [auditLogSearch, setAuditLogSearch] = useState("");
+  const [auditLogActionFilter, setAuditLogActionFilter] = useState("all");
+  const [auditLogPage, setAuditLogPage] = useState(0);
+  const AUDIT_LOG_PAGE_SIZE = 10;
+
   useEffect(() => {
     fetchFramework();
     fetchControls();
     fetchControlDomains();
   }, [id]);
+
+  // Fetch audit logs when tab is activated
+  useEffect(() => {
+    if (activeTab === "audit-logs" && auditLogs.length === 0) {
+      fetchAuditLogs();
+    }
+  }, [activeTab]);
+
+  const fetchAuditLogs = async () => {
+    setAuditLogsLoading(true);
+    try {
+      const res = await fetch(`/api/audit-logs?limit=1000&offset=0&search=${encodeURIComponent(framework?.name || "")}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAuditLogs(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+    } finally {
+      setAuditLogsLoading(false);
+    }
+  };
+
+  const filteredAuditLogs = useMemo(() => {
+    let logs = auditLogs;
+    if (auditLogSearch) {
+      const search = auditLogSearch.toLowerCase();
+      logs = logs.filter(
+        (log) =>
+          (log.userName || "").toLowerCase().includes(search) ||
+          log.changeType.toLowerCase().includes(search) ||
+          log.entityType.toLowerCase().includes(search) ||
+          (log.changes || "").toLowerCase().includes(search)
+      );
+    }
+    if (auditLogActionFilter !== "all") {
+      logs = logs.filter((log) => log.changeType === auditLogActionFilter);
+    }
+    return logs;
+  }, [auditLogs, auditLogSearch, auditLogActionFilter]);
+
+  const auditLogActions = useMemo(() => {
+    const actions = new Set(auditLogs.map((log) => log.changeType));
+    return Array.from(actions).sort();
+  }, [auditLogs]);
+
+  const formatAuditLogDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, "0");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${day} ${month} ${year}, ${displayHours}:${minutes} ${ampm}`;
+  };
+
+  const parseChangesDetails = (changes: string | undefined): string => {
+    if (!changes) return "-";
+    try {
+      const parsed = JSON.parse(changes);
+      if (Array.isArray(parsed)) {
+        return parsed.map((c: { field?: string; oldValue?: string; newValue?: string }) =>
+          `${c.field || ""}: ${c.oldValue || "(empty)"} → ${c.newValue || "(empty)"}`
+        ).join("; ");
+      }
+      if (typeof parsed === "object") {
+        return Object.entries(parsed)
+          .map(([key, val]) => `${key}: ${val}`)
+          .join("; ");
+      }
+      return String(parsed);
+    } catch {
+      return changes;
+    }
+  };
+
+  const handleExportAuditLogs = () => {
+    if (filteredAuditLogs.length === 0) {
+      toast({ title: t("No audit logs available to export"), variant: "destructive" });
+      return;
+    }
+
+    try {
+      const exportData = filteredAuditLogs.map((log) => ({
+        "User": log.userName || "-",
+        "Action": log.changeType,
+        "Target": log.entityType,
+        "Details": parseChangesDetails(log.changes),
+        "Date & Time": formatAuditLogDate(log.createdAt),
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      worksheet["!cols"] = [
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 25 },
+        { wch: 50 },
+        { wch: 25 },
+      ];
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Logs");
+
+      const frameworkName = (framework?.name || "Framework").replace(/[^a-zA-Z0-9]/g, "_");
+      const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
+      XLSX.writeFile(workbook, `Framework_AuditLogs_${frameworkName}_${dateStr}.xlsx`);
+
+      toast({ title: t("Exported"), description: t("Audit logs exported successfully") });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({ title: t("Error"), description: t("Failed to export audit logs"), variant: "destructive" });
+    }
+  };
 
   const fetchFramework = async () => {
     try {
@@ -1829,8 +1964,115 @@ export default function FrameworkDetailPage({
 
         {/* Audit Logs Tab */}
         <TabsContent value="audit-logs" className="mt-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-            <p className="text-sm text-slate-500">{t("Audit logs will be displayed here.")}</p>
+          <div className="bg-white rounded-xl border border-slate-200">
+            {/* Toolbar */}
+            <div className="p-4 border-b border-slate-200 flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder={t("Search audit logs...")}
+                  value={auditLogSearch}
+                  onChange={(e) => { setAuditLogSearch(e.target.value); setAuditLogPage(0); }}
+                  className="pl-9 bg-white"
+                />
+              </div>
+              <Select value={auditLogActionFilter} onValueChange={(v) => { setAuditLogActionFilter(v); setAuditLogPage(0); }}>
+                <SelectTrigger className="w-[180px] bg-white">
+                  <SelectValue placeholder={t("All Actions")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("All Actions")}</SelectItem>
+                  {auditLogActions.map((action) => (
+                    <SelectItem key={action} value={action}>{action}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={handleExportAuditLogs} className="gap-2">
+                <Download className="h-4 w-4" />
+                {t("Export")}
+              </Button>
+            </div>
+
+            {/* Table */}
+            {auditLogsLoading ? (
+              <div className="p-12 text-center">
+                <p className="text-sm text-slate-500">{t("Loading...")}</p>
+              </div>
+            ) : filteredAuditLogs.length === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-sm text-slate-500">{t("No audit logs found.")}</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[140px]">{t("User")}</TableHead>
+                        <TableHead className="min-w-[100px]">{t("Action")}</TableHead>
+                        <TableHead className="min-w-[150px]">{t("Target")}</TableHead>
+                        <TableHead className="min-w-[250px]">{t("Details")}</TableHead>
+                        <TableHead className="min-w-[180px]">{t("Date & Time")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAuditLogs
+                        .slice(auditLogPage * AUDIT_LOG_PAGE_SIZE, (auditLogPage + 1) * AUDIT_LOG_PAGE_SIZE)
+                        .map((log) => (
+                          <TableRow key={log.id}>
+                            <TableCell className="font-medium">{log.userName || "-"}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                log.changeType === "CREATE" ? "bg-green-100 text-green-700" :
+                                log.changeType === "DELETE" ? "bg-red-100 text-red-700" :
+                                "bg-blue-100 text-blue-700"
+                              }`}>
+                                {log.changeType}
+                              </span>
+                            </TableCell>
+                            <TableCell>{log.entityType}</TableCell>
+                            <TableCell className="text-slate-600 text-sm max-w-[350px] truncate" title={parseChangesDetails(log.changes)}>
+                              {parseChangesDetails(log.changes)}
+                            </TableCell>
+                            <TableCell className="text-slate-500 text-sm">{formatAuditLogDate(log.createdAt)}</TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                {filteredAuditLogs.length > AUDIT_LOG_PAGE_SIZE && (
+                  <div className="p-3 border-t border-slate-200 flex items-center justify-between">
+                    <p className="text-sm text-slate-500">
+                      {t("Showing")} {auditLogPage * AUDIT_LOG_PAGE_SIZE + 1} {t("to")}{" "}
+                      {Math.min((auditLogPage + 1) * AUDIT_LOG_PAGE_SIZE, filteredAuditLogs.length)} {t("of")}{" "}
+                      {filteredAuditLogs.length}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setAuditLogPage((p) => Math.max(0, p - 1))}
+                        disabled={auditLogPage === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setAuditLogPage((p) => p + 1)}
+                        disabled={(auditLogPage + 1) * AUDIT_LOG_PAGE_SIZE >= filteredAuditLogs.length}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </TabsContent>
       </Tabs>

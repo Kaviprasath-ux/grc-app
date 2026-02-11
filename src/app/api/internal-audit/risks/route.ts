@@ -10,6 +10,7 @@ export const GET = withAuth(
       const year = searchParams.get("year");
       const departmentId = searchParams.get("departmentId");
       const search = searchParams.get("search");
+      const status = searchParams.get("status");
 
       const tenantFilter = getTenantFilter(session);
       const where: any = { ...tenantFilter };
@@ -26,6 +27,11 @@ export const GET = withAuth(
       // Filter by department
       if (departmentId) {
         where.departmentId = departmentId;
+      }
+
+      // Filter by status
+      if (status) {
+        where.status = status;
       }
 
       // Search filter

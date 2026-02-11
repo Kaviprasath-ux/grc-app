@@ -456,17 +456,6 @@ export default function GRCAdminControlListPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <PermissionGate resource="compliance.controls" action="delete">
-            <Button
-              size="sm"
-              onClick={() => setIsDeleteAllDialogOpen(true)}
-              variant="outline"
-              className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Delete All")}
-            </Button>
-          </PermissionGate>
           <PermissionGate resource="compliance.controls" action="create">
             <Button size="sm" onClick={handleImport} variant="outline">
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />

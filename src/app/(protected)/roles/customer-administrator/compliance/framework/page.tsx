@@ -86,6 +86,7 @@ export default function CustomerAdminFrameworkPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const isGRCReviewer = useHasRole("GRCReviewer");
   const isDepartmentReviewer = useHasRole("DepartmentReviewer");
   const isReviewerRole = isGRCReviewer || isDepartmentReviewer;
@@ -132,6 +133,7 @@ export default function CustomerAdminFrameworkPage() {
     country: "",
     industry: "",
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchFrameworks();
@@ -184,7 +186,33 @@ export default function CustomerAdminFrameworkPage() {
       country: "",
       industry: "",
     });
+    setFormErrors({});
     setUploadedFile(null);
+  };
+
+  const validateFrameworkForm = () => {
+    const errors: Record<string, string> = {};
+    if (!formData.name?.trim()) {
+      errors.name = t("Please enter name");
+    }
+    if (!formData.type) {
+      errors.type = t("Please Select Framework Type");
+    }
+    if (!formData.country?.trim()) {
+      errors.country = t("Please enter Country");
+    }
+    if (!formData.industry?.trim()) {
+      errors.industry = t("Please enter Industry");
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFrameworkFieldChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (formErrors[field]) {
+      setFormErrors({ ...formErrors, [field]: "" });
+    }
   };
 
   const resetImportState = () => {
@@ -218,6 +246,7 @@ export default function CustomerAdminFrameworkPage() {
 
   const handleAICreate = async () => {
     if (isAISubmitting) return;
+    if (!validateFrameworkForm()) return;
 
     setIsAISubmitting(true);
     setAiJobStatus("submitting");
@@ -327,6 +356,7 @@ export default function CustomerAdminFrameworkPage() {
   };
 
   const handleCreate = async () => {
+    if (!validateFrameworkForm()) return;
     try {
       const response = await fetch("/api/frameworks", {
         method: "POST",
@@ -830,7 +860,7 @@ export default function CustomerAdminFrameworkPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
-        {!isReviewerRole && (
+        {isCustomerAdmin && (
           <div className="flex items-center gap-2">
             <Button
               onClick={openAICreateDialog}
@@ -867,7 +897,7 @@ export default function CustomerAdminFrameworkPage() {
             />
           </div>
           <div className="flex items-center gap-3 ms-auto">
-            {!isReviewerRole && (
+            {isCustomerAdmin && (
               <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
                 <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("Subscription")} />
@@ -1090,24 +1120,27 @@ export default function CustomerAdminFrameworkPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  {t("Integrated Framework Name")} <span className="text-semantic-error">*</span>
+                  {t("Integrated Framework Name")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => handleFrameworkFieldChange("name", e.target.value)}
                   placeholder={t("Enter framework name")}
-                  className="bg-white"
+                  className={`bg-white ${formErrors.name ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                 />
+                {formErrors.name && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  {t("Framework Type")} <span className="text-semantic-error">*</span>
+                  {t("Framework Type")} <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value })}
+                  onValueChange={(value) => handleFrameworkFieldChange("type", value)}
                 >
-                  <SelectTrigger className="w-full bg-white">
+                  <SelectTrigger className={`w-full bg-white ${formErrors.type ? "border-red-400 bg-red-50" : ""}`}>
                     <SelectValue placeholder={t("Select type")} />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
@@ -1116,6 +1149,9 @@ export default function CustomerAdminFrameworkPage() {
                     <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                   </SelectContent>
                 </Select>
+                {formErrors.type && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.type}</p>
+                )}
               </div>
             </div>
 
@@ -1133,25 +1169,31 @@ export default function CustomerAdminFrameworkPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  {t("Country")} <span className="text-semantic-error">*</span>
+                  {t("Country")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  onChange={(e) => handleFrameworkFieldChange("country", e.target.value)}
                   placeholder={t("Enter country")}
-                  className="bg-white"
+                  className={`bg-white ${formErrors.country ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                 />
+                {formErrors.country && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.country}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  {t("Industry")} <span className="text-semantic-error">*</span>
+                  {t("Industry")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={formData.industry}
-                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                  onChange={(e) => handleFrameworkFieldChange("industry", e.target.value)}
                   placeholder={t("Enter industry")}
-                  className="bg-white"
+                  className={`bg-white ${formErrors.industry ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                 />
+                {formErrors.industry && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.industry}</p>
+                )}
               </div>
             </div>
 
@@ -1216,7 +1258,7 @@ export default function CustomerAdminFrameworkPage() {
             <Button
               size="sm"
               onClick={handleAICreate}
-              disabled={!formData.name || !formData.type || !formData.country || !formData.industry || isAISubmitting}
+              disabled={isAISubmitting}
             >
               {isAISubmitting ? (
                 <>
@@ -1265,13 +1307,13 @@ export default function CustomerAdminFrameworkPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  {t("Framework Type")} <span className="text-semantic-error">*</span>
+                  {t("Framework Type")} <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value })}
+                  onValueChange={(value) => handleFrameworkFieldChange("type", value)}
                 >
-                  <SelectTrigger className="w-full bg-white">
+                  <SelectTrigger className={`w-full bg-white ${formErrors.type ? "border-red-400 bg-red-50" : ""}`}>
                     <SelectValue placeholder={t("Select type")} />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
@@ -1280,19 +1322,25 @@ export default function CustomerAdminFrameworkPage() {
                     <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                   </SelectContent>
                 </Select>
+                {formErrors.type && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.type}</p>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
-                {t("Integrated Framework Name")} <span className="text-semantic-error">*</span>
+                {t("Integrated Framework Name")} <span className="text-red-500">*</span>
               </Label>
               <Input
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => handleFrameworkFieldChange("name", e.target.value)}
                 placeholder={t("Enter framework name")}
-                className="bg-white"
+                className={`bg-white ${formErrors.name ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
               />
+              {formErrors.name && (
+                <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1309,25 +1357,31 @@ export default function CustomerAdminFrameworkPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  {t("Country")} <span className="text-semantic-error">*</span>
+                  {t("Country")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  onChange={(e) => handleFrameworkFieldChange("country", e.target.value)}
                   placeholder={t("Enter country")}
-                  className="bg-white"
+                  className={`bg-white ${formErrors.country ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                 />
+                {formErrors.country && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.country}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  {t("Industry")} <span className="text-semantic-error">*</span>
+                  {t("Industry")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={formData.industry}
-                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                  onChange={(e) => handleFrameworkFieldChange("industry", e.target.value)}
                   placeholder={t("Enter industry")}
-                  className="bg-white"
+                  className={`bg-white ${formErrors.industry ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                 />
+                {formErrors.industry && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.industry}</p>
+                )}
               </div>
             </div>
           </div>
@@ -1339,7 +1393,6 @@ export default function CustomerAdminFrameworkPage() {
             <Button
               size="sm"
               onClick={handleCreate}
-              disabled={!formData.name || !formData.type || !formData.country || !formData.industry}
             >
               {t("Create & Import")}
             </Button>

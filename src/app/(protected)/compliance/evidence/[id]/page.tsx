@@ -291,6 +291,7 @@ export default function EvidenceDetailPage() {
   const isDepartmentReviewer = session?.user?.roles?.includes("DepartmentReviewer");
   const isDepartmentContributor = session?.user?.roles?.includes("DepartmentContributor");
   const isReviewer = session?.user?.roles?.includes("Reviewer");
+  const isContributor = session?.user?.roles?.includes("Contributor");
   const currentUserId = session?.user?.id;
 
   const [evidence, setEvidence] = useState<Evidence | null>(null);
@@ -328,6 +329,7 @@ export default function EvidenceDetailPage() {
     kpiDescription: "",
     kpiCalculationFormula: "",
   });
+  const [kpiFormErrors, setKpiFormErrors] = useState<Record<string, string>>({});
   const [kpiEditMode, setKpiEditMode] = useState(false);
   const [kpiSaving, setKpiSaving] = useState(false);
 
@@ -787,10 +789,37 @@ export default function EvidenceDetailPage() {
     await handleStatusChange("Draft");
   };
 
+  const validateKpiForm = () => {
+    const errors: Record<string, string> = {};
+    if (!kpiForm.kpiObjective?.trim()) {
+      errors.kpiObjective = t("KPI Objective cannot be empty");
+    }
+    if (!kpiForm.kpiDataSource?.trim()) {
+      errors.kpiDataSource = t("Data Source cannot be empty");
+    }
+    if (!kpiForm.kpiExpectedScore?.trim()) {
+      errors.kpiExpectedScore = t("KPI Expected Score cannot be empty");
+    }
+    if (!kpiForm.kpiDescription?.trim()) {
+      errors.kpiDescription = t("KPI Description cannot be empty");
+    }
+    if (!kpiForm.kpiCalculationFormula?.trim()) {
+      errors.kpiCalculationFormula = t("KPI Calculation Formula cannot be empty");
+    }
+    setKpiFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleKpiFieldChange = (field: string, value: string) => {
+    setKpiForm({ ...kpiForm, [field]: value });
+    if (kpiFormErrors[field]) {
+      setKpiFormErrors({ ...kpiFormErrors, [field]: "" });
+    }
+  };
+
   const handleSaveKpi = async () => {
     // Validate required fields
-    if (!kpiForm.kpiObjective?.trim()) {
-      toast.error(t("KPI Objective is required"));
+    if (!validateKpiForm()) {
       return;
     }
 
@@ -1732,20 +1761,28 @@ export default function EvidenceDetailPage() {
                     <Textarea
                       placeholder={t("Enter Objective")}
                       value={kpiForm.kpiObjective}
-                      onChange={(e) => setKpiForm({ ...kpiForm, kpiObjective: e.target.value })}
+                      onChange={(e) => handleKpiFieldChange("kpiObjective", e.target.value)}
                       disabled={!kpiEditMode}
                       rows={3}
+                      className={kpiFormErrors.kpiObjective ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
                     />
+                    {kpiFormErrors.kpiObjective && (
+                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiObjective}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Data Source")} <span className="text-red-500">*</span></Label>
                     <Textarea
                       placeholder={t("Enter Data Source")}
                       value={kpiForm.kpiDataSource}
-                      onChange={(e) => setKpiForm({ ...kpiForm, kpiDataSource: e.target.value })}
+                      onChange={(e) => handleKpiFieldChange("kpiDataSource", e.target.value)}
                       disabled={!kpiEditMode}
                       rows={3}
+                      className={kpiFormErrors.kpiDataSource ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
                     />
+                    {kpiFormErrors.kpiDataSource && (
+                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiDataSource}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Expected Score (%)")} <span className="text-red-500">*</span></Label>
@@ -1753,31 +1790,43 @@ export default function EvidenceDetailPage() {
                       type="number"
                       placeholder={t("Enter expected score")}
                       value={kpiForm.kpiExpectedScore}
-                      onChange={(e) => setKpiForm({ ...kpiForm, kpiExpectedScore: e.target.value })}
+                      onChange={(e) => handleKpiFieldChange("kpiExpectedScore", e.target.value)}
                       disabled={!kpiEditMode}
+                      className={kpiFormErrors.kpiExpectedScore ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
                     />
+                    {kpiFormErrors.kpiExpectedScore && (
+                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiExpectedScore}</p>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")}</Label>
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")} <span className="text-red-500">*</span></Label>
                     <Textarea
-                      placeholder={t("Enter Description")}
+                      placeholder={t("Enter KPI Description")}
                       value={kpiForm.kpiDescription}
-                      onChange={(e) => setKpiForm({ ...kpiForm, kpiDescription: e.target.value })}
+                      onChange={(e) => handleKpiFieldChange("kpiDescription", e.target.value)}
                       disabled={!kpiEditMode}
                       rows={3}
+                      className={kpiFormErrors.kpiDescription ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
                     />
+                    {kpiFormErrors.kpiDescription && (
+                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiDescription}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Calculation Formula")} <span className="text-red-500">*</span></Label>
                     <Textarea
                       placeholder={t("Enter the KPI Calculation Formula")}
                       value={kpiForm.kpiCalculationFormula}
-                      onChange={(e) => setKpiForm({ ...kpiForm, kpiCalculationFormula: e.target.value })}
+                      onChange={(e) => handleKpiFieldChange("kpiCalculationFormula", e.target.value)}
                       disabled={!kpiEditMode}
                       rows={3}
+                      className={kpiFormErrors.kpiCalculationFormula ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
                     />
+                    {kpiFormErrors.kpiCalculationFormula && (
+                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiCalculationFormula}</p>
+                    )}
                   </div>
                   {/* KPI Actual Score - visible when KPI Expected Score AND Description are not empty */}
                   {kpiForm.kpiExpectedScore && kpiForm.kpiDescription && (
@@ -1888,28 +1937,25 @@ export default function EvidenceDetailPage() {
           <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Attachments")}</h3>
             <div className="flex gap-2">
-              {isCustomerAdmin ? (
+              {(isCustomerAdmin || isReviewer || isContributor || isDepartmentReviewer || isDepartmentContributor) && (
                 <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   {t("Add Attachment")}
                 </Button>
-              ) : (
-                <Button size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("Add Attachment")}
+              )}
+              {(isCustomerAdmin || isReviewer || isContributor || isDepartmentReviewer || isDepartmentContributor) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    fetchAvailableArtifacts();
+                    setLinkArtifactsDialogOpen(true);
+                  }}
+                >
+                  <Link2 className="h-4 w-4 mr-1" />
+                  {t("Link Artifacts")}
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  fetchAvailableArtifacts();
-                  setLinkArtifactsDialogOpen(true);
-                }}
-              >
-                <Link2 className="h-4 w-4 mr-1" />
-                {t("Link Artifacts")}
-              </Button>
             </div>
           </div>
           <div className="p-5">
@@ -2497,8 +2543,8 @@ export default function EvidenceDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Upload Attachment Dialog (Customer Admin) */}
-      {isCustomerAdmin && (
+      {/* Upload Attachment Dialog */}
+      {(isCustomerAdmin || isReviewer || isContributor || isDepartmentReviewer || isDepartmentContributor) && (
         <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
           setUploadDialogOpen(open);
           if (!open) {

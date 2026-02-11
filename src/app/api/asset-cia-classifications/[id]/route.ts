@@ -12,6 +12,7 @@ export async function PUT(
     const {
       subCategoryId,
       groupId,
+      sensitivityId,
       confidentiality,
       confidentialityScore,
       integrity,
@@ -37,11 +38,12 @@ export async function PUT(
       data: {
         subCategoryId,
         groupId,
-        confidentiality: confidentiality || "low",
-        confidentialityScore: confidentialityScore || 1,
-        integrity: integrity || "low",
-        integrityScore: integrityScore || 1,
-        availability: availability || "low",
+        ...(sensitivityId !== undefined ? { sensitivityId } : {}),
+        confidentiality: confidentiality || "",
+        confidentialityScore: confidentialityScore || 0,
+        integrity: integrity || "",
+        integrityScore: integrityScore || 0,
+        availability: availability || "",
         availabilityScore: availabilityScore || 0,
         assetCriticality: assetCriticality || calculatedCriticality,
         assetCriticalityScore: assetCriticalityScore || maxScore,
@@ -53,6 +55,7 @@ export async function PUT(
           },
         },
         group: true,
+        sensitivity: true,
       },
     });
 

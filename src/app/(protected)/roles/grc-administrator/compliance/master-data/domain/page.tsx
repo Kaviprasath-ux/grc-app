@@ -315,10 +315,6 @@ export default function DomainMasterDataPage() {
 
       {/* Action Buttons - Above Card */}
       <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={handleDeleteAll}>
-          <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Delete All")}
-        </Button>
         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}

@@ -493,6 +493,32 @@ export default function EvidencePage() {
     }
   };
 
+  const handleExport = () => {
+    const csv = [
+      ["Evidence Code", "Name", "Description", "Domain", "Recurrence", "Status", "Department", "Assignee"],
+      ...evidences.map((e) => [
+        e.evidenceCode,
+        e.name,
+        e.description || "",
+        e.domain || "",
+        e.recurrence || "",
+        e.status,
+        e.department?.name || "",
+        e.assignee?.fullName || "",
+      ]),
+    ]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "evidences.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleImportFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -890,9 +916,13 @@ export default function EvidencePage() {
 
           {/* Action Buttons - Above Card */}
           <div className="flex items-center justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Export")}
+            </Button>
             <PermissionGate resource="compliance.evidence" action="create">
               <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Import")}
               </Button>
             </PermissionGate>

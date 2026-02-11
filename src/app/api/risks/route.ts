@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getDataScopeFilter } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 
 // Helper function to calculate risk rating based on score
 // Rating values matching website: Catastrophic, Very high, High, Low Risk
@@ -289,8 +289,9 @@ export const POST = withAuth(
         },
       });
 
-      // Notify owner if different from creator
+      // Send RISK_CREATED notification to owner if assigned and different from creator
       if (ownerId && ownerId !== session.id && session.customerAccountId) {
+        // Notify owner about assignment
         await notificationService.notifyRiskAssigned({
           customerAccountId: session.customerAccountId,
           actorId: session.id,
@@ -298,6 +299,26 @@ export const POST = withAuth(
           riskId: risk.id,
           riskCode: risk.riskId,
           riskName: risk.name,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+
+        // Also send RISK_CREATED notification with full details
+        await notificationService.send({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          recipientId: ownerId,
+          event: NOTIFICATION_EVENTS.RISK_CREATED,
+          title: 'New Risk Created',
+          message: `A new risk "${risk.riskId}: ${risk.name}" has been created and assigned to you. Risk Rating: ${risk.riskRating}`,
+          relatedEntityType: 'risk',
+          relatedEntityId: risk.id,
+          link: `/risk-management/register/${risk.id}`,
+          metadata: {
+            riskCode: risk.riskId,
+            riskName: risk.name,
+            riskRating: risk.riskRating,
+            actorName: session.name || 'System',
+          },
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }

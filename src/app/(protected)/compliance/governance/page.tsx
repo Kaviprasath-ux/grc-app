@@ -484,6 +484,32 @@ export default function GovernancePage() {
     }
   };
 
+  const handleExport = () => {
+    const csv = [
+      ["Code", "Name", "Document Type", "Status", "Assignee", "Approver", "Department", "Recurrence"],
+      ...policies.map((p) => [
+        p.code,
+        p.name,
+        p.documentType,
+        p.status,
+        p.assignee?.fullName || "",
+        p.approver?.fullName || "",
+        p.department?.name || "",
+        p.recurrence || "",
+      ]),
+    ]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `governance-${activeDocType.toLowerCase()}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -811,7 +837,7 @@ export default function GovernancePage() {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleExport}>
                   <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Export")}
                 </Button>
@@ -1106,12 +1132,6 @@ export default function GovernancePage() {
             <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-2">
-                <PermissionGate resource="compliance.governance" action="delete">
-                  <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-                    <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                    {t("Delete All")}
-                  </Button>
-                </PermissionGate>
                 <PermissionGate resource="compliance.governance" action="create">
                   <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
                     <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />

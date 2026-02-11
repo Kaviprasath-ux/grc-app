@@ -498,12 +498,6 @@ export default function GRCAdminGovernancePage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <PermissionGate resource="compliance.governance" action="delete">
-                  <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-                    <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                    {t("Delete All")}
-                  </Button>
-                </PermissionGate>
                 <PermissionGate resource="compliance.governance" action="create">
                   <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
                     <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />

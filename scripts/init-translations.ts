@@ -829,6 +829,26 @@ const translations: [string, string, string][] = [
   ['Inherent impact is required', 'تأثير المخاطر الكامنة مطلوب', 'Iedzimtā ietekme ir obligāta'],
   ['Residual likelihood is required', 'احتمالية المخاطر المتبقية مطلوبة', 'Atlikušā varbūtība ir obligāta'],
   ['Residual impact is required', 'تأثير المخاطر المتبقية مطلوب', 'Atlikušā ietekme ir obligāta'],
+
+  // Asset validation messages
+  ['Asset ID is required', 'معرف الأصل مطلوب', 'Aktīva ID ir obligāts'],
+  ['Asset name is required', 'اسم الأصل مطلوب', 'Aktīva nosaukums ir obligāts'],
+  ['Please select the department', 'يرجى تحديد القسم', 'Lūdzu, izvēlieties nodaļu'],
+  ['Please select the asset owner', 'يرجى تحديد مالك الأصل', 'Lūdzu, izvēlieties aktīva īpašnieku'],
+  ['Please select the asset category', 'يرجى تحديد فئة الأصل', 'Lūdzu, izvēlieties aktīva kategoriju'],
+  ['Please select the asset sub category', 'يرجى تحديد الفئة الفرعية للأصل', 'Lūdzu, izvēlieties aktīva apakškategoriju'],
+  ['Please select the asset group', 'يرجى تحديد مجموعة الأصول', 'Lūdzu, izvēlieties aktīvu grupu'],
+  ['Please select the asset custodian', 'يرجى تحديد حارس الأصل', 'Lūdzu, izvēlieties aktīva glabātāju'],
+  ['Please enter the asset location', 'يرجى إدخال موقع الأصل', 'Lūdzu, ievadiet aktīva atrašanās vietu'],
+
+  // Asset Classification validation messages
+  ['Please select asset sub category', 'يرجى تحديد الفئة الفرعية للأصل', 'Lūdzu, izvēlieties aktīva apakškategoriju'],
+  ['Please select asset group', 'يرجى تحديد مجموعة الأصول', 'Lūdzu, izvēlieties aktīvu grupu'],
+  ['Please select sensitivity rating', 'يرجى تحديد تصنيف الحساسية', 'Lūdzu, izvēlieties jutīguma novērtējumu'],
+  ['Please select confidentiality rating', 'يرجى تحديد تصنيف السرية', 'Lūdzu, izvēlieties konfidencialitātes novērtējumu'],
+  ['Please select integrity rating', 'يرجى تحديد تصنيف النزاهة', 'Lūdzu, izvēlieties integritātes novērtējumu'],
+  ['Please select availability rating', 'يرجى تحديد تصنيف التوافر', 'Lūdzu, izvēlieties pieejamības novērtējumu'],
+
   ['Process created successfully', 'تم إنشاء العملية بنجاح', 'Process veiksmīgi izveidots'],
   ['Failed to create process', 'فشل في إنشاء العملية', 'Neizdevās izveidot procesu'],
   ['Process updated successfully', 'تم تحديث العملية بنجاح', 'Process veiksmīgi atjaunināts'],

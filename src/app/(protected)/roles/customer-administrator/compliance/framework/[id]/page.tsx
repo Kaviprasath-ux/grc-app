@@ -1,5 +1,6 @@
 "use client";
 
+import * as XLSX from "xlsx";
 import { useEffect, useState, use, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -1111,6 +1112,102 @@ export default function CustomerAdminFrameworkDetailPage({
     document.body.removeChild(link);
   };
 
+  const handleExportAuditLogs = () => {
+    if (filteredAuditLogs.length === 0) {
+      toast({ title: t("No audit logs available to export"), variant: "destructive" });
+      return;
+    }
+
+    const headers = ["User", "Action", "Target", "Details", "Date & Time"];
+    const rows = filteredAuditLogs.map((log) => [
+      log.user,
+      log.action,
+      log.target,
+      log.detail,
+      formatAuditDate(log.timestamp),
+    ]);
+
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Auto-fit column widths
+    ws["!cols"] = headers.map((_, i) => ({
+      wch: Math.max(
+        headers[i].length,
+        ...rows.map((row) => (row[i] || "").toString().length)
+      ) + 2,
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Audit Logs");
+
+    const fileName = `${(framework?.name || "Framework")} Audit Log Report.xlsx`;
+    const wbOut = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbOut], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({ title: t("Exported"), description: t("Audit logs exported successfully") });
+  };
+
+  const handleExportSOA = () => {
+    if (soaCategories.length === 0) {
+      toast({ title: t("No SOA data available to export"), variant: "destructive" });
+      return;
+    }
+
+    const headers = ["Category", "Code", "Requirement", "Applicable", "Justification", "Impl. Status", "Compliance"];
+    const rows: string[][] = [];
+
+    soaCategories.forEach((cat) => {
+      (cat.children || []).forEach((req) => {
+        rows.push([
+          cat.name || "",
+          req.code || "",
+          req.name || "",
+          req.applicability || "",
+          req.justification || "",
+          req.implementationStatus || "",
+          req.controlCompliance || "Non Compliant",
+        ]);
+      });
+    });
+
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Auto-fit column widths
+    ws["!cols"] = headers.map((_, i) => ({
+      wch: Math.max(
+        headers[i].length,
+        ...rows.map((row) => (row[i] || "").toString().length)
+      ) + 2,
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "SOA");
+
+    const fileName = `${(framework?.name || "Framework")} SOA Report.xlsx`;
+    const wbOut = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbOut], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({ title: t("Exported"), description: t("SOA report exported successfully") });
+  };
+
   const handleLinkControls = async () => {
     if (!selectedRequirement || selectedControlIds.length === 0) return;
 
@@ -1806,7 +1903,7 @@ export default function CustomerAdminFrameworkDetailPage({
                 <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExportSOA}>
               <Download className="h-4 w-4 me-2" />
               {t("Download Report")}
             </Button>
@@ -1944,7 +2041,7 @@ export default function CustomerAdminFrameworkDetailPage({
                 <SelectItem value="Approved">{t("Approved")}</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExportAuditLogs}>
               <Download className="h-4 w-4 me-2" />
               {t("Export")}
             </Button>

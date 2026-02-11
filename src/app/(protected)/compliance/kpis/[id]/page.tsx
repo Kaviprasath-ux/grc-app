@@ -176,6 +176,7 @@ export default function KPIDetailPage({
     expectedScore: "",
     actualScore: "",
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Update dialog state
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
@@ -220,7 +221,9 @@ export default function KPIDetailPage({
           description: data.description || "",
           dataSource: data.dataSource || "",
           calculationFormula: data.calculationFormula || "",
-          expectedScore: data.expectedScore?.toString() || "",
+          expectedScore: data.evidence?.kpiExpectedScore != null
+            ? data.evidence.kpiExpectedScore.toString()
+            : "",
           actualScore: data.actualScore?.toString() || "",
         });
       }
@@ -261,10 +264,10 @@ export default function KPIDetailPage({
     return calculateNextReviewDate(lastReviewDate, recurrence);
   }, [kpi]);
 
-  // Get expected score from KPI or Evidence
+  // Get expected score from Evidence record (source of truth)
   const expectedScore = useMemo(() => {
     if (!kpi) return null;
-    return kpi.expectedScore ?? kpi.evidence?.kpiExpectedScore ?? null;
+    return kpi.evidence?.kpiExpectedScore ?? null;
   }, [kpi]);
 
   // Filter reviews by selected year and sort ascending by date
@@ -348,9 +351,46 @@ export default function KPIDetailPage({
     }
   };
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    if (!formData.objective?.trim()) {
+      errors.objective = t("KPI Objective cannot be empty");
+    }
+    if (!formData.dataSource?.trim()) {
+      errors.dataSource = t("Data Source cannot be empty");
+    }
+    if (!formData.expectedScore?.trim()) {
+      errors.expectedScore = t("KPI Expected Score cannot be empty");
+    }
+    if (!formData.description?.trim()) {
+      errors.description = t("KPI Description cannot be empty");
+    }
+    if (!formData.calculationFormula?.trim()) {
+      errors.calculationFormula = t("KPI Calculation Formula cannot be empty");
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (formErrors[field]) {
+      setFormErrors({ ...formErrors, [field]: "" });
+    }
+  };
+
   const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     setSaving(true);
     try {
+      const newExpectedScore = formData.expectedScore !== ""
+        ? parseFloat(formData.expectedScore)
+        : null;
+
+      // Update KPI details
       const response = await fetch(`/api/kpis/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -359,11 +399,23 @@ export default function KPIDetailPage({
           description: formData.description,
           dataSource: formData.dataSource,
           calculationFormula: formData.calculationFormula,
-          expectedScore: formData.expectedScore
-            ? parseFloat(formData.expectedScore)
+          expectedScore: newExpectedScore,
+          actualScore: formData.actualScore !== ""
+            ? parseFloat(formData.actualScore)
             : null,
         }),
       });
+
+      // Also update the Evidence record's kpiExpectedScore (source of truth)
+      if (response.ok && kpi?.evidence?.id) {
+        await fetch(`/api/evidences/${kpi.evidence.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kpiExpectedScore: newExpectedScore,
+          }),
+        });
+      }
 
       if (response.ok) {
         toast({
@@ -739,50 +791,75 @@ export default function KPIDetailPage({
         <h3 className="text-base font-semibold text-slate-800 mb-4">{t("KPI Details")}</h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")}</Label>
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              {t("KPI Objective")} <span className="text-red-500">*</span>
+            </Label>
             <Input
               placeholder={t("Enter Objective")}
               value={formData.objective}
-              onChange={(e) => setFormData({ ...formData, objective: e.target.value })}
-              className="h-9 border-slate-200"
+              onChange={(e) => handleFieldChange("objective", e.target.value)}
+              className={`h-9 ${formErrors.objective ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : "border-slate-200"}`}
             />
+            {formErrors.objective && (
+              <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.objective}</p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")}</Label>
-            <Input
-              placeholder={t("Enter Description")}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="h-9 border-slate-200"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Data Source")}</Label>
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              {t("KPI Data Source")} <span className="text-red-500">*</span>
+            </Label>
             <Input
               placeholder={t("Enter Data Source")}
               value={formData.dataSource}
-              onChange={(e) => setFormData({ ...formData, dataSource: e.target.value })}
-              className="h-9 border-slate-200"
+              onChange={(e) => handleFieldChange("dataSource", e.target.value)}
+              className={`h-9 ${formErrors.dataSource ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : "border-slate-200"}`}
             />
+            {formErrors.dataSource && (
+              <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.dataSource}</p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Calculation Formula")}</Label>
-            <Input
-              placeholder={t("Enter Formula")}
-              value={formData.calculationFormula}
-              onChange={(e) => setFormData({ ...formData, calculationFormula: e.target.value })}
-              className="h-9 border-slate-200"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Expected Score")}</Label>
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              {t("KPI Expected Score (%)")} <span className="text-red-500">*</span>
+            </Label>
             <Input
               type="number"
-              placeholder="0"
+              placeholder={t("Enter expected score")}
               value={formData.expectedScore}
-              onChange={(e) => setFormData({ ...formData, expectedScore: e.target.value })}
-              className="h-9 border-slate-200"
+              onChange={(e) => handleFieldChange("expectedScore", e.target.value)}
+              className={`h-9 ${formErrors.expectedScore ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : "border-slate-200"}`}
             />
+            {formErrors.expectedScore && (
+              <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.expectedScore}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              {t("KPI Description")} <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              placeholder={t("Enter KPI Description")}
+              value={formData.description}
+              onChange={(e) => handleFieldChange("description", e.target.value)}
+              className={`h-9 ${formErrors.description ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : "border-slate-200"}`}
+            />
+            {formErrors.description && (
+              <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.description}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              {t("KPI Calculation Formula")} <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              placeholder={t("Enter the KPI Calculation Formula")}
+              value={formData.calculationFormula}
+              onChange={(e) => handleFieldChange("calculationFormula", e.target.value)}
+              className={`h-9 ${formErrors.calculationFormula ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : "border-slate-200"}`}
+            />
+            {formErrors.calculationFormula && (
+              <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.calculationFormula}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">

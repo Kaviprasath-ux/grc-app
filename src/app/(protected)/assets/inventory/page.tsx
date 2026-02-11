@@ -233,6 +233,9 @@ export default function AssetInventoryPage() {
     nextReviewDate: "",
   });
 
+  // Field errors state for inline validation
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
   // Filtered subcategories based on selected category
   const filteredSubCategories = subCategories.filter(
     (sc) => !newAsset.categoryId || sc.categoryId === newAsset.categoryId
@@ -356,7 +359,63 @@ export default function AssetInventoryPage() {
 
   // Asset CRUD
   const handleAddAsset = async () => {
-    if (!newAsset.assetId.trim() || !newAsset.name.trim()) return;
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation: Asset ID
+    if (!newAsset.assetId.trim()) {
+      errors.assetId = t("Asset ID is required");
+    }
+
+    // Validation: Asset Name
+    if (!newAsset.name.trim()) {
+      errors.name = t("Asset name is required");
+    }
+
+    // Validation: Department
+    if (!newAsset.departmentId) {
+      errors.departmentId = t("Please select the department");
+    }
+
+    // Validation: Asset Owner
+    if (!newAsset.ownerId) {
+      errors.ownerId = t("Please select the asset owner");
+    }
+
+    // Validation: Asset Category
+    if (!newAsset.categoryId) {
+      errors.categoryId = t("Please select the asset category");
+    }
+
+    // Validation: Asset Sub Category
+    if (!newAsset.subCategoryId) {
+      errors.subCategoryId = t("Please select the asset sub category");
+    }
+
+    // Validation: Asset Group
+    if (!newAsset.groupId) {
+      errors.groupId = t("Please select the asset group");
+    }
+
+    // Validation: Asset Custodian
+    if (!newAsset.custodianId) {
+      errors.custodianId = t("Please select the asset custodian");
+    }
+
+    // Validation: Asset Location
+    if (!newAsset.location || !newAsset.location.trim()) {
+      errors.location = t("Please enter the asset location");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/assets", {
         method: "POST",
@@ -392,6 +451,64 @@ export default function AssetInventoryPage() {
 
   const handleEditAsset = async () => {
     if (!editingAsset) return;
+
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation: Asset ID
+    if (!editingAsset.assetId.trim()) {
+      errors.assetId = t("Asset ID is required");
+    }
+
+    // Validation: Asset Name
+    if (!editingAsset.name.trim()) {
+      errors.name = t("Asset name is required");
+    }
+
+    // Validation: Department
+    if (!editingAsset.departmentId) {
+      errors.departmentId = t("Please select the department");
+    }
+
+    // Validation: Asset Owner
+    if (!editingAsset.ownerId) {
+      errors.ownerId = t("Please select the asset owner");
+    }
+
+    // Validation: Asset Category
+    if (!editingAsset.categoryId) {
+      errors.categoryId = t("Please select the asset category");
+    }
+
+    // Validation: Asset Sub Category
+    if (!editingAsset.subCategoryId) {
+      errors.subCategoryId = t("Please select the asset sub category");
+    }
+
+    // Validation: Asset Group
+    if (!editingAsset.groupId) {
+      errors.groupId = t("Please select the asset group");
+    }
+
+    // Validation: Asset Custodian
+    if (!editingAsset.custodianId) {
+      errors.custodianId = t("Please select the asset custodian");
+    }
+
+    // Validation: Asset Location
+    if (!editingAsset.location || !editingAsset.location.trim()) {
+      errors.location = t("Please enter the asset location");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/assets/${editingAsset.id}`, {
         method: "PUT",
@@ -450,6 +567,7 @@ export default function AssetInventoryPage() {
       acquisitionDate: "",
       nextReviewDate: "",
     });
+    setFieldErrors({});
   };
 
   // Inline add handlers for Category, Sub Category, Group, Lifecycle Status
@@ -887,6 +1005,7 @@ export default function AssetInventoryPage() {
                               ? new Date(asset.nextReviewDate).toISOString().split('T')[0]
                               : null,
                           });
+                          setFieldErrors({});
                           setIsEditAssetOpen(true);
                         }}
                       >
@@ -974,30 +1093,46 @@ export default function AssetInventoryPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Asset Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={newAsset.name}
-                  onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewAsset({ ...newAsset, name: e.target.value });
+                    if (fieldErrors.name) {
+                      setFieldErrors({ ...fieldErrors, name: "" });
+                    }
+                  }}
                   placeholder={t("Enter Asset Name")}
-                  className="mt-1.5"
+                  className={`mt-1.5 ${fieldErrors.name ? "border-red-500" : ""}`}
                 />
+                {fieldErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
+                )}
               </div>
 
               {/* Asset ID - Full Width */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Asset ID")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Asset ID")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={newAsset.assetId}
                   disabled
-                  className="mt-1.5 bg-muted"
+                  className={`mt-1.5 bg-muted ${fieldErrors.assetId ? "border-red-500" : ""}`}
                 />
+                {fieldErrors.assetId && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.assetId}</p>
+                )}
               </div>
 
               {/* Department - Full Width */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Department")} <span className="text-semantic-error">*</span></Label>
                 <Select
                   value={newAsset.departmentId}
-                  onValueChange={(value) => setNewAsset({ ...newAsset, departmentId: value, ownerId: "" })}
+                  onValueChange={(value) => {
+                    setNewAsset({ ...newAsset, departmentId: value, ownerId: "" });
+                    if (fieldErrors.departmentId) {
+                      setFieldErrors({ ...fieldErrors, departmentId: "" });
+                    }
+                  }}
                 >
-                  <SelectTrigger className="mt-1.5 w-full">
+                  <SelectTrigger className={`mt-1.5 w-full ${fieldErrors.departmentId ? "border-red-500" : ""}`}>
                     <SelectValue placeholder={t("Select Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1008,17 +1143,25 @@ export default function AssetInventoryPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.departmentId && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.departmentId}</p>
+                )}
               </div>
 
               {/* Asset Owner - Full Width */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Asset Owner")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Asset Owner")} <span className="text-semantic-error">*</span></Label>
                 <Select
                   value={newAsset.ownerId}
-                  onValueChange={(value) => setNewAsset({ ...newAsset, ownerId: value })}
+                  onValueChange={(value) => {
+                    setNewAsset({ ...newAsset, ownerId: value });
+                    if (fieldErrors.ownerId) {
+                      setFieldErrors({ ...fieldErrors, ownerId: "" });
+                    }
+                  }}
                   disabled={!newAsset.departmentId}
                 >
-                  <SelectTrigger className={`mt-1.5 w-full ${!newAsset.departmentId ? "bg-muted" : ""}`}>
+                  <SelectTrigger className={`mt-1.5 w-full ${!newAsset.departmentId ? "bg-muted" : ""} ${fieldErrors.ownerId ? "border-red-500" : ""}`}>
                     <SelectValue placeholder={newAsset.departmentId ? t("Select Asset Owner") : t("Select Department first")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1029,18 +1172,26 @@ export default function AssetInventoryPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.ownerId && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.ownerId}</p>
+                )}
               </div>
 
               {/* Category & Sub Category */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Asset Category")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Category")} <span className="text-semantic-error">*</span></Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={newAsset.categoryId}
-                      onValueChange={(value) => setNewAsset({ ...newAsset, categoryId: value, subCategoryId: "" })}
+                      onValueChange={(value) => {
+                        setNewAsset({ ...newAsset, categoryId: value, subCategoryId: "" });
+                        if (fieldErrors.categoryId) {
+                          setFieldErrors({ ...fieldErrors, categoryId: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.categoryId ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select Category")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1061,16 +1212,24 @@ export default function AssetInventoryPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.categoryId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryId}</p>
+                  )}
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={newAsset.subCategoryId}
-                      onValueChange={(value) => setNewAsset({ ...newAsset, subCategoryId: value })}
+                      onValueChange={(value) => {
+                        setNewAsset({ ...newAsset, subCategoryId: value });
+                        if (fieldErrors.subCategoryId) {
+                          setFieldErrors({ ...fieldErrors, subCategoryId: "" });
+                        }
+                      }}
                       disabled={!newAsset.categoryId}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.subCategoryId ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select Sub Category")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1092,19 +1251,27 @@ export default function AssetInventoryPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.subCategoryId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryId}</p>
+                  )}
                 </div>
               </div>
 
               {/* Group & Custodian */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Asset Group")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Group")} <span className="text-semantic-error">*</span></Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={newAsset.groupId}
-                      onValueChange={(value) => setNewAsset({ ...newAsset, groupId: value })}
+                      onValueChange={(value) => {
+                        setNewAsset({ ...newAsset, groupId: value });
+                        if (fieldErrors.groupId) {
+                          setFieldErrors({ ...fieldErrors, groupId: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.groupId ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select Asset Group")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1125,14 +1292,22 @@ export default function AssetInventoryPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.groupId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.groupId}</p>
+                  )}
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Asset Custodian")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Custodian")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={newAsset.custodianId}
-                    onValueChange={(value) => setNewAsset({ ...newAsset, custodianId: value })}
+                    onValueChange={(value) => {
+                      setNewAsset({ ...newAsset, custodianId: value });
+                      if (fieldErrors.custodianId) {
+                        setFieldErrors({ ...fieldErrors, custodianId: "" });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={`mt-1.5 w-full ${fieldErrors.custodianId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select Asset Custodian")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1143,6 +1318,9 @@ export default function AssetInventoryPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.custodianId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.custodianId}</p>
+                  )}
                 </div>
               </div>
 
@@ -1178,13 +1356,21 @@ export default function AssetInventoryPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Asset Location")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Location")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={newAsset.location}
-                    onChange={(e) => setNewAsset({ ...newAsset, location: e.target.value })}
+                    onChange={(e) => {
+                      setNewAsset({ ...newAsset, location: e.target.value });
+                      if (fieldErrors.location) {
+                        setFieldErrors({ ...fieldErrors, location: "" });
+                      }
+                    }}
                     placeholder={t("Enter Location")}
-                    className="mt-1.5"
+                    className={`mt-1.5 ${fieldErrors.location ? "border-red-500" : ""}`}
                   />
+                  {fieldErrors.location && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.location}</p>
+                  )}
                 </div>
               </div>
 
@@ -1266,9 +1452,17 @@ export default function AssetInventoryPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={editingAsset.name}
-                    onChange={(e) => setEditingAsset({ ...editingAsset, name: e.target.value })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setEditingAsset({ ...editingAsset, name: e.target.value });
+                      if (fieldErrors.name) {
+                        setFieldErrors({ ...fieldErrors, name: "" });
+                      }
+                    }}
+                    className={`mt-1.5 ${fieldErrors.name ? "border-red-500" : ""}`}
                   />
+                  {fieldErrors.name && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
+                  )}
                 </div>
 
                 {/* Asset ID - Full Width */}
@@ -1283,12 +1477,17 @@ export default function AssetInventoryPage() {
 
                 {/* Department - Full Width */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Department")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={editingAsset.departmentId || ""}
-                    onValueChange={(value) => setEditingAsset({ ...editingAsset, departmentId: value, ownerId: null })}
+                    onValueChange={(value) => {
+                      setEditingAsset({ ...editingAsset, departmentId: value, ownerId: null });
+                      if (fieldErrors.departmentId) {
+                        setFieldErrors({ ...fieldErrors, departmentId: "" });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={`mt-1.5 w-full ${fieldErrors.departmentId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select Department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1299,17 +1498,25 @@ export default function AssetInventoryPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.departmentId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.departmentId}</p>
+                  )}
                 </div>
 
                 {/* Asset Owner - Full Width */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Asset Owner")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Owner")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={editingAsset.ownerId || ""}
-                    onValueChange={(value) => setEditingAsset({ ...editingAsset, ownerId: value })}
+                    onValueChange={(value) => {
+                      setEditingAsset({ ...editingAsset, ownerId: value });
+                      if (fieldErrors.ownerId) {
+                        setFieldErrors({ ...fieldErrors, ownerId: "" });
+                      }
+                    }}
                     disabled={!editingAsset.departmentId}
                   >
-                    <SelectTrigger className={`mt-1.5 w-full ${!editingAsset.departmentId ? "bg-muted" : ""}`}>
+                    <SelectTrigger className={`mt-1.5 w-full ${!editingAsset.departmentId ? "bg-muted" : ""} ${fieldErrors.ownerId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={editingAsset.departmentId ? t("Select Asset Owner") : t("Select Department first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1320,18 +1527,26 @@ export default function AssetInventoryPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.ownerId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.ownerId}</p>
+                  )}
                 </div>
 
                 {/* Category & Sub Category */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Asset Category")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Category")} <span className="text-semantic-error">*</span></Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editingAsset.categoryId || ""}
-                        onValueChange={(value) => setEditingAsset({ ...editingAsset, categoryId: value, subCategoryId: null })}
+                        onValueChange={(value) => {
+                          setEditingAsset({ ...editingAsset, categoryId: value, subCategoryId: null });
+                          if (fieldErrors.categoryId) {
+                            setFieldErrors({ ...fieldErrors, categoryId: "" });
+                          }
+                        }}
                       >
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className={`flex-1 ${fieldErrors.categoryId ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select Category")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
@@ -1352,16 +1567,24 @@ export default function AssetInventoryPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+                    {fieldErrors.categoryId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryId}</p>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editingAsset.subCategoryId || ""}
-                        onValueChange={(value) => setEditingAsset({ ...editingAsset, subCategoryId: value })}
+                        onValueChange={(value) => {
+                          setEditingAsset({ ...editingAsset, subCategoryId: value });
+                          if (fieldErrors.subCategoryId) {
+                            setFieldErrors({ ...fieldErrors, subCategoryId: "" });
+                          }
+                        }}
                         disabled={!editingAsset.categoryId}
                       >
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className={`flex-1 ${fieldErrors.subCategoryId ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select Sub Category")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
@@ -1383,19 +1606,27 @@ export default function AssetInventoryPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+                    {fieldErrors.subCategoryId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryId}</p>
+                    )}
                   </div>
                 </div>
 
                 {/* Group & Custodian */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Asset Group")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Group")} <span className="text-semantic-error">*</span></Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editingAsset.groupId || ""}
-                        onValueChange={(value) => setEditingAsset({ ...editingAsset, groupId: value })}
+                        onValueChange={(value) => {
+                          setEditingAsset({ ...editingAsset, groupId: value });
+                          if (fieldErrors.groupId) {
+                            setFieldErrors({ ...fieldErrors, groupId: "" });
+                          }
+                        }}
                       >
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className={`flex-1 ${fieldErrors.groupId ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select Asset Group")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
@@ -1416,14 +1647,22 @@ export default function AssetInventoryPage() {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+                    {fieldErrors.groupId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.groupId}</p>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Asset Custodian")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Custodian")} <span className="text-semantic-error">*</span></Label>
                     <Select
                       value={editingAsset.custodianId || ""}
-                      onValueChange={(value) => setEditingAsset({ ...editingAsset, custodianId: value })}
+                      onValueChange={(value) => {
+                        setEditingAsset({ ...editingAsset, custodianId: value });
+                        if (fieldErrors.custodianId) {
+                          setFieldErrors({ ...fieldErrors, custodianId: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full">
+                      <SelectTrigger className={`mt-1.5 w-full ${fieldErrors.custodianId ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select Asset Custodian")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1434,6 +1673,9 @@ export default function AssetInventoryPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.custodianId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.custodianId}</p>
+                    )}
                   </div>
                 </div>
 
@@ -1469,13 +1711,21 @@ export default function AssetInventoryPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Asset Location")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Location")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       value={editingAsset.location || ""}
-                      onChange={(e) => setEditingAsset({ ...editingAsset, location: e.target.value })}
+                      onChange={(e) => {
+                        setEditingAsset({ ...editingAsset, location: e.target.value });
+                        if (fieldErrors.location) {
+                          setFieldErrors({ ...fieldErrors, location: "" });
+                        }
+                      }}
                       placeholder={t("Enter Location")}
-                      className="mt-1.5"
+                      className={`mt-1.5 ${fieldErrors.location ? "border-red-500" : ""}`}
                     />
+                    {fieldErrors.location && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.location}</p>
+                    )}
                   </div>
                 </div>
 
@@ -1531,6 +1781,7 @@ export default function AssetInventoryPage() {
             <Button variant="outline" onClick={() => {
               setIsEditAssetOpen(false);
               setEditingAsset(null);
+              setFieldErrors({});
             }}>
               {t("Cancel")}
             </Button>
