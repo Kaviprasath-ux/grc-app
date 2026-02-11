@@ -41,6 +41,7 @@ import { Plus, Pencil, Trash2, Download, Upload, Search, Check, ChevronLeft, Che
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useHasRole } from "@/hooks/usePermissions";
 
 interface Department {
   id: string;
@@ -112,7 +113,9 @@ export default function GovernanceMasterDataPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [policies, setPolicies] = useState<Policy[]>([]);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
@@ -337,6 +340,26 @@ export default function GovernanceMasterDataPage() {
     }
   };
 
+  const confirmDeleteAll = async () => {
+    try {
+      const response = await fetch("/api/policies/delete-all", {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchPolicies();
+        toast({ title: t("Success"), description: t("All governance documents deleted successfully") });
+      } else {
+        toast({ title: t("Error"), description: t("Failed to delete governance documents"), variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error deleting all governance documents:", error);
+      toast({ title: t("Error"), description: t("Failed to delete governance documents"), variant: "destructive" });
+    } finally {
+      setDeleteAllDialogOpen(false);
+    }
+  };
+
   const openEditDialog = (policy: Policy) => {
     setSelectedPolicy(policy);
     setFormData({
@@ -554,6 +577,12 @@ export default function GovernanceMasterDataPage() {
 
       {/* Action Buttons - above card */}
       <div className="flex items-center justify-end gap-2">
+        {isCustomerAdmin && (
+          <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(true)}>
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}
@@ -1277,6 +1306,27 @@ export default function GovernanceMasterDataPage() {
               className="bg-red-600 hover:bg-red-700 h-9"
             >
               {t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Confirmation */}
+      <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
+          <AlertDialogHeader className="px-6 py-4">
+            <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete All Governance Documents")}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
+              {t("Are you sure you want to delete all governance documents? This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteAll}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {t("Delete All")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

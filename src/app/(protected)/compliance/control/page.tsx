@@ -500,6 +500,35 @@ function ControlListPageContent() {
     }
   };
 
+  const handleExport = () => {
+    const csv = [
+      ["Control Code", "Name", "Description", "Control Question", "Functional Grouping", "Status", "Domain", "Framework", "Department", "Owner", "Assignee"],
+      ...controls.map((c) => [
+        c.controlCode,
+        c.name,
+        c.description || "",
+        c.controlQuestion || "",
+        c.functionalGrouping || "",
+        c.status,
+        c.domain?.name || "",
+        c.framework?.name || "",
+        c.department?.name || "",
+        c.owner?.fullName || "",
+        c.assignee?.fullName || "",
+      ]),
+    ]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "controls.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleCreateControl = async () => {
     try {
       const response = await fetch("/api/controls", {
@@ -841,17 +870,10 @@ function ControlListPageContent() {
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2">
-            <PermissionGate resource="compliance.controls" action="delete">
-              <Button
-                size="sm"
-                onClick={() => setIsDeleteAllDialogOpen(true)}
-                variant="outline"
-                className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Delete All")}
-              </Button>
-            </PermissionGate>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Export")}
+            </Button>
             <PermissionGate resource="compliance.controls" action="create">
               <Button size="sm" onClick={handleImport} variant="outline">
                 <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
