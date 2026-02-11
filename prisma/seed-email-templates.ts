@@ -2922,11 +2922,20 @@ async function seedEmailTemplates() {
   console.log('========================================');
 }
 
-seedEmailTemplates()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Export for use in main seed.ts
+export { EMAIL_TEMPLATES, seedEmailTemplates };
+
+// Run standalone if this file is executed directly
+// Check if this module is the main module (not imported)
+const isMainModule = require.main === module || process.argv[1]?.includes('seed-email-templates');
+
+if (isMainModule) {
+  seedEmailTemplates()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
