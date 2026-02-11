@@ -223,17 +223,25 @@ export default function AssetSettingsPage() {
     name: "",
     assetId: "",
     location: "",
+    value: 0,
+    acquisitionDate: "",
+    lifecycleStatusId: "",
+    riskRating: "",
+    lastRiskAssessment: "",
+    auditTrail: "",
+    nextReviewDate: "",
+    sensitivityId: "",
     categoryId: "",
     subCategoryId: "",
-    groupId: "",
-    sensitivityId: "",
-    lifecycleStatusId: "",
-    value: 0
+    policies: "",
   });
   const [ciaRatingForm, setCiaRatingForm] = useState({ label: "", value: 0 });
   const [scoringConfigForm, setScoringConfigForm] = useState({ level: "", minScore: 0, maxScore: 0, color: "#000000" });
   const [isScoringAddOpen, setIsScoringAddOpen] = useState(false);
   const [isScoringEditOpen, setIsScoringEditOpen] = useState(false);
+
+  // Field validation errors
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [isScoringDeleteOpen, setIsScoringDeleteOpen] = useState(false);
   const [selectedScoringConfig, setSelectedScoringConfig] = useState<ScoringConfig | null>(null);
 
@@ -306,7 +314,26 @@ export default function AssetSettingsPage() {
 
   // Category CRUD
   const handleAddCategory = async () => {
-    if (!categoryForm.name.trim()) return;
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation
+    if (!categoryForm.name.trim()) {
+      errors.categoryName = t("Please enter category name");
+    }
+    if (!categoryForm.status) {
+      errors.categoryStatus = t("Please select status");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/asset-categories", {
         method: "POST",
@@ -328,7 +355,28 @@ export default function AssetSettingsPage() {
   };
 
   const handleEditCategory = async () => {
-    if (!selectedItem || !categoryForm.name.trim()) return;
+    if (!selectedItem) return;
+
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation
+    if (!categoryForm.name.trim()) {
+      errors.categoryName = t("Please enter category name");
+    }
+    if (!categoryForm.status) {
+      errors.categoryStatus = t("Please select status");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/asset-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -368,7 +416,32 @@ export default function AssetSettingsPage() {
 
   // SubCategory CRUD
   const handleAddSubCategory = async () => {
-    if (!subCategoryForm.name.trim() || !subCategoryForm.categoryId) return;
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation
+    if (!subCategoryForm.name.trim()) {
+      errors.subCategoryName = t("Please enter sub category name");
+    }
+    if (!subCategoryForm.description.trim()) {
+      errors.subCategoryDescription = t("Please enter description");
+    }
+    if (!subCategoryForm.categoryId) {
+      errors.subCategoryCategoryId = t("Please select category");
+    }
+    if (!subCategoryForm.status) {
+      errors.subCategoryStatus = t("Please select status");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/asset-sub-categories", {
         method: "POST",
@@ -390,7 +463,30 @@ export default function AssetSettingsPage() {
   };
 
   const handleEditSubCategory = async () => {
-    if (!selectedItem || !subCategoryForm.name.trim()) return;
+    if (!selectedItem) return;
+
+    const errors: { [key: string]: string } = {};
+
+    if (!subCategoryForm.name.trim()) {
+      errors.subCategoryName = t("Please enter sub category name");
+    }
+    if (!subCategoryForm.description.trim()) {
+      errors.subCategoryDescription = t("Please enter description");
+    }
+    if (!subCategoryForm.categoryId) {
+      errors.subCategoryCategoryId = t("Please select category");
+    }
+    if (!subCategoryForm.status) {
+      errors.subCategoryStatus = t("Please select status");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/asset-sub-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -430,7 +526,25 @@ export default function AssetSettingsPage() {
 
   // Group CRUD
   const handleAddGroup = async () => {
-    if (!groupForm.name.trim()) return;
+    const errors: { [key: string]: string } = {};
+
+    if (!groupForm.name.trim()) {
+      errors.groupName = t("Please enter group name");
+    }
+    if (!groupForm.description.trim()) {
+      errors.groupDescription = t("Please enter description");
+    }
+    if (!groupForm.status) {
+      errors.groupStatus = t("Please select status");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/asset-groups", {
         method: "POST",
@@ -452,7 +566,27 @@ export default function AssetSettingsPage() {
   };
 
   const handleEditGroup = async () => {
-    if (!selectedItem || !groupForm.name.trim()) return;
+    if (!selectedItem) return;
+
+    const errors: { [key: string]: string } = {};
+
+    if (!groupForm.name.trim()) {
+      errors.groupName = t("Please enter group name");
+    }
+    if (!groupForm.description.trim()) {
+      errors.groupDescription = t("Please enter description");
+    }
+    if (!groupForm.status) {
+      errors.groupStatus = t("Please select status");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/asset-groups/${selectedItem.id}`, {
         method: "PUT",
@@ -492,7 +626,19 @@ export default function AssetSettingsPage() {
 
   // Lifecycle Status CRUD
   const handleAddLifecycle = async () => {
-    if (!lifecycleForm.name.trim()) return;
+    const errors: { [key: string]: string } = {};
+
+    if (!lifecycleForm.name.trim()) {
+      errors.lifecycleName = t("Please enter lifecycle name");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/asset-lifecycle-statuses", {
         method: "POST",
@@ -514,7 +660,21 @@ export default function AssetSettingsPage() {
   };
 
   const handleEditLifecycle = async () => {
-    if (!selectedItem || !lifecycleForm.name.trim()) return;
+    if (!selectedItem) return;
+
+    const errors: { [key: string]: string } = {};
+
+    if (!lifecycleForm.name.trim()) {
+      errors.lifecycleName = t("Please enter lifecycle name");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/asset-lifecycle-statuses/${selectedItem.id}`, {
         method: "PUT",
@@ -554,7 +714,31 @@ export default function AssetSettingsPage() {
 
   // Asset CRUD
   const handleAddAsset = async () => {
-    if (!assetForm.name.trim() || !assetForm.assetId.trim()) return;
+    const errors: { [key: string]: string } = {};
+
+    if (!assetForm.name.trim()) {
+      errors.assetName = t("Please enter asset name");
+    }
+    if (!assetForm.sensitivityId) {
+      errors.assetSensitivityId = t("Please select asset sensitivity");
+    }
+    if (!assetForm.categoryId) {
+      errors.assetCategoryId = t("Please select asset category");
+    }
+    if (!assetForm.subCategoryId) {
+      errors.assetSubCategoryId = t("Please select asset sub category");
+    }
+    if (!assetForm.policies) {
+      errors.assetPolicies = t("Please select policies");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/assets", {
         method: "POST",
@@ -563,12 +747,17 @@ export default function AssetSettingsPage() {
           name: assetForm.name,
           assetId: assetForm.assetId,
           location: assetForm.location || null,
+          value: assetForm.value || null,
+          acquisitionDate: assetForm.acquisitionDate || null,
+          lifecycleStatusId: assetForm.lifecycleStatusId || null,
+          riskRating: assetForm.riskRating || null,
+          lastRiskAssessment: assetForm.lastRiskAssessment || null,
+          auditTrail: assetForm.auditTrail || null,
+          nextReviewDate: assetForm.nextReviewDate || null,
+          sensitivityId: assetForm.sensitivityId || null,
           categoryId: assetForm.categoryId || null,
           subCategoryId: assetForm.subCategoryId || null,
-          groupId: assetForm.groupId || null,
-          sensitivityId: assetForm.sensitivityId || null,
-          lifecycleStatusId: assetForm.lifecycleStatusId || null,
-          value: assetForm.value || null,
+          policies: assetForm.policies || null,
         }),
       });
       if (res.ok) {
@@ -578,12 +767,17 @@ export default function AssetSettingsPage() {
           name: "",
           assetId: "",
           location: "",
+          value: 0,
+          acquisitionDate: "",
+          lifecycleStatusId: "",
+          riskRating: "",
+          lastRiskAssessment: "",
+          auditTrail: "",
+          nextReviewDate: "",
+          sensitivityId: "",
           categoryId: "",
           subCategoryId: "",
-          groupId: "",
-          sensitivityId: "",
-          lifecycleStatusId: "",
-          value: 0
+          policies: "",
         });
         setIsAddOpen(false);
       } else {
@@ -597,7 +791,19 @@ export default function AssetSettingsPage() {
 
   // Sensitivity CRUD
   const handleAddSensitivity = async () => {
-    if (!sensitivityForm.name.trim()) return;
+    const errors: { [key: string]: string } = {};
+
+    if (!sensitivityForm.name.trim()) {
+      errors.sensitivityName = t("Please enter sensitivity name");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/asset-sensitivities", {
         method: "POST",
@@ -619,7 +825,21 @@ export default function AssetSettingsPage() {
   };
 
   const handleEditSensitivity = async () => {
-    if (!selectedItem || !sensitivityForm.name.trim()) return;
+    if (!selectedItem) return;
+
+    const errors: { [key: string]: string } = {};
+
+    if (!sensitivityForm.name.trim()) {
+      errors.sensitivityName = t("Please enter sensitivity name");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/asset-sensitivities/${selectedItem.id}`, {
         method: "PUT",
@@ -659,7 +879,22 @@ export default function AssetSettingsPage() {
 
   // CIA Rating CRUD
   const handleAddCiaRating = async () => {
-    if (!ciaRatingForm.label.trim()) return;
+    const errors: { [key: string]: string } = {};
+
+    if (!ciaRatingForm.label.trim()) {
+      errors.ciaRatingLabel = t("Please enter label");
+    }
+    if (ciaRatingForm.value === null || ciaRatingForm.value === undefined) {
+      errors.ciaRatingValue = t("Please enter value");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/cia-ratings", {
         method: "POST",
@@ -685,7 +920,24 @@ export default function AssetSettingsPage() {
   };
 
   const handleEditCiaRating = async () => {
-    if (!selectedCiaRating || !ciaRatingForm.label.trim()) return;
+    if (!selectedCiaRating) return;
+
+    const errors: { [key: string]: string } = {};
+
+    if (!ciaRatingForm.label.trim()) {
+      errors.ciaRatingLabel = t("Please enter label");
+    }
+    if (ciaRatingForm.value === null || ciaRatingForm.value === undefined) {
+      errors.ciaRatingValue = t("Please enter value");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/cia-ratings/${selectedCiaRating.id}`, {
         method: "PUT",
@@ -747,7 +999,27 @@ export default function AssetSettingsPage() {
   };
 
   const handleAddScoringConfig = async () => {
-    if (!scoringConfigForm.level.trim()) return;
+    const errors: { [key: string]: string } = {};
+
+    if (!scoringConfigForm.level.trim()) {
+      errors.scoringConfigLevel = t("Please enter level");
+    }
+    if (scoringConfigForm.minScore === null || scoringConfigForm.minScore === undefined) {
+      errors.scoringConfigMinScore = t("Please enter minimum score");
+    }
+    if (scoringConfigForm.maxScore === null || scoringConfigForm.maxScore === undefined) {
+      errors.scoringConfigMaxScore = t("Please enter maximum score");
+    }
+    if (!scoringConfigForm.color) {
+      errors.scoringConfigColor = t("Please select color");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
 
     const currentConfigs = getCurrentConfigs();
 
@@ -827,6 +1099,28 @@ export default function AssetSettingsPage() {
 
   const handleUpdateScoringConfig = async () => {
     if (!selectedScoringConfig) return;
+
+    const errors: { [key: string]: string } = {};
+
+    if (!scoringConfigForm.level.trim()) {
+      errors.scoringConfigLevel = t("Please enter level");
+    }
+    if (scoringConfigForm.minScore === null || scoringConfigForm.minScore === undefined) {
+      errors.scoringConfigMinScore = t("Please enter minimum score");
+    }
+    if (scoringConfigForm.maxScore === null || scoringConfigForm.maxScore === undefined) {
+      errors.scoringConfigMaxScore = t("Please enter maximum score");
+    }
+    if (!scoringConfigForm.color) {
+      errors.scoringConfigColor = t("Please select color");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
 
     // Check that low range and high range are not the same (for addition/product types)
     if (scoringCalculationType !== "high_of_all" && scoringConfigForm.minScore === scoringConfigForm.maxScore) {
@@ -1450,14 +1744,20 @@ export default function AssetSettingsPage() {
                 name: "",
                 assetId: "",
                 location: "",
+                value: 0,
+                acquisitionDate: "",
+                lifecycleStatusId: "",
+                riskRating: "",
+                lastRiskAssessment: "",
+                auditTrail: "",
+                nextReviewDate: "",
+                sensitivityId: "",
                 categoryId: "",
                 subCategoryId: "",
-                groupId: "",
-                sensitivityId: "",
-                lifecycleStatusId: "",
-                value: 0
+                policies: "",
               });
             }
+            setFieldErrors({});
             setIsAddOpen(true);
           }}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1563,6 +1863,7 @@ export default function AssetSettingsPage() {
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                           setSelectedItem(item);
                           setCategoryForm({ name: item.name, description: item.description || "", status: item.status });
+                          setFieldErrors({});
                           setIsEditOpen(true);
                         }}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -1591,6 +1892,7 @@ export default function AssetSettingsPage() {
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                           setSelectedItem(item);
                           setSubCategoryForm({ name: item.name, description: item.description || "", categoryId: item.categoryId, status: item.status });
+                          setFieldErrors({});
                           setIsEditOpen(true);
                         }}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -1618,6 +1920,7 @@ export default function AssetSettingsPage() {
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                           setSelectedItem(item);
                           setGroupForm({ name: item.name, description: item.description || "", status: (item as any).status || "Active", subCategoryId: (item as any).subCategoryId || "" });
+                          setFieldErrors({});
                           setIsEditOpen(true);
                         }}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -1641,6 +1944,7 @@ export default function AssetSettingsPage() {
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                           setSelectedItem(item as any);
                           setSensitivityForm({ name: item.name, description: item.description || "" });
+                          setFieldErrors({});
                           setIsEditOpen(true);
                         }}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -1695,184 +1999,289 @@ export default function AssetSettingsPage() {
             <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
               {entitySubTab === "asset-list" && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Asset ID")} *</Label>
-                      <Input
-                        value={assetForm.assetId}
-                        onChange={(e) => setAssetForm({ ...assetForm, assetId: e.target.value })}
-                        placeholder={t("e.g., AST-001")}
-                        className="mt-1.5"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
-                      <Input
-                        value={assetForm.name}
-                        onChange={(e) => setAssetForm({ ...assetForm, name: e.target.value })}
-                        placeholder={t("e.g., Production Server 1")}
-                        className="mt-1.5"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
-                      <Select
-                        value={assetForm.categoryId}
-                        onValueChange={(value) => setAssetForm({ ...assetForm, categoryId: value })}
-                      >
-                        <SelectTrigger className="mt-1.5 w-full">
-                          <SelectValue placeholder={t("Select category")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Sub Category")}</Label>
-                      <Select
-                        value={assetForm.subCategoryId}
-                        onValueChange={(value) => setAssetForm({ ...assetForm, subCategoryId: value })}
-                      >
-                        <SelectTrigger className="mt-1.5 w-full">
-                          <SelectValue placeholder={t("Select sub category")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subCategories
-                            .filter(sc => !assetForm.categoryId || sc.categoryId === assetForm.categoryId)
-                            .map((sc) => (
-                              <SelectItem key={sc.id} value={sc.id}>
-                                {sc.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Group")}</Label>
-                      <Select
-                        value={assetForm.groupId}
-                        onValueChange={(value) => setAssetForm({ ...assetForm, groupId: value })}
-                      >
-                        <SelectTrigger className="mt-1.5 w-full">
-                          <SelectValue placeholder={t("Select group")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {groups.map((g) => (
-                            <SelectItem key={g.id} value={g.id}>
-                              {g.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Sensitivity")}</Label>
-                      <Select
-                        value={assetForm.sensitivityId}
-                        onValueChange={(value) => setAssetForm({ ...assetForm, sensitivityId: value })}
-                      >
-                        <SelectTrigger className="mt-1.5 w-full">
-                          <SelectValue placeholder={t("Select sensitivity")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sensitivities.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Lifecycle Status")}</Label>
-                      <Select
-                        value={assetForm.lifecycleStatusId}
-                        onValueChange={(value) => setAssetForm({ ...assetForm, lifecycleStatusId: value })}
-                      >
-                        <SelectTrigger className="mt-1.5 w-full">
-                          <SelectValue placeholder={t("Select status")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {lifecycleStatuses.map((ls) => (
-                            <SelectItem key={ls.id} value={ls.id}>
-                              {ls.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Value")}</Label>
-                      <Input
-                        type="number"
-                        value={assetForm.value || ""}
-                        onChange={(e) => setAssetForm({ ...assetForm, value: parseFloat(e.target.value) || 0 })}
-                        placeholder={t("e.g., 10000")}
-                        className="mt-1.5"
-                      />
-                    </div>
-                  </div>
+                  {/* 1. Name */}
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Location")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
+                    <Input
+                      value={assetForm.name}
+                      onChange={(e) => {
+                        setAssetForm({ ...assetForm, name: e.target.value });
+                        if (fieldErrors.assetName) {
+                          setFieldErrors({ ...fieldErrors, assetName: "" });
+                        }
+                      }}
+                      placeholder={t("Enter asset name")}
+                      className={fieldErrors.assetName ? "mt-1.5 border-red-500" : "mt-1.5"}
+                    />
+                    {fieldErrors.assetName && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetName}</p>
+                    )}
+                  </div>
+
+                  {/* 2. Asset ID */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset ID")}</Label>
+                    <Input
+                      value={assetForm.assetId}
+                      onChange={(e) => {
+                        setAssetForm({ ...assetForm, assetId: e.target.value });
+                        if (fieldErrors.assetAssetId) {
+                          setFieldErrors({ ...fieldErrors, assetAssetId: "" });
+                        }
+                      }}
+                      placeholder={t("Enter asset ID")}
+                      className={fieldErrors.assetAssetId ? "mt-1.5 border-red-500" : "mt-1.5"}
+                    />
+                    {fieldErrors.assetAssetId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetAssetId}</p>
+                    )}
+                  </div>
+
+                  {/* 3. Asset Location */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Location")}</Label>
                     <Input
                       value={assetForm.location}
-                      onChange={(e) => setAssetForm({ ...assetForm, location: e.target.value })}
-                      placeholder={t("e.g., Data Center 1")}
-                      className="mt-1.5"
+                      onChange={(e) => {
+                        setAssetForm({ ...assetForm, location: e.target.value });
+                        if (fieldErrors.assetLocation) {
+                          setFieldErrors({ ...fieldErrors, assetLocation: "" });
+                        }
+                      }}
+                      placeholder={t("Enter asset location")}
+                      className={fieldErrors.assetLocation ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.assetLocation && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetLocation}</p>
+                    )}
                   </div>
-                </>
-              )}
 
-              {entitySubTab === "categories" && (
-                <>
+                  {/* 4. Asset Value */}
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Value")}</Label>
                     <Input
-                      value={categoryForm.name}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                      placeholder={t("e.g., Hardware, Software, Data")}
-                      className="mt-1.5"
+                      type="number"
+                      value={assetForm.value || ""}
+                      onChange={(e) => {
+                        setAssetForm({ ...assetForm, value: parseFloat(e.target.value) || 0 });
+                        if (fieldErrors.assetValue) {
+                          setFieldErrors({ ...fieldErrors, assetValue: "" });
+                        }
+                      }}
+                      placeholder={t("Enter asset value")}
+                      className={fieldErrors.assetValue ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.assetValue && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetValue}</p>
+                    )}
                   </div>
+
+                  {/* 5. Acquisition date */}
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Acquisition date")}</Label>
+                    <Input
+                      type="date"
+                      value={assetForm.acquisitionDate}
+                      onChange={(e) => {
+                        setAssetForm({ ...assetForm, acquisitionDate: e.target.value });
+                        if (fieldErrors.assetAcquisitionDate) {
+                          setFieldErrors({ ...fieldErrors, assetAcquisitionDate: "" });
+                        }
+                      }}
+                      placeholder="dd/mm/yyyy"
+                      className={fieldErrors.assetAcquisitionDate ? "mt-1.5 border-red-500" : "mt-1.5"}
+                    />
+                    {fieldErrors.assetAcquisitionDate && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetAcquisitionDate}</p>
+                    )}
+                  </div>
+
+                  {/* 6. Lifecycle status */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Lifecycle status")}</Label>
                     <Select
-                      value={categoryForm.status}
-                      onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
+                      value={assetForm.lifecycleStatusId}
+                      onValueChange={(value) => {
+                        setAssetForm({ ...assetForm, lifecycleStatusId: value });
+                        if (fieldErrors.assetLifecycleStatusId) {
+                          setFieldErrors({ ...fieldErrors, assetLifecycleStatusId: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full">
-                        <SelectValue />
+                      <SelectTrigger className={fieldErrors.assetLifecycleStatusId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
+                        <SelectValue placeholder={t("Select lifecycle status")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Active">{t("Active")}</SelectItem>
-                        <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
+                        {lifecycleStatuses.map((ls) => (
+                          <SelectItem key={ls.id} value={ls.id}>
+                            {ls.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.assetLifecycleStatusId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetLifecycleStatusId}</p>
+                    )}
                   </div>
-                </>
-              )}
 
-              {entitySubTab === "subcategories" && (
-                <>
+                  {/* 7. Risk rating (Radio buttons) */}
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Risk rating")}</Label>
+                    <div className="flex items-center gap-6 mt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="riskRating"
+                          value="High"
+                          checked={assetForm.riskRating === "High"}
+                          onChange={(e) => {
+                            setAssetForm({ ...assetForm, riskRating: e.target.value });
+                            if (fieldErrors.assetRiskRating) {
+                              setFieldErrors({ ...fieldErrors, assetRiskRating: "" });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{t("High")}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="riskRating"
+                          value="Medium"
+                          checked={assetForm.riskRating === "Medium"}
+                          onChange={(e) => {
+                            setAssetForm({ ...assetForm, riskRating: e.target.value });
+                            if (fieldErrors.assetRiskRating) {
+                              setFieldErrors({ ...fieldErrors, assetRiskRating: "" });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{t("Medium")}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="riskRating"
+                          value="Low"
+                          checked={assetForm.riskRating === "Low"}
+                          onChange={(e) => {
+                            setAssetForm({ ...assetForm, riskRating: e.target.value });
+                            if (fieldErrors.assetRiskRating) {
+                              setFieldErrors({ ...fieldErrors, assetRiskRating: "" });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{t("Low")}</span>
+                      </label>
+                    </div>
+                    {fieldErrors.assetRiskRating && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetRiskRating}</p>
+                    )}
+                  </div>
+
+                  {/* 8. Last risk assessment */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Last risk assessment")}</Label>
+                    <Input
+                      type="date"
+                      value={assetForm.lastRiskAssessment}
+                      onChange={(e) => {
+                        setAssetForm({ ...assetForm, lastRiskAssessment: e.target.value });
+                        if (fieldErrors.assetLastRiskAssessment) {
+                          setFieldErrors({ ...fieldErrors, assetLastRiskAssessment: "" });
+                        }
+                      }}
+                      placeholder="dd/mm/yyyy"
+                      className={fieldErrors.assetLastRiskAssessment ? "mt-1.5 border-red-500" : "mt-1.5"}
+                    />
+                    {fieldErrors.assetLastRiskAssessment && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetLastRiskAssessment}</p>
+                    )}
+                  </div>
+
+                  {/* 9. Audit trail */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Audit trail")}</Label>
+                    <Input
+                      value={assetForm.auditTrail}
+                      onChange={(e) => {
+                        setAssetForm({ ...assetForm, auditTrail: e.target.value });
+                        if (fieldErrors.assetAuditTrail) {
+                          setFieldErrors({ ...fieldErrors, assetAuditTrail: "" });
+                        }
+                      }}
+                      placeholder={t("Enter audit trail")}
+                      className={fieldErrors.assetAuditTrail ? "mt-1.5 border-red-500" : "mt-1.5"}
+                    />
+                    {fieldErrors.assetAuditTrail && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetAuditTrail}</p>
+                    )}
+                  </div>
+
+                  {/* 10. Next review date */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Next review date")}</Label>
+                    <Input
+                      type="date"
+                      value={assetForm.nextReviewDate}
+                      onChange={(e) => {
+                        setAssetForm({ ...assetForm, nextReviewDate: e.target.value });
+                        if (fieldErrors.assetNextReviewDate) {
+                          setFieldErrors({ ...fieldErrors, assetNextReviewDate: "" });
+                        }
+                      }}
+                      placeholder="dd/mm/yyyy"
+                      className={fieldErrors.assetNextReviewDate ? "mt-1.5 border-red-500" : "mt-1.5"}
+                    />
+                    {fieldErrors.assetNextReviewDate && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetNextReviewDate}</p>
+                    )}
+                  </div>
+
+                  {/* 11. Asset sensitivity */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset sensitivity")} <span className="text-semantic-error">*</span></Label>
                     <Select
-                      value={subCategoryForm.categoryId}
-                      onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
+                      value={assetForm.sensitivityId}
+                      onValueChange={(value) => {
+                        setAssetForm({ ...assetForm, sensitivityId: value });
+                        if (fieldErrors.assetSensitivityId) {
+                          setFieldErrors({ ...fieldErrors, assetSensitivityId: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full">
+                      <SelectTrigger className={fieldErrors.assetSensitivityId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
+                        <SelectValue placeholder={t("Select sensitivity")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sensitivities.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldErrors.assetSensitivityId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetSensitivityId}</p>
+                    )}
+                  </div>
+
+                  {/* 12. Asset Category */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Category")} <span className="text-semantic-error">*</span></Label>
+                    <Select
+                      value={assetForm.categoryId}
+                      onValueChange={(value) => {
+                        setAssetForm({ ...assetForm, categoryId: value });
+                        if (fieldErrors.assetCategoryId) {
+                          setFieldErrors({ ...fieldErrors, assetCategoryId: "" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={fieldErrors.assetCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                         <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -1883,15 +2292,158 @@ export default function AssetSettingsPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.assetCategoryId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetCategoryId}</p>
+                    )}
+                  </div>
+
+                  {/* 13. Asset Sub Category */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
+                    <Select
+                      value={assetForm.subCategoryId}
+                      onValueChange={(value) => {
+                        setAssetForm({ ...assetForm, subCategoryId: value });
+                        if (fieldErrors.assetSubCategoryId) {
+                          setFieldErrors({ ...fieldErrors, assetSubCategoryId: "" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={fieldErrors.assetSubCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
+                        <SelectValue placeholder={t("Select sub category")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subCategories
+                          .filter(sc => !assetForm.categoryId || sc.categoryId === assetForm.categoryId)
+                          .map((sc) => (
+                            <SelectItem key={sc.id} value={sc.id}>
+                              {sc.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldErrors.assetSubCategoryId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetSubCategoryId}</p>
+                    )}
+                  </div>
+
+                  {/* 14. Policies */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Policies")} <span className="text-semantic-error">*</span></Label>
+                    <Select
+                      value={assetForm.policies}
+                      onValueChange={(value) => {
+                        setAssetForm({ ...assetForm, policies: value });
+                        if (fieldErrors.assetPolicies) {
+                          setFieldErrors({ ...fieldErrors, assetPolicies: "" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={fieldErrors.assetPolicies ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
+                        <SelectValue placeholder={t("Select policies")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="policy1">{t("Policy 1")}</SelectItem>
+                        <SelectItem value="policy2">{t("Policy 2")}</SelectItem>
+                        <SelectItem value="policy3">{t("Policy 3")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {fieldErrors.assetPolicies && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.assetPolicies}</p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {entitySubTab === "categories" && (
+                <>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
+                    <Input
+                      value={categoryForm.name}
+                      onChange={(e) => {
+                        setCategoryForm({ ...categoryForm, name: e.target.value });
+                        if (fieldErrors.categoryName) {
+                          setFieldErrors({ ...fieldErrors, categoryName: "" });
+                        }
+                      }}
+                      placeholder={t("e.g., Hardware, Software, Data")}
+                      className={fieldErrors.categoryName ? "mt-1.5 border-red-500" : "mt-1.5"}
+                    />
+                    {fieldErrors.categoryName && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryName}</p>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Status")} <span className="text-semantic-error">*</span></Label>
+                    <Select
+                      value={categoryForm.status}
+                      onValueChange={(value) => {
+                        setCategoryForm({ ...categoryForm, status: value });
+                        if (fieldErrors.categoryStatus) {
+                          setFieldErrors({ ...fieldErrors, categoryStatus: "" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={fieldErrors.categoryStatus ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">{t("Active")}</SelectItem>
+                        <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {fieldErrors.categoryStatus && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryStatus}</p>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {entitySubTab === "subcategories" && (
+                <>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-semantic-error">*</span></Label>
+                    <Select
+                      value={subCategoryForm.categoryId}
+                      onValueChange={(value) => {
+                        setSubCategoryForm({ ...subCategoryForm, categoryId: value });
+                        if (fieldErrors.subCategoryCategoryId) {
+                          setFieldErrors({ ...fieldErrors, subCategoryCategoryId: "" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={fieldErrors.subCategoryCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
+                        <SelectValue placeholder={t("Select category")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldErrors.subCategoryCategoryId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryCategoryId}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       value={subCategoryForm.name}
-                      onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setSubCategoryForm({ ...subCategoryForm, name: e.target.value });
+                        if (fieldErrors.subCategoryName) {
+                          setFieldErrors({ ...fieldErrors, subCategoryName: "" });
+                        }
+                      }}
                       placeholder={t("e.g., Server, Firewall, Router")}
-                      className="mt-1.5"
+                      className={fieldErrors.subCategoryName ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.subCategoryName && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryName}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -1908,13 +2460,21 @@ export default function AssetSettingsPage() {
               {entitySubTab === "groups" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       value={groupForm.name}
-                      onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setGroupForm({ ...groupForm, name: e.target.value });
+                        if (fieldErrors.groupName) {
+                          setFieldErrors({ ...fieldErrors, groupName: "" });
+                        }
+                      }}
                       placeholder={t("e.g., Security Tools, Payment Systems")}
-                      className="mt-1.5"
+                      className={fieldErrors.groupName ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.groupName && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.groupName}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -1973,13 +2533,21 @@ export default function AssetSettingsPage() {
 
               {entitySubTab === "sensitivity" && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={sensitivityForm.name}
-                    onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setSensitivityForm({ ...sensitivityForm, name: e.target.value });
+                      if (fieldErrors.sensitivityName) {
+                        setFieldErrors({ ...fieldErrors, sensitivityName: "" });
+                      }
+                    }}
                     placeholder={t("e.g., High, Medium, Low")}
-                    className="mt-1.5"
+                    className={fieldErrors.sensitivityName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.sensitivityName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.sensitivityName}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -2028,21 +2596,34 @@ export default function AssetSettingsPage() {
               {entitySubTab === "categories" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       value={categoryForm.name}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setCategoryForm({ ...categoryForm, name: e.target.value });
+                        if (fieldErrors.categoryName) {
+                          setFieldErrors({ ...fieldErrors, categoryName: "" });
+                        }
+                      }}
                       placeholder={t("e.g., Hardware, Software, Data")}
-                      className="mt-1.5"
+                      className={fieldErrors.categoryName ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.categoryName && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryName}</p>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Status")} <span className="text-semantic-error">*</span></Label>
                     <Select
                       value={categoryForm.status}
-                      onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
+                      onValueChange={(value) => {
+                        setCategoryForm({ ...categoryForm, status: value });
+                        if (fieldErrors.categoryStatus) {
+                          setFieldErrors({ ...fieldErrors, categoryStatus: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full">
+                      <SelectTrigger className={fieldErrors.categoryStatus ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -2050,6 +2631,9 @@ export default function AssetSettingsPage() {
                         <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {fieldErrors.categoryStatus && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryStatus}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -2057,12 +2641,17 @@ export default function AssetSettingsPage() {
               {entitySubTab === "subcategories" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-semantic-error">*</span></Label>
                     <Select
                       value={subCategoryForm.categoryId}
-                      onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
+                      onValueChange={(value) => {
+                        setSubCategoryForm({ ...subCategoryForm, categoryId: value });
+                        if (fieldErrors.subCategoryCategoryId) {
+                          setFieldErrors({ ...fieldErrors, subCategoryCategoryId: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full">
+                      <SelectTrigger className={fieldErrors.subCategoryCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                         <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -2073,15 +2662,26 @@ export default function AssetSettingsPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.subCategoryCategoryId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryCategoryId}</p>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       value={subCategoryForm.name}
-                      onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setSubCategoryForm({ ...subCategoryForm, name: e.target.value });
+                        if (fieldErrors.subCategoryName) {
+                          setFieldErrors({ ...fieldErrors, subCategoryName: "" });
+                        }
+                      }}
                       placeholder={t("e.g., Server, Firewall, Router")}
-                      className="mt-1.5"
+                      className={fieldErrors.subCategoryName ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.subCategoryName && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryName}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2098,13 +2698,21 @@ export default function AssetSettingsPage() {
               {entitySubTab === "groups" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       value={groupForm.name}
-                      onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setGroupForm({ ...groupForm, name: e.target.value });
+                        if (fieldErrors.groupName) {
+                          setFieldErrors({ ...fieldErrors, groupName: "" });
+                        }
+                      }}
                       placeholder={t("e.g., Security Tools, Payment Systems")}
-                      className="mt-1.5"
+                      className={fieldErrors.groupName ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.groupName && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.groupName}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2163,13 +2771,21 @@ export default function AssetSettingsPage() {
 
               {entitySubTab === "sensitivity" && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={sensitivityForm.name}
-                    onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setSensitivityForm({ ...sensitivityForm, name: e.target.value });
+                      if (fieldErrors.sensitivityName) {
+                        setFieldErrors({ ...fieldErrors, sensitivityName: "" });
+                      }
+                    }}
                     placeholder={t("e.g., High, Medium, Low")}
-                    className="mt-1.5"
+                    className={fieldErrors.sensitivityName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.sensitivityName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.sensitivityName}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -2390,6 +3006,7 @@ export default function AssetSettingsPage() {
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                         setSelectedItem(item);
                         setLifecycleForm({ name: item.name, description: item.description || "", order: item.order });
+                        setFieldErrors({});
                         setIsEditOpen(true);
                       }}>
                         <Pencil className="h-3.5 w-3.5" />
@@ -2439,13 +3056,21 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={lifecycleForm.name}
-                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
+                  onChange={(e) => {
+                    setLifecycleForm({ ...lifecycleForm, name: e.target.value });
+                    if (fieldErrors.lifecycleName) {
+                      setFieldErrors({ ...fieldErrors, lifecycleName: "" });
+                    }
+                  }}
                   placeholder={t("e.g., Active, In Use, Retired")}
-                  className="mt-1.5"
+                  className={fieldErrors.lifecycleName ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.lifecycleName && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.lifecycleName}</p>
+                )}
               </div>
             </div>
 
@@ -2463,7 +3088,7 @@ export default function AssetSettingsPage() {
 
         {/* Edit Lifecycle Status Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -2475,32 +3100,22 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-6 py-6">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={lifecycleForm.name}
-                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
-                  className="mt-1.5"
+                  onChange={(e) => {
+                    setLifecycleForm({ ...lifecycleForm, name: e.target.value });
+                    if (fieldErrors.lifecycleName) {
+                      setFieldErrors({ ...fieldErrors, lifecycleName: "" });
+                    }
+                  }}
+                  className={fieldErrors.lifecycleName ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                <textarea
-                  value={lifecycleForm.description}
-                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
-                  placeholder={t("Enter description")}
-                  className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Order")}</Label>
-                <Input
-                  type="number"
-                  value={lifecycleForm.order}
-                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
-                  className="mt-1.5"
-                />
+                {fieldErrors.lifecycleName && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.lifecycleName}</p>
+                )}
               </div>
             </div>
 
@@ -2584,6 +3199,7 @@ export default function AssetSettingsPage() {
                 <Button size="sm" onClick={() => {
                   setCiaRatingType(key);
                   setCiaRatingForm({ label: "", value: 0 });
+                  setFieldErrors({});
                   setIsCiaAddOpen(true);
                 }}>
                   <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
@@ -2610,6 +3226,7 @@ export default function AssetSettingsPage() {
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                               setSelectedCiaRating(r);
                               setCiaRatingForm({ label: r.label, value: r.value });
+                              setFieldErrors({});
                               setIsCiaEditOpen(true);
                             }}>
                               <Pencil className="h-3.5 w-3.5" />
@@ -2662,6 +3279,7 @@ export default function AssetSettingsPage() {
                 size="sm"
                 onClick={() => {
                   setScoringConfigForm({ level: "", minScore: 0, maxScore: 0, color: "#16A34A" });
+                  setFieldErrors({});
                   setIsScoringAddOpen(true);
                 }}
               >
@@ -2712,6 +3330,7 @@ export default function AssetSettingsPage() {
                             maxScore: config.maxScore,
                             color: config.color,
                           });
+                          setFieldErrors({});
                           setIsScoringEditOpen(true);
                         }}
                       >
@@ -2771,43 +3390,75 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Criticality Level")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Criticality Level")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={scoringConfigForm.level}
-                  onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, level: e.target.value })}
+                  onChange={(e) => {
+                    setScoringConfigForm({ ...scoringConfigForm, level: e.target.value });
+                    if (fieldErrors.scoringConfigLevel) {
+                      setFieldErrors({ ...fieldErrors, scoringConfigLevel: "" });
+                    }
+                  }}
                   placeholder={t("e.g., Critical, High, Medium, Low")}
-                  className="mt-1.5"
+                  className={fieldErrors.scoringConfigLevel ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.scoringConfigLevel && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.scoringConfigLevel}</p>
+                )}
               </div>
               {scoringCalculationType === "high_of_all" ? (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("High range")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("High range")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     type="number"
                     value={scoringConfigForm.maxScore}
-                    onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.scoringConfigMaxScore) {
+                        setFieldErrors({ ...fieldErrors, scoringConfigMaxScore: "" });
+                      }
+                    }}
+                    className={fieldErrors.scoringConfigMaxScore ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.scoringConfigMaxScore && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.scoringConfigMaxScore}</p>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Low range")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Low range")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.minScore}
-                      onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, minScore: parseInt(e.target.value) || 0 })}
-                      className="mt-1.5"
+                      onChange={(e) => {
+                        setScoringConfigForm({ ...scoringConfigForm, minScore: parseInt(e.target.value) || 0 });
+                        if (fieldErrors.scoringConfigMinScore) {
+                          setFieldErrors({ ...fieldErrors, scoringConfigMinScore: "" });
+                        }
+                      }}
+                      className={fieldErrors.scoringConfigMinScore ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.scoringConfigMinScore && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.scoringConfigMinScore}</p>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("High range")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("High range")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.maxScore}
-                      onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 })}
-                      className="mt-1.5"
+                      onChange={(e) => {
+                        setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 });
+                        if (fieldErrors.scoringConfigMaxScore) {
+                          setFieldErrors({ ...fieldErrors, scoringConfigMaxScore: "" });
+                        }
+                      }}
+                      className={fieldErrors.scoringConfigMaxScore ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.scoringConfigMaxScore && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.scoringConfigMaxScore}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -2839,43 +3490,75 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Rating")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Rating")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={scoringConfigForm.level}
-                  onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, level: e.target.value })}
+                  onChange={(e) => {
+                    setScoringConfigForm({ ...scoringConfigForm, level: e.target.value });
+                    if (fieldErrors.scoringConfigLevel) {
+                      setFieldErrors({ ...fieldErrors, scoringConfigLevel: "" });
+                    }
+                  }}
                   placeholder={t("e.g., Critical, High, Medium, Low")}
-                  className="mt-1.5"
+                  className={fieldErrors.scoringConfigLevel ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.scoringConfigLevel && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.scoringConfigLevel}</p>
+                )}
               </div>
               {scoringCalculationType === "high_of_all" ? (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("High range")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("High range")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     type="number"
                     value={scoringConfigForm.maxScore}
-                    onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.scoringConfigMaxScore) {
+                        setFieldErrors({ ...fieldErrors, scoringConfigMaxScore: "" });
+                      }
+                    }}
+                    className={fieldErrors.scoringConfigMaxScore ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.scoringConfigMaxScore && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.scoringConfigMaxScore}</p>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Low range")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Low range")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.minScore}
-                      onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, minScore: parseInt(e.target.value) || 0 })}
-                      className="mt-1.5"
+                      onChange={(e) => {
+                        setScoringConfigForm({ ...scoringConfigForm, minScore: parseInt(e.target.value) || 0 });
+                        if (fieldErrors.scoringConfigMinScore) {
+                          setFieldErrors({ ...fieldErrors, scoringConfigMinScore: "" });
+                        }
+                      }}
+                      className={fieldErrors.scoringConfigMinScore ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.scoringConfigMinScore && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.scoringConfigMinScore}</p>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("High range")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("High range")} <span className="text-semantic-error">*</span></Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.maxScore}
-                      onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 })}
-                      className="mt-1.5"
+                      onChange={(e) => {
+                        setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 });
+                        if (fieldErrors.scoringConfigMaxScore) {
+                          setFieldErrors({ ...fieldErrors, scoringConfigMaxScore: "" });
+                        }
+                      }}
+                      className={fieldErrors.scoringConfigMaxScore ? "mt-1.5 border-red-500" : "mt-1.5"}
                     />
+                    {fieldErrors.scoringConfigMaxScore && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.scoringConfigMaxScore}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -2930,23 +3613,39 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={ciaRatingForm.label}
-                  onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
+                  onChange={(e) => {
+                    setCiaRatingForm({ ...ciaRatingForm, label: e.target.value });
+                    if (fieldErrors.ciaRatingLabel) {
+                      setFieldErrors({ ...fieldErrors, ciaRatingLabel: "" });
+                    }
+                  }}
                   placeholder={t("e.g., high, medium, low")}
-                  className="mt-1.5"
+                  className={fieldErrors.ciaRatingLabel ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.ciaRatingLabel && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.ciaRatingLabel}</p>
+                )}
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Value")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Value")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   type="number"
                   value={ciaRatingForm.value}
-                  onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 });
+                    if (fieldErrors.ciaRatingValue) {
+                      setFieldErrors({ ...fieldErrors, ciaRatingValue: "" });
+                    }
+                  }}
                   placeholder={t("e.g., 10, 5, 1")}
-                  className="mt-1.5"
+                  className={fieldErrors.ciaRatingValue ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.ciaRatingValue && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.ciaRatingValue}</p>
+                )}
               </div>
             </div>
 
@@ -2976,21 +3675,37 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={ciaRatingForm.label}
-                  onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
-                  className="mt-1.5"
+                  onChange={(e) => {
+                    setCiaRatingForm({ ...ciaRatingForm, label: e.target.value });
+                    if (fieldErrors.ciaRatingLabel) {
+                      setFieldErrors({ ...fieldErrors, ciaRatingLabel: "" });
+                    }
+                  }}
+                  className={fieldErrors.ciaRatingLabel ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.ciaRatingLabel && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.ciaRatingLabel}</p>
+                )}
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Value")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Value")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   type="number"
                   value={ciaRatingForm.value}
-                  onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
-                  className="mt-1.5"
+                  onChange={(e) => {
+                    setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 });
+                    if (fieldErrors.ciaRatingValue) {
+                      setFieldErrors({ ...fieldErrors, ciaRatingValue: "" });
+                    }
+                  }}
+                  className={fieldErrors.ciaRatingValue ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.ciaRatingValue && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.ciaRatingValue}</p>
+                )}
               </div>
             </div>
 
@@ -3098,13 +3813,21 @@ export default function AssetSettingsPage() {
             {entitySubTab === "categories" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={categoryForm.name}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setCategoryForm({ ...categoryForm, name: e.target.value });
+                      if (fieldErrors.categoryName) {
+                        setFieldErrors({ ...fieldErrors, categoryName: "" });
+                      }
+                    }}
                     placeholder={t("e.g., Hardware, Software, Data")}
-                    className="mt-1.5"
+                    className={fieldErrors.categoryName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.categoryName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryName}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
@@ -3127,12 +3850,17 @@ export default function AssetSettingsPage() {
             {entitySubTab === "subcategories" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={subCategoryForm.categoryId}
-                    onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
+                    onValueChange={(value) => {
+                      setSubCategoryForm({ ...subCategoryForm, categoryId: value });
+                      if (fieldErrors.subCategoryCategoryId) {
+                        setFieldErrors({ ...fieldErrors, subCategoryCategoryId: "" });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={fieldErrors.subCategoryCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                       <SelectValue placeholder={t("Select category")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -3143,15 +3871,26 @@ export default function AssetSettingsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.subCategoryCategoryId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryCategoryId}</p>
+                  )}
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={subCategoryForm.name}
-                    onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setSubCategoryForm({ ...subCategoryForm, name: e.target.value });
+                      if (fieldErrors.subCategoryName) {
+                        setFieldErrors({ ...fieldErrors, subCategoryName: "" });
+                      }
+                    }}
                     placeholder={t("e.g., Server, Firewall, Router")}
-                    className="mt-1.5"
+                    className={fieldErrors.subCategoryName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.subCategoryName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryName}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3168,13 +3907,21 @@ export default function AssetSettingsPage() {
             {entitySubTab === "groups" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={groupForm.name}
-                    onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setGroupForm({ ...groupForm, name: e.target.value });
+                      if (fieldErrors.groupName) {
+                        setFieldErrors({ ...fieldErrors, groupName: "" });
+                      }
+                    }}
                     placeholder={t("e.g., Security Tools, Payment Systems")}
-                    className="mt-1.5"
+                    className={fieldErrors.groupName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.groupName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.groupName}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3233,26 +3980,42 @@ export default function AssetSettingsPage() {
 
             {entitySubTab === "sensitivity" && (
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={sensitivityForm.name}
-                  onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
+                  onChange={(e) => {
+                    setSensitivityForm({ ...sensitivityForm, name: e.target.value });
+                    if (fieldErrors.sensitivityName) {
+                      setFieldErrors({ ...fieldErrors, sensitivityName: "" });
+                    }
+                  }}
                   placeholder={t("e.g., high, medium, low")}
-                  className="mt-1.5"
+                  className={fieldErrors.sensitivityName ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.sensitivityName && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.sensitivityName}</p>
+                )}
               </div>
             )}
 
             {activeCategory === "lifecycle" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={lifecycleForm.name}
-                    onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setLifecycleForm({ ...lifecycleForm, name: e.target.value });
+                      if (fieldErrors.lifecycleName) {
+                        setFieldErrors({ ...fieldErrors, lifecycleName: "" });
+                      }
+                    }}
                     placeholder={t("e.g., Active, In Use, Retired")}
-                    className="mt-1.5"
+                    className={fieldErrors.lifecycleName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.lifecycleName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.lifecycleName}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3264,13 +4027,21 @@ export default function AssetSettingsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Order")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Order")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     type="number"
                     value={lifecycleForm.order}
-                    onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.lifecycleOrder) {
+                        setFieldErrors({ ...fieldErrors, lifecycleOrder: "" });
+                      }
+                    }}
+                    className={fieldErrors.lifecycleOrder ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.lifecycleOrder && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.lifecycleOrder}</p>
+                  )}
                 </div>
               </>
             )}
@@ -3313,12 +4084,20 @@ export default function AssetSettingsPage() {
             {entitySubTab === "categories" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={categoryForm.name}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setCategoryForm({ ...categoryForm, name: e.target.value });
+                      if (fieldErrors.categoryName) {
+                        setFieldErrors({ ...fieldErrors, categoryName: "" });
+                      }
+                    }}
+                    className={fieldErrors.categoryName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.categoryName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryName}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
@@ -3341,12 +4120,17 @@ export default function AssetSettingsPage() {
             {entitySubTab === "subcategories" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={subCategoryForm.categoryId}
-                    onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
+                    onValueChange={(value) => {
+                      setSubCategoryForm({ ...subCategoryForm, categoryId: value });
+                      if (fieldErrors.subCategoryCategoryId) {
+                        setFieldErrors({ ...fieldErrors, subCategoryCategoryId: "" });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={fieldErrors.subCategoryCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -3357,14 +4141,25 @@ export default function AssetSettingsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.subCategoryCategoryId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryCategoryId}</p>
+                  )}
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={subCategoryForm.name}
-                    onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setSubCategoryForm({ ...subCategoryForm, name: e.target.value });
+                      if (fieldErrors.subCategoryName) {
+                        setFieldErrors({ ...fieldErrors, subCategoryName: "" });
+                      }
+                    }}
+                    className={fieldErrors.subCategoryName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.subCategoryName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryName}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3380,12 +4175,20 @@ export default function AssetSettingsPage() {
             {entitySubTab === "groups" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={groupForm.name}
-                    onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setGroupForm({ ...groupForm, name: e.target.value });
+                      if (fieldErrors.groupName) {
+                        setFieldErrors({ ...fieldErrors, groupName: "" });
+                      }
+                    }}
+                    className={fieldErrors.groupName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.groupName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.groupName}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3443,24 +4246,40 @@ export default function AssetSettingsPage() {
 
             {entitySubTab === "sensitivity" && (
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={sensitivityForm.name}
-                  onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
-                  className="mt-1.5"
+                  onChange={(e) => {
+                    setSensitivityForm({ ...sensitivityForm, name: e.target.value });
+                    if (fieldErrors.sensitivityName) {
+                      setFieldErrors({ ...fieldErrors, sensitivityName: "" });
+                    }
+                  }}
+                  className={fieldErrors.sensitivityName ? "mt-1.5 border-red-500" : "mt-1.5"}
                 />
+                {fieldErrors.sensitivityName && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.sensitivityName}</p>
+                )}
               </div>
             )}
 
             {activeCategory === "lifecycle" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={lifecycleForm.name}
-                    onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setLifecycleForm({ ...lifecycleForm, name: e.target.value });
+                      if (fieldErrors.lifecycleName) {
+                        setFieldErrors({ ...fieldErrors, lifecycleName: "" });
+                      }
+                    }}
+                    className={fieldErrors.lifecycleName ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.lifecycleName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.lifecycleName}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3471,13 +4290,21 @@ export default function AssetSettingsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Order")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Order")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     type="number"
                     value={lifecycleForm.order}
-                    onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.lifecycleOrder) {
+                        setFieldErrors({ ...fieldErrors, lifecycleOrder: "" });
+                      }
+                    }}
+                    className={fieldErrors.lifecycleOrder ? "mt-1.5 border-red-500" : "mt-1.5"}
                   />
+                  {fieldErrors.lifecycleOrder && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.lifecycleOrder}</p>
+                  )}
                 </div>
               </>
             )}
