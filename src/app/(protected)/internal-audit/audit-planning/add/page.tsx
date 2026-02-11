@@ -220,11 +220,21 @@ export default function AddEngagementPage() {
 
   const fetchHistoricalRisks = async (departmentId: string) => {
     try {
-      const lastYear = new Date().getFullYear() - 1;
-      const response = await fetch(`/api/internal-audit/risks?departmentId=${departmentId}&year=${lastYear}`);
+      // Fetch Closed risks from selected department
+      const response = await fetch(`/api/internal-audit/risks?departmentId=${departmentId}&status=Closed`);
       if (response.ok) {
         const data = await response.json();
-        setHistoricalRisks(data);
+
+        // Filter to include only risks from current year or last year
+        const currentYear = new Date().getFullYear();
+        const lastYear = currentYear - 1;
+
+        const filteredRisks = data.filter((risk: any) => {
+          const riskYear = new Date(risk.creationDate).getFullYear();
+          return riskYear === currentYear || riskYear === lastYear;
+        });
+
+        setHistoricalRisks(filteredRisks);
       }
     } catch (error) {
       console.error("Failed to fetch historical risks:", error);
