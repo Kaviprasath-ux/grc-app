@@ -12,18 +12,19 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import { Download, ChevronRight, Home, FileBarChart, Search } from "lucide-react";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // Risk Report Types matching UAT exactly
 const reportTypes = [
-  { id: "risk-by-category", title: "Risk By Category", columns: ["Risk Category", "Risk name"] },
-  { id: "risk-by-strategy", title: "Risk By Strategy", columns: ["Strategy", "Risk name"] },
-  { id: "risk-by-rating", title: "Risk By Rating", columns: ["Rating", "Risk name"] },
-  { id: "risk-by-status", title: "Risk By Status", columns: ["Status", "Risk name"] },
-  { id: "risk-by-type", title: "Risk By Type", columns: ["Type", "Risk name"] },
-  { id: "risk-by-owner", title: "Risk By Owner", columns: ["Owner", "Risk name"] },
+  { id: "risk-by-category", title: "Risk By Category", description: "Risks grouped by their assigned category", columns: ["Risk Category", "Risk name"] },
+  { id: "risk-by-strategy", title: "Risk By Strategy", description: "Risks grouped by response strategy", columns: ["Strategy", "Risk name"] },
+  { id: "risk-by-rating", title: "Risk By Rating", description: "Risks grouped by risk rating level", columns: ["Rating", "Risk name"] },
+  { id: "risk-by-status", title: "Risk By Status", description: "Risks grouped by current status", columns: ["Status", "Risk name"] },
+  { id: "risk-by-type", title: "Risk By Type", description: "Risks grouped by risk type classification", columns: ["Type", "Risk name"] },
+  { id: "risk-by-owner", title: "Risk By Owner", description: "Risks grouped by assigned risk owner", columns: ["Owner", "Risk name"] },
 ];
 
 // Management Report Options matching UAT exactly
@@ -62,6 +63,7 @@ export default function RiskReportsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchReportData = async (reportId: string) => {
     setLoading(true);
@@ -194,8 +196,6 @@ export default function RiskReportsPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-  const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
     <div className="space-y-6">
@@ -213,31 +213,76 @@ export default function RiskReportsPage() {
         <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
-        <Button onClick={() => setIsManagementDialogOpen(true)}>
-          {t("Get Management Report")}
-        </Button>
-      </div>
+      {/* Page Header */}
+      <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
 
-      {/* Report List */}
-      <div className="space-y-2">
-        {reportTypes.map((report) => (
-          <Button
-            key={report.id}
-            variant="outline"
-            className="w-full justify-start text-left h-auto py-3 px-4 hover:bg-slate-50 text-slate-700"
-            onClick={() => handleReportClick(report)}
-          >
-            {t(report.title)}
-          </Button>
-        ))}
+      {/* Management Report - Featured Card */}
+      <button
+        onClick={() => setIsManagementDialogOpen(true)}
+        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-5 flex items-center gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
+      >
+        <div className="p-2.5 bg-primary-100/80 rounded-lg flex-shrink-0">
+          <FileBarChart className="h-5 w-5 text-primary-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-primary-900">{t("Management Report")}</h3>
+          <p className="text-xs text-primary-600/70 mt-0.5">{t("Generate a comprehensive risk report with charts across categories, ratings, and owners")}</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-primary-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
+      </button>
+
+      {/* Reports Card */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Toolbar: Search */}
+        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Risk Reports")}</span>
+          <div className="relative w-56">
+            <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search reports...")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full ltr:pl-8 rtl:pr-8 ltr:pr-3 rtl:pl-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Report List */}
+        <div className="divide-y divide-slate-100">
+          {reportTypes
+            .filter((r) => searchQuery === "" || r.title.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase()))
+            .length > 0 ? (
+            reportTypes
+              .filter((r) => searchQuery === "" || r.title.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((report) => (
+                <button
+                  key={report.id}
+                  onClick={() => handleReportClick(report)}
+                  className="group w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+                >
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-slate-800">{t(report.title)}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">{t(report.description)}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
+                </button>
+              ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+                <FileBarChart className="h-6 w-6 text-primary-600" />
+              </div>
+              <p className="text-sm font-medium text-slate-800">{t("No reports found")}</p>
+              <p className="text-xs text-slate-500 mt-1">{t("Try adjusting your search")}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Report Detail Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport ? t(selectedReport.title) : ""}</DialogTitle>
           </DialogHeader>
@@ -296,51 +341,13 @@ export default function RiskReportsPage() {
           </div>
 
           {/* Pagination */}
-          {totalItems > 0 && (
-            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-t border-slate-100">
-              <span className="text-sm text-slate-500">
-                {startItem} {t("to")} {endItem} {t("of")} {totalItems}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <PaginationUI
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+          />
         </DialogContent>
       </Dialog>
 
@@ -390,7 +397,7 @@ export default function RiskReportsPage() {
             )}
           </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsManagementDialogOpen(false)}>
               {t("Cancel")}
             </Button>

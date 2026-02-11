@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, X, FileText, Target, Zap, Shield, BarChart3, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 
 interface Risk {
@@ -100,12 +100,12 @@ interface RiskAssessmentWizardDialogProps {
 }
 
 const assessmentSteps = [
-  { id: 1, name: "Risk Context" },
-  { id: 2, name: "Likelihood" },
-  { id: 3, name: "Impact" },
-  { id: 4, name: "Vulnerability" },
-  { id: 5, name: "Risk Rating" },
-  { id: 6, name: "Risk Summary" },
+  { id: 1, name: "Risk Context", icon: FileText },
+  { id: 2, name: "Likelihood", icon: Target },
+  { id: 3, name: "Impact", icon: Zap },
+  { id: 4, name: "Vulnerability", icon: Shield },
+  { id: 5, name: "Risk Rating", icon: BarChart3 },
+  { id: 6, name: "Summary", icon: ClipboardList },
 ];
 
 export function RiskAssessmentWizardDialog({
@@ -598,6 +598,32 @@ export function RiskAssessmentWizardDialog({
   const riskScore = calcLikelihood * calcImpact * (calcVulnerability / 10 || 1);
   const calculatedRating = getRiskRatingFromScore(riskScore);
 
+  // Speedometer calculations for Risk Summary step
+  const speedometerMaxScore = riskRanges.length > 0 ? Math.max(...riskRanges.map(r => r.highRange)) : 125;
+  const speedometerPct = Math.min(Math.max(riskScore / speedometerMaxScore, 0), 1);
+  const needleAngle = Math.PI * (1 - speedometerPct);
+  const needleX = 100 + 60 * Math.cos(needleAngle);
+  const needleY = 100 - 60 * Math.sin(needleAngle);
+  const arcPoint = (angleDeg: number) => ({
+    x: 100 + 70 * Math.cos(angleDeg * Math.PI / 180),
+    y: 100 - 70 * Math.sin(angleDeg * Math.PI / 180),
+  });
+  const defaultZoneColors = ["#22c55e", "#eab308", "#f97316", "#ef4444"];
+  const speedometerZones = riskRanges.length > 0
+    ? riskRanges.map((range, i) => {
+        const total = riskRanges.length;
+        return {
+          startAngle: 180 - (i * 180 / total),
+          endAngle: 180 - ((i + 1) * 180 / total),
+          color: range.color || defaultZoneColors[i % defaultZoneColors.length],
+        };
+      })
+    : defaultZoneColors.map((color, i) => ({
+        startAngle: 180 - (i * 45),
+        endAngle: 180 - ((i + 1) * 45),
+        color,
+      }));
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -628,40 +654,48 @@ export function RiskAssessmentWizardDialog({
             {/* Step Indicator */}
             {!loading && risk && (
               <div className="flex items-start justify-center pt-5">
-                {assessmentSteps.map((step, index) => (
-                  <div key={step.id} className="flex items-start">
-                    <div className="flex flex-col items-center w-20">
-                      <div
-                        className={cn(
-                          "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                          currentStep > step.id
-                            ? "bg-success text-white"
-                            : currentStep === step.id
-                            ? "bg-primary-600 text-white"
-                            : "bg-slate-100 text-slate-400 border border-slate-200"
-                        )}
+                {assessmentSteps.map((step, index) => {
+                  const StepIcon = step.icon;
+                  const isActive = currentStep === step.id;
+                  const isCompleted = currentStep > step.id;
+                  return (
+                    <div key={step.id} className="flex items-start">
+                      <button
+                        onClick={() => setCurrentStep(step.id)}
+                        className="flex flex-col items-center w-[72px] group"
                       >
-                        {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
-                      </div>
-                      <span
-                        className={cn(
-                          "mt-2 text-[10px] font-medium text-center leading-tight",
-                          currentStep >= step.id ? "text-slate-700" : "text-slate-400"
-                        )}
-                      >
-                        {step.name}
-                      </span>
+                        <div
+                          className={cn(
+                            "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm",
+                            isCompleted
+                              ? "bg-success text-white ring-2 ring-success/20"
+                              : isActive
+                              ? "bg-primary-600 text-white ring-4 ring-primary-100"
+                              : "bg-slate-100 text-slate-400 border border-slate-200 group-hover:border-slate-300"
+                          )}
+                        >
+                          {isCompleted ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
+                        </div>
+                        <span
+                          className={cn(
+                            "mt-2 text-[10px] font-medium text-center leading-tight transition-colors",
+                            isActive || isCompleted ? "text-slate-700" : "text-slate-400"
+                          )}
+                        >
+                          {step.name}
+                        </span>
+                      </button>
+                      {index < assessmentSteps.length - 1 && (
+                        <div
+                          className={cn(
+                            "w-6 h-0.5 mt-[18px] -mx-1 transition-colors",
+                            isCompleted ? "bg-success" : "bg-slate-200"
+                          )}
+                        />
+                      )}
                     </div>
-                    {index < assessmentSteps.length - 1 && (
-                      <div
-                        className={cn(
-                          "w-6 h-0.5 mt-[18px] -mx-2 transition-colors",
-                          currentStep > step.id ? "bg-success" : "bg-slate-200"
-                        )}
-                      />
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </DialogHeader>
@@ -820,24 +854,24 @@ export function RiskAssessmentWizardDialog({
                     {/* Risk Calculation */}
                     <div className="p-5 bg-slate-50 rounded-lg border border-slate-100">
                       <h4 className="font-semibold text-slate-800 mb-4">Inherent Risk Calculation</h4>
-                      <div className="grid grid-cols-7 gap-2 items-center text-center">
-                        <div className="p-3 bg-white rounded-lg border border-slate-200">
-                          <p className="text-xs text-slate-500 uppercase">Likelihood</p>
+                      <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-2 items-center text-center">
+                        <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-0">
+                          <p className="text-[10px] text-slate-500 uppercase truncate">Likelihood</p>
                           <p className="text-xl font-bold text-slate-800">{calcLikelihood}</p>
                         </div>
-                        <p className="font-bold text-xl text-slate-400">×</p>
-                        <div className="p-3 bg-white rounded-lg border border-slate-200">
-                          <p className="text-xs text-slate-500 uppercase">Impact</p>
+                        <p className="font-bold text-xl text-slate-400 px-1">×</p>
+                        <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-0">
+                          <p className="text-[10px] text-slate-500 uppercase truncate">Impact</p>
                           <p className="text-xl font-bold text-slate-800">{calcImpact}</p>
                         </div>
-                        <p className="font-bold text-xl text-slate-400">×</p>
-                        <div className="p-3 bg-white rounded-lg border border-slate-200">
-                          <p className="text-xs text-slate-500 uppercase">Vulnerability</p>
+                        <p className="font-bold text-xl text-slate-400 px-1">×</p>
+                        <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-0">
+                          <p className="text-[10px] text-slate-500 uppercase truncate">Vulnerability</p>
                           <p className="text-xl font-bold text-slate-800">{calcVulnerability}</p>
                         </div>
-                        <p className="font-bold text-xl text-slate-400">=</p>
-                        <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
-                          <p className="text-xs text-primary-600 uppercase">Score</p>
+                        <p className="font-bold text-xl text-slate-400 px-1">=</p>
+                        <div className="p-3 bg-primary-50 rounded-lg border border-primary-200 min-w-0">
+                          <p className="text-[10px] text-primary-600 uppercase truncate">Score</p>
                           <p className="text-xl font-bold text-primary-700">{riskScore.toFixed(2)}</p>
                         </div>
                       </div>
@@ -888,12 +922,88 @@ export function RiskAssessmentWizardDialog({
                 {/* Step 6: Risk Summary */}
                 {currentStep === 6 && (
                   <div className="space-y-5">
-                    {/* Risk Ratings Summary */}
+                    {/* Speedometer Chart */}
+                    <div className="p-5 bg-slate-50 rounded-lg border border-slate-100">
+                      <h4 className="font-semibold text-slate-800 mb-3 text-center">Inherent Risk Score</h4>
+                      <div className="flex justify-center">
+                        <div className="flex flex-col items-center">
+                          <svg viewBox="0 0 200 130" className="w-52 h-auto">
+                            {/* Zone arcs */}
+                            {speedometerZones.map((zone, i) => {
+                              const start = arcPoint(zone.startAngle);
+                              const end = arcPoint(zone.endAngle);
+                              return (
+                                <path
+                                  key={i}
+                                  d={`M ${start.x.toFixed(1)} ${start.y.toFixed(1)} A 70 70 0 0 1 ${end.x.toFixed(1)} ${end.y.toFixed(1)}`}
+                                  stroke={zone.color}
+                                  strokeWidth="14"
+                                  fill="none"
+                                  strokeLinecap="round"
+                                />
+                              );
+                            })}
+                            {/* Needle */}
+                            <line x1="100" y1="100" x2={needleX.toFixed(1)} y2={needleY.toFixed(1)} stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" />
+                            <circle cx="100" cy="100" r="5" fill="#1e293b" />
+                            <circle cx="100" cy="100" r="2" fill="white" />
+                            {/* Score */}
+                            <text x="100" y="122" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e293b">{riskScore.toFixed(1)}</text>
+                          </svg>
+                          <span className={cn(
+                            "inline-block px-4 py-1.5 rounded-full text-sm font-semibold -mt-1",
+                            calculatedRating === "Critical" || calculatedRating === "Catastrophic" ? "bg-red-100 text-red-800" : "",
+                            calculatedRating === "Very High" ? "bg-orange-100 text-orange-800" : "",
+                            calculatedRating === "High" ? "bg-amber-100 text-amber-800" : "",
+                            calculatedRating === "Medium" ? "bg-yellow-100 text-yellow-800" : "",
+                            calculatedRating === "Low" || calculatedRating === "Low Risk" ? "bg-green-100 text-green-800" : ""
+                          )}>
+                            {calculatedRating}
+                          </span>
+                        </div>
+                      </div>
+                      {/* Risk Ranges Legend */}
+                      <div className="flex justify-center gap-3 mt-4">
+                        {riskRanges.map((range) => (
+                          <div key={range.id} className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: range.color || "#94a3b8" }} />
+                            <span className="text-[10px] text-slate-500">{range.title} ({range.lowRange}-{range.highRange})</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Risk Calculation Breakdown */}
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-2 items-center text-center">
+                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-0">
+                          <p className="text-[10px] text-slate-500 uppercase truncate">Likelihood</p>
+                          <p className="text-lg font-bold text-slate-800">{calcLikelihood}</p>
+                        </div>
+                        <p className="font-bold text-lg text-slate-400 px-1">&times;</p>
+                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-0">
+                          <p className="text-[10px] text-slate-500 uppercase truncate">Impact</p>
+                          <p className="text-lg font-bold text-slate-800">{calcImpact}</p>
+                        </div>
+                        <p className="font-bold text-lg text-slate-400 px-1">&times;</p>
+                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-0">
+                          <p className="text-[10px] text-slate-500 uppercase truncate">Vulnerability</p>
+                          <p className="text-lg font-bold text-slate-800">{calcVulnerability}</p>
+                        </div>
+                        <p className="font-bold text-lg text-slate-400 px-1">=</p>
+                        <div className="p-2.5 bg-primary-50 rounded-lg border border-primary-200 min-w-0">
+                          <p className="text-[10px] text-primary-600 uppercase truncate">Score</p>
+                          <p className="text-lg font-bold text-primary-700">{riskScore.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ratings Summary Cards */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="p-5 bg-slate-50 rounded-lg border border-slate-100 text-center">
-                        <p className="text-xs text-slate-500 uppercase mb-3">Inherent Risk Rating</p>
+                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                        <p className="text-xs text-slate-500 uppercase mb-2">Inherent Risk</p>
                         <span className={cn(
-                          "inline-block px-4 py-2 rounded-lg text-sm font-semibold",
+                          "inline-block px-3 py-1.5 rounded-lg text-sm font-semibold",
                           calculatedRating === "Critical" || calculatedRating === "Catastrophic" ? "bg-red-100 text-red-800" : "",
                           calculatedRating === "Very High" ? "bg-orange-100 text-orange-800" : "",
                           calculatedRating === "High" ? "bg-amber-100 text-amber-800" : "",
@@ -902,17 +1012,17 @@ export function RiskAssessmentWizardDialog({
                         )}>
                           {calculatedRating}
                         </span>
-                        <p className="text-xs text-slate-400 mt-2">Score: {riskScore.toFixed(2)}</p>
+                        <p className="text-xs text-slate-400 mt-1.5">Score: {riskScore.toFixed(2)}</p>
                       </div>
-                      <div className="p-5 bg-slate-50 rounded-lg border border-slate-100 text-center">
-                        <p className="text-xs text-slate-500 uppercase mb-3">Overall Control Rating</p>
+                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                        <p className="text-xs text-slate-500 uppercase mb-2">Control Rating</p>
                         <p className="text-lg font-semibold text-slate-800">-</p>
-                        <p className="text-xs text-slate-400 mt-2">No controls linked</p>
+                        <p className="text-xs text-slate-400 mt-1.5">No controls linked</p>
                       </div>
-                      <div className="p-5 bg-slate-50 rounded-lg border border-slate-100 text-center">
-                        <p className="text-xs text-slate-500 uppercase mb-3">Residual Risk Rating</p>
+                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                        <p className="text-xs text-slate-500 uppercase mb-2">Residual Risk</p>
                         <span className={cn(
-                          "inline-block px-4 py-2 rounded-lg text-sm font-semibold",
+                          "inline-block px-3 py-1.5 rounded-lg text-sm font-semibold",
                           calculatedRating === "Critical" || calculatedRating === "Catastrophic" ? "bg-red-100 text-red-800" : "",
                           calculatedRating === "Very High" ? "bg-orange-100 text-orange-800" : "",
                           calculatedRating === "High" ? "bg-amber-100 text-amber-800" : "",
@@ -921,35 +1031,37 @@ export function RiskAssessmentWizardDialog({
                         )}>
                           {calculatedRating}
                         </span>
-                        <p className="text-xs text-slate-400 mt-2">Score: {riskScore.toFixed(2)}</p>
+                        <p className="text-xs text-slate-400 mt-1.5">Score: {riskScore.toFixed(2)}</p>
                       </div>
                     </div>
 
-                    {/* Existing Controls */}
-                    <div className="p-5 bg-slate-50 rounded-lg border border-slate-100">
-                      <h4 className="font-semibold text-slate-800 mb-3">Existing Controls</h4>
-                      <p className="text-sm text-slate-500">No controls linked to this risk</p>
-                    </div>
-
-                    {/* Assessment Summary */}
-                    <div className="p-5 bg-slate-50 rounded-lg border border-slate-100">
-                      <h4 className="font-semibold text-slate-800 mb-3">Assessment Summary</h4>
-                      <div className="grid grid-cols-2 gap-4">
+                    {/* Assessment Details */}
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <h4 className="font-semibold text-slate-800 mb-3">Assessment Details</h4>
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-1">Risk ID</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">Risk ID</p>
                           <p className="text-sm font-medium text-slate-800">{risk.riskId}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-1">Risk Name</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">Risk Name</p>
                           <p className="text-sm font-medium text-slate-800">{risk.name}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-1">Calculated Likelihood</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">Likelihood Score</p>
                           <p className="text-sm font-medium text-slate-800">{calcLikelihood}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-1">Calculated Impact</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">Impact Score</p>
                           <p className="text-sm font-medium text-slate-800">{calcImpact}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">Vulnerability Score</p>
+                          <p className="text-sm font-medium text-slate-800">{calcVulnerability}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">Existing Controls</p>
+                          <p className="text-sm font-medium text-slate-500">No controls linked</p>
                         </div>
                       </div>
                     </div>

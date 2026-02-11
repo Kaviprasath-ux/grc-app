@@ -55,6 +55,7 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 
 interface Evidence {
   id: string;
@@ -533,31 +534,33 @@ export default function GRCAdminEvidencePage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <Select value={customerFilter} onValueChange={setCustomerFilter}>
-            <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
-              <SelectValue placeholder={t("All Customers")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-              <SelectItem value="all">{t("All Customers")}</SelectItem>
-              {customerAccounts.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-            <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
-              <SelectValue placeholder={t("Framework")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-              <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-              {frameworks.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="ms-auto flex items-center gap-3">
+            <Select value={customerFilter} onValueChange={setCustomerFilter}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("All Customers")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">{t("All Customers")}</SelectItem>
+                {customerAccounts.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("Framework")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                {frameworks.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <Table>
@@ -614,33 +617,13 @@ export default function GRCAdminEvidencePage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-          <span className="text-xs text-slate-500">
-            {total > 0
-              ? t("Showing {start} to {end} of {total}").replace("{start}", String(startItem)).replace("{end}", String(endItem)).replace("{total}", String(total))
-              : t("No evidence")}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <PaginationUI
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={total}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Create Evidence Dialog - 3 Step Wizard */}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -130,19 +130,69 @@ export const PUT = withAuth(
         });
       });
 
-      // Notify new owner if owner changed
-      if (ownerId && ownerId !== existingIssue.ownerId && ownerId !== session.id && session.customerAccountId) {
-        await notificationService.send({
-          customerAccountId: session.customerAccountId,
-          actorId: session.id,
-          recipientId: ownerId,
-          event: 'ISSUE_ASSIGNED' as never, // Custom event for issues
-          title: 'Issue assigned to you',
-          message: `Issue "${issue.title}" has been assigned to you`,
-          relatedEntityType: 'issue',
-          relatedEntityId: issue.id,
-          link: `/organization/context/issues/${issue.id}`,
-        });
+      // Send notifications for issue changes
+      if (session.customerAccountId) {
+        // Notify new owner if owner changed
+        if (ownerId && ownerId !== existingIssue.ownerId && ownerId !== session.id) {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: ownerId,
+            event: NOTIFICATION_EVENTS.ISSUE_CREATED,
+            title: 'Issue Assigned to You',
+            message: `Issue "${issue.title}" has been assigned to you.`,
+            relatedEntityType: 'issue',
+            relatedEntityId: issue.id,
+            link: `/organization/context/issues/${issue.id}`,
+            metadata: {
+              issueTitle: issue.title,
+              category: issue.category,
+              domain: issue.domain,
+              assignedBy: session.name || 'User',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify owner when issue is resolved
+        if (status === "Resolved" && existingIssue.ownerId && existingIssue.ownerId !== session.id) {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: existingIssue.ownerId,
+            event: NOTIFICATION_EVENTS.ISSUE_RESOLVED,
+            title: 'Issue Resolved',
+            message: `Issue "${issue.title}" has been marked as resolved.`,
+            relatedEntityType: 'issue',
+            relatedEntityId: issue.id,
+            link: `/organization/context/issues/${issue.id}`,
+            metadata: {
+              issueTitle: issue.title,
+              resolvedBy: session.name || 'User',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify owner when issue is rejected
+        if (status === "Rejected" && existingIssue.ownerId && existingIssue.ownerId !== session.id) {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: existingIssue.ownerId,
+            event: NOTIFICATION_EVENTS.ISSUE_REJECTED,
+            title: 'Issue Rejected',
+            message: `Issue "${issue.title}" has been rejected.`,
+            relatedEntityType: 'issue',
+            relatedEntityId: issue.id,
+            link: `/organization/context/issues/${issue.id}`,
+            metadata: {
+              issueTitle: issue.title,
+              rejectedBy: session.name || 'Reviewer',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
       }
 
       return NextResponse.json(issue);

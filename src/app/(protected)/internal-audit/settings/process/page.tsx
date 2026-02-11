@@ -733,12 +733,12 @@ export default function ProcessPage() {
                 placeholder={t("Search By Process ID, Name")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-[250px] h-9 bg-white border-slate-200"
+                className="pl-10 w-[250px] h-9 bg-slate-50 border-slate-200"
               />
             </div>
 
             <Select value={filterDepartment || "all"} onValueChange={(v) => setFilterDepartment(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
+              <SelectTrigger className="w-[160px] h-9 bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Department")} />
               </SelectTrigger>
               <SelectContent>
@@ -752,7 +752,7 @@ export default function ProcessPage() {
             </Select>
 
             <Select value={filterOwner || "all"} onValueChange={(v) => setFilterOwner(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
+              <SelectTrigger className="w-[160px] h-9 bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Process Owner")} />
               </SelectTrigger>
               <SelectContent>
@@ -766,7 +766,7 @@ export default function ProcessPage() {
             </Select>
 
             <Select value={filterFrequency || "all"} onValueChange={(v) => setFilterFrequency(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
+              <SelectTrigger className="w-[160px] h-9 bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Process Frequency")} />
               </SelectTrigger>
               <SelectContent>

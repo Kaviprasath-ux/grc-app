@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_EVENTS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all issues
 export const GET = withAuth(
@@ -181,12 +181,19 @@ export const POST = withAuth(
           customerAccountId: session.customerAccountId,
           actorId: session.id,
           recipientId: ownerId,
-          event: NOTIFICATION_EVENTS.PROCESS_ASSIGNED || 'ISSUE_ASSIGNED',
-          title: 'Issue assigned to you',
-          message: `Issue "${issue.title}" has been assigned to you`,
+          event: NOTIFICATION_EVENTS.ISSUE_CREATED,
+          title: 'Issue Assigned to You',
+          message: `Issue "${issue.title}" has been created and assigned to you. Category: ${issue.category}, Domain: ${issue.domain}`,
           relatedEntityType: 'issue',
           relatedEntityId: issue.id,
           link: `/organization/context/issues/${issue.id}`,
+          metadata: {
+            issueTitle: issue.title,
+            category: issue.category,
+            domain: issue.domain,
+            createdBy: session.name || 'User',
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

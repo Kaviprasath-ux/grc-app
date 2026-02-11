@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Building2, Target, Info, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -762,6 +762,70 @@ export function NewRiskWizard({
                   />
                 </div>
 
+              {/* Section: Ownership & Classification */}
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-5 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
+                    <Building2 className="h-4 w-4 text-primary-600" />
+                  </div>
+                  <h3 className="text-base font-semibold text-slate-800">Ownership & Classification</h3>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Department</Label>
+                      <Select
+                        value={formData.departmentId}
+                        onValueChange={(value) => handleInputChange("departmentId", value)}
+                      >
+                        <SelectTrigger className="w-full bg-white border-slate-200">
+                          <SelectValue placeholder="Select department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-slate-500" />
+                        Risk Owner
+                      </Label>
+                      <Select
+                        value={formData.ownerId}
+                        onValueChange={(value) => handleInputChange("ownerId", value)}
+                        disabled={!formData.departmentId}
+                      >
+                        <SelectTrigger className="w-full bg-white border-slate-200">
+                          <SelectValue placeholder={formData.departmentId ? "Select owner" : "Select department first"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.length === 0 ? (
+                            <div className="py-2 px-3 text-sm text-slate-500">
+                              No reviewers found
+                            </div>
+                          ) : (
+                            users.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.fullName}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {!formData.departmentId && (
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                          <Info className="h-3 w-3" />
+                          Select a department to choose an owner
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="department">Department *</Label>
@@ -861,6 +925,92 @@ export function NewRiskWizard({
                   </div>
                 </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Risk Type</Label>
+                      <Select
+                        value={formData.typeId}
+                        onValueChange={(value) => handleInputChange("typeId", value)}
+                      >
+                        <SelectTrigger className="w-full bg-white border-slate-200">
+                          <SelectValue placeholder="Select risk type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {riskTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id}>
+                              {type.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Conditional dropdown based on Risk Type */}
+                    {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                          <Target className="h-3.5 w-3.5 text-slate-500" />
+                          Impacted Asset
+                        </Label>
+                        <Select
+                          value={formData.impactedAssetId}
+                          onValueChange={(value) => handleInputChange("impactedAssetId", value)}
+                        >
+                          <SelectTrigger className="w-full bg-white border-slate-200">
+                            <SelectValue placeholder="Select asset" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {assets.map((asset) => (
+                              <SelectItem key={asset.id} value={asset.id}>
+                                {asset.assetId} - {asset.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                          <Target className="h-3.5 w-3.5 text-slate-500" />
+                          Impacted Process
+                        </Label>
+                        <Select
+                          value={formData.impactedProcessId}
+                          onValueChange={(value) => handleInputChange("impactedProcessId", value)}
+                        >
+                          <SelectTrigger className="w-full bg-white border-slate-200">
+                            <SelectValue placeholder="Select process" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {processes.map((process) => (
+                              <SelectItem key={process.id} value={process.id}>
+                                {process.processCode} - {process.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {!formData.typeId && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-400">Impacted Asset/Process</Label>
+                        <Select disabled>
+                          <SelectTrigger className="w-full bg-slate-50 border-slate-200">
+                            <SelectValue placeholder="Select risk type first" />
+                          </SelectTrigger>
+                        </Select>
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                          <Info className="h-3 w-3" />
+                          Choose a risk type to enable this field
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="riskType">Risk Type *</Label>

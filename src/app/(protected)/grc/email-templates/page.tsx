@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -719,21 +718,15 @@ export default function EmailTemplatesPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">{t("Email Templates")}</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {t("Manage email templates with customizable placeholders")}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {/* Import/Export Buttons */}
+        <h1 className="text-2xl font-bold text-slate-800">{t("Email Templates")}</h1>
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             title={t("Import templates from XML file")}
           >
-            <FileUp className="h-4 w-4 mr-2" />
+            <FileUp className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Import")}
           </Button>
           <Button
@@ -743,52 +736,37 @@ export default function EmailTemplatesPage() {
             disabled={templates.length === 0}
             title={t("Export templates to XML file")}
           >
-            <FileDown className="h-4 w-4 mr-2" />
+            <FileDown className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
           <Button onClick={openAddDialog} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Add Template")}
           </Button>
         </div>
       </div>
 
-      {/* Info Card */}
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="py-4">
-          <div className="flex items-start gap-3">
-            <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <p className="text-sm text-blue-800 font-medium">{t("Global Email Templates")}</p>
-              <p className="text-sm text-blue-700 mt-1">
-                {t("Templates are used for all email notifications. Use Import/Export (XML format) to backup or transfer templates between environments.")}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Filters */}
-      <div className="flex gap-4">
-        <div className="w-48">
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="bg-white">
-              <SelectValue placeholder={t("Filter by category")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("All Categories")}</SelectItem>
-              {TEMPLATE_CATEGORIES.map((cat) => (
-                <SelectItem key={cat.value} value={cat.value}>
-                  {t(cat.label)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Filter Toolbar */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="ms-auto flex items-center gap-3">
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[180px] h-9 bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("All Categories")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">{t("All Categories")}</SelectItem>
+                {TEMPLATE_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {t(cat.label)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -806,7 +784,6 @@ export default function EmailTemplatesPage() {
                   <div className="flex flex-col items-center gap-2">
                     <FileText className="h-8 w-8 text-slate-300" />
                     <p>{t("No email templates found")}</p>
-                    <p className="text-xs text-slate-400">{t("Add a template or seed default templates to get started")}</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -886,7 +863,7 @@ export default function EmailTemplatesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-red-600"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(template)}
                         title={t("Delete")}
                       >
@@ -921,7 +898,6 @@ export default function EmailTemplatesPage() {
               </TabsList>
 
               <TabsContent value="content" className="space-y-4">
-                {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Template Code")} <span className="text-red-500">*</span></Label>
@@ -992,10 +968,10 @@ export default function EmailTemplatesPage() {
                     value={formData.category}
                     onValueChange={(v) => setFormData({ ...formData, category: v })}
                   >
-                    <SelectTrigger className="w-full max-w-xs bg-white">
+                    <SelectTrigger className="w-full bg-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {TEMPLATE_CATEGORIES.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {t(cat.label)}
@@ -1030,7 +1006,7 @@ export default function EmailTemplatesPage() {
                     onKeyPress={(e) => e.key === "Enter" && handleAddPlaceholder()}
                   />
                   <Button onClick={handleAddPlaceholder} size="sm">
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                     {t("Add")}
                   </Button>
                 </div>
@@ -1041,7 +1017,7 @@ export default function EmailTemplatesPage() {
                       {`{${placeholder}}`}
                       <button
                         onClick={() => handleRemovePlaceholder(placeholder)}
-                        className="ml-2 text-slate-400 hover:text-slate-600"
+                        className="ltr:ml-2 rtl:mr-2 text-slate-400 hover:text-slate-600"
                       >
                         &times;
                       </button>
@@ -1066,12 +1042,12 @@ export default function EmailTemplatesPage() {
             </Tabs>
           </div>
 
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end gap-2">
-            <Button onClick={handleSave} disabled={submitting} size="sm">
-              {submitting ? t("Saving...") : t("Save")}
-            </Button>
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => { setShowDialog(false); resetForm(); }}>
               {t("Cancel")}
+            </Button>
+            <Button onClick={handleSave} disabled={submitting} size="sm">
+              {submitting ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -1123,7 +1099,7 @@ export default function EmailTemplatesPage() {
             )}
           </div>
 
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setShowPreviewDialog(false)}>
               {t("Close")}
             </Button>
@@ -1165,13 +1141,13 @@ export default function EmailTemplatesPage() {
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
-            <Button onClick={handleImport} disabled={importing} size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              {importing ? t("Importing...") : t("Import")}
-            </Button>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => { setShowImportDialog(false); setImportData(""); setImportOverwrite(false); }}>
               {t("Cancel")}
+            </Button>
+            <Button onClick={handleImport} disabled={importing} size="sm">
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {importing ? t("Importing...") : t("Import")}
             </Button>
           </div>
         </DialogContent>
@@ -1187,17 +1163,17 @@ export default function EmailTemplatesPage() {
           </div>
 
           <div className="px-6 py-5">
-            <p className="text-slate-600">
+            <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete the template")} <strong>{selectedTemplate?.name}</strong>?
             </p>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
-            <Button onClick={handleDelete} disabled={submitting} size="sm" variant="destructive">
-              {submitting ? t("Deleting...") : t("Delete")}
-            </Button>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => { setShowDeleteDialog(false); setSelectedTemplate(null); }}>
               {t("Cancel")}
+            </Button>
+            <Button onClick={handleDelete} disabled={submitting} size="sm" variant="destructive">
+              {submitting ? t("Deleting...") : t("Delete")}
             </Button>
           </div>
         </DialogContent>

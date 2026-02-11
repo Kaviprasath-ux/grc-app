@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -13,7 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Send, CheckCircle2, XCircle, Home, ChevronRight, Mail, Trash2, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Send, Home, ChevronRight, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -302,91 +302,52 @@ export default function EmailSettingsPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-slate-800">{t("Email Settings")}</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {t("Configure SMTP settings for sending email notifications")}
-          </p>
+          {emailSettings && (
+            <Badge className={emailSettings.isVerified
+              ? "bg-green-100 text-green-700 hover:bg-green-100"
+              : "bg-amber-100 text-amber-700 hover:bg-amber-100"
+            }>
+              {emailSettings.isVerified ? t("Verified") : t("Not Verified")}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {emailSettings && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setShowTestDialog(true)}>
+                <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Test Connection")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Delete")}
+              </Button>
+            </>
+          )}
+          <Button size="sm" onClick={handleSave} disabled={submitting}>
+            {submitting ? t("Saving...") : t("Save Settings")}
+          </Button>
         </div>
       </div>
 
-      {/* Info Card */}
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="py-4">
-          <div className="flex items-start gap-3">
-            <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <p className="text-sm text-blue-800 font-medium">{t("Global SMTP Configuration")}</p>
-              <p className="text-sm text-blue-700 mt-1">
-                {t("Configure the SMTP server settings for sending email notifications. This configuration is used for all email notifications in the platform.")}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Status Card */}
-      {emailSettings && (
-        <Card className={emailSettings.isVerified ? "border-green-200 bg-green-50/50" : "border-amber-200 bg-amber-50/50"}>
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {emailSettings.isVerified ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-amber-600" />
-                )}
-                <div>
-                  <p className={`text-sm font-medium ${emailSettings.isVerified ? "text-green-800" : "text-amber-800"}`}>
-                    {emailSettings.isVerified ? t("Connection Verified") : t("Connection Not Verified")}
-                  </p>
-                  <p className={`text-xs ${emailSettings.isVerified ? "text-green-700" : "text-amber-700"}`}>
-                    {emailSettings.lastTestedAt
-                      ? `${t("Last tested")}: ${new Date(emailSettings.lastTestedAt).toLocaleString()}`
-                      : t("Not tested yet")}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTestDialog(true)}
-                  className={emailSettings.isVerified ? "border-green-300 text-green-700 hover:bg-green-100" : "border-amber-300 text-amber-700 hover:bg-amber-100"}
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {t("Test Connection")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="border-red-200 text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t("Delete")}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Configuration Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t("SMTP Configuration")}</CardTitle>
-          <CardDescription>{t("Enter your SMTP server details to enable email notifications")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* SMTP Provider Shortcut */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="p-6 space-y-5">
+          {/* SMTP Provider */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-slate-700">{t("SMTP Provider")}</Label>
             <Select value={selectedProvider} onValueChange={handleProviderChange}>
-              <SelectTrigger className="w-full max-w-xs bg-white">
+              <SelectTrigger className="w-full bg-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                 {COMMON_SMTP_PROVIDERS.map((provider) => (
                   <SelectItem key={provider.label} value={provider.label}>
                     {provider.label}
@@ -397,7 +358,7 @@ export default function EmailSettingsPage() {
             <p className="text-xs text-slate-500">{t("Select a provider to auto-fill server details, or choose Custom")}</p>
           </div>
 
-          {/* SMTP Server Settings */}
+          {/* SMTP Host + Port */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">{t("SMTP Host")} <span className="text-red-500">*</span></Label>
@@ -441,7 +402,7 @@ export default function EmailSettingsPage() {
             </div>
           </div>
 
-          {/* From/Reply-To */}
+          {/* From Address + From Name */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">{t("From Address")} <span className="text-red-500">*</span></Label>
@@ -461,6 +422,7 @@ export default function EmailSettingsPage() {
             </div>
           </div>
 
+          {/* Reply-To */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-slate-700">{t("Reply-To Address")}</Label>
             <Input
@@ -470,10 +432,12 @@ export default function EmailSettingsPage() {
             />
           </div>
 
-          {/* Security Settings */}
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="text-sm font-semibold text-slate-800">{t("Security Settings")}</h3>
-            <div className="flex items-center justify-between py-2">
+          {/* Divider */}
+          <div className="border-t border-slate-100" />
+
+          {/* Security & Status Toggles */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between py-3">
               <div>
                 <p className="text-sm font-medium text-slate-700">{t("Use TLS")}</p>
                 <p className="text-xs text-slate-500">{t("Enable TLS encryption (recommended for port 587)")}</p>
@@ -483,7 +447,7 @@ export default function EmailSettingsPage() {
                 onCheckedChange={(checked) => setFormData({ ...formData, useTLS: checked, useSSL: checked ? false : formData.useSSL })}
               />
             </div>
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between py-3">
               <div>
                 <p className="text-sm font-medium text-slate-700">{t("Use SSL")}</p>
                 <p className="text-xs text-slate-500">{t("Enable SSL encryption (for port 465)")}</p>
@@ -493,7 +457,7 @@ export default function EmailSettingsPage() {
                 onCheckedChange={(checked) => setFormData({ ...formData, useSSL: checked, useTLS: checked ? false : formData.useTLS })}
               />
             </div>
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between py-3">
               <div>
                 <p className="text-sm font-medium text-slate-700">{t("Active")}</p>
                 <p className="text-xs text-slate-500">{t("Enable email sending for this configuration")}</p>
@@ -505,14 +469,17 @@ export default function EmailSettingsPage() {
             </div>
           </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end pt-4 border-t">
-            <Button onClick={handleSave} disabled={submitting}>
-              {submitting ? t("Saving...") : t("Save Settings")}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Last tested info */}
+          {emailSettings?.lastTestedAt && (
+            <>
+              <div className="border-t border-slate-100" />
+              <p className="text-xs text-slate-500">
+                {t("Last tested")}: {new Date(emailSettings.lastTestedAt).toLocaleString()}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Test Email Dialog */}
       <Dialog open={showTestDialog} onOpenChange={setShowTestDialog}>
@@ -538,13 +505,13 @@ export default function EmailSettingsPage() {
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
-            <Button onClick={handleTest} disabled={testing} size="sm">
-              <Send className="h-4 w-4 mr-2" />
-              {testing ? t("Testing...") : t("Send Test")}
-            </Button>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setShowTestDialog(false)}>
               {t("Cancel")}
+            </Button>
+            <Button onClick={handleTest} disabled={testing} size="sm">
+              <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {testing ? t("Testing...") : t("Send Test")}
             </Button>
           </div>
         </DialogContent>
@@ -560,7 +527,7 @@ export default function EmailSettingsPage() {
           </div>
 
           <div className="px-6 py-5">
-            <p className="text-slate-600">
+            <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete the email configuration?")}
             </p>
             <p className="text-sm text-slate-500 mt-2">
@@ -568,12 +535,12 @@ export default function EmailSettingsPage() {
             </p>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
-            <Button onClick={handleDelete} disabled={submitting} size="sm" variant="destructive">
-              {submitting ? t("Deleting...") : t("Delete")}
-            </Button>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(false)}>
               {t("Cancel")}
+            </Button>
+            <Button onClick={handleDelete} disabled={submitting} size="sm" variant="destructive">
+              {submitting ? t("Deleting...") : t("Delete")}
             </Button>
           </div>
         </DialogContent>

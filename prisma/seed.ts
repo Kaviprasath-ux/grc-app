@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { seedEmailTemplates } from "./seed-email-templates";
 
 const prisma = new PrismaClient();
 
@@ -1246,19 +1247,26 @@ async function main() {
   for (const evidence of evidences) {
     const frameworkId = createdFrameworks[evidence.framework];
     if (frameworkId) {
-      await prisma.evidence.create({
-        data: {
-          customerAccountId,
-          evidenceCode: `EVD-${String(evidenceIdx++).padStart(3, "0")}`,
-          name: evidence.name,
-          description: evidence.description,
-          frameworkId: frameworkId,
-          departmentId: createdDepts[evidence.department],
-          assigneeId: createdUsers["john.doe"],
-          status: evidence.status,
-          dueDate: new Date(evidence.dueDate),
-        },
+      const evidenceCode = `EVD-${String(evidenceIdx++).padStart(3, "0")}`;
+      // Check if evidence already exists before creating
+      const existingEvidence = await prisma.evidence.findFirst({
+        where: { customerAccountId, evidenceCode },
       });
+      if (!existingEvidence) {
+        await prisma.evidence.create({
+          data: {
+            customerAccountId,
+            evidenceCode,
+            name: evidence.name,
+            description: evidence.description,
+            frameworkId: frameworkId,
+            departmentId: createdDepts[evidence.department],
+            assigneeId: createdUsers["john.doe"],
+            status: evidence.status,
+            dueDate: new Date(evidence.dueDate),
+          },
+        });
+      }
     }
   }
   console.log("✅ Evidence requests created (15 evidence items)");
@@ -1371,18 +1379,25 @@ async function main() {
 
   let exceptionIdx = 1;
   for (const exception of exceptions) {
-    await prisma.exception.create({
-      data: {
-        customerAccountId,
-        exceptionCode: `EXC-${String(exceptionIdx++).padStart(3, "0")}`,
-        name: exception.name,
-        category: exception.category,
-        departmentId: createdDepts[exception.department],
-        status: exception.status,
-        startDate: new Date(exception.startDate),
-        endDate: new Date(exception.endDate),
-      },
+    const exceptionCode = `EXC-${String(exceptionIdx++).padStart(3, "0")}`;
+    // Check if exception already exists before creating
+    const existingException = await prisma.exception.findFirst({
+      where: { customerAccountId, exceptionCode },
     });
+    if (!existingException) {
+      await prisma.exception.create({
+        data: {
+          customerAccountId,
+          exceptionCode,
+          name: exception.name,
+          category: exception.category,
+          departmentId: createdDepts[exception.department],
+          status: exception.status,
+          startDate: new Date(exception.startDate),
+          endDate: new Date(exception.endDate),
+        },
+      });
+    }
   }
   console.log("✅ Exceptions created");
 
@@ -4514,6 +4529,11 @@ async function main() {
     }
   }
   console.log("✅ Audit Reports created");
+
+  // ==================== EMAIL TEMPLATES (GLOBAL - SYSTEM DEFAULT) ====================
+  // Seed all 73 English email templates as system defaults
+  // These are available to all customer instances
+  await seedEmailTemplates();
 
   console.log("🎉 Database seeded successfully with all modules!");
 }

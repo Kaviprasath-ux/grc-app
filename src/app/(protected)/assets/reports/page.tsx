@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import { Download, ChevronRight, Home, FileBarChart, Search } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Asset {
@@ -35,6 +36,7 @@ type ReportType = "category" | "subcategory" | "group" | "location" | "criticali
 interface ReportConfig {
   id: ReportType;
   title: string;
+  description: string;
   column1Header: string;
   getColumn1Value: (asset: Asset) => string;
 }
@@ -46,41 +48,48 @@ export default function AssetReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportType | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+  const [searchQuery, setSearchQuery] = useState("");
 
   const reportConfigs: ReportConfig[] = [
     {
       id: "category",
       title: t("Asset By Category"),
+      description: t("Assets grouped by their assigned category"),
       column1Header: t("Category"),
       getColumn1Value: (asset) => asset.category?.name || "",
     },
     {
       id: "subcategory",
       title: t("Asset By Sub-Category"),
+      description: t("Assets grouped by sub-category classification"),
       column1Header: t("Asset Sub Category"),
       getColumn1Value: (asset) => asset.subCategory?.name || "",
     },
     {
       id: "group",
       title: t("Asset By Group"),
+      description: t("Assets grouped by asset group"),
       column1Header: t("Asset Group"),
       getColumn1Value: (asset) => asset.group?.name || "",
     },
     {
       id: "location",
       title: t("Asset By Location"),
+      description: t("Assets grouped by physical or logical location"),
       column1Header: t("Location"),
       getColumn1Value: (asset) => asset.location || "",
     },
     {
       id: "criticality",
       title: t("Asset By Criticality"),
+      description: t("Assets grouped by criticality level"),
       column1Header: t("Asset Criticality"),
       getColumn1Value: (asset) => asset.ciaClassification?.criticality || "",
     },
     {
       id: "sensitivity",
       title: t("Asset By Sensitivity"),
+      description: t("Assets grouped by sensitivity classification"),
       column1Header: t("Asset Sensitivity"),
       getColumn1Value: (asset) => asset.sensitivity?.name || "",
     },
@@ -114,8 +123,6 @@ export default function AssetReportsPage() {
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalItems);
   const paginatedData = sortedData.slice(startIndex, endIndex);
-  const startItem = startIndex + 1;
-  const endItem = endIndex;
 
   const handleOpenReport = (reportType: ReportType) => {
     setActiveReport(reportType);
@@ -165,22 +172,55 @@ export default function AssetReportsPage() {
       </nav>
 
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Asset Reports")}</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Asset Reports")}</h1>
 
-      {/* Report List - Matching Organization Reports style */}
-      <div className="space-y-2">
-        {reportConfigs.map((config) => (
-          <Button
-            key={config.id}
-            variant="outline"
-            className="w-full justify-start text-left h-auto py-3 px-4 hover:bg-slate-50 border-slate-200"
-            onClick={() => handleOpenReport(config.id)}
-          >
-            {config.title}
-          </Button>
-        ))}
+      {/* Reports Card */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Toolbar: Search */}
+        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Asset Reports")}</span>
+          <div className="relative w-56">
+            <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search reports...")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full ltr:pl-8 rtl:pr-8 ltr:pr-3 rtl:pl-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Report List */}
+        <div className="divide-y divide-slate-100">
+          {reportConfigs
+            .filter((r) => searchQuery === "" || r.title.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase()))
+            .length > 0 ? (
+            reportConfigs
+              .filter((r) => searchQuery === "" || r.title.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((config) => (
+                <button
+                  key={config.id}
+                  onClick={() => handleOpenReport(config.id)}
+                  className="group w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+                >
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-slate-800">{config.title}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">{config.description}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
+                </button>
+              ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+                <FileBarChart className="h-6 w-6 text-primary-600" />
+              </div>
+              <p className="text-sm font-medium text-slate-800">{t("No reports found")}</p>
+              <p className="text-xs text-slate-500 mt-1">{t("Try adjusting your search")}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Report Detail Dialog - Fixed width 700px */}
@@ -248,55 +288,14 @@ export default function AssetReportsPage() {
             </div>
           </div>
 
-          {/* Fixed Footer - Pagination */}
-          {totalItems > 0 && (
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-              <span className="text-sm text-slate-500">
-                {startItem} {t("to")} {endItem} {t("of")} {totalItems}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-slate-600 px-2">
-                  {t("Page")} {currentPage} {t("of")} {totalPages || 1}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Pagination */}
+          <PaginationUI
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+          />
         </DialogContent>
       </Dialog>
     </div>

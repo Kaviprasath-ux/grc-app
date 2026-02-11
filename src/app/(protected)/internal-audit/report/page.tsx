@@ -4,14 +4,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -30,14 +22,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import {
   Loader2,
-  ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Home,
   Download,
   Pencil,
+  Search,
+  FileText,
 } from "lucide-react";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -52,13 +44,6 @@ interface CompletedEngagement {
   status: string;
   hasReport: boolean;
   reportId: string | null;
-}
-
-interface Pagination {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
 }
 
 interface Finding {
@@ -127,12 +112,10 @@ export default function ReportsPage() {
   // Engagements list state
   const [loading, setLoading] = useState(true);
   const [engagements, setEngagements] = useState<CompletedEngagement[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({
-    total: 0,
-    page: 1,
-    limit: 20,
-    totalPages: 0,
-  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // Generate Report Dialog
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
@@ -164,20 +147,19 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetchCompletedEngagements();
-  }, [pagination.page]);
+  }, []);
 
   const fetchCompletedEngagements = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append("page", pagination.page.toString());
-      params.append("limit", pagination.limit.toString());
+      params.append("page", "1");
+      params.append("limit", "999");
 
       const response = await fetch(`/api/internal-audit/report/completed-engagements?${params}`);
       if (response.ok) {
         const data = await response.json();
         setEngagements(data.engagements || []);
-        setPagination(data.pagination || pagination);
       }
     } catch (error) {
       console.error("Failed to fetch completed engagements:", error);
@@ -415,8 +397,64 @@ export default function ReportsPage() {
     }
   };
 
-  const startIndex = (pagination.page - 1) * pagination.limit + 1;
-  const endIndex = Math.min(pagination.page * pagination.limit, pagination.total);
+  // Client-side filtering and pagination
+  const filteredEngagements = engagements.filter((e) => {
+    const matchesSearch =
+      e.engagementTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.departmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.auditType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.assignedAuditorName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "has-report" && e.hasReport) ||
+      (statusFilter === "pending" && !e.hasReport);
+    return matchesSearch && matchesStatus;
+  });
+  const totalItems = filteredEngagements.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const paginatedEngagements = filteredEngagements.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const filterTabs = [
+    { id: "all", label: "All", count: engagements.length },
+    { id: "has-report", label: "Report Ready", count: engagements.filter((e) => e.hasReport).length },
+    { id: "pending", label: "Pending", count: engagements.filter((e) => !e.hasReport).length },
+  ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          {canViewDashboard && (
+            <>
+              <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+                {t("Dashboard")}
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            </>
+          )}
+          <span className="text-primary-700 font-medium">{t("Reports")}</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading reports...")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -438,126 +476,114 @@ export default function ReportsPage() {
         <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
-      </div>
+      {/* Page Header */}
+      <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
 
-      {/* Table */}
+      {/* Engagements Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Engagement")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Type")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assigned Auditor")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-sm text-slate-500">
-                  {t("Loading completed engagements...")}
-                </TableCell>
-              </TableRow>
-            ) : engagements.length > 0 ? (
-              engagements.map((engagement) => (
-                <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800 max-w-[200px]">
-                    <span className="line-clamp-2">{engagement.engagementTitle}</span>
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{engagement.departmentName}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{engagement.auditType}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{engagement.assignedAuditorName}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{engagement.status}</TableCell>
-                  <TableCell className="py-3 pr-5">
-                    {isAuditeeOnly ? (
-                      engagement.hasReport ? (
-                        <span
-                          className="text-sm text-primary-600 hover:text-primary-700 cursor-pointer "
-                          onClick={() => openReportModal(engagement.id)}
-                        >
-                          {t("View Report")}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-sm">{t("No report")}</span>
-                      )
-                    ) : (
-                      <span
-                        className="text-sm text-primary-600 hover:text-primary-700 cursor-pointer "
-                        onClick={() => handleGenerateReport(engagement)}
-                      >
-                        {engagement.hasReport ? t("View Report") : t("Generate Draft Report")}
-                      </span>
+        {/* Toolbar: Tabs + Search */}
+        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-1">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => { setStatusFilter(tab.id); setCurrentPage(1); }}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                  statusFilter === tab.id
+                    ? "bg-primary-50 text-primary-700"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {t(tab.label)} <span className="ml-1 text-[10px] opacity-60">{tab.count}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div className="relative w-56">
+            <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search engagements...")}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full ltr:pl-8 rtl:pr-8 ltr:pr-3 rtl:pl-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Engagements List */}
+        <div className="divide-y divide-slate-100">
+          {paginatedEngagements.length > 0 ? (
+            paginatedEngagements.map((engagement) => {
+              const isClickable = isAuditeeOnly ? engagement.hasReport : true;
+              return (
+                <button
+                  key={engagement.id}
+                  onClick={() => {
+                    if (isAuditeeOnly) {
+                      if (engagement.hasReport) openReportModal(engagement.id);
+                    } else {
+                      handleGenerateReport(engagement);
+                    }
+                  }}
+                  disabled={!isClickable}
+                  className={`group w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors ${
+                    isClickable
+                      ? "hover:bg-slate-50/60 cursor-pointer"
+                      : "cursor-default opacity-70"
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-slate-800">{engagement.engagementTitle}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {engagement.departmentName} &middot; {engagement.auditType} &middot; {engagement.assignedAuditorName}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      engagement.hasReport
+                        ? "bg-green-50 text-green-700"
+                        : "bg-amber-50 text-amber-700"
+                    }`}>
+                      {engagement.hasReport ? t("Report Ready") : t("Pending")}
+                    </span>
+                    {isClickable && (
+                      <ChevronRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
                     )}
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-sm text-slate-500">
-                  {t("No completed engagements found")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                  </div>
+                </button>
+              );
+            })
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+                <FileText className="h-6 w-6 text-primary-600" />
+              </div>
+              <p className="text-sm font-medium text-slate-800">{t("No engagements found")}</p>
+              <p className="text-xs text-slate-500 mt-1">{t("Try adjusting your search or filter")}</p>
+            </div>
+          )}
+        </div>
 
         {/* Pagination */}
-        {pagination.total > 0 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-            <span className="text-xs text-slate-500">
-              {startIndex} {t("to")} {endIndex} {t("of")} {pagination.total}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={pagination.page === 1}
-                onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={pagination.page === 1}
-                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => setPagination((prev) => ({ ...prev, page: pagination.totalPages }))}
-                className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <PaginationUI
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={pageSize}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Generate Report Dialog - Pass/Fail Selection */}
       {(isAuditHead || isAuditManager) && (
         <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-          <DialogContent className="sm:max-w-[450px] p-0 gap-0">
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0">
             {/* Fixed Header */}
             <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -620,7 +646,7 @@ export default function ReportsPage() {
 
       {/* Report View/Edit Dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={(open) => { if (!open) closeReportModal(); }}>
-        <DialogContent className="sm:max-w-[900px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -688,7 +714,7 @@ export default function ReportsPage() {
                         <SelectTrigger className="w-64">
                           <SelectValue placeholder={t("Select Auditee")} />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" sideOffset={4}>
                           {users.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.firstName} {user.lastName}

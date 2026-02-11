@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/usePagination";
 import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Unauthorized } from "@/components/ui/unauthorized";
@@ -14,18 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import { RiskAssessmentWizardDialog } from "@/components/risks/risk-assessment-wizard-dialog";
 import { cn } from "@/lib/utils";
-import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import { Search, ChevronRight, Home, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 interface Risk {
@@ -73,6 +66,17 @@ const defaultRatingThresholds: RiskRatingThreshold[] = [
   { min: 20, max: 25, rating: "Catastrophic", color: "#dc2626" },
 ];
 
+const statusStyles: Record<string, string> = {
+  "Approved": "bg-green-100 text-green-800",
+  "Completed": "bg-green-100 text-green-800",
+  "Submitted": "bg-purple-100 text-purple-800",
+  "Draft": "bg-slate-100 text-slate-700",
+  "Rejected": "bg-red-100 text-red-800",
+  "In-Progress": "bg-amber-100 text-amber-800",
+  "Open": "bg-blue-100 text-blue-800",
+  "Assessment Pending": "bg-slate-100 text-slate-700",
+};
+
 export default function RiskAssessmentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -81,7 +85,6 @@ export default function RiskAssessmentPage() {
   const userRoles = useUserRoles();
   const { t } = useLanguage();
 
-  // Check if user can approve assessments (Reviewer, DepartmentReviewer, CustomerAdministrator, GRCAdministrator)
   const canApprove = userRoles.some(role =>
     ['Reviewer', 'DepartmentReviewer', 'CustomerAdministrator', 'GRCAdministrator'].includes(role)
   );
@@ -90,8 +93,6 @@ export default function RiskAssessmentPage() {
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
   const [loading, setLoading] = useState(true);
 
-
-  // Dynamic settings from API
   const [ratingThresholds, setRatingThresholds] = useState<RiskRatingThreshold[]>(defaultRatingThresholds);
 
   // Filters
@@ -102,8 +103,7 @@ export default function RiskAssessmentPage() {
   const [typeFilter, setTypeFilter] = useState("all");
 
   // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 20;
+  const ITEMS_PER_PAGE = 20;
 
   // Assessment modal state
   const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
@@ -131,13 +131,11 @@ export default function RiskAssessmentPage() {
         setRiskTypes(data);
       }
 
-      // Parse risk settings
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
         const defaults = settingsData.defaults as RiskSettings | undefined;
 
         if (defaults) {
-          // Set rating thresholds from settings
           if (defaults.rating_matrix?.thresholds && defaults.rating_matrix.thresholds.length > 0) {
             setRatingThresholds(defaults.rating_matrix.thresholds);
           }
@@ -177,11 +175,9 @@ export default function RiskAssessmentPage() {
   });
 
   // Pagination
-  const totalPages = Math.ceil(filteredRisks.length / pageSize);
-  const paginatedRisks = filteredRisks.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const { currentPage, setCurrentPage, totalPages, paginatedData: paginatedRisks } = usePagination({ data: filteredRisks, itemsPerPage: ITEMS_PER_PAGE });
+
+  const getStatusLabel = (status: string) => status || "Open";
 
   const getActionButton = (risk: Risk) => {
     const status = risk.assessmentStatus || "Open";
@@ -190,24 +186,21 @@ export default function RiskAssessmentPage() {
       case "Completed":
       case "Submitted":
       case "Rejected":
-        // Users with create permission can re-assess completed risks
         return canCreate ? (
-          <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openAssessment(risk)}>
             {t("Re-assess")}
           </Button>
         ) : null;
       case "Draft":
       case "In-Progress":
-        // Users with edit permission can continue working
         return canEdit ? (
-          <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openAssessment(risk)}>
             {t("Resume")}
           </Button>
         ) : null;
       default:
-        // Open status - users with create permission can initiate
         return canCreate ? (
-          <Button size="sm" onClick={() => openAssessment(risk)}>
+          <Button size="sm" className="h-8 text-xs" onClick={() => openAssessment(risk)}>
             {t("Initiate")}
           </Button>
         ) : null;
@@ -216,7 +209,6 @@ export default function RiskAssessmentPage() {
 
   const handleApprove = async (riskId: string) => {
     try {
-      // Find the latest assessment for this risk and approve it
       const response = await fetch(`/api/risks/${riskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -263,14 +255,12 @@ export default function RiskAssessmentPage() {
   };
 
   const handleAssessmentComplete = () => {
-    fetchData(); // Refresh the list after assessment is saved
+    fetchData();
   };
 
-  // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
-        {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
@@ -283,8 +273,6 @@ export default function RiskAssessmentPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-primary-700 font-medium">{t("Assessment")}</span>
         </nav>
-
-        {/* Page Header */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
         </div>
@@ -298,7 +286,6 @@ export default function RiskAssessmentPage() {
     );
   }
 
-  // Show unauthorized if user doesn't have view permission
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access Risk Assessment.")} />;
   }
@@ -324,176 +311,137 @@ export default function RiskAssessmentPage() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("Search risks...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[200px] bg-white"
-          />
+      {/* Data Table */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search and Filters */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+          <div className="relative flex-1 min-w-[280px] max-w-md">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t("Search risks...")}
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3 ms-auto">
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("Status")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Status")}</SelectItem>
+                <SelectItem value="Assessment Pending">{t("Assessment Pending")}</SelectItem>
+                <SelectItem value="Open">{t("Open")}</SelectItem>
+                <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+                <SelectItem value="Completed">{t("Completed")}</SelectItem>
+                <SelectItem value="Awaiting Approval">{t("Awaiting Approval")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={ratingFilter} onValueChange={(v) => { setRatingFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("Rating")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Ratings")}</SelectItem>
+                {ratingThresholds.map((threshold) => (
+                  <SelectItem key={threshold.rating} value={threshold.rating}>
+                    {threshold.rating}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("Category")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Categories")}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("Type")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Types")}</SelectItem>
+                {riskTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px] bg-white">
-            <SelectValue placeholder={t("All Status")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">{t("All Status")}</SelectItem>
-            <SelectItem value="Assessment Pending">{t("Assessment Pending")}</SelectItem>
-            <SelectItem value="Open">{t("Open")}</SelectItem>
-            <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
-            <SelectItem value="Completed">{t("Completed")}</SelectItem>
-            <SelectItem value="Awaiting Approval">{t("Awaiting Approval")}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={ratingFilter} onValueChange={setRatingFilter}>
-          <SelectTrigger className="w-[140px] bg-white">
-            <SelectValue placeholder={t("All Ratings")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">{t("All Ratings")}</SelectItem>
-            {ratingThresholds.map((threshold) => (
-              <SelectItem key={threshold.rating} value={threshold.rating}>
-                {threshold.rating}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[150px] bg-white">
-            <SelectValue placeholder={t("All Categories")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">{t("All Categories")}</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[140px] bg-white">
-            <SelectValue placeholder={t("All Types")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">{t("All Types")}</SelectItem>
-            {riskTypes.map((type) => (
-              <SelectItem key={type.id} value={type.id}>
-                {type.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
-      {/* Data Grid */}
-      <div className="bg-white rounded-xl border border-slate-200">
-        <Table>
-          <TableHeader>
-            <TableRow className="h-12 bg-slate-50/50 hover:bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 pl-4">{t("Risk ID")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Name")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Description")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Rating")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Category")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Owner")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Type")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedRisks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-slate-500">
-                  {t("No risks found")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedRisks.map((risk) => (
-                <TableRow key={risk.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <TableCell className="py-3 pl-4 font-medium text-slate-800">{risk.riskId}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{risk.name}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{risk.description || "-"}</TableCell>
-                  <TableCell className="py-3">
-                    {risk.riskRating ? <RiskRatingBadge rating={risk.riskRating} /> : "-"}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{risk.category?.name || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{risk.owner?.fullName || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{risk.type?.name || "-"}</TableCell>
-                  <TableCell className="py-3">
+        {/* Column Headers */}
+        <div className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <span>{t("Risk ID")}</span>
+          <span>{t("Risk Name")}</span>
+          <span>{t("Description")}</span>
+          <span>{t("Rating")}</span>
+          <span>{t("Category")}</span>
+          <span>{t("Owner")}</span>
+          <span>{t("Status")}</span>
+          <span className="text-end">{t("Action")}</span>
+        </div>
+
+        {/* Rows */}
+        <div className="divide-y divide-slate-100">
+          {paginatedRisks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <AlertTriangle className="h-10 w-10 text-slate-300 mb-3" />
+              <p className="text-sm font-medium text-slate-600">{t("No risks found")}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search or filters")}</p>
+            </div>
+          ) : (
+            paginatedRisks.map((risk) => {
+              const status = getStatusLabel(risk.assessmentStatus);
+              return (
+                <div
+                  key={risk.id}
+                  className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-5 py-3 items-center hover:bg-slate-50/50 transition-colors"
+                >
+                  <span className="text-sm font-medium text-primary-600">{risk.riskId}</span>
+                  <span className="text-sm text-slate-700 truncate">{risk.name}</span>
+                  <span className="text-sm text-slate-500 truncate">{risk.description || "-"}</span>
+                  <span>
+                    {risk.riskRating ? <RiskRatingBadge rating={risk.riskRating} /> : <span className="text-sm text-slate-400">-</span>}
+                  </span>
+                  <span className="text-sm text-slate-600 truncate">{risk.category?.name || "-"}</span>
+                  <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>
+                  <span>
                     <span className={cn(
-                      "px-2 py-1 rounded text-xs font-medium",
-                      (risk.assessmentStatus || "Open") === "Approved" && "bg-green-100 text-green-800",
-                      (risk.assessmentStatus || "Open") === "Submitted" && "bg-purple-100 text-purple-800",
-                      (risk.assessmentStatus || "Open") === "Draft" && "bg-slate-100 text-slate-800",
-                      (risk.assessmentStatus || "Open") === "Rejected" && "bg-red-100 text-red-800",
-                      (risk.assessmentStatus || "Open") === "In-Progress" && "bg-yellow-100 text-yellow-800",
-                      (risk.assessmentStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
+                      "px-2 py-1 rounded-full text-xs font-medium",
+                      statusStyles[status] || "bg-slate-100 text-slate-700"
                     )}>
-                      {risk.assessmentStatus || "Open"}
+                      {status}
                     </span>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <div className="flex items-center gap-1">
-                      {getActionButton(risk)}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                  </span>
+                  <span className="flex justify-end">
+                    {getActionButton(risk)}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
 
         {/* Pagination */}
-        {filteredRisks.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-sm text-slate-500">
-              {((currentPage - 1) * pageSize) + 1} {t("to")} {Math.min(currentPage * pageSize, filteredRisks.length)} {t("of")} {filteredRisks.length}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredRisks.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Assessment Wizard Modal */}

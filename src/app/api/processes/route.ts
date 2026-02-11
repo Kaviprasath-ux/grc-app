@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
 
 // GET all processes - filtered by tenant
 export async function GET() {
@@ -145,12 +145,18 @@ export async function POST(request: NextRequest) {
           customerAccountId: customerAccountId,
           actorId: session?.user?.id || '',
           recipientId: userId,
-          event: 'PROCESS_ASSIGNED',
-          title: `Process ${role} assignment`,
-          message: `You have been assigned as ${role} for process "${process.name}"`,
+          event: NOTIFICATION_EVENTS.PROCESS_ASSIGNED,
+          title: `Process ${role} Assignment`,
+          message: `You have been assigned as ${role} for process "${process.processCode}: ${process.name}"`,
           relatedEntityType: 'process',
           relatedEntityId: process.id,
           link: `/organization/process/${process.id}`,
+          metadata: {
+            processCode: process.processCode,
+            processName: process.name,
+            role: role,
+            assignedBy: session?.user?.name || 'User',
+          },
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }

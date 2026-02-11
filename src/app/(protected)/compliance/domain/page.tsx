@@ -42,6 +42,7 @@ import {
   Layers,
 } from "lucide-react";
 import Link from "next/link";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 
 interface Domain {
   id: string;
@@ -261,7 +262,7 @@ export default function DomainPage() {
             <span className="text-slate-500">{t("Compliance")}</span>
           </>
         ) : (
-          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
           </Link>
@@ -362,33 +363,13 @@ export default function DomainPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-          <span className="text-xs text-slate-500">
-            {filteredDomains.length > 0
-              ? `${startIndex + 1} ${t("to")} ${Math.min(startIndex + itemsPerPage, filteredDomains.length)} ${t("of")} ${filteredDomains.length}`
-              : t("No domains")}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <PaginationUI
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredDomains.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Create/Edit Dialog */}

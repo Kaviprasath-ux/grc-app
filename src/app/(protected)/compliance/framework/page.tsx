@@ -49,6 +49,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Pagination as PaginationUI } from "@/components/ui/pagination";
 
 interface Framework {
   id: string;
@@ -695,7 +696,7 @@ export default function FrameworkOverviewPage() {
               placeholder={t("Search frameworks...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
         </div>
@@ -789,33 +790,13 @@ export default function FrameworkOverviewPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-          <span className="text-xs text-slate-500">
-            {sortedFrameworks.length > 0
-              ? t("Showing {start} to {end} of {total}").replace("{start}", String(startIndex + 1)).replace("{end}", String(endIndex)).replace("{total}", String(sortedFrameworks.length))
-              : t("No frameworks")}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 0}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-slate-400 hover:text-slate-600"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage >= totalPages - 1}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <PaginationUI
+          currentPage={currentPage + 1}
+          totalPages={totalPages}
+          totalItems={sortedFrameworks.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={(page) => setCurrentPage(page - 1)}
+        />
       </div>
 
       {/* Step 1: Create/Edit Framework Dialog */}

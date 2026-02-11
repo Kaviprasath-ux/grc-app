@@ -117,7 +117,7 @@ export const navigation: NavItem[] = [
       { name: "Exception Management", href: "/compliance/exceptions", icon: AlertTriangle, permission: "compliance.exceptions:view" },
       { name: "KPI", href: "/compliance/kpis", icon: BarChart3, permission: "compliance.kpi:view" },
       { name: "Reports", href: "/compliance/reports", icon: FileText, permission: "compliance.dashboard:view" },
-      { name: "Master Data", href: "/compliance/master-data", icon: Settings2, permission: "compliance.settings:view" },
+      { name: "Compliance settings", href: "/compliance/master-data", icon: Settings2, permission: "compliance.settings:view" },
     ],
   },
   // ==================== End Compliance Section ====================
@@ -170,7 +170,7 @@ export const navigation: NavItem[] = [
       { name: "Report", href: "/internal-audit/report", icon: FileOutput, permission: "audit.reports:view" },
       { name: "CAPA Tracking", href: "/internal-audit/capa-tracking", icon: CheckSquare, permission: "audit.capa:view" },
       { name: "Document Library", href: "/internal-audit/document-library", icon: FolderOpen, permission: "audit.documents:view" },
-      { name: "Settings", href: "/internal-audit/settings", icon: Settings2, permission: "audit.settings:view" },
+      { name: "Audit Settings", href: "/internal-audit/settings", icon: Settings2, permission: "audit.settings:view" },
       { name: "Risk Universe", href: "/internal-audit/risk-universe", icon: CircleDot, permission: "audit.risk-universe:view" },
     ],
   },

@@ -19,6 +19,7 @@ import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -484,11 +485,10 @@ export default function AddProcessPage() {
 
             <div className="space-y-2">
               <Label htmlFor="lastAuditDate">{t("Last Audit Date")}</Label>
-              <Input
-                id="lastAuditDate"
-                type="date"
+              <DatePicker
                 value={formData.lastAuditDate}
-                onChange={(e) => setFormData({ ...formData, lastAuditDate: e.target.value })}
+                onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split("T")[0] : "" })}
+                placeholder={t("Select date")}
               />
             </div>
 
