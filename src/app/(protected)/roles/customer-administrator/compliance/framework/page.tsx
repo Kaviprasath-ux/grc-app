@@ -86,6 +86,7 @@ export default function CustomerAdminFrameworkPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const isGRCReviewer = useHasRole("GRCReviewer");
   const isDepartmentReviewer = useHasRole("DepartmentReviewer");
   const isReviewerRole = isGRCReviewer || isDepartmentReviewer;
@@ -859,7 +860,7 @@ export default function CustomerAdminFrameworkPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
-        {!isReviewerRole && (
+        {isCustomerAdmin && (
           <div className="flex items-center gap-2">
             <Button
               onClick={openAICreateDialog}
@@ -896,7 +897,7 @@ export default function CustomerAdminFrameworkPage() {
             />
           </div>
           <div className="flex items-center gap-3 ms-auto">
-            {!isReviewerRole && (
+            {isCustomerAdmin && (
               <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
                 <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("Subscription")} />

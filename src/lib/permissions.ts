@@ -367,7 +367,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.process', actions: ['view', 'create', 'edit'], scope: 'department' },
     // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Risk Matrix, NO Settings)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'compliance.framework', actions: ['view'], scope: 'department' },
+    { resource: 'compliance.framework', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'compliance.controls', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.governance', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.evidence', actions: ['view', 'create', 'edit'], scope: 'department' },

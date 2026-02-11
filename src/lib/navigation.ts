@@ -300,38 +300,53 @@ const ROLE_PATH_MAP: Record<string, string> = {
  * For most pages, use the base path with permission-based rendering instead
  * of creating duplicate role-specific pages.
  *
+ * Maps path -> role -> target folder name (from ROLE_PATH_MAP).
+ * Multiple roles can map to the same folder to share the same page.
+ *
  * @see src/hooks/usePermissions.ts for permission-based rendering
  * @see src/components/ui/permission-gate.tsx for conditional rendering
  */
-const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
+const ROLE_SPECIFIC_PATHS: Record<string, Record<string, string>> = {
   // CustomerAdministrator has unique card-grid UI with subscription management
-  // (vs table view for other roles) - keep as exception
-  "/compliance/framework": ["CustomerAdministrator"],
+  // (vs table view for GRC admin) - all customer-level roles use the same card view
+  "/compliance/framework": {
+    "CustomerAdministrator": "customer-administrator",
+    "DepartmentReviewer": "customer-administrator",
+    "DepartmentContributor": "customer-administrator",
+    "Reviewer": "customer-administrator",
+    "Contributor": "customer-administrator",
+  },
   // GRCAdministrator has separate Controls page with broader scope (all customers)
-  "/compliance/control": ["GRCAdministrator"],
+  "/compliance/control": {
+    "GRCAdministrator": "grc-administrator",
+  },
   // GRCAdministrator has separate Governance page with broader scope (all customers)
-  "/compliance/governance": ["GRCAdministrator"],
+  "/compliance/governance": {
+    "GRCAdministrator": "grc-administrator",
+  },
   // GRCAdministrator has separate Evidence page with broader scope (all customers)
-  "/compliance/evidence": ["GRCAdministrator"],
+  "/compliance/evidence": {
+    "GRCAdministrator": "grc-administrator",
+  },
   // GRCAdministrator has separate Master Data page with GRC-specific card routes
-  "/compliance/master-data": ["GRCAdministrator"],
+  "/compliance/master-data": {
+    "GRCAdministrator": "grc-administrator",
+  },
 };
 
 /**
  * Get the role-specific path for a given original path and user role
  */
 function getRoleSpecificPath(originalPath: string, userRole: string): string {
-  const rolesForPath = ROLE_SPECIFIC_PATHS[originalPath];
+  const roleMapping = ROLE_SPECIFIC_PATHS[originalPath];
 
   // If no role-specific version exists for this path, return original
-  if (!rolesForPath) return originalPath;
+  if (!roleMapping) return originalPath;
 
-  // If this role has a specific version of the page
-  if (rolesForPath.includes(userRole)) {
-    const rolePath = ROLE_PATH_MAP[userRole];
-    if (rolePath) {
-      return `/roles/${rolePath}${originalPath}`;
-    }
+  // If this role has a specific version of the page, use the target folder
+  const targetFolder = roleMapping[userRole];
+  if (targetFolder) {
+    return `/roles/${targetFolder}${originalPath}`;
   }
 
   return originalPath;
