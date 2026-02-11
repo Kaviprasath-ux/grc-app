@@ -291,6 +291,7 @@ export default function EvidenceDetailPage() {
   const isDepartmentReviewer = session?.user?.roles?.includes("DepartmentReviewer");
   const isDepartmentContributor = session?.user?.roles?.includes("DepartmentContributor");
   const isReviewer = session?.user?.roles?.includes("Reviewer");
+  const isContributor = session?.user?.roles?.includes("Contributor");
   const currentUserId = session?.user?.id;
 
   const [evidence, setEvidence] = useState<Evidence | null>(null);
@@ -1888,28 +1889,25 @@ export default function EvidenceDetailPage() {
           <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Attachments")}</h3>
             <div className="flex gap-2">
-              {isCustomerAdmin ? (
+              {(isCustomerAdmin || isReviewer || isContributor || isDepartmentReviewer || isDepartmentContributor) && (
                 <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   {t("Add Attachment")}
                 </Button>
-              ) : (
-                <Button size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("Add Attachment")}
+              )}
+              {(isCustomerAdmin || isReviewer || isContributor || isDepartmentReviewer || isDepartmentContributor) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    fetchAvailableArtifacts();
+                    setLinkArtifactsDialogOpen(true);
+                  }}
+                >
+                  <Link2 className="h-4 w-4 mr-1" />
+                  {t("Link Artifacts")}
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  fetchAvailableArtifacts();
-                  setLinkArtifactsDialogOpen(true);
-                }}
-              >
-                <Link2 className="h-4 w-4 mr-1" />
-                {t("Link Artifacts")}
-              </Button>
             </div>
           </div>
           <div className="p-5">
@@ -2497,8 +2495,8 @@ export default function EvidenceDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Upload Attachment Dialog (Customer Admin) */}
-      {isCustomerAdmin && (
+      {/* Upload Attachment Dialog */}
+      {(isCustomerAdmin || isReviewer || isContributor || isDepartmentReviewer || isDepartmentContributor) && (
         <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
           setUploadDialogOpen(open);
           if (!open) {
