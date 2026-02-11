@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -231,51 +231,122 @@ export const PUT = withAuth(
         },
       });
 
-      // Notify requester when their exception is rejected
-      if (
-        status === "Rejected" &&
-        existing.status !== "Rejected" &&
-        existing.requesterId &&
-        existing.requesterId !== session.id &&
-        session.customerAccountId
-      ) {
-        // Get the most recent comment (usually the rejection reason)
-        const latestComment = exception.comments?.[0];
-        const rejectionReason = latestComment?.content?.startsWith("[Send Back]")
-          ? latestComment.content.replace("[Send Back] ", "")
-          : undefined;
+      // Send notifications based on status changes
+      if (session.customerAccountId && existing.requesterId && existing.requesterId !== session.id) {
+        // Notify requester when their exception is rejected/denied
+        if (status === "Rejected" && existing.status !== "Rejected") {
+          const latestComment = exception.comments?.[0];
+          const rejectionReason = latestComment?.content?.startsWith("[Send Back]")
+            ? latestComment.content.replace("[Send Back] ", "")
+            : undefined;
 
-        await notificationService.notifyApprovalDenied({
-          customerAccountId: session.customerAccountId,
-          actorId: session.id,
-          requesterId: existing.requesterId,
-          entityType: "Exception",
-          entityId: id,
-          entityName: existing.name,
-          reason: rejectionReason,
-          link: `/compliance/exceptions/${id}`,
-          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
-        });
-      }
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: existing.requesterId,
+            event: NOTIFICATION_EVENTS.EXCEPTION_DENIED,
+            title: 'Exception Denied',
+            message: `Exception "${existing.exceptionCode}: ${existing.name}" has been denied.${rejectionReason ? ' Reason: ' + rejectionReason : ''}`,
+            relatedEntityType: 'exception',
+            relatedEntityId: id,
+            link: `/compliance/exceptions/${id}`,
+            metadata: {
+              exceptionCode: existing.exceptionCode,
+              exceptionName: existing.name,
+              deniedBy: session.name || 'Approver',
+              reason: rejectionReason,
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
 
-      // Notify requester when their exception is approved
-      if (
-        status === "Approved" &&
-        existing.status !== "Approved" &&
-        existing.requesterId &&
-        existing.requesterId !== session.id &&
-        session.customerAccountId
-      ) {
-        await notificationService.notifyApprovalGranted({
-          customerAccountId: session.customerAccountId,
-          actorId: session.id,
-          requesterId: existing.requesterId,
-          entityType: "Exception",
-          entityId: id,
-          entityName: existing.name,
-          link: `/compliance/exceptions/${id}`,
-          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
-        });
+        // Notify requester when their exception is approved
+        if (status === "Approved" && existing.status !== "Approved") {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: existing.requesterId,
+            event: NOTIFICATION_EVENTS.EXCEPTION_APPROVED,
+            title: 'Exception Approved',
+            message: `Exception "${existing.exceptionCode}: ${existing.name}" has been approved.`,
+            relatedEntityType: 'exception',
+            relatedEntityId: id,
+            link: `/compliance/exceptions/${id}`,
+            metadata: {
+              exceptionCode: existing.exceptionCode,
+              exceptionName: existing.name,
+              approvedBy: session.name || 'Approver',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify requester when exception is authorized
+        if (status === "Authorised" && existing.status !== "Authorised") {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: existing.requesterId,
+            event: NOTIFICATION_EVENTS.EXCEPTION_AUTHORIZED,
+            title: 'Exception Authorized',
+            message: `Exception "${existing.exceptionCode}: ${existing.name}" has been authorized.`,
+            relatedEntityType: 'exception',
+            relatedEntityId: id,
+            link: `/compliance/exceptions/${id}`,
+            metadata: {
+              exceptionCode: existing.exceptionCode,
+              exceptionName: existing.name,
+              authorizedBy: session.name || 'Authorizer',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify requester when exception is sent back
+        if (status === "Sent Back" && existing.status !== "Sent Back") {
+          const latestComment = exception.comments?.[0];
+          const reason = latestComment?.content;
+
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: existing.requesterId,
+            event: NOTIFICATION_EVENTS.EXCEPTION_SENT_BACK,
+            title: 'Exception Sent Back',
+            message: `Exception "${existing.exceptionCode}: ${existing.name}" has been sent back for revision.${reason ? ' Reason: ' + reason : ''}`,
+            relatedEntityType: 'exception',
+            relatedEntityId: id,
+            link: `/compliance/exceptions/${id}`,
+            metadata: {
+              exceptionCode: existing.exceptionCode,
+              exceptionName: existing.name,
+              sentBackBy: session.name || 'Reviewer',
+              reason: reason,
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify requester when exception is closed
+        if (status === "Closed" && existing.status !== "Closed") {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: existing.requesterId,
+            event: NOTIFICATION_EVENTS.EXCEPTION_CLOSED,
+            title: 'Exception Closed',
+            message: `Exception "${existing.exceptionCode}: ${existing.name}" has been closed.`,
+            relatedEntityType: 'exception',
+            relatedEntityId: id,
+            link: `/compliance/exceptions/${id}`,
+            metadata: {
+              exceptionCode: existing.exceptionCode,
+              exceptionName: existing.name,
+              closedBy: session.name || 'System',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
       }
 
       return NextResponse.json(exception);

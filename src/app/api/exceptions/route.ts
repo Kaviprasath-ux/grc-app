@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all exceptions with filters - filtered by customer account
 export const GET = withAuth(
@@ -229,6 +230,50 @@ export const POST = withAuth(
           comments: true,
         },
       });
+
+      // Send notifications for exception
+      // Notify approver if assigned and different from actor
+      if (approverId && approverId !== session.id) {
+        await notificationService.send({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: approverId,
+          event: NOTIFICATION_EVENTS.EXCEPTION_AUTHORIZATION_REQUIRED,
+          title: 'Exception Authorization Required',
+          message: `Exception "${exception.exceptionCode}: ${exception.name}" requires your authorization.`,
+          relatedEntityType: 'exception',
+          relatedEntityId: exception.id,
+          link: `/compliance/exceptions/${exception.id}`,
+          metadata: {
+            exceptionCode: exception.exceptionCode,
+            exceptionName: exception.name,
+            category: exception.category,
+            requestedBy: session.name || 'User',
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+      }
+
+      // Notify requester if assigned and different from actor
+      if (requesterId && requesterId !== session.id && requesterId !== approverId) {
+        await notificationService.send({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: requesterId,
+          event: NOTIFICATION_EVENTS.EXCEPTION_ASSIGNED,
+          title: 'Exception Assigned',
+          message: `Exception "${exception.exceptionCode}: ${exception.name}" has been assigned to you.`,
+          relatedEntityType: 'exception',
+          relatedEntityId: exception.id,
+          link: `/compliance/exceptions/${exception.id}`,
+          metadata: {
+            exceptionCode: exception.exceptionCode,
+            exceptionName: exception.name,
+            category: exception.category,
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+      }
 
       return NextResponse.json(exception, { status: 201 });
     } catch (error: unknown) {

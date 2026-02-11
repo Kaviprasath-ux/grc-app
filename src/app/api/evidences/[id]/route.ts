@@ -4,7 +4,7 @@ import { aiDeleteService } from "@/services/ai-delete-service";
 import { unlink } from "fs/promises";
 import path from "path";
 import { withAuth } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
 
 // GET single evidence with all related data
 export async function GET(
@@ -141,6 +141,12 @@ export const PUT = withAuth(
         },
       });
 
+      // Get the old evidence to check for status changes
+      const oldEvidence = await prisma.evidence.findUnique({
+        where: { id },
+        select: { status: true, assigneeId: true, publishedAt: true },
+      });
+
       // Notify new assignee if assignee changed and is different from current user
       if (assigneeId && assigneeId !== session?.id && session?.customerAccountId) {
         await notificationService.notifyEvidenceAssigned({
@@ -150,6 +156,67 @@ export const PUT = withAuth(
           evidenceId: updatedEvidence.id,
           evidenceName: updatedEvidence.name,
           controlCode: updatedEvidence.control?.controlCode ?? undefined,
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+      }
+
+      // Notify on status change to "Submitted"
+      if (status === "Submitted" && oldEvidence?.status !== "Submitted" && session?.customerAccountId) {
+        // Notify reviewers/managers about evidence submission
+        const managers = await prisma.user.findMany({
+          where: {
+            customerAccountId: session.customerAccountId,
+            userRoles: {
+              some: {
+                role: {
+                  name: { in: ['Reviewer', 'CustomerAdministrator', 'GRCAdministrator'] },
+                },
+              },
+            },
+          },
+          select: { id: true },
+        });
+
+        for (const manager of managers) {
+          if (manager.id !== session.id) {
+            await notificationService.send({
+              customerAccountId: session.customerAccountId,
+              actorId: session.id,
+              recipientId: manager.id,
+              event: NOTIFICATION_EVENTS.EVIDENCE_SUBMITTED,
+              title: 'Evidence Submitted',
+              message: `Evidence "${updatedEvidence.evidenceCode}: ${updatedEvidence.name}" has been submitted for review.`,
+              relatedEntityType: 'evidence',
+              relatedEntityId: updatedEvidence.id,
+              link: `/compliance/evidence/${updatedEvidence.id}`,
+              metadata: {
+                evidenceCode: updatedEvidence.evidenceCode,
+                evidenceName: updatedEvidence.name,
+                submittedBy: session.name || 'User',
+              },
+              channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+            });
+          }
+        }
+      }
+
+      // Notify on publish (when publishedAt is set)
+      if (publishedAt && !oldEvidence?.publishedAt && updatedEvidence.assigneeId && session?.customerAccountId) {
+        await notificationService.send({
+          customerAccountId: session.customerAccountId,
+          actorId: session.id,
+          recipientId: updatedEvidence.assigneeId,
+          event: NOTIFICATION_EVENTS.EVIDENCE_PUBLISHED,
+          title: 'Evidence Published',
+          message: `Evidence "${updatedEvidence.evidenceCode}: ${updatedEvidence.name}" has been published.`,
+          relatedEntityType: 'evidence',
+          relatedEntityId: updatedEvidence.id,
+          link: `/compliance/evidence/${updatedEvidence.id}`,
+          metadata: {
+            evidenceCode: updatedEvidence.evidenceCode,
+            evidenceName: updatedEvidence.name,
+            publishedBy: session.name || 'Reviewer',
+          },
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }

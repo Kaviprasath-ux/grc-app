@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -479,19 +479,86 @@ export const PATCH = withAuth(
         return updatedRisk;
       });
 
-      // Notify on send-back
-      if (body.responseStatus === "Sent Back" && risk.ownerId && risk.ownerId !== session.id && session.customerAccountId) {
-        await notificationService.notifySentBack({
-          customerAccountId: session.customerAccountId,
-          actorId: session.id,
-          assigneeId: risk.ownerId,
-          entityType: 'Risk',
-          entityId: risk.id,
-          entityName: `${risk.riskId}: ${risk.name}`,
-          reason: body.responseComment,
-          link: `/risk-management/register/${risk.id}`,
-          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
-        });
+      // Send notifications based on status changes
+      if (session.customerAccountId && risk.ownerId && risk.ownerId !== session.id) {
+        // Notify on send-back
+        if (body.responseStatus === "Sent Back") {
+          await notificationService.notifySentBack({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            assigneeId: risk.ownerId,
+            entityType: 'Risk',
+            entityId: risk.id,
+            entityName: `${risk.riskId}: ${risk.name}`,
+            reason: body.responseComment,
+            link: `/risk-management/register/${risk.id}`,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify on approval
+        if (body.responseStatus === "Approved" || body.status === "Approved") {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: risk.ownerId,
+            event: NOTIFICATION_EVENTS.RISK_APPROVED,
+            title: 'Risk Approved',
+            message: `Risk "${risk.riskId}: ${risk.name}" has been approved.`,
+            relatedEntityType: 'risk',
+            relatedEntityId: risk.id,
+            link: `/risk-management/register/${risk.id}`,
+            metadata: {
+              riskCode: risk.riskId,
+              riskName: risk.name,
+              approvedBy: session.name || 'Reviewer',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify on rejection
+        if (body.responseStatus === "Rejected" || body.status === "Rejected") {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: risk.ownerId,
+            event: NOTIFICATION_EVENTS.RISK_REJECTION,
+            title: 'Risk Rejected',
+            message: `Risk "${risk.riskId}: ${risk.name}" has been rejected.${body.responseComment ? ' Reason: ' + body.responseComment : ''}`,
+            relatedEntityType: 'risk',
+            relatedEntityId: risk.id,
+            link: `/risk-management/register/${risk.id}`,
+            metadata: {
+              riskCode: risk.riskId,
+              riskName: risk.name,
+              rejectedBy: session.name || 'Reviewer',
+              reason: body.responseComment,
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify on submit for approval
+        if (body.responseStatus === "Pending Approval" || body.status === "Pending Approval") {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: risk.ownerId,
+            event: NOTIFICATION_EVENTS.RISK_SUBMIT_FOR_APPROVAL,
+            title: 'Risk Submitted for Approval',
+            message: `Risk "${risk.riskId}: ${risk.name}" has been submitted for approval.`,
+            relatedEntityType: 'risk',
+            relatedEntityId: risk.id,
+            link: `/risk-management/register/${risk.id}`,
+            metadata: {
+              riskCode: risk.riskId,
+              riskName: risk.name,
+              submittedBy: session.name || 'User',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
       }
 
       return NextResponse.json(risk);
