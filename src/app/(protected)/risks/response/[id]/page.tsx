@@ -748,7 +748,7 @@ export default function RiskViewPage() {
               {!["Completed", "Awaiting Approval", "Sent Back"].includes(currentStatus) && t("Action completed successfully!")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="px-6 py-4 border-t border-slate-100">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
               {t("OK")}
             </AlertDialogAction>

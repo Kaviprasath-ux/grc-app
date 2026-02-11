@@ -1547,9 +1547,9 @@ export default function AuditPlanningPage() {
               {t("Are you sure you want to delete this engagement?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="border-t border-slate-100 bg-slate-50/80 rounded-b-lg px-6 py-4">
-            <AlertDialogAction onClick={handleDelete}>{t("OK")}</AlertDialogAction>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

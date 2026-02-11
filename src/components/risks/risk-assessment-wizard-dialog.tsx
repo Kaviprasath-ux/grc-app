@@ -654,48 +654,40 @@ export function RiskAssessmentWizardDialog({
             {/* Step Indicator */}
             {!loading && risk && (
               <div className="flex items-start justify-center pt-5">
-                {assessmentSteps.map((step, index) => {
-                  const StepIcon = step.icon;
-                  const isActive = currentStep === step.id;
-                  const isCompleted = currentStep > step.id;
-                  return (
-                    <div key={step.id} className="flex items-start">
-                      <button
-                        onClick={() => setCurrentStep(step.id)}
-                        className="flex flex-col items-center w-[72px] group"
+                {assessmentSteps.map((step, index) => (
+                  <div key={step.id} className="flex items-start">
+                    <div className="flex flex-col items-center w-[72px]">
+                      <div
+                        className={cn(
+                          "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
+                          currentStep > step.id
+                            ? "bg-success text-white"
+                            : currentStep === step.id
+                            ? "bg-primary-600 text-white"
+                            : "bg-slate-100 text-slate-400 border border-slate-200"
+                        )}
                       >
-                        <div
-                          className={cn(
-                            "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm",
-                            isCompleted
-                              ? "bg-success text-white ring-2 ring-success/20"
-                              : isActive
-                              ? "bg-primary-600 text-white ring-4 ring-primary-100"
-                              : "bg-slate-100 text-slate-400 border border-slate-200 group-hover:border-slate-300"
-                          )}
-                        >
-                          {isCompleted ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
-                        </div>
-                        <span
-                          className={cn(
-                            "mt-2 text-[10px] font-medium text-center leading-tight transition-colors",
-                            isActive || isCompleted ? "text-slate-700" : "text-slate-400"
-                          )}
-                        >
-                          {step.name}
-                        </span>
-                      </button>
-                      {index < assessmentSteps.length - 1 && (
-                        <div
-                          className={cn(
-                            "w-6 h-0.5 mt-[18px] -mx-1 transition-colors",
-                            isCompleted ? "bg-success" : "bg-slate-200"
-                          )}
-                        />
-                      )}
+                        {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                      </div>
+                      <span
+                        className={cn(
+                          "mt-2 text-[10px] font-medium text-center leading-tight",
+                          currentStep >= step.id ? "text-slate-700" : "text-slate-400"
+                        )}
+                      >
+                        {step.name}
+                      </span>
                     </div>
-                  );
-                })}
+                    {index < assessmentSteps.length - 1 && (
+                      <div
+                        className={cn(
+                          "w-6 h-0.5 mt-[18px] -mx-1 transition-colors",
+                          currentStep > step.id ? "bg-success" : "bg-slate-200"
+                        )}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </DialogHeader>
@@ -716,40 +708,41 @@ export function RiskAssessmentWizardDialog({
             ) : (
               <div className="space-y-5">
                 {/* Risk Header */}
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                  <div className="flex gap-2 items-center">
-                    <span className="font-semibold text-slate-800">{risk.riskId}</span>
-                    <span className="font-semibold text-slate-800">{risk.name}</span>
+                <div className="pb-4 border-b border-slate-200">
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-primary-50 text-primary-700">{risk.riskId}</span>
+                    <h3 className="font-semibold text-slate-800">{risk.name}</h3>
                   </div>
-                  <p className="text-sm text-slate-500 mt-1">{risk.description}</p>
+                  {risk.description && (
+                    <p className="text-sm text-slate-500 mt-2 leading-relaxed">{risk.description}</p>
+                  )}
                 </div>
 
                 {/* Step 1: Risk Context */}
                 {currentStep === 1 && (
-                  <div className="space-y-5">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                        <p className="text-xs text-slate-500 uppercase mb-1">Risk Category</p>
-                        <p className="font-medium text-slate-800">{risk.category?.name || "-"}</p>
+                  <div className="space-y-4">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Context</p>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-0">
+                      <div className="flex justify-between py-2.5 border-b border-slate-100">
+                        <span className="text-sm text-slate-500">Category</span>
+                        <span className="text-sm font-medium text-slate-800">{risk.category?.name || "-"}</span>
                       </div>
-                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                        <p className="text-xs text-slate-500 uppercase mb-1">Risk Type</p>
-                        <p className="font-medium text-slate-800">{risk.type?.name || "-"}</p>
+                      <div className="flex justify-between py-2.5 border-b border-slate-100">
+                        <span className="text-sm text-slate-500">Type</span>
+                        <span className="text-sm font-medium text-slate-800">{risk.type?.name || "-"}</span>
+                      </div>
+                      <div className="flex justify-between py-2.5 border-b border-slate-100">
+                        <span className="text-sm text-slate-500">Owner</span>
+                        <span className="text-sm font-medium text-slate-800">{risk.owner?.fullName || "-"}</span>
+                      </div>
+                      <div className="flex justify-between py-2.5 border-b border-slate-100">
+                        <span className="text-sm text-slate-500">Department</span>
+                        <span className="text-sm font-medium text-slate-800">{risk.category?.name || "-"}</span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                        <p className="text-xs text-slate-500 uppercase mb-1">Risk Owner</p>
-                        <p className="font-medium text-slate-800">{risk.owner?.fullName || "-"}</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                        <p className="text-xs text-slate-500 uppercase mb-1">Department</p>
-                        <p className="font-medium text-slate-800">{risk.category?.name || "-"}</p>
-                      </div>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                      <p className="text-xs text-slate-500 uppercase mb-1">Risk Sources</p>
-                      <p className="font-medium text-slate-800">{risk.riskSources || "-"}</p>
+                    <div className="flex justify-between py-2.5 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">Risk Sources</span>
+                      <span className="text-sm font-medium text-slate-800 text-right max-w-[60%]">{risk.riskSources || "-"}</span>
                     </div>
                   </div>
                 )}
@@ -757,8 +750,8 @@ export function RiskAssessmentWizardDialog({
                 {/* Step 2: Likelihood */}
                 {currentStep === 2 && (
                   <div className="space-y-6">
-                    {riskThreats.map((threat) => (
-                      <div key={threat.id} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    {riskThreats.map((threat, idx) => (
+                      <div key={threat.id} className={cn(idx < riskThreats.length - 1 && "pb-6 border-b border-slate-200")}>
                         <h4 className="font-semibold text-slate-800 mb-3">{threat.name}</h4>
                         <div className="grid grid-cols-5 gap-2">
                           {likelihoodOptions.map((option) => (
@@ -781,8 +774,8 @@ export function RiskAssessmentWizardDialog({
                 {/* Step 3: Impact */}
                 {currentStep === 3 && (
                   <div className="space-y-6">
-                    {riskThreats.map((threat) => (
-                      <div key={threat.id} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    {riskThreats.map((threat, idx) => (
+                      <div key={threat.id} className={cn(idx < riskThreats.length - 1 && "pb-6 border-b border-slate-200")}>
                         <h4 className="font-semibold text-slate-800 mb-4">{threat.name}</h4>
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-4 text-sm font-medium text-slate-600 pb-2 border-b border-slate-200">
@@ -827,8 +820,8 @@ export function RiskAssessmentWizardDialog({
                 {/* Step 4: Vulnerability */}
                 {currentStep === 4 && (
                   <div className="space-y-6">
-                    {riskVulnerabilities.map((vuln) => (
-                      <div key={vuln.id} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    {riskVulnerabilities.map((vuln, idx) => (
+                      <div key={vuln.id} className={cn(idx < riskVulnerabilities.length - 1 && "pb-6 border-b border-slate-200")}>
                         <h4 className="font-semibold text-slate-800 mb-3">{vuln.name}</h4>
                         <div className="grid grid-cols-5 gap-2">
                           {vulnerabilityRatings.map((option) => (
@@ -852,7 +845,7 @@ export function RiskAssessmentWizardDialog({
                 {currentStep === 5 && (
                   <div className="space-y-5">
                     {/* Risk Calculation */}
-                    <div className="p-5 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="pb-5 border-b border-slate-200">
                       <h4 className="font-semibold text-slate-800 mb-4">Inherent Risk Calculation</h4>
                       <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-2 items-center text-center">
                         <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-0">
@@ -878,7 +871,7 @@ export function RiskAssessmentWizardDialog({
                     </div>
 
                     {/* Risk Rating Result */}
-                    <div className="p-5 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="pb-5 border-b border-slate-200">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-slate-500 mb-1">Inherent Risk Rating</p>
@@ -923,7 +916,7 @@ export function RiskAssessmentWizardDialog({
                 {currentStep === 6 && (
                   <div className="space-y-5">
                     {/* Speedometer Chart */}
-                    <div className="p-5 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="pb-5 border-b border-slate-200">
                       <h4 className="font-semibold text-slate-800 mb-3 text-center">Inherent Risk Score</h4>
                       <div className="flex justify-center">
                         <div className="flex flex-col items-center">
@@ -974,9 +967,9 @@ export function RiskAssessmentWizardDialog({
                     </div>
 
                     {/* Risk Calculation Breakdown */}
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="pb-5 border-b border-slate-200">
                       <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-2 items-center text-center">
-                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-0">
+                        <div className="p-2.5 rounded-lg border border-slate-200 min-w-0">
                           <p className="text-[10px] text-slate-500 uppercase truncate">Likelihood</p>
                           <p className="text-lg font-bold text-slate-800">{calcLikelihood}</p>
                         </div>
@@ -999,8 +992,8 @@ export function RiskAssessmentWizardDialog({
                     </div>
 
                     {/* Ratings Summary Cards */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                    <div className="grid grid-cols-3 gap-4 pb-5 border-b border-slate-200">
+                      <div className="p-4 text-center rounded-lg border border-slate-200">
                         <p className="text-xs text-slate-500 uppercase mb-2">Inherent Risk</p>
                         <span className={cn(
                           "inline-block px-3 py-1.5 rounded-lg text-sm font-semibold",
@@ -1014,12 +1007,12 @@ export function RiskAssessmentWizardDialog({
                         </span>
                         <p className="text-xs text-slate-400 mt-1.5">Score: {riskScore.toFixed(2)}</p>
                       </div>
-                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                      <div className="p-4 text-center rounded-lg border border-slate-200">
                         <p className="text-xs text-slate-500 uppercase mb-2">Control Rating</p>
                         <p className="text-lg font-semibold text-slate-800">-</p>
                         <p className="text-xs text-slate-400 mt-1.5">No controls linked</p>
                       </div>
-                      <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                      <div className="p-4 text-center rounded-lg border border-slate-200">
                         <p className="text-xs text-slate-500 uppercase mb-2">Residual Risk</p>
                         <span className={cn(
                           "inline-block px-3 py-1.5 rounded-lg text-sm font-semibold",
@@ -1036,7 +1029,7 @@ export function RiskAssessmentWizardDialog({
                     </div>
 
                     {/* Assessment Details */}
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <div>
                       <h4 className="font-semibold text-slate-800 mb-3">Assessment Details</h4>
                       <div className="grid grid-cols-2 gap-3">
                         <div>

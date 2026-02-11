@@ -642,10 +642,10 @@ function ControlListPageContent() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
-        </Link>
+        </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Controls")}</span>
       </nav>
@@ -1454,7 +1454,7 @@ function ControlListPageContent() {
               {t("Are you sure you want to delete all controls? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAll}

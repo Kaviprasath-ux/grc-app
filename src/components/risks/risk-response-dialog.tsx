@@ -17,7 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Plus, X } from "lucide-react";
+import { ChevronDown, Plus, X, CalendarDays, TrendingUp, Wallet, ShieldAlert } from "lucide-react";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import { AddControlDialog } from "@/components/risks/add-control-dialog";
 import { ChooseControlDialog } from "@/components/risks/choose-control-dialog";
@@ -317,6 +317,8 @@ export function RiskResponseDialog({
     }
   };
 
+  const daysRemaining = risk ? getDaysRemaining(risk.treatmentDueDate) : 0;
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -325,7 +327,7 @@ export function RiskResponseDialog({
           showCloseButton={false}
         >
           {/* Fixed Header */}
-          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-200">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-lg font-semibold text-slate-800 truncate pe-2">
@@ -364,21 +366,19 @@ export function RiskResponseDialog({
                   </div>
                 )}
               </div>
-              <div className="flex-shrink-0 flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600"
-                  onClick={() => onOpenChange(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 flex-shrink-0"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </DialogHeader>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="relative h-8 w-8">
@@ -391,12 +391,12 @@ export function RiskResponseDialog({
                 <p className="text-slate-500">{t("Risk not found")}</p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <>
                 {/* Reviewer Comments (if Sent Back) */}
                 {currentStatus === "Sent Back" &&
                   risk.activityLogs &&
                   risk.activityLogs.length > 0 && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                    <div className="mx-6 mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
                       <h4 className="text-sm font-semibold text-red-800 mb-2">
                         {t("Reviewer Comments")}
                       </h4>
@@ -423,233 +423,135 @@ export function RiskResponseDialog({
                     </div>
                   )}
 
-                {/* Charts - 2x2 Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Risk Treatment - SVG Donut */}
-                  <div className="bg-slate-50 rounded-lg border border-slate-100 p-4">
-                    <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Risk Treatment")}</h4>
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-24 h-24 flex-shrink-0">
-                        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                          <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" strokeWidth="12" />
-                          <circle cx="50" cy="50" r="38" fill="none" stroke="#3b82f6" strokeWidth="12" strokeDasharray={`${0} ${2 * Math.PI * 38}`} strokeLinecap="round" />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-[10px] text-slate-500">{t("Total")}</span>
-                          <span className="text-base font-bold text-slate-800">0%</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1.5 text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 bg-blue-500 rounded-sm"></div>
-                          <span className="text-slate-600">{t("Completed")}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 bg-slate-200 rounded-sm"></div>
-                          <span className="text-slate-600">{t("Total")}</span>
-                        </div>
-                      </div>
+                {/* Quick Stats Strip */}
+                <div className="grid grid-cols-4 border-b border-slate-200">
+                  <div className="px-4 py-4 text-center border-r border-slate-100">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{t("Days Left")}</span>
                     </div>
+                    <p className={cn(
+                      "text-2xl font-bold",
+                      daysRemaining <= 3 ? "text-red-600" : daysRemaining <= 7 ? "text-amber-600" : "text-slate-800"
+                    )}>
+                      {daysRemaining}
+                    </p>
                   </div>
-
-                  {/* Budget Allocation Vs Used */}
-                  <div className="bg-slate-50 rounded-lg border border-slate-100 p-4">
-                    <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Budget Allocation Vs Used")}</h4>
-                    <div className="flex flex-col justify-between h-[calc(100%-28px)]">
-                      <div>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">{t("Allocated")}</p>
-                        <p className="text-2xl font-bold text-slate-800">0</p>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs mt-2">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 bg-yellow-500"></div>
-                          <span className="text-slate-600">{t("Used")} - 0</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 bg-slate-200"></div>
-                          <span className="text-slate-600">{t("Remaining")} - 0</span>
-                        </div>
-                      </div>
+                  <div className="px-4 py-4 text-center border-r border-slate-100">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <TrendingUp className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{t("Treatment")}</span>
                     </div>
+                    <p className="text-2xl font-bold text-slate-800">0%</p>
                   </div>
-
-                  {/* Days Remaining - Bar Chart */}
-                  <div className="bg-slate-50 rounded-lg border border-slate-100 p-4">
-                    <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Days Remaining")}</h4>
-                    <div className="flex items-end justify-center gap-1 h-20">
-                      {[0, 2, 4, 6].map((val, idx) => (
-                        <div
-                          key={idx}
-                          className={cn(
-                            "w-6 bg-blue-500 rounded-t",
-                            getDaysRemaining(risk.treatmentDueDate) >= val ? "opacity-100" : "opacity-30"
-                          )}
-                          style={{ height: `${(val + 1) * 15}%` }}
-                        />
-                      ))}
+                  <div className="px-4 py-4 text-center border-r border-slate-100">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <Wallet className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{t("Budget")}</span>
                     </div>
-                    <div className="flex justify-center gap-1 mt-1.5 text-[10px] text-slate-500">
-                      <span className="w-6 text-center">0</span>
-                      <span className="w-6 text-center">2</span>
-                      <span className="w-6 text-center">4</span>
-                      <span className="w-6 text-center">6</span>
-                    </div>
+                    <p className="text-2xl font-bold text-slate-800">0</p>
+                    <p className="text-[10px] text-slate-400">{t("Used")} 0</p>
                   </div>
-
-                  {/* Residual Risk Rating */}
-                  <div className="bg-slate-50 rounded-lg border border-slate-100 p-4">
-                    <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Residual Risk Rating")}</h4>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full border-[3px] border-orange-500 flex items-center justify-center flex-shrink-0">
-                          <div className="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
-                        </div>
-                        <span className="text-sm font-semibold text-orange-600">
-                          {risk.riskRating} (35.00)
-                        </span>
-                      </div>
-                      <div className="border-t border-slate-200 pt-2">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1.5">{t("Planned Residual Risk Rating")}</p>
-                        <div className="flex items-center gap-2">
-                          <div className="w-9 h-9 rounded-full border-[3px] border-orange-500 flex items-center justify-center flex-shrink-0">
-                            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                          </div>
-                          <span className="text-xs font-semibold text-orange-600">
-                            {risk.riskRating} (35.00)
-                          </span>
-                        </div>
-                      </div>
+                  <div className="px-4 py-4 text-center">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <ShieldAlert className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{t("Residual")}</span>
                     </div>
+                    <RiskRatingBadge rating={risk.riskRating} />
                   </div>
                 </div>
 
-                {/* Risk Details */}
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                  <h4 className="font-semibold text-slate-800 mb-3">
+                {/* Risk Details Section */}
+                <div className="px-6 py-5 border-b border-slate-200">
+                  <h4 className="text-sm font-semibold text-slate-800 mb-3">
                     {t("Risk Details")}
                   </h4>
                   {risk.description && (
-                    <p className="text-sm text-slate-500 mb-4">
+                    <p className="text-sm text-slate-500 mb-4 leading-relaxed">
                       {risk.description}
                     </p>
                   )}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase mb-0.5">
-                        {t("Risk Owner")}
-                      </p>
-                      <p className="text-sm font-medium text-slate-800">
-                        {risk.owner?.fullName || "-"}
-                      </p>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-0">
+                    <div className="flex justify-between py-2.5 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">{t("Risk Owner")}</span>
+                      <span className="text-sm font-medium text-slate-800">{risk.owner?.fullName || "-"}</span>
                     </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase mb-0.5">
-                        {t("Likelihood")}
-                      </p>
-                      <p className="text-sm font-medium text-slate-800">
-                        {risk.likelihood || "-"}
-                      </p>
+                    <div className="flex justify-between py-2.5 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">{t("Response Strategy")}</span>
+                      <span className="text-sm font-medium text-slate-800">{risk.responseStrategy || "-"}</span>
                     </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase mb-0.5">
-                        {t("Impact")}
-                      </p>
-                      <p className="text-sm font-medium text-slate-800">
-                        {risk.impact || "-"}
-                      </p>
+                    <div className="flex justify-between py-2.5 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">{t("Likelihood")}</span>
+                      <span className="text-sm font-medium text-slate-800">{risk.likelihood || "-"}</span>
                     </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase mb-0.5">
-                        {t("Response Strategy")}
-                      </p>
-                      <p className="text-sm font-medium text-slate-800">
-                        {risk.responseStrategy || "-"}
-                      </p>
+                    <div className="flex justify-between py-2.5 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">{t("Impact")}</span>
+                      <span className="text-sm font-medium text-slate-800">{risk.impact || "-"}</span>
                     </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase mb-0.5">
-                        {t("Treatment Due Date")}
-                      </p>
-                      <p className="text-sm font-medium text-slate-800">
+                    <div className="flex justify-between py-2.5 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">{t("Risk Rating")}</span>
+                      <span className="text-sm font-medium text-slate-800">{risk.riskRating || "-"}</span>
+                    </div>
+                    <div className="flex justify-between py-2.5 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">{t("Treatment Due Date")}</span>
+                      <span className="text-sm font-medium text-slate-800">
                         {risk.treatmentDueDate
-                          ? new Date(
-                              risk.treatmentDueDate
-                            ).toLocaleDateString("en-GB")
+                          ? new Date(risk.treatmentDueDate).toLocaleDateString("en-GB")
                           : "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase mb-0.5">
-                        {t("Risk Rating")}
-                      </p>
-                      <p className="text-sm font-medium text-slate-800">
-                        {risk.riskRating || "-"}
-                      </p>
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Existing Controls */}
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-800 mb-2">
+                {/* Existing Controls Section */}
+                <div className="px-6 py-5 border-b border-slate-200">
+                  <h4 className="text-sm font-semibold text-slate-800 mb-3">
                     {t("Existing Controls")}
                   </h4>
                   {controls.length === 0 ? (
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center text-sm text-slate-400">
-                      {t("No controls found")}
-                    </div>
+                    <p className="text-sm text-slate-400 py-2">{t("No controls found")}</p>
                   ) : (
                     <div className="space-y-2">
                       {controls.map((control) => (
-                        <div
+                        <Collapsible
                           key={control.id}
-                          className="bg-slate-50 rounded-lg border border-slate-100"
+                          open={expandedControls.includes(control.id)}
+                          onOpenChange={() => toggleControl(control.id)}
                         >
-                          <Collapsible
-                            open={expandedControls.includes(control.id)}
-                            onOpenChange={() => toggleControl(control.id)}
-                          >
-                            <CollapsibleTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="w-full justify-between p-3 h-auto hover:bg-slate-100/50"
-                              >
-                                <span className="flex items-center gap-2 text-sm">
-                                  <ChevronDown
-                                    className={cn(
-                                      "h-4 w-4 transition-transform text-slate-400",
-                                      expandedControls.includes(control.id) &&
-                                        "rotate-180"
-                                    )}
-                                  />
-                                  <span className="text-slate-800">
-                                    {control.controlId} - {control.name}
-                                  </span>
-                                </span>
-                                <span className="text-xs font-medium text-slate-500">
-                                  {control.effectiveness}%
-                                </span>
-                              </Button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="px-3 pb-3">
-                                <div className="bg-white rounded-lg border border-slate-100 p-3">
-                                  <p className="text-sm text-slate-500">
-                                    {control.description}
-                                  </p>
-                                </div>
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        </div>
+                          <CollapsibleTrigger asChild>
+                            <button
+                              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-left"
+                            >
+                              <span className="flex items-center gap-2 text-sm">
+                                <ChevronDown
+                                  className={cn(
+                                    "h-4 w-4 transition-transform text-slate-400",
+                                    expandedControls.includes(control.id) &&
+                                      "rotate-180"
+                                  )}
+                                />
+                                <span className="font-medium text-primary-600">{control.controlId}</span>
+                                <span className="text-slate-700">{control.name}</span>
+                              </span>
+                              <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                {control.effectiveness}%
+                              </span>
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="ms-9 me-3 mb-2 p-3 rounded-lg bg-slate-50 text-sm text-slate-600 leading-relaxed">
+                              {control.description}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Planned Controls */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
+                {/* Planned Controls Section */}
+                <div className="px-6 py-5">
+                  <div className="flex items-center justify-between mb-3">
                     <h4 className="text-sm font-semibold text-slate-800">
                       {t("Planned Controls")}
                     </h4>
@@ -676,70 +578,62 @@ export function RiskResponseDialog({
                     )}
                   </div>
                   {plannedControls.length === 0 ? (
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center text-sm text-slate-400">
-                      {t("No planned controls")}
-                    </div>
+                    <p className="text-sm text-slate-400 py-2">{t("No planned controls")}</p>
                   ) : (
                     <div className="space-y-2">
                       {plannedControls.map((control) => (
-                        <div
+                        <Collapsible
                           key={control.id}
-                          className="bg-slate-50 rounded-lg border border-slate-100"
+                          open={expandedPlannedControls.includes(control.id)}
+                          onOpenChange={() =>
+                            togglePlannedControl(control.id)
+                          }
                         >
-                          <Collapsible
-                            open={expandedPlannedControls.includes(control.id)}
-                            onOpenChange={() =>
-                              togglePlannedControl(control.id)
-                            }
-                          >
-                            <CollapsibleTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="w-full justify-between p-3 h-auto hover:bg-slate-100/50"
-                              >
-                                <span className="flex items-center gap-2 text-sm">
-                                  <ChevronDown
-                                    className={cn(
-                                      "h-4 w-4 transition-transform text-slate-400",
-                                      expandedPlannedControls.includes(
-                                        control.id
-                                      ) && "rotate-180"
-                                    )}
-                                  />
-                                  <span className="text-slate-800">
-                                    {control.controlId} - {control.name}
-                                  </span>
-                                </span>
-                              </Button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="px-3 pb-3">
-                                <div className="bg-white rounded-lg border border-slate-100 p-3">
-                                  <p className="text-sm text-slate-500">
-                                    {control.description}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-2">
-                                    {control.domain && (
-                                      <span className="bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-600">
-                                        {control.domain}
-                                      </span>
-                                    )}
-                                    {control.functionalGrouping && (
-                                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">
-                                        {control.functionalGrouping}
-                                      </span>
-                                    )}
-                                  </div>
+                          <CollapsibleTrigger asChild>
+                            <button
+                              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-left"
+                            >
+                              <span className="flex items-center gap-2 text-sm">
+                                <ChevronDown
+                                  className={cn(
+                                    "h-4 w-4 transition-transform text-slate-400",
+                                    expandedPlannedControls.includes(
+                                      control.id
+                                    ) && "rotate-180"
+                                  )}
+                                />
+                                <span className="font-medium text-primary-600">{control.controlId}</span>
+                                <span className="text-slate-700">{control.name}</span>
+                              </span>
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="ms-9 me-3 mb-2 p-3 rounded-lg bg-slate-50">
+                              <p className="text-sm text-slate-600 leading-relaxed">
+                                {control.description}
+                              </p>
+                              {(control.domain || control.functionalGrouping) && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  {control.domain && (
+                                    <span className="bg-slate-200 px-2 py-0.5 rounded text-xs text-slate-600">
+                                      {control.domain}
+                                    </span>
+                                  )}
+                                  {control.functionalGrouping && (
+                                    <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">
+                                      {control.functionalGrouping}
+                                    </span>
+                                  )}
                                 </div>
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        </div>
+                              )}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                       ))}
                     </div>
                   )}
                 </div>
-              </div>
+              </>
             )}
           </div>
 

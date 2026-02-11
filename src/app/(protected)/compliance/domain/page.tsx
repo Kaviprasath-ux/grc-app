@@ -262,10 +262,10 @@ export default function DomainPage() {
             <span className="text-slate-500">{t("Compliance")}</span>
           </>
         ) : (
-          <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <div className="flex items-center gap-1.5 text-slate-500 ">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
-          </Link>
+          </div>
         )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Domain")}</span>
@@ -373,8 +373,16 @@ export default function DomainPage() {
       </div>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) { setIsDialogOpen(false); setDomainErrors({}); } else { setIsDialogOpen(true); } }}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden">
+      <Dialog open={isDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsDialogOpen(false);
+            setDomainErrors({});
+          } else {
+            setIsDialogOpen(true);
+          }
+        }}>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">
               {editingDomain ? t("Edit Domain") : t("Create New Domain")}

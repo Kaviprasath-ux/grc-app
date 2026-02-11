@@ -47,49 +47,6 @@ interface Risk {
   department?: { id: string; name: string } | null;
 }
 
-// Horizontal Progress Bar component matching website
-function ProgressBar({
-  total,
-  completed,
-  label,
-  t
-}: {
-  total: number;
-  completed: number;
-  label: string;
-  t: (key: string) => string;
-}) {
-  const percentage = total > 0 ? (completed / total) * 100 : 0;
-
-  return (
-    <div className="flex items-center gap-4">
-      <div className="flex-1">
-        <div className="h-3 bg-slate-200 rounded-sm overflow-hidden">
-          <div
-            className="h-full bg-primary-500 transition-all duration-300"
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-        <div className="flex items-center gap-4 mt-2 text-xs text-slate-600">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-slate-300"></div>
-            <span>{t("Total")}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-primary-500"></div>
-            <span>{label}</span>
-          </div>
-        </div>
-      </div>
-      <div className="text-right whitespace-nowrap">
-        <span className="text-sm text-slate-700">{completed}/{total}</span>
-        <br />
-        <span className="text-sm text-slate-500">{label}</span>
-      </div>
-    </div>
-  );
-}
-
 export default function RiskResponsePage() {
   const { data: session } = useSession();
   const userRoles = useUserRoles();
@@ -250,53 +207,29 @@ export default function RiskResponsePage() {
       case "Open":
         // Open status: "Respond" button (changes status to In-Progress)
         return canEdit ? (
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90"
-            onClick={(e) => handleRespond(risk, e)}
-            disabled={isLoading}
-          >
+          <Button size="sm" className="h-8 text-xs" onClick={(e) => handleRespond(risk, e)} disabled={isLoading}>
             {isLoading ? "..." : t("Respond")}
           </Button>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
-            onClick={() => openDetail(risk)}
-          >
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openDetail(risk)}>
             {t("View")}
           </Button>
         );
       case "In-Progress":
         // In-Progress status: "Resume" button only (Submit for Approval is in details page)
         return (
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
-            onClick={() => openDetail(risk)}
-          >
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openDetail(risk)}>
             {t("Resume")}
           </Button>
         );
       case "Sent Back":
         // Sent Back status: "Resume" button to view and resubmit (if canEdit)
         return canEdit ? (
-          <Button
-            size="sm"
-            className="bg-orange-500 hover:bg-orange-600"
-            onClick={() => openDetail(risk)}
-          >
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openDetail(risk)}>
             {t("Resume")}
           </Button>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
-            onClick={() => openDetail(risk)}
-          >
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openDetail(risk)}>
             {t("View")}
           </Button>
         );
@@ -305,21 +238,11 @@ export default function RiskResponsePage() {
         return (
           <div className="flex gap-2">
             {canApprove && (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90"
-                onClick={(e) => handleApprove(risk, e)}
-                disabled={isLoading}
-              >
+              <Button size="sm" className="h-8 text-xs" onClick={(e) => handleApprove(risk, e)} disabled={isLoading}>
                 {isLoading ? "..." : t("Approve")}
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary/10"
-              onClick={() => openDetail(risk)}
-            >
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openDetail(risk)}>
               {t("View")}
             </Button>
           </div>
@@ -327,32 +250,18 @@ export default function RiskResponsePage() {
       case "Completed":
         // Completed status: "View" button only
         return (
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => openDetail(risk)}
-          >
+          <Button size="sm" className="h-8 text-xs" onClick={() => openDetail(risk)}>
             {t("View")}
           </Button>
         );
       default:
         // Default fallback - treat as Open
         return canEdit ? (
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90"
-            onClick={(e) => handleRespond(risk, e)}
-            disabled={isLoading}
-          >
+          <Button size="sm" className="h-8 text-xs" onClick={(e) => handleRespond(risk, e)} disabled={isLoading}>
             {isLoading ? "..." : t("Respond")}
           </Button>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
-            onClick={() => openDetail(risk)}
-          >
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openDetail(risk)}>
             {t("View")}
           </Button>
         );
@@ -434,6 +343,10 @@ export default function RiskResponsePage() {
   // Pagination
   const { currentPage, setCurrentPage, totalPages, paginatedData: paginatedRisks } = usePagination({ data: displayRisks, itemsPerPage: ITEMS_PER_PAGE });
 
+  // Percentage calculations
+  const strategyPct = strategyTotal > 0 ? Math.round((strategyClosed / strategyTotal) * 100) : 0;
+  const progressPct = progressTotal > 0 ? Math.round((progressCount / progressTotal) * 100) : 0;
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -486,14 +399,14 @@ export default function RiskResponsePage() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Risk Response Strategy")}</h1>
       </div>
 
-      {/* Summary Cards with Progress Bars */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Risk Response Strategy Card */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Strategy Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-medium text-slate-700">{t("Risk Response Strategy")}</span>
+            <h3 className="text-sm font-semibold text-slate-800">{t("Risk Response Strategy")}</h3>
             <Select value={strategyFilter} onValueChange={setStrategyFilter}>
-              <SelectTrigger className="w-32 h-8 bg-white">
+              <SelectTrigger className="w-32 h-8 text-xs border-slate-200">
                 <SelectValue placeholder={t("Strategy")} />
               </SelectTrigger>
               <SelectContent>
@@ -505,25 +418,66 @@ export default function RiskResponsePage() {
               </SelectContent>
             </Select>
           </div>
-          <ProgressBar
-            total={strategyTotal}
-            completed={strategyClosed}
-            label={t("Closed")}
-            t={t}
-          />
+          <div className="flex items-center gap-6">
+            <div className="relative w-[120px] h-[120px] flex-shrink-0">
+              <svg viewBox="0 0 120 120" className="w-full h-full">
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+                <circle
+                  cx="60" cy="60" r="48"
+                  fill="none" stroke="#6366f1" strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 48}
+                  strokeDashoffset={2 * Math.PI * 48 - (2 * Math.PI * 48 * strategyPct) / 100}
+                  transform="rotate(-90 60 60)"
+                  className="transition-all duration-700"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold text-slate-800">{strategyPct}%</span>
+                <span className="text-[10px] text-slate-500 font-medium">{t("Closed")}</span>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                  <span className="text-xs text-slate-600">{t("Closed")}</span>
+                </div>
+                <span className="text-xs font-semibold text-slate-700">{strategyClosed}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-200" />
+                  <span className="text-xs text-slate-600">{t("Total")}</span>
+                </div>
+                <span className="text-xs font-semibold text-slate-700">{strategyTotal}</span>
+              </div>
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-slate-500">{t("Resolution Progress")}</span>
+                  <span className="font-semibold text-slate-700">{strategyPct}%</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-500 rounded-full transition-all duration-700"
+                    style={{ width: `${strategyPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Risk Response Progress Card */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
+        {/* Progress Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-medium text-slate-700">{t("Risk Response Progress")}</span>
+            <h3 className="text-sm font-semibold text-slate-800">{t("Risk Response Progress")}</h3>
             <Select value={progressFilter} onValueChange={setProgressFilter}>
-              <SelectTrigger className="w-40 h-8 bg-white">
+              <SelectTrigger className="w-40 h-8 text-xs border-slate-200">
                 <SelectValue placeholder={t("Status")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("All")}</SelectItem>
-                {/* DepartmentReviewer only sees Awaiting Approval, Sent Back, and Completed */}
                 {!isDepartmentReviewer && <SelectItem value="Open">{t("Open")}</SelectItem>}
                 {!isDepartmentReviewer && <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>}
                 <SelectItem value="Awaiting Approval">{t("Awaiting Approval")}</SelectItem>
@@ -532,12 +486,54 @@ export default function RiskResponsePage() {
               </SelectContent>
             </Select>
           </div>
-          <ProgressBar
-            total={progressTotal}
-            completed={progressCount}
-            label={getProgressLabel()}
-            t={t}
-          />
+          <div className="flex items-center gap-6">
+            <div className="relative w-[120px] h-[120px] flex-shrink-0">
+              <svg viewBox="0 0 120 120" className="w-full h-full">
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+                <circle
+                  cx="60" cy="60" r="48"
+                  fill="none" stroke="#10b981" strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 48}
+                  strokeDashoffset={2 * Math.PI * 48 - (2 * Math.PI * 48 * progressPct) / 100}
+                  transform="rotate(-90 60 60)"
+                  className="transition-all duration-700"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold text-slate-800">{progressPct}%</span>
+                <span className="text-[10px] text-slate-500 font-medium">{getProgressLabel()}</span>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span className="text-xs text-slate-600">{getProgressLabel()}</span>
+                </div>
+                <span className="text-xs font-semibold text-slate-700">{progressCount}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-200" />
+                  <span className="text-xs text-slate-600">{t("Total")}</span>
+                </div>
+                <span className="text-xs font-semibold text-slate-700">{progressTotal}</span>
+              </div>
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-slate-500">{t("Completion")}</span>
+                  <span className="font-semibold text-slate-700">{progressPct}%</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -632,7 +628,7 @@ export default function RiskResponsePage() {
               {successMessage}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
               {t("OK")}
             </AlertDialogAction>

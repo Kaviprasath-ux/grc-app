@@ -1285,8 +1285,8 @@ export default function RiskRegisterPage() {
               {t("Are you sure you want to delete this risk? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

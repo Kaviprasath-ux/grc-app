@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -21,18 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  ArrowLeft,
-  Edit,
+  Home,
+  ChevronRight,
+  Pencil,
   AlertTriangle,
   Shield,
   Building2,
@@ -41,6 +36,7 @@ import {
   Plus,
   Trash2,
   Link2,
+  FileText,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
@@ -58,10 +54,10 @@ interface Risk {
   residualLikelihood: number | null;
   residualImpact: number | null;
   residualRiskRating: string | null;
-  category: string | null;
+  category: { id: string; name: string; color?: string; status?: string } | null;
   status: string;
   mitigationStatus: string | null;
-  owner: string | null;
+  owner: { id: string; fullName: string; email: string } | null;
   dueDate: string | null;
   departmentId: string | null;
   department?: { id: string; name: string } | null;
@@ -89,26 +85,27 @@ interface Control {
   status: string;
 }
 
-const statusColors: Record<string, string> = {
-  Open: "bg-blue-100 text-blue-800",
-  "In-Progress": "bg-yellow-100 text-yellow-800",
-  Completed: "bg-green-100 text-green-800",
+const riskRatingColors: Record<string, string> = {
+  Critical: "bg-red-50 text-red-700 border-red-200",
+  Catastrophic: "bg-red-50 text-red-700 border-red-200",
+  "Very High": "bg-red-50 text-red-700 border-red-200",
+  High: "bg-amber-50 text-amber-700 border-amber-200",
+  Medium: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  Low: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Low Risk": "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
-const riskRatingColors: Record<string, string> = {
-  Catastrophic: "bg-red-600 text-white",
-  "Very High": "bg-red-500 text-white",
-  High: "bg-orange-500 text-white",
-  Medium: "bg-yellow-500 text-black",
-  Low: "bg-green-500 text-white",
-  "Low Risk": "bg-green-500 text-white",
+const statusColors: Record<string, string> = {
+  Open: "bg-blue-50 text-blue-700 border-blue-200",
+  "In-Progress": "bg-amber-50 text-amber-700 border-amber-200",
+  Completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
 const controlStatusColors: Record<string, string> = {
-  Implemented: "bg-green-100 text-green-800",
-  "In Progress": "bg-yellow-100 text-yellow-800",
-  Planned: "bg-blue-100 text-blue-800",
-  "Not Implemented": "bg-gray-100 text-gray-800",
+  Implemented: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "In Progress": "bg-amber-50 text-amber-700 border-amber-200",
+  Planned: "bg-blue-50 text-blue-700 border-blue-200",
+  "Not Implemented": "bg-slate-50 text-slate-600 border-slate-200",
 };
 
 const defaultMitigationStatuses = [
@@ -174,7 +171,6 @@ export default function RiskDetailPage() {
   const [impactOptions, setImpactOptions] = useState<{ label: string; value: number }[]>([]);
   const [mitigationStatuses] = useState(defaultMitigationStatuses);
 
-  // Helper to get label for a likelihood/impact value
   const getLikelihoodLabel = (value: number): string => {
     const option = likelihoodOptions.find(o => o.value === value);
     return option?.label || `Level ${value}`;
@@ -198,10 +194,10 @@ export default function RiskDetailPage() {
           impact: data.impact?.toString() || "",
           residualLikelihood: data.residualLikelihood?.toString() || "",
           residualImpact: data.residualImpact?.toString() || "",
-          category: data.category || "",
+          category: data.category?.name || "",
           status: data.status || "",
           mitigationStatus: data.mitigationStatus || "",
-          owner: data.owner || "",
+          owner: data.owner?.fullName || "",
           dueDate: data.dueDate?.split("T")[0] || "",
           departmentId: data.departmentId || "",
         });
@@ -235,21 +231,17 @@ export default function RiskDetailPage() {
         setCategories(Array.isArray(catData) ? catData : catData.data || []);
       }
 
-      // Parse risk settings
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
         const defaults = settingsData.defaults as RiskSettings | undefined;
 
         if (defaults) {
-          // Set likelihood options from settings
           if (defaults.likelihood_scale && defaults.likelihood_scale.length > 0) {
             setLikelihoodOptions(defaults.likelihood_scale.map(opt => ({
               label: opt.label,
               value: parseInt(opt.value) || parseInt(opt.key),
             })));
           }
-
-          // Set impact options from settings
           if (defaults.impact_scale && defaults.impact_scale.length > 0) {
             setImpactOptions(defaults.impact_scale.map(opt => ({
               label: opt.label,
@@ -315,36 +307,75 @@ export default function RiskDetailPage() {
 
   const handleLinkControl = async () => {
     if (!selectedControlId) return;
-    // This would need a dedicated API endpoint for linking
     setLinkControlDialogOpen(false);
     setSelectedControlId("");
     fetchRisk();
   };
 
   const handleUnlinkControl = async (controlRiskId: string) => {
-    // This would need a dedicated API endpoint for unlinking
     console.log("Unlink control risk:", controlRiskId);
     fetchRisk();
   };
 
-  // Show loading state while permissions or data is being fetched
+  // Loading state
   if (permissionsLoading || loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>{t("Risk Management")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Risk Dashboard")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/risks/risk-control-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Risk Control Matrix")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Loading...")}</span>
+        </nav>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Show unauthorized if user doesn't have view permission
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access Risk Control Matrix.")} />;
   }
 
   if (!risk) {
     return (
-      <div className="p-6">
-        <div className="text-center text-gray-500">{t("Risk not found")}</div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>{t("Risk Management")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Risk Dashboard")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/risks/risk-control-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Risk Control Matrix")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Not Found")}</span>
+        </nav>
+        <div className="flex flex-col items-center justify-center min-h-[40vh]">
+          <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+            <AlertTriangle className="h-6 w-6 text-slate-400" />
+          </div>
+          <p className="text-sm font-medium text-slate-600">{t("Risk not found")}</p>
+        </div>
       </div>
     );
   }
@@ -356,601 +387,564 @@ export default function RiskDetailPage() {
     : null;
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Risk Dashboard")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/risks/risk-control-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Risk Control Matrix")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{risk.riskId}</span>
+      </nav>
+
+      {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/risks/risk-control-matrix")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{risk.riskId}</h1>
-              <Badge
-                className={riskRatingColors[risk.riskRating || "Low"]}
-              >
-                {risk.riskRating || "Low"}
-              </Badge>
-              <Badge className={statusColors[risk.status] || "bg-gray-100"}>
-                {risk.status}
-              </Badge>
-            </div>
-            <p className="text-gray-600">{risk.name}</p>
-          </div>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-slate-800">{risk.riskId}</h1>
+          <Badge variant="outline" className={riskRatingColors[risk.riskRating || "Low"]}>
+            {risk.riskRating || "Low"}
+          </Badge>
+          <Badge variant="outline" className={statusColors[risk.status] || "bg-slate-50 text-slate-600 border-slate-200"}>
+            {risk.status}
+          </Badge>
         </div>
 
         <PermissionGate resource="risk.risk-matrix" action="edit">
           <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Edit className="h-4 w-4 mr-2" />
+              <Button size="sm" className="bg-primary-600 hover:bg-primary-700">
+                <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Edit")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{t("Edit Risk")}</DialogTitle>
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0">
+              <DialogHeader className="px-6 py-5 border-b border-slate-100">
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Risk")}</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="col-span-2">
-                  <Label>{t("Name")}</Label>
-                  <Input
-                    value={editForm.name}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label>{t("Description")}</Label>
-                  <Textarea
-                    value={editForm.description}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, description: e.target.value })
-                    }
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label>{t("Likelihood (1-5)")}</Label>
-                  <Select
-                    value={editForm.likelihood}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, likelihood: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {likelihoodOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value.toString()}>
-                          {opt.value} - {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Impact (1-5)")}</Label>
-                  <Select
-                    value={editForm.impact}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, impact: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {impactOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value.toString()}>
-                          {opt.value} - {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Name")}</Label>
+                    <Input
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Description")}</Label>
+                    <Textarea
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Likelihood")}</Label>
+                    <Select
+                      value={editForm.likelihood}
+                      onValueChange={(value) => setEditForm({ ...editForm, likelihood: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select likelihood")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {likelihoodOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value.toString()}>
+                            {opt.value} - {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Impact")}</Label>
+                    <Select
+                      value={editForm.impact}
+                      onValueChange={(value) => setEditForm({ ...editForm, impact: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select impact")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {impactOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value.toString()}>
+                            {opt.value} - {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Residual Risk Section */}
-                <div className="col-span-2 border-t pt-4 mt-2">
-                  <Label className="text-base font-semibold">{t("Residual Risk Assessment")}</Label>
-                  <p className="text-sm text-gray-500 mb-3">{t("After applying controls/mitigations")}</p>
-                </div>
-                <div>
-                  <Label>{t("Residual Likelihood (1-5)")}</Label>
-                  <Select
-                    value={editForm.residualLikelihood}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, residualLikelihood: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select likelihood")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {likelihoodOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value.toString()}>
-                          {opt.value} - {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Residual Impact (1-5)")}</Label>
-                  <Select
-                    value={editForm.residualImpact}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, residualImpact: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select impact")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {impactOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value.toString()}>
-                          {opt.value} - {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Residual Risk Section */}
+                  <div className="pt-4 mt-2">
+                    <div className="border-t border-slate-100 pt-4">
+                      <p className="text-sm font-semibold text-slate-700">{t("Residual Risk Assessment")}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{t("After applying controls/mitigations")}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Residual Likelihood")}</Label>
+                    <Select
+                      value={editForm.residualLikelihood}
+                      onValueChange={(value) => setEditForm({ ...editForm, residualLikelihood: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select likelihood")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {likelihoodOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value.toString()}>
+                            {opt.value} - {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Residual Impact")}</Label>
+                    <Select
+                      value={editForm.residualImpact}
+                      onValueChange={(value) => setEditForm({ ...editForm, residualImpact: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select impact")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {impactOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value.toString()}>
+                            {opt.value} - {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="col-span-2 border-t pt-4 mt-2">
-                  <Label className="text-base font-semibold">{t("Other Details")}</Label>
-                </div>
-                <div>
-                  <Label>{t("Category")}</Label>
-                  <Select
-                    value={editForm.category}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, category: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select category")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((c) => (
-                        <SelectItem key={c.id} value={c.name}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Status")}</Label>
-                  <Select
-                    value={editForm.status}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, status: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Open">{t("Open")}</SelectItem>
-                      <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
-                      <SelectItem value="Completed">{t("Completed")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Mitigation Status")}</Label>
-                  <Select
-                    value={editForm.mitigationStatus}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, mitigationStatus: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select status")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mitigationStatuses.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Owner")}</Label>
-                  <Input
-                    value={editForm.owner}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, owner: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>{t("Department")}</Label>
-                  <Select
-                    value={editForm.departmentId}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, departmentId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select department")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t("Due Date")}</Label>
-                  <Input
-                    type="date"
-                    value={editForm.dueDate}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, dueDate: e.target.value })
-                    }
-                  />
+                  {/* Other Details Section */}
+                  <div className="pt-4 mt-2">
+                    <div className="border-t border-slate-100 pt-4">
+                      <p className="text-sm font-semibold text-slate-700">{t("Other Details")}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Category")}</Label>
+                    <Select
+                      value={editForm.category}
+                      onValueChange={(value) => setEditForm({ ...editForm, category: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select category")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.name}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Status")}</Label>
+                    <Select
+                      value={editForm.status}
+                      onValueChange={(value) => setEditForm({ ...editForm, status: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select status")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Open">{t("Open")}</SelectItem>
+                        <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+                        <SelectItem value="Completed">{t("Completed")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Mitigation Status")}</Label>
+                    <Select
+                      value={editForm.mitigationStatus}
+                      onValueChange={(value) => setEditForm({ ...editForm, mitigationStatus: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select status")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mitigationStatuses.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Owner")}</Label>
+                    <Input
+                      value={editForm.owner}
+                      onChange={(e) => setEditForm({ ...editForm, owner: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Department")}</Label>
+                    <Select
+                      value={editForm.departmentId}
+                      onValueChange={(value) => setEditForm({ ...editForm, departmentId: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select department")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Due Date")}</Label>
+                    <DatePicker
+                      value={editForm.dueDate || undefined}
+                      onChange={(date) => setEditForm({ ...editForm, dueDate: date ? date.toISOString().split("T")[0] : "" })}
+                      placeholder={t("Select due date")}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditDialogOpen(false)}
-                >
+              <DialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                   {t("Cancel")}
                 </Button>
-                <Button onClick={handleSave}>{t("Save Changes")}</Button>
-              </div>
+                <Button onClick={handleSave} className="bg-primary-600 hover:bg-primary-700">
+                  {t("Save Changes")}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </PermissionGate>
       </div>
 
-      {/* Inherent Risk Assessment Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            {t("Inherent Risk Assessment")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">{t("Likelihood")}</p>
-              <p className="text-3xl font-bold">{risk.likelihood}</p>
-              <p className="text-xs text-gray-400">
-                {getLikelihoodLabel(risk.likelihood)}
-              </p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">{t("Impact")}</p>
-              <p className="text-3xl font-bold">{risk.impact}</p>
-              <p className="text-xs text-gray-400">
-                {getImpactLabel(risk.impact)}
-              </p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">{t("Risk Score")}</p>
-              <p className="text-3xl font-bold">{riskScore}</p>
-              <p className="text-xs text-gray-400">{t("L x I")}</p>
-            </div>
-            <div
-              className={`text-center p-4 rounded-lg ${
-                riskRatingColors[risk.riskRating || "Low"]
-              } bg-opacity-20`}
-            >
-              <p className="text-sm opacity-80">{t("Risk Rating")}</p>
-              <Badge className={riskRatingColors[risk.riskRating || "Low"]}>
-                {risk.riskRating || "Low"}
-              </Badge>
+      {/* Risk Assessment Cards Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Inherent Risk Assessment */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+            <AlertTriangle className="h-4.5 w-4.5 text-slate-500" />
+            <h3 className="text-sm font-semibold text-slate-800">{t("Inherent Risk Assessment")}</h3>
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-4 gap-3">
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Likelihood")}</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{risk.likelihood}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{getLikelihoodLabel(risk.likelihood)}</p>
+              </div>
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Impact")}</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{risk.impact}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{getImpactLabel(risk.impact)}</p>
+              </div>
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Score")}</p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{riskScore}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{t("L x I")}</p>
+              </div>
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Rating")}</p>
+                <div className="mt-2">
+                  <Badge variant="outline" className={riskRatingColors[risk.riskRating || "Low"]}>
+                    {risk.riskRating || "Low"}
+                  </Badge>
+                </div>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Residual Risk Assessment Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            {t("Residual Risk Assessment")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {risk.residualLikelihood && risk.residualImpact ? (
-            <div className="grid grid-cols-4 gap-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">{t("Likelihood")}</p>
-                <p className="text-3xl font-bold">{risk.residualLikelihood}</p>
-                <p className="text-xs text-gray-400">
-                  {getLikelihoodLabel(risk.residualLikelihood)}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">{t("Impact")}</p>
-                <p className="text-3xl font-bold">{risk.residualImpact}</p>
-                <p className="text-xs text-gray-400">
-                  {getImpactLabel(risk.residualImpact)}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">{t("Risk Score")}</p>
-                <p className="text-3xl font-bold">{residualRiskScore}</p>
-                <p className="text-xs text-gray-400">{t("L x I")}</p>
-              </div>
-              <div
-                className={`text-center p-4 rounded-lg ${
-                  riskRatingColors[risk.residualRiskRating || "Low"]
-                } bg-opacity-20`}
-              >
-                <p className="text-sm opacity-80">{t("Risk Rating")}</p>
-                <Badge className={riskRatingColors[risk.residualRiskRating || "Low"]}>
-                  {risk.residualRiskRating || "Low"}
-                </Badge>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>{t("No residual risk assessment available")}</p>
-              <p className="text-sm mt-1">{t("Edit the risk to add residual risk values")}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Details Grid */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Basic Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("Risk Details")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label className="text-gray-500">{t("Category")}</Label>
-                <p className="font-medium">{risk.category || "-"}</p>
-              </div>
-              <div>
-                <Label className="text-gray-500">{t("Mitigation Status")}</Label>
-                <p className="font-medium">{risk.mitigationStatus || "-"}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-gray-400" />
-                <div>
-                  <Label className="text-gray-500">{t("Owner")}</Label>
-                  <p className="font-medium">{risk.owner || "-"}</p>
+        {/* Residual Risk Assessment */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+            <Shield className="h-4.5 w-4.5 text-slate-500" />
+            <h3 className="text-sm font-semibold text-slate-800">{t("Residual Risk Assessment")}</h3>
+          </div>
+          <div className="p-5">
+            {risk.residualLikelihood && risk.residualImpact ? (
+              <div className="grid grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Likelihood")}</p>
+                  <p className="text-2xl font-bold text-slate-800 mt-1">{risk.residualLikelihood}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{getLikelihoodLabel(risk.residualLikelihood)}</p>
+                </div>
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Impact")}</p>
+                  <p className="text-2xl font-bold text-slate-800 mt-1">{risk.residualImpact}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{getImpactLabel(risk.residualImpact)}</p>
+                </div>
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Score")}</p>
+                  <p className="text-2xl font-bold text-slate-800 mt-1">{residualRiskScore}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{t("L x I")}</p>
+                </div>
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Rating")}</p>
+                  <div className="mt-2">
+                    <Badge variant="outline" className={riskRatingColors[risk.residualRiskRating || "Low"]}>
+                      {risk.residualRiskRating || "Low"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-gray-400" />
-                <div>
-                  <Label className="text-gray-500">{t("Department")}</Label>
-                  <p className="font-medium">{risk.department?.name || "-"}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                <div>
-                  <Label className="text-gray-500">{t("Due Date")}</Label>
-                  <p className="font-medium">
-                    {risk.dueDate
-                      ? new Date(risk.dueDate).toLocaleDateString()
-                      : "-"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Description */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("Description")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {risk.description ? (
-              <p className="whitespace-pre-wrap">{risk.description}</p>
             ) : (
-              <p className="text-gray-500 italic">{t("No description provided")}</p>
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <Shield className="h-8 w-8 text-slate-300 mb-2" />
+                <p className="text-sm text-slate-500">{t("No residual risk assessment available")}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{t("Edit the risk to add residual risk values")}</p>
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Linked Controls */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            {t("Mitigating Controls")}
-          </CardTitle>
+      {/* Details Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Risk Details */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+            <FileText className="h-4.5 w-4.5 text-slate-500" />
+            <h3 className="text-sm font-semibold text-slate-800">{t("Risk Details")}</h3>
+          </div>
+          <div className="p-5">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                <span className="text-sm text-slate-500">{t("Category")}</span>
+                <span className="text-sm font-medium text-slate-800">{risk.category?.name || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                <span className="text-sm text-slate-500">{t("Mitigation Status")}</span>
+                <span className="text-sm font-medium text-slate-800">{risk.mitigationStatus || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <User className="h-3.5 w-3.5" />
+                  <span>{t("Owner")}</span>
+                </div>
+                <span className="text-sm font-medium text-slate-800">{risk.owner?.fullName || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span>{t("Department")}</span>
+                </div>
+                <span className="text-sm font-medium text-slate-800">{risk.department?.name || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{t("Due Date")}</span>
+                </div>
+                <span className="text-sm font-medium text-slate-800">
+                  {risk.dueDate ? new Date(risk.dueDate).toLocaleDateString() : "-"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Description + Matrix */}
+        <div className="space-y-5">
+          {/* Description */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <FileText className="h-4.5 w-4.5 text-slate-500" />
+              <h3 className="text-sm font-semibold text-slate-800">{t("Description")}</h3>
+            </div>
+            <div className="p-5">
+              {risk.description ? (
+                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{risk.description}</p>
+              ) : (
+                <p className="text-sm text-slate-400 italic">{t("No description provided")}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Risk Matrix Position */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <AlertTriangle className="h-4.5 w-4.5 text-slate-500" />
+              <h3 className="text-sm font-semibold text-slate-800">{t("Matrix Position")}</h3>
+            </div>
+            <div className="p-5">
+              <div className="flex items-center justify-center">
+                <div className="relative">
+                  <table className="border-collapse">
+                    <tbody>
+                      {[5, 4, 3, 2, 1].map((l) => (
+                        <tr key={l}>
+                          {[1, 2, 3, 4, 5].map((i) => {
+                            const score = l * i;
+                            const isCurrentPosition = l === risk.likelihood && i === risk.impact;
+                            let bgColor = "bg-emerald-400";
+                            if (score >= 20) bgColor = "bg-red-400";
+                            else if (score >= 12) bgColor = "bg-amber-400";
+                            else if (score >= 6) bgColor = "bg-yellow-300";
+
+                            return (
+                              <td
+                                key={i}
+                                className={`w-10 h-10 border border-white/40 ${bgColor} ${
+                                  isCurrentPosition
+                                    ? "ring-2 ring-slate-800 ring-inset"
+                                    : "opacity-60"
+                                }`}
+                              >
+                                {isCurrentPosition && (
+                                  <div className="flex items-center justify-center h-full">
+                                    <div className="w-3 h-3 rounded-full bg-slate-800" />
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="absolute -left-7 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                    {t("Likelihood")}
+                  </div>
+                  <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                    {t("Impact")}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mitigating Controls */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4.5 w-4.5 text-slate-500" />
+            <h3 className="text-sm font-semibold text-slate-800">{t("Mitigating Controls")}</h3>
+            <span className="text-xs text-slate-400 ml-1">({linkedControls.length})</span>
+          </div>
           <PermissionGate resource="risk.risk-matrix" action="edit">
-            <Dialog
-              open={linkControlDialogOpen}
-              onOpenChange={setLinkControlDialogOpen}
-            >
+            <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button size="sm" variant="outline" className="border-slate-200">
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Link Control")}
                 </Button>
               </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{t("Link Control to Risk")}</DialogTitle>
+              <DialogContent className="sm:max-w-[600px] p-0 gap-0">
+                <DialogHeader className="px-6 py-5 border-b border-slate-100">
+                  <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Control to Risk")}</DialogTitle>
                 </DialogHeader>
-                <div className="py-4">
-                  <Label>{t("Select Control")}</Label>
-                  <Select
-                    value={selectedControlId}
-                    onValueChange={setSelectedControlId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("Select a control")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableControls
-                        .filter(
-                          (c) =>
-                            !linkedControls.find((lc) => lc.control.id === c.id)
-                        )
-                        .map((control) => (
-                          <SelectItem key={control.id} value={control.id}>
-                            {control.controlId} - {control.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                <div className="px-6 py-5">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-slate-600">{t("Select Control")}</Label>
+                    <Select value={selectedControlId} onValueChange={setSelectedControlId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("Select a control")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableControls
+                          .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
+                          .map((control) => (
+                            <SelectItem key={control.id} value={control.id}>
+                              {control.controlId} - {control.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setLinkControlDialogOpen(false)}
-                  >
+                <DialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+                  <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
                     {t("Cancel")}
                   </Button>
-                  <Button onClick={handleLinkControl}>{t("Link")}</Button>
-                </div>
+                  <Button onClick={handleLinkControl} className="bg-primary-600 hover:bg-primary-700">
+                    {t("Link")}
+                  </Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           </PermissionGate>
-        </CardHeader>
-        <CardContent>
-          {linkedControls.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>{t("No controls linked to this risk")}</p>
-              <p className="text-sm mt-1">
-                {t("Link controls to show how this risk is being mitigated")}
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("Control ID")}</TableHead>
-                  <TableHead>{t("Name")}</TableHead>
-                  <TableHead>{t("Domain")}</TableHead>
-                  <TableHead>{t("Status")}</TableHead>
-                  <TableHead className="w-[80px]">{t("Actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {linkedControls.map((cr) => (
-                  <TableRow key={cr.id}>
-                    <TableCell className="font-medium">
-                      {cr.control.controlId}
-                    </TableCell>
-                    <TableCell>{cr.control.name}</TableCell>
-                    <TableCell>{cr.control.domain?.name || "-"}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          controlStatusColors[cr.control.status] ||
-                          "bg-gray-100"
-                        }
-                      >
-                        {cr.control.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            router.push(`/compliance/control/${cr.control.id}`)
-                          }
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        >
-                          <Shield className="h-4 w-4" />
-                        </Button>
-                        <PermissionGate resource="risk.risk-matrix" action="edit">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleUnlinkControl(cr.id)}
-                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </PermissionGate>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Risk Matrix Position */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("Position in Risk Matrix")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center">
-            <div className="relative">
-              <table className="border-collapse">
-                <tbody>
-                  {[5, 4, 3, 2, 1].map((l) => (
-                    <tr key={l}>
-                      {[1, 2, 3, 4, 5].map((i) => {
-                        const score = l * i;
-                        const isCurrentPosition =
-                          l === risk.likelihood && i === risk.impact;
-                        let bgColor = "bg-green-500";
-                        if (score >= 20) bgColor = "bg-red-600";
-                        else if (score >= 12) bgColor = "bg-orange-500";
-                        else if (score >= 6) bgColor = "bg-yellow-400";
-
-                        return (
-                          <td
-                            key={i}
-                            className={`w-12 h-12 border ${bgColor} ${
-                              isCurrentPosition
-                                ? "ring-4 ring-black ring-inset"
-                                : "bg-opacity-60"
-                            }`}
-                          >
-                            {isCurrentPosition && (
-                              <div className="flex items-center justify-center h-full">
-                                <AlertTriangle className="h-6 w-6 text-white drop-shadow" />
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 text-sm text-gray-500">
-                {t("Likelihood")}
-              </div>
-              <div className="absolute bottom-[-24px] left-1/2 -translate-x-1/2 text-sm text-gray-500">
-                {t("Impact")}
-              </div>
+        {linkedControls.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 px-4">
+            <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+              <Link2 className="h-6 w-6 text-slate-400" />
             </div>
+            <p className="text-sm font-medium text-slate-600">{t("No controls linked to this risk")}</p>
+            <p className="text-xs text-slate-400 mt-1">
+              {t("Link controls to show how this risk is being mitigated")}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        ) : (
+          <>
+            {/* Controls Table Header */}
+            <div className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-4 px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <span>{t("Control ID")}</span>
+              <span>{t("Name")}</span>
+              <span>{t("Domain")}</span>
+              <span>{t("Status")}</span>
+              <span></span>
+            </div>
+            {/* Controls Rows */}
+            <div className="divide-y divide-slate-100">
+              {linkedControls.map((cr) => (
+                <div
+                  key={cr.id}
+                  className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-4 px-5 py-3 items-center hover:bg-slate-50/60 transition-colors"
+                >
+                  <span className="text-sm font-medium text-slate-800">{cr.control.controlId}</span>
+                  <span className="text-sm text-slate-600 truncate">{cr.control.name}</span>
+                  <span className="text-sm text-slate-500 truncate">{cr.control.domain?.name || "-"}</span>
+                  <div>
+                    <Badge variant="outline" className={`text-[11px] ${controlStatusColors[cr.control.status] || "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                      {cr.control.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => router.push(`/compliance/control/${cr.control.id}`)}
+                      className="h-7 w-7 text-slate-400 hover:text-primary-600"
+                    >
+                      <Shield className="h-3.5 w-3.5" />
+                    </Button>
+                    <PermissionGate resource="risk.risk-matrix" action="edit">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleUnlinkControl(cr.id)}
+                        className="h-7 w-7 text-slate-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </PermissionGate>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

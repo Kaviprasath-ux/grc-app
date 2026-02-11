@@ -606,10 +606,10 @@ export default function EvidencesMasterDataPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
-        </Link>
+        </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Compliance Settings")}

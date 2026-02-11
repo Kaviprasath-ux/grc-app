@@ -26,7 +26,6 @@ import {
   Upload,
   Activity,
   Search,
-  Eye,
   Shield,
   AlertCircle,
   Clock,
@@ -35,7 +34,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import { RiskDetailDialog } from "@/components/risks/risk-detail-dialog";
 import { NewRiskWizard } from "@/components/risks/new-risk-wizard";
 import {
   AlertDialog,
@@ -153,9 +151,6 @@ function RiskRegisterContent() {
   const [statusFilter, setStatusFilter] = useState(initialStatus || "");
 
   // Dialog states
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
-  const [editMode, setEditMode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [riskToDelete, setRiskToDelete] = useState<Risk | null>(null);
   const [activityLogOpen, setActivityLogOpen] = useState(false);
@@ -258,12 +253,6 @@ function RiskRegisterContent() {
     fetchRiskTypes();
     fetchDepartments();
   }, [fetchRisks]);
-
-  const handleViewRisk = (risk: Risk) => {
-    setSelectedRisk(risk);
-    setEditMode(false);
-    setDetailOpen(true);
-  };
 
   const handleEditRisk = (risk: Risk) => {
     setRiskToEdit(risk);
@@ -567,8 +556,7 @@ function RiskRegisterContent() {
             {paginatedRisks.map((risk) => (
               <div
                 key={risk.id}
-                className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors cursor-pointer`}
-                onClick={() => handleViewRisk(risk)}
+                className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors`}
               >
                 <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                 <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
@@ -579,26 +567,12 @@ function RiskRegisterContent() {
                   <RiskRatingBadge rating={risk.riskRating} />
                 </div>
                 {(canEdit || canDelete) && (
-                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewRisk(risk);
-                      }}
-                      className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                  <div className="flex items-center justify-end gap-1">
                     {canEdit && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditRisk(risk);
-                        }}
+                        onClick={() => handleEditRisk(risk)}
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                       >
                         <Pencil className="h-4 w-4" />
@@ -608,10 +582,7 @@ function RiskRegisterContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(risk);
-                        }}
+                        onClick={() => handleDeleteClick(risk)}
                         className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -639,22 +610,6 @@ function RiskRegisterContent() {
         </div>
       )}
 
-      {/* Risk Detail Dialog */}
-      <RiskDetailDialog
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        risk={selectedRisk}
-        editMode={editMode}
-        onEditModeChange={setEditMode}
-        onSuccess={() => {
-          setDetailOpen(false);
-          fetchRisks();
-          fetchStats();
-        }}
-        categories={categories}
-        departments={departments}
-      />
-
       {/* New/Edit Risk Wizard Dialog */}
       <NewRiskWizard
         open={newRiskDialogOpen}
@@ -674,7 +629,7 @@ function RiskRegisterContent() {
               {t("Are you sure you want to delete this risk?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}

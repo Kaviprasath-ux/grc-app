@@ -2078,9 +2078,9 @@ function ProfilePageContent() {
               {t("Are you sure you want to delete this department? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteDepartment}>{t("Delete")}</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDeleteDepartment} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -2094,9 +2094,9 @@ function ProfilePageContent() {
               {t("Are you sure you want to delete this service? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteService}>{t("Delete")}</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDeleteService} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -2110,9 +2110,9 @@ function ProfilePageContent() {
               {t("Are you sure you want to unsubscribe from this regulation? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteRegulation}>{t("Unsubscribe")}</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDeleteRegulation} className="bg-red-600 hover:bg-red-700">{t("Unsubscribe")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -1375,7 +1375,7 @@ export default function GovernanceDetailPage() {
               {t("This will revert the status from Published to Approved. The document will need to be published again after any changes.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleUnpublish} className="bg-orange-600 hover:bg-orange-700">
               {t("Unpublish")}

@@ -997,7 +997,7 @@ export default function GRCAdminGovernancePage() {
               {t("Are you sure you want to delete")} &quot;{policyToDelete?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel onClick={() => setPolicyToDelete(null)}>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeletePolicy} className="bg-red-600 hover:bg-red-700">
               {t("Delete")}
@@ -1015,7 +1015,7 @@ export default function GRCAdminGovernancePage() {
               {t("Are you sure you want to delete all items?")} {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
               {t("Delete All")}

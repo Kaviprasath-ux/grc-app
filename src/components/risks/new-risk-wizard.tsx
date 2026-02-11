@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Building2, Target, Info, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -664,68 +664,57 @@ export function NewRiskWizard({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-          <DialogTitle className="text-lg font-semibold text-slate-800">{isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}</DialogTitle>
-        </DialogHeader>
+        <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}</DialogTitle>
+          </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          {/* Stepper */}
-          <div className="mb-6">
-            <nav aria-label="Progress">
-              <ol className="flex items-center">
-                {steps.map((step, index) => (
-                  <li
-                    key={step.id}
+          {/* Step Indicator */}
+          <div className="flex items-start justify-center pt-5">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-start">
+                <div className="flex flex-col items-center w-32">
+                  <div
                     className={cn(
-                      "relative flex-1",
-                      index !== steps.length - 1 && "pr-8"
+                      "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
+                      currentStep > step.id
+                        ? "bg-success text-white"
+                        : currentStep === step.id
+                        ? "bg-primary-600 text-white"
+                        : "bg-slate-100 text-slate-400 border border-slate-200"
                     )}
                   >
-                    <div className="flex items-center">
-                      <button
-                        onClick={() => setCurrentStep(step.id)}
-                        className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
-                          currentStep >= step.id
-                            ? "border-primary-500 bg-primary-500 text-white"
-                            : "border-slate-300 bg-white text-slate-500"
-                        )}
-                      >
-                        <span className="text-sm">{step.id}</span>
-                      </button>
-                      <button
-                        onClick={() => setCurrentStep(step.id)}
-                        className={cn(
-                          "ml-2 text-sm font-medium",
-                          currentStep >= step.id
-                            ? "text-primary-600"
-                            : "text-slate-500"
-                        )}
-                      >
-                        {step.name}
-                      </button>
-                      {index !== steps.length - 1 && (
-                        <div
-                          className={cn(
-                            "ml-4 h-0.5 flex-1",
-                            currentStep > step.id ? "bg-primary-500" : "bg-slate-300"
-                          )}
-                        />
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </nav>
+                    {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                  </div>
+                  <span
+                    className={cn(
+                      "mt-2 text-xs font-medium text-center",
+                      currentStep >= step.id ? "text-slate-700" : "text-slate-400"
+                    )}
+                  >
+                    {step.name}
+                  </span>
+                </div>
+                {index < steps.length - 1 && (
+                  <div
+                    className={cn(
+                      "w-12 h-0.5 mt-[18px] -mx-5 transition-colors",
+                      currentStep > step.id ? "bg-success" : "bg-slate-200"
+                    )}
+                  />
+                )}
+              </div>
+            ))}
           </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-6">
 
           {/* Step Content */}
           <div className="min-h-[400px]">
             {/* Step 1: Risk Details */}
             {currentStep === 1 && (
               <div className="space-y-5">
-                <h3 className="text-lg font-semibold text-slate-800">{isEditMode ? "Edit Risk" : "Risk Details"}</h3>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="riskId">Risk ID</Label>
@@ -762,70 +751,6 @@ export function NewRiskWizard({
                   />
                 </div>
 
-              {/* Section: Ownership & Classification */}
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-5 border border-slate-200">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
-                    <Building2 className="h-4 w-4 text-primary-600" />
-                  </div>
-                  <h3 className="text-base font-semibold text-slate-800">Ownership & Classification</h3>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Department</Label>
-                      <Select
-                        value={formData.departmentId}
-                        onValueChange={(value) => handleInputChange("departmentId", value)}
-                      >
-                        <SelectTrigger className="w-full bg-white border-slate-200">
-                          <SelectValue placeholder="Select department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departments.map((dept) => (
-                            <SelectItem key={dept.id} value={dept.id}>
-                              {dept.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
-                        <User className="h-3.5 w-3.5 text-slate-500" />
-                        Risk Owner
-                      </Label>
-                      <Select
-                        value={formData.ownerId}
-                        onValueChange={(value) => handleInputChange("ownerId", value)}
-                        disabled={!formData.departmentId}
-                      >
-                        <SelectTrigger className="w-full bg-white border-slate-200">
-                          <SelectValue placeholder={formData.departmentId ? "Select owner" : "Select department first"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.length === 0 ? (
-                            <div className="py-2 px-3 text-sm text-slate-500">
-                              No reviewers found
-                            </div>
-                          ) : (
-                            users.map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                {user.fullName}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      {!formData.departmentId && (
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                          <Info className="h-3 w-3" />
-                          Select a department to choose an owner
-                        </p>
-                      )}
-                    </div>
-                  </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="department">Department *</Label>
@@ -867,16 +792,16 @@ export function NewRiskWizard({
                           users.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.fullName}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {validationErrors.ownerId && (
-                    <p className="text-sm text-red-600 mt-1">{validationErrors.ownerId}</p>
-                  )}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {validationErrors.ownerId && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.ownerId}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -925,92 +850,6 @@ export function NewRiskWizard({
                   </div>
                 </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Risk Type</Label>
-                      <Select
-                        value={formData.typeId}
-                        onValueChange={(value) => handleInputChange("typeId", value)}
-                      >
-                        <SelectTrigger className="w-full bg-white border-slate-200">
-                          <SelectValue placeholder="Select risk type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {riskTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Conditional dropdown based on Risk Type */}
-                    {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
-                          <Target className="h-3.5 w-3.5 text-slate-500" />
-                          Impacted Asset
-                        </Label>
-                        <Select
-                          value={formData.impactedAssetId}
-                          onValueChange={(value) => handleInputChange("impactedAssetId", value)}
-                        >
-                          <SelectTrigger className="w-full bg-white border-slate-200">
-                            <SelectValue placeholder="Select asset" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {assets.map((asset) => (
-                              <SelectItem key={asset.id} value={asset.id}>
-                                {asset.assetId} - {asset.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
-                          <Target className="h-3.5 w-3.5 text-slate-500" />
-                          Impacted Process
-                        </Label>
-                        <Select
-                          value={formData.impactedProcessId}
-                          onValueChange={(value) => handleInputChange("impactedProcessId", value)}
-                        >
-                          <SelectTrigger className="w-full bg-white border-slate-200">
-                            <SelectValue placeholder="Select process" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {processes.map((process) => (
-                              <SelectItem key={process.id} value={process.id}>
-                                {process.processCode} - {process.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {!formData.typeId && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-400">Impacted Asset/Process</Label>
-                        <Select disabled>
-                          <SelectTrigger className="w-full bg-slate-50 border-slate-200">
-                            <SelectValue placeholder="Select risk type first" />
-                          </SelectTrigger>
-                        </Select>
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                          <Info className="h-3 w-3" />
-                          Choose a risk type to enable this field
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="riskType">Risk Type *</Label>
@@ -1019,7 +858,7 @@ export function NewRiskWizard({
                       onValueChange={(value) => handleInputChange("typeId", value)}
                     >
                       <SelectTrigger className={cn("w-full", validationErrors.typeId && "border-red-500")}>
-                        <SelectValue placeholder="Risk Type" />
+                        <SelectValue placeholder="Select Risk Type" />
                       </SelectTrigger>
                       <SelectContent>
                         {riskTypes.map((type) => (
@@ -1033,7 +872,6 @@ export function NewRiskWizard({
                       <p className="text-sm text-red-600 mt-1">{validationErrors.typeId}</p>
                     )}
                   </div>
-                  {/* Conditional dropdown based on Risk Type selection */}
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
                     <div className="space-y-1.5">
                       <Label>Impacted Asset</Label>
@@ -1081,9 +919,6 @@ export function NewRiskWizard({
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select Risk Type first" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Select Risk Type first</SelectItem>
-                        </SelectContent>
                       </Select>
                     </div>
                   )}
