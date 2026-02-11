@@ -102,6 +102,14 @@ export default function BIAMethodologyPage() {
     sortOrder: 0,
   });
 
+  // Validation error states
+  const [rangeFormErrors, setRangeFormErrors] = useState<{
+    label?: string;
+    lowValue?: string;
+    highValue?: string;
+    overlap?: string;
+  }>({});
+
   useEffect(() => {
     fetchRatings();
     fetchScoringConfig();
@@ -228,9 +236,50 @@ export default function BIAMethodologyPage() {
     }
   };
 
+  // Validate range form and check for overlaps
+  const validateRangeForm = (excludeId?: string): boolean => {
+    const errors: typeof rangeFormErrors = {};
+
+    if (!rangeForm.label.trim()) {
+      errors.label = "Criticality Label is required";
+    }
+
+    if (rangeForm.lowValue < 0) {
+      errors.lowValue = "Min Score cannot be negative";
+    }
+
+    if (rangeForm.highValue < 0) {
+      errors.highValue = "Max Score cannot be negative";
+    }
+
+    if (rangeForm.lowValue > rangeForm.highValue) {
+      errors.highValue = "Max Score must be greater than or equal to Min Score";
+    }
+
+    // Check for overlapping ranges (client-side)
+    const existingRanges = scoringRanges.filter(r => r.id !== excludeId);
+    for (const existing of existingRanges) {
+      const existingLow = existing.lowValue;
+      const existingHigh = existing.highValue ?? Number.MAX_SAFE_INTEGER;
+      const newLow = rangeForm.lowValue;
+      const newHigh = rangeForm.highValue;
+
+      // Two ranges overlap if: newLow <= existingHigh AND newHigh >= existingLow
+      if (newLow <= existingHigh && newHigh >= existingLow) {
+        const existingHighDisplay = existing.highValue !== null ? existing.highValue : "∞";
+        errors.overlap = `Range ${newLow}-${newHigh} overlaps with "${existing.label}" (${existingLow}-${existingHighDisplay})`;
+        break;
+      }
+    }
+
+    setRangeFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Range CRUD handlers
   const handleAddRange = async () => {
-    if (!rangeForm.label.trim()) return;
+    if (!validateRangeForm()) return;
+
     try {
       const res = await fetch("/api/bia/scoring-ranges", {
         method: "POST",
@@ -246,15 +295,18 @@ export default function BIAMethodologyPage() {
         resetRangeForm();
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create range");
+        setRangeFormErrors({ overlap: error.error || "Failed to create range" });
       }
     } catch (error) {
       console.error("Error creating range:", error);
+      setRangeFormErrors({ overlap: "Failed to create range. Please try again." });
     }
   };
 
   const handleEditRange = async () => {
-    if (!editingRange || !rangeForm.label.trim()) return;
+    if (!editingRange) return;
+    if (!validateRangeForm(editingRange.id)) return;
+
     try {
       const res = await fetch(`/api/bia/scoring-ranges/${editingRange.id}`, {
         method: "PUT",
@@ -271,10 +323,11 @@ export default function BIAMethodologyPage() {
         resetRangeForm();
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update range");
+        setRangeFormErrors({ overlap: error.error || "Failed to update range" });
       }
     } catch (error) {
       console.error("Error updating range:", error);
+      setRangeFormErrors({ overlap: "Failed to update range. Please try again." });
     }
   };
 
@@ -313,6 +366,7 @@ export default function BIAMethodologyPage() {
       color: "#3b82f6",
       sortOrder: 0,
     });
+    setRangeFormErrors({});
   };
 
   const openEditRatingDialog = (item: BIARating) => {
@@ -705,7 +759,7 @@ export default function BIAMethodologyPage() {
       </Dialog>
 
       {/* Add Range Dialog */}
-      <Dialog open={isAddRangeOpen} onOpenChange={setIsAddRangeOpen}>
+      <Dialog open={isAddRangeOpen} onOpenChange={(open) => { setIsAddRangeOpen(open); if (!open) resetRangeForm(); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Scoring Range</DialogTitle>
@@ -716,28 +770,60 @@ export default function BIAMethodologyPage() {
               <Label>Criticality Label *</Label>
               <Input
                 value={rangeForm.label}
-                onChange={(e) => setRangeForm({ ...rangeForm, label: e.target.value })}
+                onChange={(e) => {
+                  setRangeForm({ ...rangeForm, label: e.target.value });
+                  if (rangeFormErrors.label) setRangeFormErrors({ ...rangeFormErrors, label: undefined });
+                }}
                 placeholder="e.g., Critical, High, Medium, Low"
+                className={rangeFormErrors.label ? "border-red-500" : ""}
               />
+              {rangeFormErrors.label && (
+                <p className="text-sm text-red-500">{rangeFormErrors.label}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Min Score *</Label>
                 <Input
                   type="number"
+                  min="0"
                   value={rangeForm.lowValue}
-                  onChange={(e) => setRangeForm({ ...rangeForm, lowValue: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setRangeForm({ ...rangeForm, lowValue: parseInt(e.target.value) || 0 });
+                    if (rangeFormErrors.lowValue || rangeFormErrors.overlap) {
+                      setRangeFormErrors({ ...rangeFormErrors, lowValue: undefined, overlap: undefined });
+                    }
+                  }}
+                  className={rangeFormErrors.lowValue ? "border-red-500" : ""}
                 />
+                {rangeFormErrors.lowValue && (
+                  <p className="text-sm text-red-500">{rangeFormErrors.lowValue}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label>Max Score</Label>
+                <Label>Max Score *</Label>
                 <Input
                   type="number"
+                  min="0"
                   value={rangeForm.highValue}
-                  onChange={(e) => setRangeForm({ ...rangeForm, highValue: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setRangeForm({ ...rangeForm, highValue: parseInt(e.target.value) || 0 });
+                    if (rangeFormErrors.highValue || rangeFormErrors.overlap) {
+                      setRangeFormErrors({ ...rangeFormErrors, highValue: undefined, overlap: undefined });
+                    }
+                  }}
+                  className={rangeFormErrors.highValue ? "border-red-500" : ""}
                 />
+                {rangeFormErrors.highValue && (
+                  <p className="text-sm text-red-500">{rangeFormErrors.highValue}</p>
+                )}
               </div>
             </div>
+            {rangeFormErrors.overlap && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{rangeFormErrors.overlap}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Color</Label>
               <Input
@@ -757,7 +843,7 @@ export default function BIAMethodologyPage() {
       </Dialog>
 
       {/* Edit Range Dialog */}
-      <Dialog open={isEditRangeOpen} onOpenChange={setIsEditRangeOpen}>
+      <Dialog open={isEditRangeOpen} onOpenChange={(open) => { setIsEditRangeOpen(open); if (!open) { setEditingRange(null); resetRangeForm(); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Scoring Range</DialogTitle>
@@ -767,27 +853,59 @@ export default function BIAMethodologyPage() {
               <Label>Criticality Label *</Label>
               <Input
                 value={rangeForm.label}
-                onChange={(e) => setRangeForm({ ...rangeForm, label: e.target.value })}
+                onChange={(e) => {
+                  setRangeForm({ ...rangeForm, label: e.target.value });
+                  if (rangeFormErrors.label) setRangeFormErrors({ ...rangeFormErrors, label: undefined });
+                }}
+                className={rangeFormErrors.label ? "border-red-500" : ""}
               />
+              {rangeFormErrors.label && (
+                <p className="text-sm text-red-500">{rangeFormErrors.label}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Min Score *</Label>
                 <Input
                   type="number"
+                  min="0"
                   value={rangeForm.lowValue}
-                  onChange={(e) => setRangeForm({ ...rangeForm, lowValue: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setRangeForm({ ...rangeForm, lowValue: parseInt(e.target.value) || 0 });
+                    if (rangeFormErrors.lowValue || rangeFormErrors.overlap) {
+                      setRangeFormErrors({ ...rangeFormErrors, lowValue: undefined, overlap: undefined });
+                    }
+                  }}
+                  className={rangeFormErrors.lowValue ? "border-red-500" : ""}
                 />
+                {rangeFormErrors.lowValue && (
+                  <p className="text-sm text-red-500">{rangeFormErrors.lowValue}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label>Max Score</Label>
+                <Label>Max Score *</Label>
                 <Input
                   type="number"
+                  min="0"
                   value={rangeForm.highValue}
-                  onChange={(e) => setRangeForm({ ...rangeForm, highValue: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    setRangeForm({ ...rangeForm, highValue: parseInt(e.target.value) || 0 });
+                    if (rangeFormErrors.highValue || rangeFormErrors.overlap) {
+                      setRangeFormErrors({ ...rangeFormErrors, highValue: undefined, overlap: undefined });
+                    }
+                  }}
+                  className={rangeFormErrors.highValue ? "border-red-500" : ""}
                 />
+                {rangeFormErrors.highValue && (
+                  <p className="text-sm text-red-500">{rangeFormErrors.highValue}</p>
+                )}
               </div>
             </div>
+            {rangeFormErrors.overlap && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{rangeFormErrors.overlap}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Color</Label>
               <Input
