@@ -14,6 +14,7 @@ export async function GET() {
           },
         },
         group: true,
+        sensitivity: true,
       },
       orderBy: [{ subCategory: { name: "asc" } }, { group: { name: "asc" } }],
     });
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     const {
       subCategoryId,
       groupId,
+      sensitivityId,
       confidentiality,
       confidentialityScore,
       integrity,
@@ -69,11 +71,12 @@ export async function POST(request: NextRequest) {
         ...(customerAccountId ? { customerAccountId } : {}),
         subCategoryId,
         groupId,
-        confidentiality: confidentiality || "low",
-        confidentialityScore: confidentialityScore || 1,
-        integrity: integrity || "low",
-        integrityScore: integrityScore || 1,
-        availability: availability || "low",
+        ...(sensitivityId ? { sensitivityId } : {}),
+        confidentiality: confidentiality || "",
+        confidentialityScore: confidentialityScore || 0,
+        integrity: integrity || "",
+        integrityScore: integrityScore || 0,
+        availability: availability || "",
         availabilityScore: availabilityScore || 0,
         assetCriticality: assetCriticality || calculatedCriticality,
         assetCriticalityScore: assetCriticalityScore || maxScore,
@@ -85,6 +88,7 @@ export async function POST(request: NextRequest) {
           },
         },
         group: true,
+        sensitivity: true,
       },
     });
 

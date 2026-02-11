@@ -1427,15 +1427,16 @@ model CIARating {
 
 // Asset Sensitivity Levels
 model AssetSensitivity {
-  id                String           @id @default(cuid())
+  id                String                    @id @default(cuid())
   // Multi-tenant: Link to customer account
   customerAccountId String?
-  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
-  name              String           // Public, Internal, Confidential, Restricted
+  customerAccount   CustomerAccount?          @relation(fields: [customerAccountId], references: [id])
+  name              String                    // Public, Internal, Confidential, Restricted
   description       String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
   assets            Asset[]
+  classifications   AssetCIAClassification[]
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
@@ -1443,26 +1444,29 @@ model AssetSensitivity {
 
 // Asset CIA Classification (Links Sub Category + Group with CIA ratings)
 model AssetCIAClassification {
-  id                    String           @id @default(cuid())
+  id                    String            @id @default(cuid())
   // Multi-tenant: Link to customer account
   customerAccountId     String?
-  customerAccount       CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  customerAccount       CustomerAccount?  @relation(fields: [customerAccountId], references: [id])
   subCategoryId         String
-  subCategory           AssetSubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  subCategory           AssetSubCategory  @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
   groupId               String
-  group                 AssetGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  confidentiality       String           @default("low") // high, medium, low
-  confidentialityScore  Int              @default(1)
-  integrity             String           @default("low") // high, medium, low
-  integrityScore        Int              @default(1)
-  availability          String           @default("low") // high, medium, low
-  availabilityScore     Int              @default(0)
-  assetCriticality      String           @default("low") // high, medium, low
-  assetCriticalityScore Int              @default(1)
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  group                 AssetGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sensitivityId         String?
+  sensitivity           AssetSensitivity? @relation(fields: [sensitivityId], references: [id], onDelete: SetNull)
+  confidentiality       String            @default("") // high, medium, low
+  confidentialityScore  Int               @default(0)
+  integrity             String            @default("") // high, medium, low
+  integrityScore        Int               @default(0)
+  availability          String            @default("") // high, medium, low
+  availabilityScore     Int               @default(0)
+  assetCriticality      String            @default("low") // high, medium, low
+  assetCriticalityScore Int               @default(1)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   @@index([customerAccountId])
+  @@index([sensitivityId])
 }
 
 // Asset Scoring Configuration (stores the calculation type setting)

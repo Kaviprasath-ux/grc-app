@@ -108,6 +108,9 @@ export default function AssetClassificationPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedClassification, setSelectedClassification] = useState<CIAClassification | null>(null);
 
+  // Field validation errors
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
   // Inline add dialogs
   const [isAddSensitivityOpen, setIsAddSensitivityOpen] = useState(false);
   const [isAddCIARatingOpen, setIsAddCIARatingOpen] = useState(false);
@@ -121,11 +124,11 @@ export default function AssetClassificationPage() {
     subCategoryId: "",
     groupId: "",
     sensitivityId: "",
-    confidentiality: "low",
-    confidentialityScore: 1,
-    integrity: "low",
-    integrityScore: 1,
-    availability: "low",
+    confidentiality: "",
+    confidentialityScore: 0,
+    integrity: "",
+    integrityScore: 0,
+    availability: "",
     availabilityScore: 0,
   });
 
@@ -172,10 +175,48 @@ export default function AssetClassificationPage() {
   };
 
   const handleAdd = async () => {
-    if (!formData.subCategoryId || !formData.groupId) {
-      toast({ title: t("Error"), description: t("Please select both Sub Category and Group"), variant: "destructive" });
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation: Asset Sub Category
+    if (!formData.subCategoryId) {
+      errors.subCategoryId = t("Please select asset sub category");
+    }
+
+    // Validation: Asset Group
+    if (!formData.groupId) {
+      errors.groupId = t("Please select asset group");
+    }
+
+    // Validation: Asset Sensitivity
+    if (!formData.sensitivityId) {
+      errors.sensitivityId = t("Please select sensitivity rating");
+    }
+
+    // Validation: Confidentiality
+    if (!formData.confidentiality) {
+      errors.confidentiality = t("Please select confidentiality rating");
+    }
+
+    // Validation: Integrity
+    if (!formData.integrity) {
+      errors.integrity = t("Please select integrity rating");
+    }
+
+    // Validation: Availability
+    if (!formData.availability) {
+      errors.availability = t("Please select availability rating");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/asset-cia-classifications", {
         method: "POST",
@@ -198,6 +239,49 @@ export default function AssetClassificationPage() {
 
   const handleEdit = async () => {
     if (!selectedClassification) return;
+
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation: Asset Sub Category
+    if (!formData.subCategoryId) {
+      errors.subCategoryId = t("Please select asset sub category");
+    }
+
+    // Validation: Asset Group
+    if (!formData.groupId) {
+      errors.groupId = t("Please select asset group");
+    }
+
+    // Validation: Asset Sensitivity
+    if (!formData.sensitivityId) {
+      errors.sensitivityId = t("Please select sensitivity rating");
+    }
+
+    // Validation: Confidentiality
+    if (!formData.confidentiality) {
+      errors.confidentiality = t("Please select confidentiality rating");
+    }
+
+    // Validation: Integrity
+    if (!formData.integrity) {
+      errors.integrity = t("Please select integrity rating");
+    }
+
+    // Validation: Availability
+    if (!formData.availability) {
+      errors.availability = t("Please select availability rating");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/asset-cia-classifications/${selectedClassification.id}`, {
         method: "PUT",
@@ -251,6 +335,7 @@ export default function AssetClassificationPage() {
       availability: classification.availability,
       availabilityScore: classification.availabilityScore,
     });
+    setFieldErrors({});
 
     // Fetch filtered groups for the existing subCategoryId
     if (classification.subCategoryId) {
@@ -278,14 +363,15 @@ export default function AssetClassificationPage() {
       subCategoryId: "",
       groupId: "",
       sensitivityId: "",
-      confidentiality: "low",
-      confidentialityScore: 1,
-      integrity: "low",
-      integrityScore: 1,
-      availability: "low",
+      confidentiality: "",
+      confidentialityScore: 0,
+      integrity: "",
+      integrityScore: 0,
+      availability: "",
       availabilityScore: 0,
     });
     setFilteredGroups([]);
+    setFieldErrors({});
   };
 
   const updateCIAValue = (field: "confidentiality" | "integrity" | "availability", value: string) => {
@@ -301,6 +387,10 @@ export default function AssetClassificationPage() {
         [field]: value,
         [`${field}Score`]: rating.value,
       });
+      // Clear field error when value changes
+      if (fieldErrors[field]) {
+        setFieldErrors({ ...fieldErrors, [field]: "" });
+      }
     }
   };
 
@@ -877,9 +967,14 @@ export default function AssetClassificationPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.subCategoryId}
-                    onValueChange={handleSubCategoryChange}
+                    onValueChange={(value) => {
+                      handleSubCategoryChange(value);
+                      if (fieldErrors.subCategoryId) {
+                        setFieldErrors({ ...fieldErrors, subCategoryId: "" });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={`mt-1.5 w-full ${fieldErrors.subCategoryId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select Sub Category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -890,15 +985,23 @@ export default function AssetClassificationPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.subCategoryId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryId}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Group")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.groupId}
-                    onValueChange={(value) => setFormData({ ...formData, groupId: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, groupId: value });
+                      if (fieldErrors.groupId) {
+                        setFieldErrors({ ...fieldErrors, groupId: "" });
+                      }
+                    }}
                     disabled={!formData.subCategoryId}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={`mt-1.5 w-full ${fieldErrors.groupId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={formData.subCategoryId ? t("Select Group") : t("Select Sub Category first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -909,18 +1012,26 @@ export default function AssetClassificationPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.groupId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.groupId}</p>
+                  )}
                 </div>
               </div>
 
               {/* Asset Sensitivity with inline add */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Asset Sensitivity")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Asset Sensitivity")} <span className="text-semantic-error">*</span></Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={formData.sensitivityId}
-                    onValueChange={(value) => setFormData({ ...formData, sensitivityId: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, sensitivityId: value });
+                      if (fieldErrors.sensitivityId) {
+                        setFieldErrors({ ...fieldErrors, sensitivityId: "" });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className={`flex-1 ${fieldErrors.sensitivityId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select Sensitivity")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -940,18 +1051,21 @@ export default function AssetClassificationPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+                {fieldErrors.sensitivityId && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.sensitivityId}</p>
+                )}
               </div>
 
               {/* Confidentiality & Integrity */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Confidentiality")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Confidentiality")} <span className="text-semantic-error">*</span></Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={formData.confidentiality}
                       onValueChange={(value) => updateCIAValue("confidentiality", value)}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.confidentiality ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -974,15 +1088,18 @@ export default function AssetClassificationPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.confidentiality && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.confidentiality}</p>
+                  )}
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Integrity")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Integrity")} <span className="text-semantic-error">*</span></Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={formData.integrity}
                       onValueChange={(value) => updateCIAValue("integrity", value)}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.integrity ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1005,18 +1122,21 @@ export default function AssetClassificationPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.integrity && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.integrity}</p>
+                  )}
                 </div>
               </div>
 
               {/* Availability */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Availability")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Availability")} <span className="text-semantic-error">*</span></Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={formData.availability}
                     onValueChange={(value) => updateCIAValue("availability", value)}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className={`flex-1 ${fieldErrors.availability ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1039,13 +1159,19 @@ export default function AssetClassificationPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+                {fieldErrors.availability && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.availability}</p>
+                )}
               </div>
             </div>
           </div>
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAddOpen(false)}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => {
+              setIsAddOpen(false);
+              setFieldErrors({});
+            }}>{t("Cancel")}</Button>
             <Button onClick={handleAdd}>{t("Save")}</Button>
           </div>
         </DialogContent>
@@ -1070,9 +1196,14 @@ export default function AssetClassificationPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.subCategoryId}
-                    onValueChange={handleSubCategoryChange}
+                    onValueChange={(value) => {
+                      handleSubCategoryChange(value);
+                      if (fieldErrors.subCategoryId) {
+                        setFieldErrors({ ...fieldErrors, subCategoryId: "" });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={`mt-1.5 w-full ${fieldErrors.subCategoryId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select Sub Category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1083,15 +1214,23 @@ export default function AssetClassificationPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.subCategoryId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.subCategoryId}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Group")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.groupId}
-                    onValueChange={(value) => setFormData({ ...formData, groupId: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, groupId: value });
+                      if (fieldErrors.groupId) {
+                        setFieldErrors({ ...fieldErrors, groupId: "" });
+                      }
+                    }}
                     disabled={!formData.subCategoryId}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={`mt-1.5 w-full ${fieldErrors.groupId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={formData.subCategoryId ? t("Select Group") : t("Select Sub Category first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1102,18 +1241,26 @@ export default function AssetClassificationPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.groupId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.groupId}</p>
+                  )}
                 </div>
               </div>
 
               {/* Asset Sensitivity with inline add */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Asset Sensitivity")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Asset Sensitivity")} <span className="text-semantic-error">*</span></Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={formData.sensitivityId}
-                    onValueChange={(value) => setFormData({ ...formData, sensitivityId: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, sensitivityId: value });
+                      if (fieldErrors.sensitivityId) {
+                        setFieldErrors({ ...fieldErrors, sensitivityId: "" });
+                      }
+                    }}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className={`flex-1 ${fieldErrors.sensitivityId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select Sensitivity")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1133,18 +1280,21 @@ export default function AssetClassificationPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+                {fieldErrors.sensitivityId && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.sensitivityId}</p>
+                )}
               </div>
 
               {/* Confidentiality & Integrity */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Confidentiality")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Confidentiality")} <span className="text-semantic-error">*</span></Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={formData.confidentiality}
                       onValueChange={(value) => updateCIAValue("confidentiality", value)}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.confidentiality ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1167,15 +1317,18 @@ export default function AssetClassificationPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.confidentiality && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.confidentiality}</p>
+                  )}
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Integrity")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Integrity")} <span className="text-semantic-error">*</span></Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={formData.integrity}
                       onValueChange={(value) => updateCIAValue("integrity", value)}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.integrity ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -1198,18 +1351,21 @@ export default function AssetClassificationPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.integrity && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.integrity}</p>
+                  )}
                 </div>
               </div>
 
               {/* Availability */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Availability")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Availability")} <span className="text-semantic-error">*</span></Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={formData.availability}
                     onValueChange={(value) => updateCIAValue("availability", value)}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className={`flex-1 ${fieldErrors.availability ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1232,13 +1388,19 @@ export default function AssetClassificationPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+                {fieldErrors.availability && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.availability}</p>
+                )}
               </div>
             </div>
           </div>
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => {
+              setIsEditOpen(false);
+              setFieldErrors({});
+            }}>{t("Cancel")}</Button>
             <Button onClick={handleEdit}>{t("Save")}</Button>
           </div>
         </DialogContent>

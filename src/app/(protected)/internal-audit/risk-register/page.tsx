@@ -287,6 +287,9 @@ export default function RiskRegisterPage() {
   };
   const [formData, setFormData] = useState(initialFormData);
 
+  // Field errors state for inline validation
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
   // Generate year options (current year + 5 years back)
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
@@ -501,6 +504,7 @@ export default function RiskRegisterPage() {
     setIsAddRiskOpen(false);
     setFormData(initialFormData);
     setUploadedFiles([]);
+    setFieldErrors({});
   };
 
   // Edit Risk Modal handlers
@@ -550,6 +554,7 @@ export default function RiskRegisterPage() {
     setIsEditRiskOpen(false);
     setEditingRisk(null);
     setFormData(initialFormData);
+    setFieldErrors({});
   };
 
   // View Risk Modal handler
@@ -677,66 +682,47 @@ export default function RiskRegisterPage() {
 
   // Submit Add Risk form
   const handleAddRiskSubmit = async () => {
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
     // Validation: Risk Name
     if (!formData.riskName.trim()) {
-      toast({
-        title: "Error",
-        description: t("Risk name is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.riskName = t("Risk name is required");
     }
 
     // Validation: Risk Description
     if (!formData.riskDescription.trim()) {
-      toast({
-        title: "Error",
-        description: t("Risk description is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.riskDescription = t("Risk description is required");
     }
 
     // Validation: Inherent Likelihood
     if (!formData.inherentLikelihood) {
-      toast({
-        title: "Error",
-        description: t("Inherent likelihood is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.inherentLikelihood = t("Inherent likelihood is required");
     }
 
     // Validation: Inherent Impact
     if (!formData.inherentImpact) {
-      toast({
-        title: "Error",
-        description: t("Inherent impact is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.inherentImpact = t("Inherent impact is required");
     }
 
     // Validation: Residual Likelihood
     if (!formData.residualLikelihood) {
-      toast({
-        title: "Error",
-        description: t("Residual likelihood is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.residualLikelihood = t("Residual likelihood is required");
     }
 
     // Validation: Residual Impact
     if (!formData.residualImpact) {
-      toast({
-        title: "Error",
-        description: t("Residual impact is required"),
-        variant: "destructive",
-      });
+      errors.residualImpact = t("Residual impact is required");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
+    // Clear errors if validation passes
+    setFieldErrors({});
     setSaving(true);
     try {
       const inherentScore = calculateInherentScore();
@@ -789,66 +775,51 @@ export default function RiskRegisterPage() {
 
   // Submit Edit Risk form
   const handleEditRiskSubmit = async () => {
-    // Validation: Risk Name
-    if (!editingRisk || !formData.riskName.trim()) {
-      toast({
-        title: "Error",
-        description: t("Risk name is required"),
-        variant: "destructive",
-      });
+    if (!editingRisk) {
       return;
+    }
+
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation: Risk Name
+    if (!formData.riskName.trim()) {
+      errors.riskName = t("Risk name is required");
     }
 
     // Validation: Risk Description
     if (!formData.riskDescription.trim()) {
-      toast({
-        title: "Error",
-        description: t("Risk description is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.riskDescription = t("Risk description is required");
     }
 
     // Validation: Inherent Likelihood
     if (!formData.inherentLikelihood) {
-      toast({
-        title: "Error",
-        description: t("Inherent likelihood is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.inherentLikelihood = t("Inherent likelihood is required");
     }
 
     // Validation: Inherent Impact
     if (!formData.inherentImpact) {
-      toast({
-        title: "Error",
-        description: t("Inherent impact is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.inherentImpact = t("Inherent impact is required");
     }
 
     // Validation: Residual Likelihood
     if (!formData.residualLikelihood) {
-      toast({
-        title: "Error",
-        description: t("Residual likelihood is required"),
-        variant: "destructive",
-      });
-      return;
+      errors.residualLikelihood = t("Residual likelihood is required");
     }
 
     // Validation: Residual Impact
     if (!formData.residualImpact) {
-      toast({
-        title: "Error",
-        description: t("Residual impact is required"),
-        variant: "destructive",
-      });
+      errors.residualImpact = t("Residual impact is required");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
+    // Clear errors if validation passes
+    setFieldErrors({});
     setSaving(true);
     try {
       const inherentScore = calculateInherentScore();
@@ -1801,10 +1772,18 @@ export default function RiskRegisterPage() {
                     <Label className="text-sm font-medium text-slate-700">{t("Risk Name")} <span className="text-error">*</span></Label>
                     <Input
                       value={formData.riskName}
-                      onChange={(e) => setFormData({ ...formData, riskName: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, riskName: e.target.value });
+                        if (fieldErrors.riskName) {
+                          setFieldErrors({ ...fieldErrors, riskName: "" });
+                        }
+                      }}
                       placeholder={t("Enter risk name")}
-                      className="mt-1.5 w-full bg-white"
+                      className={`mt-1.5 w-full bg-white ${fieldErrors.riskName ? "border-red-500" : ""}`}
                     />
+                    {fieldErrors.riskName && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.riskName}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
@@ -1892,11 +1871,19 @@ export default function RiskRegisterPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Risk Description")} <span className="text-red-500">*</span></Label>
                   <Textarea
                     value={formData.riskDescription}
-                    onChange={(e) => setFormData({ ...formData, riskDescription: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, riskDescription: e.target.value });
+                      if (fieldErrors.riskDescription) {
+                        setFieldErrors({ ...fieldErrors, riskDescription: "" });
+                      }
+                    }}
                     placeholder={t("Enter risk description")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${fieldErrors.riskDescription ? "border-red-500" : ""}`}
                     rows={3}
                   />
+                  {fieldErrors.riskDescription && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.riskDescription}</p>
+                  )}
                 </div>
               </div>
 
@@ -1908,9 +1895,14 @@ export default function RiskRegisterPage() {
                     <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
                     <Select
                       value={formData.inherentLikelihood}
-                      onValueChange={(value) => setFormData({ ...formData, inherentLikelihood: value })}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, inherentLikelihood: value });
+                        if (fieldErrors.inherentLikelihood) {
+                          setFieldErrors({ ...fieldErrors, inherentLikelihood: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentLikelihood ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select likelihood")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1921,14 +1913,22 @@ export default function RiskRegisterPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.inherentLikelihood && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentLikelihood}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
                     <Select
                       value={formData.inherentImpact}
-                      onValueChange={(value) => setFormData({ ...formData, inherentImpact: value })}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, inherentImpact: value });
+                        if (fieldErrors.inherentImpact) {
+                          setFieldErrors({ ...fieldErrors, inherentImpact: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentImpact ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select impact")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1939,6 +1939,9 @@ export default function RiskRegisterPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.inherentImpact && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentImpact}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1982,9 +1985,14 @@ export default function RiskRegisterPage() {
                     <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
                     <Select
                       value={formData.residualLikelihood}
-                      onValueChange={(value) => setFormData({ ...formData, residualLikelihood: value })}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, residualLikelihood: value });
+                        if (fieldErrors.residualLikelihood) {
+                          setFieldErrors({ ...fieldErrors, residualLikelihood: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualLikelihood ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select likelihood")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1995,14 +2003,22 @@ export default function RiskRegisterPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.residualLikelihood && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.residualLikelihood}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
                     <Select
                       value={formData.residualImpact}
-                      onValueChange={(value) => setFormData({ ...formData, residualImpact: value })}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, residualImpact: value });
+                        if (fieldErrors.residualImpact) {
+                          setFieldErrors({ ...fieldErrors, residualImpact: "" });
+                        }
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualImpact ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select impact")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -2013,6 +2029,9 @@ export default function RiskRegisterPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.residualImpact && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.residualImpact}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2184,10 +2203,18 @@ export default function RiskRegisterPage() {
                       <Label className="text-sm font-medium text-slate-700">{t("Risk Name")} <span className="text-error">*</span></Label>
                       <Input
                         value={formData.riskName}
-                        onChange={(e) => setFormData({ ...formData, riskName: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, riskName: e.target.value });
+                          if (fieldErrors.riskName) {
+                            setFieldErrors({ ...fieldErrors, riskName: "" });
+                          }
+                        }}
                         placeholder={t("Enter risk name")}
-                        className="mt-1.5 w-full bg-white"
+                        className={`mt-1.5 w-full bg-white ${fieldErrors.riskName ? "border-red-500" : ""}`}
                       />
+                      {fieldErrors.riskName && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors.riskName}</p>
+                      )}
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
@@ -2275,11 +2302,19 @@ export default function RiskRegisterPage() {
                     <Label className="text-sm font-medium text-slate-700">{t("Risk Description")} <span className="text-red-500">*</span></Label>
                     <Textarea
                       value={formData.riskDescription}
-                      onChange={(e) => setFormData({ ...formData, riskDescription: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, riskDescription: e.target.value });
+                        if (fieldErrors.riskDescription) {
+                          setFieldErrors({ ...fieldErrors, riskDescription: "" });
+                        }
+                      }}
                       placeholder={t("Enter risk description")}
-                      className="mt-1.5 w-full bg-white"
+                      className={`mt-1.5 w-full bg-white ${fieldErrors.riskDescription ? "border-red-500" : ""}`}
                       rows={3}
                     />
+                    {fieldErrors.riskDescription && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.riskDescription}</p>
+                    )}
                   </div>
                 </div>
 
@@ -2291,9 +2326,14 @@ export default function RiskRegisterPage() {
                       <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
                       <Select
                         value={formData.inherentLikelihood}
-                        onValueChange={(value) => setFormData({ ...formData, inherentLikelihood: value })}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, inherentLikelihood: value });
+                          if (fieldErrors.inherentLikelihood) {
+                            setFieldErrors({ ...fieldErrors, inherentLikelihood: "" });
+                          }
+                        }}
                       >
-                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentLikelihood ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select likelihood")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -2304,14 +2344,22 @@ export default function RiskRegisterPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {fieldErrors.inherentLikelihood && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentLikelihood}</p>
+                      )}
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
                       <Select
                         value={formData.inherentImpact}
-                        onValueChange={(value) => setFormData({ ...formData, inherentImpact: value })}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, inherentImpact: value });
+                          if (fieldErrors.inherentImpact) {
+                            setFieldErrors({ ...fieldErrors, inherentImpact: "" });
+                          }
+                        }}
                       >
-                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentImpact ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select impact")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -2322,6 +2370,9 @@ export default function RiskRegisterPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {fieldErrors.inherentImpact && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentImpact}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2365,9 +2416,14 @@ export default function RiskRegisterPage() {
                       <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
                       <Select
                         value={formData.residualLikelihood}
-                        onValueChange={(value) => setFormData({ ...formData, residualLikelihood: value })}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, residualLikelihood: value });
+                          if (fieldErrors.residualLikelihood) {
+                            setFieldErrors({ ...fieldErrors, residualLikelihood: "" });
+                          }
+                        }}
                       >
-                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualLikelihood ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select likelihood")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -2378,14 +2434,22 @@ export default function RiskRegisterPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {fieldErrors.residualLikelihood && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors.residualLikelihood}</p>
+                      )}
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
                       <Select
                         value={formData.residualImpact}
-                        onValueChange={(value) => setFormData({ ...formData, residualImpact: value })}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, residualImpact: value });
+                          if (fieldErrors.residualImpact) {
+                            setFieldErrors({ ...fieldErrors, residualImpact: "" });
+                          }
+                        }}
                       >
-                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualImpact ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select impact")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -2396,6 +2460,9 @@ export default function RiskRegisterPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {fieldErrors.residualImpact && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors.residualImpact}</p>
+                      )}
                     </div>
                   </div>
                 </div>
