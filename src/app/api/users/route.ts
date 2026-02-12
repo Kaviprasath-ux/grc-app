@@ -108,9 +108,53 @@ export async function POST(request: NextRequest) {
     }
 
     // Multi-tenant: Get customerAccountId from session (users created by CustomerAdmin belong to same account)
-    const customerAccountId = session?.user?.customerAccountId || null;
+    let customerAccountId = session?.user?.customerAccountId || null;
     // Track who created this user (for DR/DC framework visibility)
     const createdById = session?.user?.id || null;
+
+    // Fallback: if customerAccountId is not on session, look up via user record
+    if (!customerAccountId && session?.user?.id) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { customerAccountId: true, customerCode: true },
+      });
+
+      customerAccountId = currentUser?.customerAccountId || null;
+
+      if (!customerAccountId && currentUser?.customerCode) {
+        const account = await prisma.customerAccount.findUnique({
+          where: { code: currentUser.customerCode },
+          select: { id: true },
+        });
+        customerAccountId = account?.id || null;
+      }
+    }
+
+    // Check subscription plan limits before creating user
+    if (customerAccountId) {
+      const now = new Date();
+      const activePlan = await prisma.subscriptionPlan.findFirst({
+        where: {
+          customerAccountId,
+          status: "Active",
+          expiryDate: { gte: now },
+        },
+      });
+
+      if (!activePlan) {
+        return NextResponse.json(
+          { error: "Subscription plan has expired or is inactive" },
+          { status: 403 }
+        );
+      }
+
+      if (activePlan.accountsUsed >= activePlan.maxAccountsAllowed) {
+        return NextResponse.json(
+          { error: `Maximum accounts limit reached. Your plan allows ${activePlan.maxAccountsAllowed} accounts.` },
+          { status: 403 }
+        );
+      }
+    }
 
     // Hash password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -160,6 +204,24 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Increment accountsUsed in the active subscription plan
+    if (customerAccountId) {
+      const now = new Date();
+      const activePlan = await prisma.subscriptionPlan.findFirst({
+        where: {
+          customerAccountId,
+          status: "Active",
+          expiryDate: { gte: now },
+        },
+      });
+      if (activePlan) {
+        await prisma.subscriptionPlan.update({
+          where: { id: activePlan.id },
+          data: { accountsUsed: { increment: 1 } },
+        });
+      }
+    }
 
     // Send welcome notification to new user
     if (customerAccountId && createdById) {

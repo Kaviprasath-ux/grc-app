@@ -223,6 +223,30 @@ export const POST = withAuth(
 
       const customerAccountId = session.customerAccountId;
 
+      // Check subscription plan limits before creating framework
+      const now = new Date();
+      const activePlan = await prisma.subscriptionPlan.findFirst({
+        where: {
+          customerAccountId,
+          status: "Active",
+          expiryDate: { gte: now },
+        },
+      });
+
+      if (!activePlan) {
+        return NextResponse.json(
+          { error: "Subscription plan has expired or is inactive" },
+          { status: 403 }
+        );
+      }
+
+      if (activePlan.frameworksUsed >= activePlan.maxFrameworksAllowed) {
+        return NextResponse.json(
+          { error: `Maximum frameworks limit reached. Your plan allows ${activePlan.maxFrameworksAllowed} frameworks.` },
+          { status: 403 }
+        );
+      }
+
       const framework = await prisma.framework.create({
         data: {
           code: code || null,
@@ -242,6 +266,14 @@ export const POST = withAuth(
           customerAccountId,
         },
       });
+
+      // Increment frameworksUsed in the active subscription plan
+      if (status === "Subscribed" && activePlan) {
+        await prisma.subscriptionPlan.update({
+          where: { id: activePlan.id },
+          data: { frameworksUsed: { increment: 1 } },
+        });
+      }
 
       return NextResponse.json(framework, { status: 201 });
     } catch (error: unknown) {

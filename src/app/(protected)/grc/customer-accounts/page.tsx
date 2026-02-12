@@ -187,6 +187,7 @@ export default function CustomerAccountsPage() {
   const [showSubscriptionPlanDialog, setShowSubscriptionPlanDialog] = useState(false);
   const [showNewSubscriptionDialog, setShowNewSubscriptionDialog] = useState(false);
   const [showEditSubscriptionDialog, setShowEditSubscriptionDialog] = useState(false);
+  const [showSubscriptionWarningDialog, setShowSubscriptionWarningDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerAccount | null>(null);
   const [nextCustomerCode, setNextCustomerCode] = useState("GRC_001");
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
@@ -229,6 +230,9 @@ export default function CustomerAccountsPage() {
     status: "Active",
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [subscriptionErrors, setSubscriptionErrors] = useState<Record<string, string>>({});
+  const [editSubscriptionErrors, setEditSubscriptionErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [logoUploadStatus, setLogoUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
@@ -273,6 +277,7 @@ export default function CustomerAccountsPage() {
     });
     setPendingSubscriptionPlans([]);
     setIsOnboardingMode(false);
+    setFormErrors({});
   };
 
   const resetChangePasswordData = () => {
@@ -290,6 +295,7 @@ export default function CustomerAccountsPage() {
       maxAccounts: 0,
       status: "Active",
     });
+    setSubscriptionErrors({});
   };
 
   const handleLogoDragOver = (e: React.DragEvent) => {
@@ -354,28 +360,34 @@ export default function CustomerAccountsPage() {
   };
 
   const handleOnboardCustomer = async () => {
-    if (!formData.customerName || !formData.email || !formData.userName) {
-      toast({
-        title: t("Validation Error"),
-        description: t("Please fill in all required fields"),
-        variant: "destructive",
-      });
-      return;
+    const errors: Record<string, string> = {};
+
+    if (!formData.customerName.trim()) {
+      errors.customerName = t("Please Enter the Customer Name");
+    }
+    if (!formData.userName.trim()) {
+      errors.userName = t("Please Enter the Username");
+    }
+    if (!formData.email.trim()) {
+      errors.email = t("Please Enter the Email");
     }
     if (!formData.newPassword) {
-      toast({
-        title: t("Validation Error"),
-        description: t("Password is required"),
-        variant: "destructive",
-      });
+      errors.newPassword = t("Password can not be empty");
+    }
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = t("Password can not be empty");
+    }
+    if (formData.newPassword && formData.confirmPassword && formData.newPassword !== formData.confirmPassword) {
+      errors.confirmPassword = t("Passwords do not match");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
-    if (formData.newPassword !== formData.confirmPassword) {
-      toast({
-        title: t("Validation Error"),
-        description: t("Passwords do not match"),
-        variant: "destructive",
-      });
+
+    if (pendingSubscriptionPlans.length === 0) {
+      setShowSubscriptionWarningDialog(true);
       return;
     }
 
@@ -441,12 +453,20 @@ export default function CustomerAccountsPage() {
   const handleEditCustomer = async () => {
     if (!selectedCustomer) return;
 
-    if (!formData.customerName || !formData.email || !formData.userName) {
-      toast({
-        title: t("Validation Error"),
-        description: t("Please fill in all required fields"),
-        variant: "destructive",
-      });
+    const errors: Record<string, string> = {};
+
+    if (!formData.customerName.trim()) {
+      errors.customerName = t("Please Enter the Customer Name");
+    }
+    if (!formData.userName.trim()) {
+      errors.userName = t("Please Enter the Username");
+    }
+    if (!formData.email.trim()) {
+      errors.email = t("Please Enter the Email");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
 
@@ -595,12 +615,28 @@ export default function CustomerAccountsPage() {
   };
 
   const handleAddSubscription = async () => {
-    if (!newSubscriptionData.startDate || !newSubscriptionData.expiryDate) {
-      toast({
-        title: t("Validation Error"),
-        description: t("Start date and expiry date are required"),
-        variant: "destructive",
-      });
+    const errors: Record<string, string> = {};
+
+    if (!newSubscriptionData.startDate) {
+      errors.startDate = t("Please enter the subscription start date.");
+    }
+    if (!newSubscriptionData.expiryDate) {
+      errors.expiryDate = t("Expiry date is required and should be greater than the start date!");
+    } else if (newSubscriptionData.startDate && newSubscriptionData.expiryDate <= newSubscriptionData.startDate) {
+      errors.expiryDate = t("Expiry date is required and should be greater than the start date!");
+    }
+    if (!newSubscriptionData.maxFrameworks || newSubscriptionData.maxFrameworks <= 0) {
+      errors.maxFrameworks = t("Please enter the maximum allowed frameworks.");
+    }
+    if (!newSubscriptionData.maxAccounts || newSubscriptionData.maxAccounts <= 0) {
+      errors.maxAccounts = t("Please enter the maximum allowed accounts.");
+    }
+    if (!newSubscriptionData.status) {
+      errors.status = t("Status is required!");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setSubscriptionErrors(errors);
       return;
     }
 
@@ -757,12 +793,28 @@ export default function CustomerAccountsPage() {
   const handleEditSubscription = async () => {
     if (!editSubscriptionData.id) return;
 
-    if (!editSubscriptionData.startDate || !editSubscriptionData.expiryDate) {
-      toast({
-        title: t("Validation Error"),
-        description: t("Start date and expiry date are required"),
-        variant: "destructive",
-      });
+    const errors: Record<string, string> = {};
+
+    if (!editSubscriptionData.startDate) {
+      errors.startDate = t("Please enter the subscription start date.");
+    }
+    if (!editSubscriptionData.expiryDate) {
+      errors.expiryDate = t("Expiry date is required and should be greater than the start date!");
+    } else if (editSubscriptionData.startDate && editSubscriptionData.expiryDate <= editSubscriptionData.startDate) {
+      errors.expiryDate = t("Expiry date is required and should be greater than the start date!");
+    }
+    if (!editSubscriptionData.maxFrameworks || editSubscriptionData.maxFrameworks <= 0) {
+      errors.maxFrameworks = t("Please enter the maximum allowed frameworks.");
+    }
+    if (!editSubscriptionData.maxAccounts || editSubscriptionData.maxAccounts <= 0) {
+      errors.maxAccounts = t("Please enter the maximum allowed accounts.");
+    }
+    if (!editSubscriptionData.status) {
+      errors.status = t("Status is required!");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setEditSubscriptionErrors(errors);
       return;
     }
 
@@ -1058,7 +1110,7 @@ export default function CustomerAccountsPage() {
       </div>
 
       {/* Onboard Customer Dialog */}
-      <Dialog open={showOnboardDialog} onOpenChange={setShowOnboardDialog}>
+      <Dialog open={showOnboardDialog} onOpenChange={(open) => { setShowOnboardDialog(open); if (!open) { setFormErrors({}); } }}>
         <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
@@ -1090,9 +1142,13 @@ export default function CustomerAccountsPage() {
                   <Input
                     id="customerName"
                     value={formData.customerName}
-                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, customerName: e.target.value }); setFormErrors((prev) => { const { customerName, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter customer name")}
+                    className={formErrors.customerName ? "border-red-400" : ""}
                   />
+                  {formErrors.customerName && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{formErrors.customerName}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -1100,9 +1156,13 @@ export default function CustomerAccountsPage() {
                   <Input
                     id="userName"
                     value={formData.userName}
-                    onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, userName: e.target.value }); setFormErrors((prev) => { const { userName, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter username")}
+                    className={formErrors.userName ? "border-red-400" : ""}
                   />
+                  {formErrors.userName && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{formErrors.userName}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -1111,9 +1171,13 @@ export default function CustomerAccountsPage() {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors((prev) => { const { email, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter email address")}
+                    className={formErrors.email ? "border-red-400" : ""}
                   />
+                  {formErrors.email && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{formErrors.email}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -1283,9 +1347,13 @@ export default function CustomerAccountsPage() {
                     id="newPassword"
                     type="password"
                     value={formData.newPassword}
-                    onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, newPassword: e.target.value }); setFormErrors((prev) => { const { newPassword, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter password")}
+                    className={formErrors.newPassword ? "border-red-400" : ""}
                   />
+                  {formErrors.newPassword && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{formErrors.newPassword}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -1294,9 +1362,13 @@ export default function CustomerAccountsPage() {
                     id="confirmPassword"
                     type="password"
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, confirmPassword: e.target.value }); setFormErrors((prev) => { const { confirmPassword, ...rest } = prev; return rest; }); }}
                     placeholder={t("Confirm password")}
+                    className={formErrors.confirmPassword ? "border-red-400" : ""}
                   />
+                  {formErrors.confirmPassword && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{formErrors.confirmPassword}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1324,7 +1396,7 @@ export default function CustomerAccountsPage() {
       </Dialog>
 
       {/* Edit Customer Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) { setFormErrors({}); } }}>
         <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
@@ -1356,9 +1428,13 @@ export default function CustomerAccountsPage() {
                   <Input
                     id="editCustomerName"
                     value={formData.customerName}
-                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, customerName: e.target.value }); setFormErrors((prev) => { const { customerName, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter customer name")}
+                    className={formErrors.customerName ? "border-red-400" : ""}
                   />
+                  {formErrors.customerName && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{formErrors.customerName}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -1366,9 +1442,13 @@ export default function CustomerAccountsPage() {
                   <Input
                     id="editUserName"
                     value={formData.userName}
-                    onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, userName: e.target.value }); setFormErrors((prev) => { const { userName, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter username")}
+                    className={formErrors.userName ? "border-red-400" : ""}
                   />
+                  {formErrors.userName && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{formErrors.userName}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -1377,9 +1457,13 @@ export default function CustomerAccountsPage() {
                     id="editEmail"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors((prev) => { const { email, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter email address")}
+                    className={formErrors.email ? "border-red-400" : ""}
                   />
+                  {formErrors.email && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{formErrors.email}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -1707,7 +1791,7 @@ export default function CustomerAccountsPage() {
       </Dialog>
 
       {/* New Subscription Dialog */}
-      <Dialog open={showNewSubscriptionDialog} onOpenChange={setShowNewSubscriptionDialog}>
+      <Dialog open={showNewSubscriptionDialog} onOpenChange={(open) => { setShowNewSubscriptionDialog(open); if (!open) { setSubscriptionErrors({}); } }}>
         <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -1718,69 +1802,94 @@ export default function CustomerAccountsPage() {
 
           {/* Content */}
           <div className="px-6 py-5 space-y-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startDate" className="text-right text-sm font-medium text-slate-700">{t("Start date")}</Label>
-              <Input
-                id="startDate"
-                type="date"
-                className="col-span-3"
-                value={newSubscriptionData.startDate}
-                onChange={(e) => setNewSubscriptionData({ ...newSubscriptionData, startDate: e.target.value })}
-              />
+            <div className="grid grid-cols-4 gap-4">
+              <Label htmlFor="startDate" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Start date")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={newSubscriptionData.startDate}
+                  onChange={(e) => { setNewSubscriptionData({ ...newSubscriptionData, startDate: e.target.value }); setSubscriptionErrors((prev) => { const { startDate, ...rest } = prev; return rest; }); }}
+                  className={subscriptionErrors.startDate ? "border-red-400" : ""}
+                />
+                {subscriptionErrors.startDate && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.startDate}</div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expiryDate" className="text-right text-sm font-medium text-slate-700">{t("Expiry date")}</Label>
-              <Input
-                id="expiryDate"
-                type="date"
-                className="col-span-3"
-                value={newSubscriptionData.expiryDate}
-                onChange={(e) => setNewSubscriptionData({ ...newSubscriptionData, expiryDate: e.target.value })}
-              />
+            <div className="grid grid-cols-4 gap-4">
+              <Label htmlFor="expiryDate" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Expiry date")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <Input
+                  id="expiryDate"
+                  type="date"
+                  value={newSubscriptionData.expiryDate}
+                  onChange={(e) => { setNewSubscriptionData({ ...newSubscriptionData, expiryDate: e.target.value }); setSubscriptionErrors((prev) => { const { expiryDate, ...rest } = prev; return rest; }); }}
+                  className={subscriptionErrors.expiryDate ? "border-red-400" : ""}
+                />
+                {subscriptionErrors.expiryDate && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.expiryDate}</div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="maxFrameworks" className="text-right text-sm font-medium text-slate-700">{t("Max frameworks")}</Label>
-              <Input
-                id="maxFrameworks"
-                type="number"
-                min="0"
-                className="col-span-3"
-                value={newSubscriptionData.maxFrameworks}
-                onChange={(e) => setNewSubscriptionData({ ...newSubscriptionData, maxFrameworks: parseInt(e.target.value) || 0 })}
-              />
+            <div className="grid grid-cols-4 gap-4">
+              <Label htmlFor="maxFrameworks" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <Input
+                  id="maxFrameworks"
+                  type="number"
+                  min="0"
+                  value={newSubscriptionData.maxFrameworks}
+                  onChange={(e) => { setNewSubscriptionData({ ...newSubscriptionData, maxFrameworks: parseInt(e.target.value) || 0 }); setSubscriptionErrors((prev) => { const { maxFrameworks, ...rest } = prev; return rest; }); }}
+                  className={subscriptionErrors.maxFrameworks ? "border-red-400" : ""}
+                />
+                {subscriptionErrors.maxFrameworks && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.maxFrameworks}</div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="maxAccounts" className="text-right text-sm font-medium text-slate-700">{t("Max accounts")}</Label>
-              <Input
-                id="maxAccounts"
-                type="number"
-                min="0"
-                className="col-span-3"
-                value={newSubscriptionData.maxAccounts}
-                onChange={(e) => setNewSubscriptionData({ ...newSubscriptionData, maxAccounts: parseInt(e.target.value) || 0 })}
-              />
+            <div className="grid grid-cols-4 gap-4">
+              <Label htmlFor="maxAccounts" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max accounts")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <Input
+                  id="maxAccounts"
+                  type="number"
+                  min="0"
+                  value={newSubscriptionData.maxAccounts}
+                  onChange={(e) => { setNewSubscriptionData({ ...newSubscriptionData, maxAccounts: parseInt(e.target.value) || 0 }); setSubscriptionErrors((prev) => { const { maxAccounts, ...rest } = prev; return rest; }); }}
+                  className={subscriptionErrors.maxAccounts ? "border-red-400" : ""}
+                />
+                {subscriptionErrors.maxAccounts && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.maxAccounts}</div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700">{t("Status")}</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="subscriptionStatus"
-                    checked={newSubscriptionData.status === "Active"}
-                    onChange={() => setNewSubscriptionData({ ...newSubscriptionData, status: "Active" })}
-                    className="accent-primary"
-                  /> {t("Active")}
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="subscriptionStatus"
-                    checked={newSubscriptionData.status === "Inactive"}
-                    onChange={() => setNewSubscriptionData({ ...newSubscriptionData, status: "Inactive" })}
-                    className="accent-primary"
-                  /> {t("Inactive")}
-                </label>
+            <div className="grid grid-cols-4 gap-4">
+              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Status")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <div className="flex gap-4 h-9 items-center">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="subscriptionStatus"
+                      checked={newSubscriptionData.status === "Active"}
+                      onChange={() => { setNewSubscriptionData({ ...newSubscriptionData, status: "Active" }); setSubscriptionErrors((prev) => { const { status, ...rest } = prev; return rest; }); }}
+                      className="accent-primary"
+                    /> {t("Active")}
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="subscriptionStatus"
+                      checked={newSubscriptionData.status === "Inactive"}
+                      onChange={() => { setNewSubscriptionData({ ...newSubscriptionData, status: "Inactive" }); setSubscriptionErrors((prev) => { const { status, ...rest } = prev; return rest; }); }}
+                      className="accent-primary"
+                    /> {t("Inactive")}
+                  </label>
+                </div>
+                {subscriptionErrors.status && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.status}</div>
+                )}
               </div>
             </div>
           </div>
@@ -1798,7 +1907,7 @@ export default function CustomerAccountsPage() {
       </Dialog>
 
       {/* Edit Subscription Dialog */}
-      <Dialog open={showEditSubscriptionDialog} onOpenChange={setShowEditSubscriptionDialog}>
+      <Dialog open={showEditSubscriptionDialog} onOpenChange={(open) => { setShowEditSubscriptionDialog(open); if (!open) { setEditSubscriptionErrors({}); } }}>
         <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
@@ -1809,69 +1918,94 @@ export default function CustomerAccountsPage() {
 
           {/* Content */}
           <div className="px-6 py-5 space-y-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editStartDate" className="text-right text-sm font-medium text-slate-700">{t("Start date")}</Label>
-              <Input
-                id="editStartDate"
-                type="date"
-                className="col-span-3"
-                value={editSubscriptionData.startDate}
-                onChange={(e) => setEditSubscriptionData({ ...editSubscriptionData, startDate: e.target.value })}
-              />
+            <div className="grid grid-cols-4 gap-4">
+              <Label htmlFor="editStartDate" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Start date")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <Input
+                  id="editStartDate"
+                  type="date"
+                  value={editSubscriptionData.startDate}
+                  onChange={(e) => { setEditSubscriptionData({ ...editSubscriptionData, startDate: e.target.value }); setEditSubscriptionErrors((prev) => { const { startDate, ...rest } = prev; return rest; }); }}
+                  className={editSubscriptionErrors.startDate ? "border-red-400" : ""}
+                />
+                {editSubscriptionErrors.startDate && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.startDate}</div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editExpiryDate" className="text-right text-sm font-medium text-slate-700">{t("Expiry date")}</Label>
-              <Input
-                id="editExpiryDate"
-                type="date"
-                className="col-span-3"
-                value={editSubscriptionData.expiryDate}
-                onChange={(e) => setEditSubscriptionData({ ...editSubscriptionData, expiryDate: e.target.value })}
-              />
+            <div className="grid grid-cols-4 gap-4">
+              <Label htmlFor="editExpiryDate" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Expiry date")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <Input
+                  id="editExpiryDate"
+                  type="date"
+                  value={editSubscriptionData.expiryDate}
+                  onChange={(e) => { setEditSubscriptionData({ ...editSubscriptionData, expiryDate: e.target.value }); setEditSubscriptionErrors((prev) => { const { expiryDate, ...rest } = prev; return rest; }); }}
+                  className={editSubscriptionErrors.expiryDate ? "border-red-400" : ""}
+                />
+                {editSubscriptionErrors.expiryDate && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.expiryDate}</div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editMaxFrameworks" className="text-right text-sm font-medium text-slate-700">{t("Max frameworks")}</Label>
-              <Input
-                id="editMaxFrameworks"
-                type="number"
-                min="0"
-                className="col-span-3"
-                value={editSubscriptionData.maxFrameworks}
-                onChange={(e) => setEditSubscriptionData({ ...editSubscriptionData, maxFrameworks: parseInt(e.target.value) || 0 })}
-              />
+            <div className="grid grid-cols-4 gap-4">
+              <Label htmlFor="editMaxFrameworks" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <Input
+                  id="editMaxFrameworks"
+                  type="number"
+                  min="0"
+                  value={editSubscriptionData.maxFrameworks}
+                  onChange={(e) => { setEditSubscriptionData({ ...editSubscriptionData, maxFrameworks: parseInt(e.target.value) || 0 }); setEditSubscriptionErrors((prev) => { const { maxFrameworks, ...rest } = prev; return rest; }); }}
+                  className={editSubscriptionErrors.maxFrameworks ? "border-red-400" : ""}
+                />
+                {editSubscriptionErrors.maxFrameworks && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.maxFrameworks}</div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editMaxAccounts" className="text-right text-sm font-medium text-slate-700">{t("Max accounts")}</Label>
-              <Input
-                id="editMaxAccounts"
-                type="number"
-                min="0"
-                className="col-span-3"
-                value={editSubscriptionData.maxAccounts}
-                onChange={(e) => setEditSubscriptionData({ ...editSubscriptionData, maxAccounts: parseInt(e.target.value) || 0 })}
-              />
+            <div className="grid grid-cols-4 gap-4">
+              <Label htmlFor="editMaxAccounts" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max accounts")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <Input
+                  id="editMaxAccounts"
+                  type="number"
+                  min="0"
+                  value={editSubscriptionData.maxAccounts}
+                  onChange={(e) => { setEditSubscriptionData({ ...editSubscriptionData, maxAccounts: parseInt(e.target.value) || 0 }); setEditSubscriptionErrors((prev) => { const { maxAccounts, ...rest } = prev; return rest; }); }}
+                  className={editSubscriptionErrors.maxAccounts ? "border-red-400" : ""}
+                />
+                {editSubscriptionErrors.maxAccounts && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.maxAccounts}</div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700">{t("Status")}</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="editSubscriptionStatus"
-                    checked={editSubscriptionData.status === "Active"}
-                    onChange={() => setEditSubscriptionData({ ...editSubscriptionData, status: "Active" })}
-                    className="accent-primary"
-                  /> {t("Active")}
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="editSubscriptionStatus"
-                    checked={editSubscriptionData.status === "Inactive"}
-                    onChange={() => setEditSubscriptionData({ ...editSubscriptionData, status: "Inactive" })}
-                    className="accent-primary"
-                  /> {t("Inactive")}
-                </label>
+            <div className="grid grid-cols-4 gap-4">
+              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Status")}</Label>
+              <div className="col-span-3 space-y-1.5">
+                <div className="flex gap-4 h-9 items-center">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="editSubscriptionStatus"
+                      checked={editSubscriptionData.status === "Active"}
+                      onChange={() => { setEditSubscriptionData({ ...editSubscriptionData, status: "Active" }); setEditSubscriptionErrors((prev) => { const { status, ...rest } = prev; return rest; }); }}
+                      className="accent-primary"
+                    /> {t("Active")}
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="editSubscriptionStatus"
+                      checked={editSubscriptionData.status === "Inactive"}
+                      onChange={() => { setEditSubscriptionData({ ...editSubscriptionData, status: "Inactive" }); setEditSubscriptionErrors((prev) => { const { status, ...rest } = prev; return rest; }); }}
+                      className="accent-primary"
+                    /> {t("Inactive")}
+                  </label>
+                </div>
+                {editSubscriptionErrors.status && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.status}</div>
+                )}
               </div>
             </div>
           </div>
@@ -1881,7 +2015,7 @@ export default function CustomerAccountsPage() {
             <Button onClick={handleEditSubscription} disabled={submitting} size="sm">
               {submitting ? t("Saving...") : t("Save")}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => { setShowEditSubscriptionDialog(false); setSelectedPlan(null); }}>
+            <Button variant="outline" size="sm" onClick={() => { setShowEditSubscriptionDialog(false); setSelectedPlan(null); setEditSubscriptionErrors({}); }}>
               {t("Cancel")}
             </Button>
           </div>
@@ -1949,6 +2083,30 @@ export default function CustomerAccountsPage() {
           <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => { setShowLogoDialog(false); setSelectedCustomer(null); }}>
               {t("Close")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subscription Plan Warning Dialog */}
+      <Dialog open={showSubscriptionWarningDialog} onOpenChange={setShowSubscriptionWarningDialog}>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-amber-600">{t("Warning")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-5">
+            <p className="text-slate-600">{t("Please add a subscription plan to continue!")}</p>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+            <Button size="sm" onClick={() => setShowSubscriptionWarningDialog(false)}>
+              {t("OK")}
             </Button>
           </div>
         </DialogContent>
