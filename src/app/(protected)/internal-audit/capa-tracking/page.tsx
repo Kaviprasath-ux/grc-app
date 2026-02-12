@@ -315,7 +315,7 @@ export default function CAPATrackingPage() {
       });
 
       const response = await fetch(
-        `/api/internal-audit/findings/${findingId}/attachments`,
+        `/api/internal-audit/capa-tracking/${findingId}/attachments`,
         {
           method: 'POST',
           body: formData,
@@ -323,9 +323,8 @@ export default function CAPATrackingPage() {
       );
 
       if (response.ok) {
-        const data = await response.json();
-        const newAttachments = data.files || data;
-        setExistingAttachments((prev) => [...(Array.isArray(newAttachments) ? newAttachments : []), ...prev]);
+        const newAttachments = await response.json();
+        setExistingAttachments((prev) => [...newAttachments, ...prev]);
         setUploadedFiles([]);
         return true;
       } else {
@@ -346,7 +345,7 @@ export default function CAPATrackingPage() {
 
     try {
       const response = await fetch(
-        `/api/internal-audit/findings/${findingToEdit.id}/attachments?attachmentId=${attachmentId}`,
+        `/api/internal-audit/capa-tracking/${findingToEdit.id}/attachments/${attachmentId}`,
         { method: 'DELETE' }
       );
 
