@@ -871,12 +871,12 @@ function ControlListPageContent() {
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Export")}
             </Button>
             <PermissionGate resource="compliance.controls" action="create">
               <Button size="sm" onClick={handleImport} variant="outline">
-                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Import")}
               </Button>
             </PermissionGate>

@@ -668,7 +668,7 @@ export default function RiskAssessmentConfigPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -689,7 +689,7 @@ export default function RiskAssessmentConfigPage() {
                   }}
                   placeholder={t("Enter factor label")}
                   className={`mt-1.5 w-full bg-white ${formErrors.label ? "border-red-500" : ""}`}
-                  autoFocus
+                  
                 />
                 {formErrors.label && <p className="text-sm text-red-500 mt-1">{formErrors.label}</p>}
               </div>
@@ -706,7 +706,7 @@ export default function RiskAssessmentConfigPage() {
                     }}
                     placeholder={t("Enter label")}
                     className={`mt-1.5 w-full bg-white ${formErrors.label ? "border-red-500" : ""}`}
-                    autoFocus
+                   
                   />
                   {formErrors.label && <p className="text-sm text-red-500 mt-1">{formErrors.label}</p>}
                 </div>
@@ -738,7 +738,7 @@ export default function RiskAssessmentConfigPage() {
                     }}
                     placeholder={t("Enter scoring range label")}
                     className={`mt-1.5 w-full bg-white ${formErrors.label ? "border-red-500" : ""}`}
-                    autoFocus
+                    
                   />
                   {formErrors.label && <p className="text-sm text-red-500 mt-1">{formErrors.label}</p>}
                 </div>

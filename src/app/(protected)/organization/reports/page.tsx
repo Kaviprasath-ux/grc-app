@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home, FileBarChart, Search } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home, FileBarChart, Search,Upload } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -346,7 +346,7 @@ export default function OrganizationReportsPage() {
               <div className="flex items-center justify-between pr-8">
                 <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport ? t(selectedReport.title) : ""}</DialogTitle>
                 <Button variant="outline" size="sm" onClick={handleExport}>
-                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Export")}
                 </Button>
               </div>

@@ -232,7 +232,7 @@ export default function BIACategoriesPage() {
             placeholder="Search categories..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[250px]"
+            className="pl-10 w-[250px] bg-slate-50"
           />
         </div>
         <Button onClick={() => setIsAddOpen(true)}>

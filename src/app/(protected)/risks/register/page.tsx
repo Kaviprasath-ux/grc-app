@@ -454,16 +454,17 @@ function RiskRegisterContent() {
 
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-2">
+        
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
         <PermissionGate resource="risk.register" action="create">
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Import")}
           </Button>
         </PermissionGate>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Export")}
-        </Button>
         <Button variant="outline" size="sm" onClick={handleActivityLogOpen}>
           <Activity className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Activity Log")}
@@ -604,9 +605,14 @@ function RiskRegisterContent() {
           />
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl border border-slate-200">
-          <Shield className="h-12 w-12 text-slate-300 mb-3" />
-          <p className="text-slate-500">{t("No risks found")}</p>
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+              <Shield className="h-6 w-6 text-primary-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 mb-1">{t("No risks found")}</p>
+            <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
+          </div>
         </div>
       )}
 
@@ -643,7 +649,7 @@ function RiskRegisterContent() {
 
       {/* Activity Log Dialog */}
       <Dialog open={activityLogOpen} onOpenChange={setActivityLogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle>{t("Activity Log")}</DialogTitle>
             <p className="text-sm text-slate-500">
@@ -693,7 +699,7 @@ function RiskRegisterContent() {
           setSelectedFile(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}> 
           <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle>{t("Import Risks")}</DialogTitle>
           </DialogHeader>

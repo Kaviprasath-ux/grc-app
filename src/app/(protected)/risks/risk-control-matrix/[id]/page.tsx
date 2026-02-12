@@ -426,7 +426,7 @@ export default function RiskDetailPage() {
                 {t("Edit")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0">
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader className="px-6 py-5 border-b border-slate-100">
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Risk")}</DialogTitle>
               </DialogHeader>
@@ -639,7 +639,7 @@ export default function RiskDetailPage() {
         {/* Inherent Risk Assessment */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-            <AlertTriangle className="h-4.5 w-4.5 text-slate-500" />
+            
             <h3 className="text-sm font-semibold text-slate-800">{t("Inherent Risk Assessment")}</h3>
           </div>
           <div className="p-5">
@@ -674,7 +674,7 @@ export default function RiskDetailPage() {
         {/* Residual Risk Assessment */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-            <Shield className="h-4.5 w-4.5 text-slate-500" />
+            
             <h3 className="text-sm font-semibold text-slate-800">{t("Residual Risk Assessment")}</h3>
           </div>
           <div className="p-5">
@@ -705,10 +705,12 @@ export default function RiskDetailPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-6 text-center">
-                <Shield className="h-8 w-8 text-slate-300 mb-2" />
-                <p className="text-sm text-slate-500">{t("No residual risk assessment available")}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{t("Edit the risk to add residual risk values")}</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <Shield className="h-6 w-6 text-primary-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No residual risk assessment available")}</p>
+                <p className="text-xs text-slate-400">{t("Edit the risk to add residual risk values")}</p>
               </div>
             )}
           </div>
@@ -720,7 +722,7 @@ export default function RiskDetailPage() {
         {/* Risk Details */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-            <FileText className="h-4.5 w-4.5 text-slate-500" />
+            
             <h3 className="text-sm font-semibold text-slate-800">{t("Risk Details")}</h3>
           </div>
           <div className="p-5">
@@ -735,24 +737,24 @@ export default function RiskDetailPage() {
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-50">
                 <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <User className="h-3.5 w-3.5" />
+                  
                   <span>{t("Owner")}</span>
                 </div>
                 <span className="text-sm font-medium text-slate-800">{risk.owner?.fullName || "-"}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-50">
                 <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <Building2 className="h-3.5 w-3.5" />
+                  
                   <span>{t("Department")}</span>
                 </div>
                 <span className="text-sm font-medium text-slate-800">{risk.department?.name || "-"}</span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <Calendar className="h-3.5 w-3.5" />
+                  
                   <span>{t("Due Date")}</span>
                 </div>
-                <span className="text-sm font-medium text-slate-800">
+                <span className="text-sm font-medium text-slate-800 ">
                   {risk.dueDate ? new Date(risk.dueDate).toLocaleDateString() : "-"}
                 </span>
               </div>
@@ -765,7 +767,7 @@ export default function RiskDetailPage() {
           {/* Description */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-              <FileText className="h-4.5 w-4.5 text-slate-500" />
+              
               <h3 className="text-sm font-semibold text-slate-800">{t("Description")}</h3>
             </div>
             <div className="p-5">
@@ -780,7 +782,7 @@ export default function RiskDetailPage() {
           {/* Risk Matrix Position */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-              <AlertTriangle className="h-4.5 w-4.5 text-slate-500" />
+              
               <h3 className="text-sm font-semibold text-slate-800">{t("Matrix Position")}</h3>
             </div>
             <div className="p-5">
@@ -819,7 +821,7 @@ export default function RiskDetailPage() {
                       ))}
                     </tbody>
                   </table>
-                  <div className="absolute -left-7 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                  <div className="absolute -left-11 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
                     {t("Likelihood")}
                   </div>
                   <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
@@ -836,7 +838,7 @@ export default function RiskDetailPage() {
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <Shield className="h-4.5 w-4.5 text-slate-500" />
+            
             <h3 className="text-sm font-semibold text-slate-800">{t("Mitigating Controls")}</h3>
             <span className="text-xs text-slate-400 ml-1">({linkedControls.length})</span>
           </div>
@@ -885,14 +887,12 @@ export default function RiskDetailPage() {
         </div>
 
         {linkedControls.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-              <Link2 className="h-6 w-6 text-slate-400" />
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+              <Link2 className="h-6 w-6 text-primary-400" />
             </div>
-            <p className="text-sm font-medium text-slate-600">{t("No controls linked to this risk")}</p>
-            <p className="text-xs text-slate-400 mt-1">
-              {t("Link controls to show how this risk is being mitigated")}
-            </p>
+            <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked to this risk")}</p>
+            <p className="text-xs text-slate-400">{t("Link controls to show how this risk is being mitigated")}</p>
           </div>
         ) : (
           <>

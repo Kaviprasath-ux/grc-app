@@ -25,7 +25,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Check, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ArrowLeft, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -926,7 +926,13 @@ export default function RiskAssessmentWizardPage() {
 
             <div>
               <h4 className="font-semibold mb-2">{t("Existing Controls")}</h4>
-              <p className="text-sm text-muted-foreground">{t("No controls linked to this risk")}</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <Link2 className="h-6 w-6 text-primary-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked to this risk")}</p>
+                <p className="text-xs text-slate-400">{t("Link controls from the risk register to see them here")}</p>
+              </div>
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, ChevronRight, Home, FileBarChart, Search } from "lucide-react";
+import { Download, ChevronRight, Home, FileBarChart, Search,Upload } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -232,7 +232,7 @@ export default function AssetReportsPage() {
               <div className="flex items-center justify-between pr-8">
                 <DialogTitle className="text-lg font-semibold text-slate-800">{activeConfig?.title}</DialogTitle>
                 <Button variant="outline" size="sm" onClick={handleExport}>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 mr-2" />
                   {t("Export")}
                 </Button>
               </div>

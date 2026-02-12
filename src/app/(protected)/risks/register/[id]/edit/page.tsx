@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -933,17 +933,20 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     </table>
                   </div>
                 ) : (
-                  <div className="border border-slate-200 rounded-lg p-12 text-center text-slate-500">
-                    <p>{t("noControlsLinkedYet")}</p>
-                    <p className="text-sm mt-2">
-                      {t("clickLinkControlToAssociate")}
-                    </p>
+                  <div className="border border-slate-200 rounded-lg">
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                        <Link2 className="h-6 w-6 text-primary-400" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-600 mb-1">{t("noControlsLinkedYet")}</p>
+                      <p className="text-xs text-slate-400">{t("clickLinkControlToAssociate")}</p>
+                    </div>
                   </div>
                 )}
 
                 {/* Link Control Dialog */}
                 <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
-                  <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+                  <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
                       <DialogTitle className="text-lg font-semibold text-slate-800">{t("linkControls")}</DialogTitle>
                     </DialogHeader>
@@ -1013,7 +1016,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
 
           {/* Create Cause Dialog */}
           <Dialog open={createCauseDialogOpen} onOpenChange={setCreateCauseDialogOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>{t("createNewCause") || "Create New Cause"}</DialogTitle>
               </DialogHeader>

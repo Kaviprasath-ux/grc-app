@@ -1414,7 +1414,7 @@ export default function AuditPlanningPage() {
             {t("Generate Annual Plan Report")}
           </Button>
           {isAuditHead && (
-            <Button onClick={openAddDialog}>
+            <Button size="sm" onClick={openAddDialog}>
               <Plus className="h-4 w-4 mr-2" />
               {t("Add Engagement")}
             </Button>

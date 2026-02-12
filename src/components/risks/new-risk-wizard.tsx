@@ -663,7 +663,7 @@ export function NewRiskWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-slate-800">{isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}</DialogTitle>
@@ -1128,7 +1128,7 @@ export function NewRiskWizard({
 
                 {/* Link Control Dialog */}
                 <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
-                  <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+                  <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
                       <DialogTitle className="text-lg font-semibold text-slate-800">Link Controls</DialogTitle>
                     </DialogHeader>
@@ -1199,7 +1199,7 @@ export function NewRiskWizard({
 
         {/* Create Cause Dialog */}
         <Dialog open={createCauseDialogOpen} onOpenChange={setCreateCauseDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Cause</DialogTitle>
             </DialogHeader>
@@ -1244,7 +1244,7 @@ export function NewRiskWizard({
 
         {/* Create Category Dialog */}
         <Dialog open={createCategoryDialogOpen} onOpenChange={setCreateCategoryDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Category</DialogTitle>
             </DialogHeader>
@@ -1289,7 +1289,7 @@ export function NewRiskWizard({
 
         {/* Create Threat Dialog */}
         <Dialog open={createThreatDialogOpen} onOpenChange={setCreateThreatDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Threat</DialogTitle>
             </DialogHeader>
@@ -1334,7 +1334,7 @@ export function NewRiskWizard({
 
         {/* Create Vulnerability Dialog */}
         <Dialog open={createVulnerabilityDialogOpen} onOpenChange={setCreateVulnerabilityDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]">
+          <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Vulnerability</DialogTitle>
             </DialogHeader>

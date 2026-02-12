@@ -3,8 +3,8 @@
 import { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Download } from "lucide-react";
+import { Download, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Risk {
@@ -246,273 +246,277 @@ function ManagementReportContent() {
     }
   });
 
+  // Rating color helpers
+  const getRatingBar = (rating: string) => {
+    if (rating === "Low Risk") return "bg-emerald-400";
+    if (rating === "Medium") return "bg-sky-400";
+    if (rating === "High") return "bg-amber-400";
+    if (rating === "Very High" || rating === "very high") return "bg-rose-400";
+    if (rating === "Catastrophic") return "bg-red-600";
+    return "bg-slate-300";
+  };
+
+  const getRatingBadge = (rating: string) => {
+    if (rating === "Low Risk") return "bg-emerald-50 text-emerald-600 border-emerald-200";
+    if (rating === "Medium") return "bg-sky-50 text-sky-600 border-sky-200";
+    if (rating === "High") return "bg-amber-50 text-amber-600 border-amber-200";
+    if (rating === "Very High" || rating === "very high") return "bg-rose-50 text-rose-600 border-rose-200";
+    if (rating === "Catastrophic") return "bg-red-50 text-red-700 border-red-200";
+    return "bg-slate-50 text-slate-500 border-slate-200";
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="relative h-8 w-8">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <Home className="h-4 w-4" />
+            <span>{t("Risk Management")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/risks/dashboard" className="text-slate-400 hover:text-primary-600 transition-colors">
+            {t("Risk Dashboard")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/risks/reports" className="text-slate-400 hover:text-primary-600 transition-colors">
+            {t("Reports")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Management Report")}</span>
+        </nav>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/risks/reports")}
-            className="h-8 w-8 text-slate-600 hover:text-slate-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold text-slate-800">{t("managementReport")}</h1>
+    <div className="space-y-5">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-slate-400">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
         </div>
-        <Button onClick={handleDownloadReport}>
-          <Download className="h-4 w-4 mr-2" />
-          {t("downloadReport")}
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/risks/dashboard" className="text-slate-400 hover:text-primary-600 transition-colors">
+          {t("Risk Dashboard")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/risks/reports" className="text-slate-400 hover:text-primary-600 transition-colors">
+          {t("Reports")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Management Report")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-800">{t("Management Report")}</h1>
+          
+        </div>
+        <Button size="sm" onClick={handleDownloadReport} className="bg-primary-600 hover:bg-primary-700">
+          <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+          {t("Download")}
         </Button>
       </div>
 
       {/* Report Content */}
-      <div ref={reportRef} className="space-y-6">
-        <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">{t("riskManagementReport")}</h2>
+      <div ref={reportRef} className="space-y-4">
 
-        {/* Average Risks Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {selectedOptions.includes("average-residual-risk") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("averageResidualRisk")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold text-center py-4">{avgResidualRisk}</div>
-              </CardContent>
-            </Card>
-          )}
-
-          {selectedOptions.includes("average-inherent-risk") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("averageInherentRisk")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold text-center py-4">{avgInherentRisk}</div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Active Risks by Rating */}
-        {selectedOptions.includes("active-risks-by-rating") && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("activeRisksByRating")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {Object.entries(risksByRating).map(([rating, count]) => {
-                  const maxCount = Math.max(...Object.values(risksByRating));
-                  const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                  return (
-                    <div key={rating} className="flex items-center gap-3">
-                      <div className="w-24 text-sm">{rating}</div>
-                      <div className="flex-1 bg-slate-100 rounded h-6">
-                        <div
-                          className={`h-6 rounded ${
-                            rating === "Low Risk" ? "bg-green-500" :
-                            rating === "High" ? "bg-orange-500" :
-                            rating === "very high" || rating === "Very High" ? "bg-red-500" :
-                            rating === "Catastrophic" ? "bg-red-800" :
-                            "bg-blue-500"
-                          }`}
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <span className="w-8 text-right text-sm">{count}</span>
-                    </div>
-                  );
-                })}
+        {/* Average Risk Scores */}
+        {(selectedOptions.includes("average-residual-risk") || selectedOptions.includes("average-inherent-risk")) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {selectedOptions.includes("average-inherent-risk") && (
+              <div className="bg-white rounded-lg border border-slate-200 px-5 py-4">
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Average Inherent Risk")}</p>
+                <p className="text-3xl font-semibold text-slate-800 mt-1.5">{avgInherentRisk}</p>
               </div>
-            </CardContent>
-          </Card>
+            )}
+            {selectedOptions.includes("average-residual-risk") && (
+              <div className="bg-white rounded-lg border border-slate-200 px-5 py-4">
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Average Residual Risk")}</p>
+                <p className="text-3xl font-semibold text-slate-800 mt-1.5">{avgResidualRisk}</p>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Top 5 Risks */}
+        {/* Active Risks by Rating */}
+        {selectedOptions.includes("active-risks-by-rating") && (() => {
+          const totalRisks = Object.values(risksByRating).reduce((sum, c) => sum + c, 0);
+          return (
+            <div className="bg-white rounded-lg border border-slate-200 px-5 py-4">
+              <div className="flex items-baseline justify-between mb-4">
+                <p className="text-sm font-medium text-slate-700">{t("Active Risks by Rating")}</p>
+                <span className="text-[11px] text-slate-400">{totalRisks} {t("total")}</span>
+              </div>
+              <div className="space-y-2.5">
+                {Object.entries(risksByRating)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([rating, count]) => {
+                    const pct = totalRisks > 0 ? Math.round((count / totalRisks) * 100) : 0;
+                    return (
+                      <div key={rating} className="flex items-center gap-3">
+                        <span className="w-24 text-xs text-slate-500 truncate">{rating}</span>
+                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${getRatingBar(rating)}`}
+                            style={{ width: `${Math.max(pct, 3)}%` }}
+                          />
+                        </div>
+                        <span className="w-6 text-[11px] text-slate-500 ltr:text-right rtl:text-left tabular-nums">{count}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Top 5 Risks by Severity */}
         {selectedOptions.includes("top-5-risk-severity") && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("top5Risks")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left p-2 text-sm font-medium">#</th>
-                    <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
-                    <th className="text-left p-2 text-sm font-medium">{t("rating")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {top5Risks.map((risk, idx) => (
-                    <tr key={risk.id} className="border-b border-slate-200">
-                      <td className="p-2 text-sm">#{idx + 1}</td>
-                      <td className="p-2 text-sm">{risk.name}</td>
-                      <td className="p-2 text-sm">{risk.riskRating || "-"}</td>
-                    </tr>
-                  ))}
-                  {top5Risks.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="p-4 text-center text-slate-500">
-                        {t("noRiskDataAvailable")}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-lg border border-slate-200">
+            <div className="px-5 py-3.5">
+              <p className="text-sm font-medium text-slate-700">{t("Top 5 Risks by Severity")}</p>
+            </div>
+            <div className="border-t border-slate-100">
+              {top5Risks.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-xs text-slate-400">{t("No risk data available")}</p>
+                </div>
+              ) : (
+                top5Risks.map((risk, idx) => (
+                  <div key={risk.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                    <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
+                    <span className="flex-1 text-sm text-slate-600 truncate">{risk.name}</span>
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${getRatingBadge(risk.riskRating || "")}`}>
+                      {risk.riskRating || "-"}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         )}
 
         {/* Top 5 Lists Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Top 5 Assets */}
-          {selectedOptions.includes("top-5-assets") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("top5Assets")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left p-2 text-sm font-medium">#</th>
-                      <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {top5Assets.map((asset, idx) => (
-                      <tr key={asset.name} className="border-b border-slate-200">
-                        <td className="p-2 text-sm">#{idx + 1}</td>
-                        <td className="p-2 text-sm">{asset.name}</td>
-                      </tr>
-                    ))}
-                    {top5Assets.length === 0 && (
-                      <tr>
-                        <td colSpan={2} className="p-4 text-center text-slate-500">
-                          {t("noAssetDataAvailable")}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          )}
+        {(selectedOptions.includes("top-5-assets") || selectedOptions.includes("top-5-departments") || selectedOptions.includes("top-5-threats") || selectedOptions.includes("top-5-risk-owners")) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Top 5 Assets */}
+            {selectedOptions.includes("top-5-assets") && (
+              <div className="bg-white rounded-lg border border-slate-200">
+                <div className="px-5 py-3.5">
+                  <p className="text-sm font-medium text-slate-700">{t("Top 5 Assets")}</p>
+                </div>
+                <div className="border-t border-slate-100">
+                  {top5Assets.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-slate-400">{t("No asset data available")}</p>
+                    </div>
+                  ) : (
+                    top5Assets.map((asset, idx) => (
+                      <div key={asset.name} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                        <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
+                        <span className="flex-1 text-sm text-slate-600 truncate">{asset.name}</span>
+                        <span className="text-[11px] text-slate-400 tabular-nums">{asset.count}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
 
-          {/* Top 5 Departments */}
-          {selectedOptions.includes("top-5-departments") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("top5Departments")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left p-2 text-sm font-medium">#</th>
-                      <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {top5Departments.map((dept, idx) => (
-                      <tr key={dept.name} className="border-b border-slate-200">
-                        <td className="p-2 text-sm">#{idx + 1}</td>
-                        <td className="p-2 text-sm">{dept.name}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          )}
+            {/* Top 5 Departments */}
+            {selectedOptions.includes("top-5-departments") && (
+              <div className="bg-white rounded-lg border border-slate-200">
+                <div className="px-5 py-3.5">
+                  <p className="text-sm font-medium text-slate-700">{t("Top 5 Departments")}</p>
+                </div>
+                <div className="border-t border-slate-100">
+                  {top5Departments.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-slate-400">{t("No department data available")}</p>
+                    </div>
+                  ) : (
+                    top5Departments.map((dept, idx) => (
+                      <div key={dept.name} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                        <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
+                        <span className="flex-1 text-sm text-slate-600 truncate">{dept.name}</span>
+                        <span className="text-[11px] text-slate-400 tabular-nums">{dept.count}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
 
-          {/* Top 5 Threats */}
-          {selectedOptions.includes("top-5-threats") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("top5Threats")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left p-2 text-sm font-medium">#</th>
-                      <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {top5Threats.map((threat, idx) => (
-                      <tr key={threat.name} className="border-b border-slate-200">
-                        <td className="p-2 text-sm">#{idx + 1}</td>
-                        <td className="p-2 text-sm">{threat.name}</td>
-                      </tr>
-                    ))}
-                    {top5Threats.length === 0 && (
-                      <tr>
-                        <td colSpan={2} className="p-4 text-center text-slate-500">
-                          {t("noThreatDataAvailable")}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          )}
+            {/* Top 5 Threats */}
+            {selectedOptions.includes("top-5-threats") && (
+              <div className="bg-white rounded-lg border border-slate-200">
+                <div className="px-5 py-3.5">
+                  <p className="text-sm font-medium text-slate-700">{t("Top 5 Threats")}</p>
+                </div>
+                <div className="border-t border-slate-100">
+                  {top5Threats.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-slate-400">{t("No threat data available")}</p>
+                    </div>
+                  ) : (
+                    top5Threats.map((threat, idx) => (
+                      <div key={threat.name} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                        <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
+                        <span className="flex-1 text-sm text-slate-600 truncate">{threat.name}</span>
+                        <span className="text-[11px] text-slate-400 tabular-nums">{threat.count}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
 
-          {/* Top 5 Risk Owners */}
-          {selectedOptions.includes("top-5-risk-owners") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("top5RiskOwners")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left p-2 text-sm font-medium">#</th>
-                      <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {top5Owners.map((owner, idx) => (
-                      <tr key={owner.name} className="border-b border-slate-200">
-                        <td className="p-2 text-sm">#{idx + 1}</td>
-                        <td className="p-2 text-sm">{owner.name}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            {/* Top 5 Risk Owners */}
+            {selectedOptions.includes("top-5-risk-owners") && (
+              <div className="bg-white rounded-lg border border-slate-200">
+                <div className="px-5 py-3.5">
+                  <p className="text-sm font-medium text-slate-700">{t("Top 5 Risk Owners")}</p>
+                </div>
+                <div className="border-t border-slate-100">
+                  {top5Owners.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-slate-400">{t("No owner data available")}</p>
+                    </div>
+                  ) : (
+                    top5Owners.map((owner, idx) => (
+                      <div key={owner.name} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                        <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
+                        <span className="flex-1 text-sm text-slate-600 truncate">{owner.name}</span>
+                        <span className="text-[11px] text-slate-400 tabular-nums">{owner.count}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Risk Activity Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Risk Activity Trend */}
-          {selectedOptions.includes("risk-activity-trend") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("riskActivityTrend")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+        {(selectedOptions.includes("risk-activity-trend") || selectedOptions.includes("risk-activity-timeline")) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Risk Activity Trend */}
+            {selectedOptions.includes("risk-activity-trend") && (
+              <div className="bg-white rounded-lg border border-slate-200 px-5 py-4">
+                <div className="flex items-baseline justify-between mb-4">
+                  <p className="text-sm font-medium text-slate-700">{t("Risk Activity Trend")}</p>
+                  <span className="text-[11px] text-slate-400">{filterYear}</span>
+                </div>
+                <div className="space-y-1.5">
                   {months.map(month => {
                     const data = risksByMonth[month];
                     const maxVal = Math.max(
@@ -523,55 +527,51 @@ function ManagementReportContent() {
                       ))
                     ) || 1;
                     return (
-                      <div key={month} className="flex items-center gap-2 text-xs">
-                        <div className="w-8">{month}</div>
-                        <div className="flex-1 flex gap-1">
+                      <div key={month} className="flex items-center gap-2">
+                        <span className="w-7 text-[10px] text-slate-400">{month}</span>
+                        <div className="flex-1 flex gap-0.5">
                           <div
-                            className="h-3 bg-blue-500 rounded"
-                            style={{ width: `${(data.identified / maxVal) * 100}%`, minWidth: data.identified > 0 ? '4px' : '0' }}
+                            className="h-2 bg-sky-400 rounded-sm"
+                            style={{ width: `${(data.identified / maxVal) * 100}%`, minWidth: data.identified > 0 ? '3px' : '0' }}
                           />
                           <div
-                            className="h-3 bg-green-500 rounded"
-                            style={{ width: `${(data.assessed / maxVal) * 100}%`, minWidth: data.assessed > 0 ? '4px' : '0' }}
+                            className="h-2 bg-emerald-400 rounded-sm"
+                            style={{ width: `${(data.assessed / maxVal) * 100}%`, minWidth: data.assessed > 0 ? '3px' : '0' }}
                           />
                           <div
-                            className="h-3 bg-purple-500 rounded"
-                            style={{ width: `${(data.mitigated / maxVal) * 100}%`, minWidth: data.mitigated > 0 ? '4px' : '0' }}
+                            className="h-2 bg-violet-400 rounded-sm"
+                            style={{ width: `${(data.mitigated / maxVal) * 100}%`, minWidth: data.mitigated > 0 ? '3px' : '0' }}
                           />
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="flex gap-4 mt-4 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span>{t("identified")}</span>
+                <div className="flex gap-4 mt-3 pt-3 border-t border-slate-50">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-sky-400 rounded-sm"></div>
+                    <span className="text-[10px] text-slate-400">{t("Identified")}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-green-500 rounded"></div>
-                    <span>{t("assessed")}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-sm"></div>
+                    <span className="text-[10px] text-slate-400">{t("Assessed")}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-purple-500 rounded"></div>
-                    <span>{t("mitigated")}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-violet-400 rounded-sm"></div>
+                    <span className="text-[10px] text-slate-400">{t("Mitigated")}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* Risk Activity Timeline */}
-          {selectedOptions.includes("risk-activity-timeline") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center justify-between">
-                  <span>{t("riskActivityBasedOnTimeline")}</span>
-                  <span className="text-sm font-normal text-slate-500">{filterYear}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+            {/* Risk Activity Timeline */}
+            {selectedOptions.includes("risk-activity-timeline") && (
+              <div className="bg-white rounded-lg border border-slate-200 px-5 py-4">
+                <div className="flex items-baseline justify-between mb-4">
+                  <p className="text-sm font-medium text-slate-700">{t("Risk Activity Timeline")}</p>
+                  <span className="text-[11px] text-slate-400">{filterYear}</span>
+                </div>
+                <div className="space-y-1.5">
                   {months.map(month => {
                     const data = risksByMonth[month];
                     const maxVal = Math.max(
@@ -582,44 +582,44 @@ function ManagementReportContent() {
                       ))
                     ) || 1;
                     return (
-                      <div key={month} className="flex items-center gap-2 text-xs">
-                        <div className="w-8">{month}</div>
-                        <div className="flex-1 flex gap-1">
+                      <div key={month} className="flex items-center gap-2">
+                        <span className="w-7 text-[10px] text-slate-400">{month}</span>
+                        <div className="flex-1 flex gap-0.5">
                           <div
-                            className="h-3 bg-blue-500 rounded"
-                            style={{ width: `${(data.identified / maxVal) * 100}%`, minWidth: data.identified > 0 ? '4px' : '0' }}
+                            className="h-2 bg-sky-400 rounded-sm"
+                            style={{ width: `${(data.identified / maxVal) * 100}%`, minWidth: data.identified > 0 ? '3px' : '0' }}
                           />
                           <div
-                            className="h-3 bg-green-500 rounded"
-                            style={{ width: `${(data.assessed / maxVal) * 100}%`, minWidth: data.assessed > 0 ? '4px' : '0' }}
+                            className="h-2 bg-emerald-400 rounded-sm"
+                            style={{ width: `${(data.assessed / maxVal) * 100}%`, minWidth: data.assessed > 0 ? '3px' : '0' }}
                           />
                           <div
-                            className="h-3 bg-purple-500 rounded"
-                            style={{ width: `${(data.mitigated / maxVal) * 100}%`, minWidth: data.mitigated > 0 ? '4px' : '0' }}
+                            className="h-2 bg-violet-400 rounded-sm"
+                            style={{ width: `${(data.mitigated / maxVal) * 100}%`, minWidth: data.mitigated > 0 ? '3px' : '0' }}
                           />
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="flex gap-4 mt-4 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span>{t("identified")}</span>
+                <div className="flex gap-4 mt-3 pt-3 border-t border-slate-50">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-sky-400 rounded-sm"></div>
+                    <span className="text-[10px] text-slate-400">{t("Identified")}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-green-500 rounded"></div>
-                    <span>{t("assessed")}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-sm"></div>
+                    <span className="text-[10px] text-slate-400">{t("Assessed")}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-purple-500 rounded"></div>
-                    <span>{t("mitigated")}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-violet-400 rounded-sm"></div>
+                    <span className="text-[10px] text-slate-400">{t("Mitigated")}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -628,8 +628,11 @@ function ManagementReportContent() {
 export default function RiskManagementReportPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     }>
       <ManagementReportContent />

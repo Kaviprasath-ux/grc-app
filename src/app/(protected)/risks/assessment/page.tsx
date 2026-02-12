@@ -396,10 +396,12 @@ export default function RiskAssessmentPage() {
         {/* Rows */}
         <div className="divide-y divide-slate-100">
           {paginatedRisks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4">
-              <AlertTriangle className="h-10 w-10 text-slate-300 mb-3" />
-              <p className="text-sm font-medium text-slate-600">{t("No risks found")}</p>
-              <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search or filters")}</p>
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <AlertTriangle className="h-6 w-6 text-primary-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("No risks found")}</p>
+              <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
             </div>
           ) : (
             paginatedRisks.map((risk) => {

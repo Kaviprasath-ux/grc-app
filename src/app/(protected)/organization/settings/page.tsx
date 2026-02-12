@@ -561,7 +561,7 @@ export default function OrganizationSettingsPage() {
           return (
             <button
               key={category.id}
-              className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left transition-all hover:border-primary-200 hover:shadow-md hover:shadow-primary-100/50 cursor-pointer"
+              className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left    cursor-pointer"
               onClick={() => {
                 if (category.id === "bia") {
                   router.push("/organization/settings/bia");
@@ -570,7 +570,7 @@ export default function OrganizationSettingsPage() {
                 }
               }}
             >
-              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors group-hover:bg-primary-100">
+              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors ">
                 <Icon className="h-5 w-5 text-primary-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -579,14 +579,14 @@ export default function OrganizationSettingsPage() {
                   {t(category.description)}
                 </p>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:text-primary-500 group-hover:translate-x-0.5" />
+              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 " />
             </button>
           );
         })}
 
         {/* Email Notifications Toggle Card */}
         <div
-          className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left transition-all hover:border-primary-200 hover:shadow-md hover:shadow-primary-100/50"
+          className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left transition-all "
         >
           <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors group-hover:bg-primary-100">
             <Mail className="h-5 w-5 text-primary-600" />

@@ -20,7 +20,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ArrowLeft, Plus, Home, ChevronRight } from "lucide-react";
+import { ChevronDown, ArrowLeft, Plus, Home, ChevronRight, Link2 } from "lucide-react";
 import Link from "next/link";
 import { AddControlDialog } from "@/components/risks/add-control-dialog";
 import { ChooseControlDialog } from "@/components/risks/choose-control-dialog";
@@ -616,6 +616,17 @@ export default function RiskViewPage() {
       {/* Existing Controls */}
       <div>
         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Existing Controls")}</h3>
+        {controls.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <Link2 className="h-6 w-6 text-primary-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("No existing controls found")}</p>
+              <p className="text-xs text-slate-400">{t("No controls are currently linked to this risk")}</p>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-2">
           {controls.map((control) => (
             <div key={control.id} className="bg-white rounded-xl border border-slate-200">
@@ -655,6 +666,7 @@ export default function RiskViewPage() {
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* Planned Controls */}
@@ -674,8 +686,14 @@ export default function RiskViewPage() {
           )}
         </div>
         {plannedControls.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 py-8 text-center text-slate-400 text-sm">
-            {t("No items found")}
+          <div className="bg-white rounded-xl border border-slate-200">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <Link2 className="h-6 w-6 text-primary-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("No planned controls found")}</p>
+              <p className="text-xs text-slate-400">{t("Add controls to plan risk mitigation")}</p>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">

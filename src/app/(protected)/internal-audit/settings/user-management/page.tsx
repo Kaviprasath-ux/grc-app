@@ -577,7 +577,7 @@ export default function UserManagementPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -790,7 +790,7 @@ export default function UserManagementPage() {
 
       {/* Change Password Dialog */}
       <Dialog open={changePasswordDialogOpen} onOpenChange={setChangePasswordDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -808,7 +808,7 @@ export default function UserManagementPage() {
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                 placeholder={t("Enter new password")}
                 className="mt-1.5 w-full bg-white"
-                autoFocus
+                
               />
             </div>
             <div>

@@ -610,7 +610,7 @@ export default function ExceptionsPage() {
 
       {/* Create Exception Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setExceptionErrors({}); } setCreateDialogOpen(open); }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
@@ -954,7 +954,7 @@ export default function ExceptionsPage() {
 
       {/* Approver Selection Dialog */}
       <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Select Approver")}</DialogTitle>
@@ -1386,7 +1386,7 @@ export default function ExceptionsPage() {
 
       {/* Edit Exception Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogHeader>

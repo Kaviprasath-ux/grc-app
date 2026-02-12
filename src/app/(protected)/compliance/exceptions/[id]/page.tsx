@@ -848,8 +848,8 @@ export default function ExceptionDetailPage({
       </div>
 
       {/* Comments Dialog */}
-      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
-        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}  >
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden"  onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Comments")}</DialogTitle>
           </div>
@@ -924,7 +924,7 @@ export default function ExceptionDetailPage({
 
       {/* Send Back Dialog */}
       <Dialog open={sendBackDialogOpen} onOpenChange={setSendBackDialogOpen}>
-        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Send Back Exception")}</DialogTitle>
@@ -972,7 +972,7 @@ export default function ExceptionDetailPage({
 
       {/* Resubmit Dialog - for rejected exceptions */}
       <Dialog open={resubmitDialogOpen} onOpenChange={setResubmitDialogOpen}>
-        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Resubmit Exception")}</DialogTitle>

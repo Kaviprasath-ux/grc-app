@@ -870,6 +870,10 @@ export default function AssetInventoryPage() {
 
       {/* Action Buttons - Above Card */}
       <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
         <PermissionGate resource="asset.inventory" action="create">
           <label>
             <input
@@ -886,10 +890,7 @@ export default function AssetInventoryPage() {
             </Button>
           </label>
         </PermissionGate>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Export")}
-        </Button>
+        
         <PermissionGate resource="asset.inventory" action="create">
           <Button size="sm" onClick={() => {
             setNewAsset({ ...newAsset, assetId: generateAssetId() });

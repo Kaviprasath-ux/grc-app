@@ -583,13 +583,13 @@ export default function GovernanceMasterDataPage() {
             {t("Delete All")}
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Import")}
-        </Button>
         <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Import")}
         </Button>
         <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -714,7 +714,7 @@ export default function GovernanceMasterDataPage() {
           resetForm();
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("New Policies")}</DialogTitle>
           </div>
@@ -1101,7 +1101,7 @@ export default function GovernanceMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Policy")}</DialogTitle>
           </div>
@@ -1342,7 +1342,7 @@ export default function GovernanceMasterDataPage() {
           }
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Import Policies")}</DialogTitle>
           </div>

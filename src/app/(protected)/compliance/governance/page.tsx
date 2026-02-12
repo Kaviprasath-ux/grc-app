@@ -838,7 +838,7 @@ export default function GovernancePage() {
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={handleExport}>
-                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Export")}
                 </Button>
                 <Button size="sm" onClick={() => {
@@ -862,12 +862,12 @@ export default function GovernancePage() {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      className="w-75 ltr:pl-9 rtl:pr-9 ltr:pr-4 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
                   <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
                     <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                      <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                      <SelectTrigger className="w-[200px] h-9 text-sm bg-slate-50 border-slate-200">
                         <SelectValue placeholder={t("Integrated Framework")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">

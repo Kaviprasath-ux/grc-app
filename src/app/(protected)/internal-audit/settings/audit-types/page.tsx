@@ -313,7 +313,7 @@ export default function AuditTypesPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -335,7 +335,7 @@ export default function AuditTypesPage() {
                 }}
                 placeholder={t("Enter audit type name")}
                 className={`mt-1.5 w-full bg-white ${formError ? "border-red-500" : ""}`}
-                autoFocus
+                
               />
               {formError && <p className="text-sm text-red-500 mt-1">{formError}</p>}
             </div>
@@ -355,7 +355,7 @@ export default function AuditTypesPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">

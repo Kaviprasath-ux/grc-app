@@ -1345,12 +1345,12 @@ export default function ProcessPage() {
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2 mb-4">
             <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 me-2" />
+              <Upload className="h-4 w-4 me-2" />
               {t("Export")}
             </Button>
             {!isDepartmentContributor && (
               <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 me-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
             )}
@@ -1432,7 +1432,7 @@ export default function ProcessPage() {
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2 mb-4">
             <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 me-2" />
+              <Upload className="h-4 w-4 me-2" />
               {t("Export")}
             </Button>
           </div>
@@ -1686,7 +1686,7 @@ export default function ProcessPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[420px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
@@ -1710,7 +1710,7 @@ export default function ProcessPage() {
 
       {/* AI Risk Evaluation Dialog */}
       <Dialog open={isAIEvaluationOpen} onOpenChange={setIsAIEvaluationOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
@@ -1955,7 +1955,7 @@ export default function ProcessPage() {
 
       {/* BIA Form Dialog */}
       <Dialog open={isBIAFormOpen} onOpenChange={setIsBIAFormOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2158,7 +2158,7 @@ export default function ProcessPage() {
         setIsAddProcessOpen(open);
         if (!open) resetProcessForm();
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2513,7 +2513,7 @@ export default function ProcessPage() {
         setIsEditProcessOpen(open);
         if (!open) setEditingProcess(null);
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2951,7 +2951,7 @@ export default function ProcessPage() {
         setIsKPIModalOpen(open);
         if (!open) { setSelectedKPIProcess(null); setKpiErrors({}); }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>

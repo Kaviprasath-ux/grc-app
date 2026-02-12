@@ -175,7 +175,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="relative h-[calc(100vh-120px)]">
+      <ScrollArea className="relative h-[calc(100vh-120px)] pt-2">
         <nav className="pb-4">
           {status === "loading" ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">

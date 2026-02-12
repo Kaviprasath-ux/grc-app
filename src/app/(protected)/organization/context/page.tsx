@@ -3197,12 +3197,12 @@ export default function ContextPage() {
             {/* Action Buttons */}
             <div className="flex items-center justify-end gap-2 mb-4">
               <Button variant="outline" size="sm" onClick={handleExportStakeholders}>
-                <Download className="h-4 w-4 me-2" />
+                <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
               {!isReadOnlyRole && (
                 <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                  <Upload className="h-4 w-4 me-2" />
+                  <Download className="h-4 w-4 me-2" />
                   {t("Import")}
                 </Button>
               )}
@@ -3351,12 +3351,12 @@ export default function ContextPage() {
             {/* Action Buttons */}
             <div className="flex items-center justify-end gap-2 mb-4">
               <Button variant="outline" size="sm" onClick={handleExportIssues}>
-                <Download className="h-4 w-4 me-2" />
+                <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
               {!isReadOnlyRole && (
                 <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                  <Upload className="h-4 w-4 me-2" />
+                  <Download className="h-4 w-4 me-2" />
                   {t("Import")}
                 </Button>
               )}

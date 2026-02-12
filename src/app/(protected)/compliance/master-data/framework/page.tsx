@@ -353,7 +353,7 @@ export default function FrameworkMasterDataPage() {
       {/* Action Buttons - Above Card */}
       <div className="flex items-center justify-end gap-2">
         <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
         </Button>
         <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
@@ -363,7 +363,7 @@ export default function FrameworkMasterDataPage() {
               {t("New Framework (AI)")}
             </Button>
           </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
               <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("AI Framework Generator")}</DialogTitle>
               </div>
@@ -407,7 +407,7 @@ export default function FrameworkMasterDataPage() {
               {t("New Framework")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
               <DialogTitle className="text-base font-semibold text-slate-800">
                   {wizardStep === 1 ? t("Create Integrated Framework") : t("Import Requirement")}
@@ -728,7 +728,7 @@ export default function FrameworkMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Integrated Framework")}</DialogTitle>
           </div>

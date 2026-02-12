@@ -335,7 +335,7 @@ export default function PeriodicityPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -358,7 +358,7 @@ export default function PeriodicityPage() {
                   }}
                   placeholder={t("Enter interval (e.g., Monthly, Quarterly)")}
                   className={`mt-1.5 w-full bg-white ${formErrors.interval ? "border-red-500" : ""}`}
-                  autoFocus
+                  
                 />
                 {formErrors.interval && <p className="text-sm text-red-500 mt-1">{formErrors.interval}</p>}
               </div>

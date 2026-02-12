@@ -829,7 +829,7 @@ function ProfilePageContent() {
                     placeholder={t("Search services...")}
                     value={serviceSearch}
                     onChange={(e) => { setServiceSearch(e.target.value); setServicePage(1); }}
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>
@@ -1150,7 +1150,7 @@ function ProfilePageContent() {
                     placeholder={t("Search departments...")}
                     value={departmentSearch}
                     onChange={(e) => { setDepartmentSearch(e.target.value); setDepartmentPage(1); }}
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>
@@ -1494,7 +1494,7 @@ function ProfilePageContent() {
 
       {/* Edit Service Dialog */}
       <Dialog open={isEditServiceOpen} onOpenChange={setIsEditServiceOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1991,7 +1991,7 @@ function ProfilePageContent() {
 
       {/* Add Service Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={(open) => { if (!open) { setIsAddCategoryOpen(false); setCategoryNameError(""); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2027,7 +2027,7 @@ function ProfilePageContent() {
 
       {/* Add Service Item Dialog */}
       <Dialog open={isAddItemOpen} onOpenChange={(open) => { if (!open) { setIsAddItemOpen(false); setItemNameError(""); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>

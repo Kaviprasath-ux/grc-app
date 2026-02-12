@@ -12,7 +12,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download, ChevronRight, Home, FileBarChart, Search } from "lucide-react";
+import { Download, ChevronRight, Home, FileBarChart, Search ,Upload } from "lucide-react";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -270,11 +270,11 @@ export default function RiskReportsPage() {
               ))
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
-                <FileBarChart className="h-6 w-6 text-primary-600" />
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <FileBarChart className="h-6 w-6 text-primary-400" />
               </div>
-              <p className="text-sm font-medium text-slate-800">{t("No reports found")}</p>
-              <p className="text-xs text-slate-500 mt-1">{t("Try adjusting your search")}</p>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("No reports found")}</p>
+              <p className="text-xs text-slate-400">{t("Try adjusting your search")}</p>
             </div>
           )}
         </div>
@@ -290,7 +290,7 @@ export default function RiskReportsPage() {
           {/* Export Button */}
           <div className="flex-shrink-0 flex justify-end px-6 py-3 border-b border-slate-100">
             <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
               {t("Export")}
             </Button>
           </div>

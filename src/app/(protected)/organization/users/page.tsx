@@ -768,11 +768,11 @@ export default function UsersPage() {
             {/* Action Buttons */}
             <div className="flex items-center justify-end gap-2">
               <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 me-2" />
+                <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                <Upload className="h-4 w-4 me-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
               <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
@@ -919,11 +919,11 @@ export default function UsersPage() {
             {/* Action Buttons */}
             <div className="flex items-center justify-end gap-2">
               <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 me-2" />
+                <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                <Upload className="h-4 w-4 me-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
               <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
@@ -1007,7 +1007,7 @@ export default function UsersPage() {
           });
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1397,7 +1397,7 @@ export default function UsersPage() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1737,7 +1737,7 @@ export default function UsersPage() {
           }
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1802,7 +1802,7 @@ export default function UsersPage() {
         setIsViewUserOpen(open);
         if (!open) setViewingUser(null);
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1942,7 +1942,7 @@ export default function UsersPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>

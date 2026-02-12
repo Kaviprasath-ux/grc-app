@@ -321,13 +321,13 @@ export default function DomainMasterDataPage() {
             {t("Delete All")}
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Import")}
-        </Button>
         <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Import")}
         </Button>
         <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); setDomainErrors({}); } else { setCreateDialogOpen(true); } }}>
           <DialogTrigger asChild>
@@ -336,7 +336,7 @@ export default function DomainMasterDataPage() {
               {t("New Domain")}
             </Button>
           </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden">
+            <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
               <div className="px-6 py-4 border-b border-slate-100">
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Create New Domain")}</DialogTitle>
               </div>
@@ -499,7 +499,7 @@ export default function DomainMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={(open) => { if (!open) { setEditDialogOpen(false); setDomainErrors({}); } else { setEditDialogOpen(true); } }}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Domain")}</DialogTitle>
           </div>
@@ -562,7 +562,7 @@ export default function DomainMasterDataPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
+        <AlertDialogContent className="p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader className="px-6 py-4">
             <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete Domain")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
@@ -607,7 +607,7 @@ export default function DomainMasterDataPage() {
         setImportDialogOpen(open);
         if (!open) setSelectedFile(null);
       }}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Import Domain")}</DialogTitle>
           </div>

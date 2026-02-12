@@ -1212,7 +1212,7 @@ export default function EvidenceDetailPage() {
 
   // Determine if evidence has any attachments or linked artifacts
   const hasAnyAttachments = (evidence?.attachments && evidence.attachments.length > 0) ||
-                            (evidence?.linkedArtifacts && evidence.linkedArtifacts.length > 0);
+    (evidence?.linkedArtifacts && evidence.linkedArtifacts.length > 0);
 
   // Get status step based on evidence state
   const getStatusStep = (status: string) => {
@@ -1374,14 +1374,32 @@ export default function EvidenceDetailPage() {
                   <p className="mt-1 text-slate-800">{evidence.description || "-"}</p>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review date")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    {t("Review date")}
+                  </Label>
+
                   <div className="mt-1 flex items-center gap-2">
-                    <Input
-                      type="date"
-                      value={evidence.reviewDate?.split("T")[0] || ""}
-                      onChange={(e) => handleInlineUpdate("reviewDate", e.target.value ? new Date(e.target.value).toISOString() : null)}
-                      className="w-48 bg-white"
-                      placeholder="dd/mm/yyyy"
+                    <DatePicker
+                      value={
+                        evidence.reviewDate
+                          ? new Date(evidence.reviewDate)
+                          : undefined
+                      }
+                      onChange={(date) =>
+                        handleInlineUpdate(
+                          "reviewDate",
+                          date
+                            ? new Date(
+                              Date.UTC(
+                                date.getFullYear(),
+                                date.getMonth(),
+                                date.getDate()
+                              )
+                            ).toISOString()
+                            : null
+                        )
+                      }
+                      placeholder={t("Select review date")}
                     />
                   </div>
                 </div>
@@ -1395,21 +1413,19 @@ export default function EvidenceDetailPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("artifacts")}
-              className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${
-                activeTab === "artifacts"
-                  ? "bg-primary-700 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+              className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${activeTab === "artifacts"
+                ? "bg-primary-700 text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
             >
               {t("Linked Artifact")}
             </button>
             <button
               onClick={() => setActiveTab("controls")}
-              className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${
-                activeTab === "controls"
-                  ? "bg-primary-700 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+              className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${activeTab === "controls"
+                ? "bg-primary-700 text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
             >
               {t("Linked Controls")}
             </button>
@@ -1539,9 +1555,8 @@ export default function EvidenceDetailPage() {
         {/* Upload Step */}
         <div className="flex items-center gap-2">
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              currentStep >= 0 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 0 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
+              }`}
           >
             {currentStep > 0 ? <Check className="h-6 w-6" /> : <Upload className="h-5 w-5" />}
           </div>
@@ -1552,9 +1567,8 @@ export default function EvidenceDetailPage() {
         {/* Draft Step */}
         <div className="flex items-center gap-2">
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              currentStep >= 1 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 1 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
+              }`}
           >
             {currentStep > 1 ? <Check className="h-6 w-6" /> : <FileText className="h-5 w-5" />}
           </div>
@@ -1565,9 +1579,8 @@ export default function EvidenceDetailPage() {
         {/* Publish Step */}
         <div className="flex items-center gap-2">
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              currentStep >= 2 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 2 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
+              }`}
           >
             {currentStep >= 2 ? <Check className="h-6 w-6" /> : <span className="text-lg font-medium">3</span>}
           </div>
@@ -1625,312 +1638,334 @@ export default function EvidenceDetailPage() {
       {/* Main Content - Single Column Layout */}
       <div className="space-y-6">
         {/* Evidence Details */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-              <h3 className="text-base font-semibold text-slate-800">{t("Evidence Details")}</h3>
-              <Button variant="ghost" size="icon">
-                <Eye className="h-4 w-4" />
-              </Button>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <h3 className="text-base font-semibold text-slate-800">{t("Evidence Details")}</h3>
+            <Button variant="ghost" size="icon">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="p-5 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
+                <p>{evidence.name}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
+                <p>{evidence.description || "-"}</p>
+              </div>
             </div>
-            <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
-                  <p>{evidence.name}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
-                  <p>{evidence.description || "-"}</p>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
-                  <Select
-                    value={evidence.departmentId || ""}
-                    onValueChange={(value) => handleInlineUpdate("departmentId", value || null)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={t("Select department")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assigned to")}</Label>
-                    <Dialog open={editAssigneeOpen} onOpenChange={setEditAssigneeOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="link" size="sm">
-                          {t("Edit Assignee")}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>{t("Edit Assignee")}</DialogTitle>
-                        </DialogHeader>
-                        <div className="py-4">
-                          <Label>{t("Select Assignee")}</Label>
-                          <Select
-                            value={evidence.assigneeId || ""}
-                            onValueChange={(value) => {
-                              handleInlineUpdate("assigneeId", value || null);
-                              setEditAssigneeOpen(false);
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder={t("Select assignee")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {filteredUsers.map((u) => (
-                                <SelectItem key={u.id} value={u.id}>
-                                  {u.fullName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  <p>{evidence.assignee?.fullName || "-"}</p>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
+                <Select
+                  value={evidence.departmentId || ""}
+                  onValueChange={(value) => handleInlineUpdate("departmentId", value || null)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("Select department")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assigned to")}</Label>
+                  <Dialog open={editAssigneeOpen} onOpenChange={setEditAssigneeOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        {t("Edit Assignee")}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{t("Edit Assignee")}</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4 space-y-2">
+                        <Label>{t("Select Assignee")}</Label>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</Label>
-                  <Select
-                    value={evidence.recurrence || ""}
-                    onValueChange={(value) => handleRecurrenceChange(value || null)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={t("Select recurrence")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {recurrenceOptions.map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {t(r)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        <Select
+                          value={evidence.assigneeId || ""}
+                          onValueChange={(value) => {
+                            handleInlineUpdate("assigneeId", value || null);
+                            setEditAssigneeOpen(false);
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={t("Select assignee")} />
+                          </SelectTrigger>
+
+                          <SelectContent className="w-full">
+                            {filteredUsers.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.fullName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review Date")}</Label>
-                  <Input
-                    type="date"
-                    value={evidence.reviewDate?.split("T")[0] || ""}
-                    onChange={(e) => handleInlineUpdate("reviewDate", e.target.value ? new Date(e.target.value).toISOString() : null)}
-                  />
-                </div>
+                <p>{evidence.assignee?.fullName || "-"}</p>
               </div>
+            </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{t("KPI Required")}</span>
-                <Checkbox
-                  checked={evidence.kpiRequired}
-                  onCheckedChange={(checked) => handleInlineUpdate("kpiRequired", !!checked)}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</Label>
+                <Select
+                  value={evidence.recurrence || ""}
+                  onValueChange={(value) => handleRecurrenceChange(value || null)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("Select recurrence")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recurrenceOptions.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {t(r)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  {t("Review Date")}
+                </Label>
+
+                <DatePicker
+                  value={
+                    evidence.reviewDate
+                      ? new Date(evidence.reviewDate)
+                      : undefined
+                  }
+                  onChange={(date) =>
+                    handleInlineUpdate(
+                      "reviewDate",
+                      date
+                        ? new Date(
+                          Date.UTC(
+                            date.getFullYear(),
+                            date.getMonth(),
+                            date.getDate()
+                          )
+                        ).toISOString()
+                        : null
+                    )
+                  }
+                  placeholder={t("Select review date")}
                 />
               </div>
             </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm">{t("KPI Required")}</span>
+              <Checkbox
+                checked={evidence.kpiRequired}
+                onCheckedChange={(checked) => handleInlineUpdate("kpiRequired", !!checked)}
+              />
+            </div>
           </div>
+        </div>
 
-          {/* KPI Details - Show if KPI Required */}
-          {evidence.kpiRequired && (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">{t("KPI Details")}</h3>
-                {!kpiEditMode && evidence.kpis && evidence.kpis.length > 0 && (
-                  <Button variant="outline" size="sm" onClick={() => setKpiEditMode(true)}>
-                    {t("Edit")}
-                  </Button>
-                )}
-              </div>
-              <div className="p-5 space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")} <span className="text-red-500">*</span></Label>
-                    <Textarea
-                      placeholder={t("Enter Objective")}
-                      value={kpiForm.kpiObjective}
-                      onChange={(e) => handleKpiFieldChange("kpiObjective", e.target.value)}
-                      disabled={!kpiEditMode}
-                      rows={3}
-                      className={kpiFormErrors.kpiObjective ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
-                    />
-                    {kpiFormErrors.kpiObjective && (
-                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiObjective}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Data Source")} <span className="text-red-500">*</span></Label>
-                    <Textarea
-                      placeholder={t("Enter Data Source")}
-                      value={kpiForm.kpiDataSource}
-                      onChange={(e) => handleKpiFieldChange("kpiDataSource", e.target.value)}
-                      disabled={!kpiEditMode}
-                      rows={3}
-                      className={kpiFormErrors.kpiDataSource ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
-                    />
-                    {kpiFormErrors.kpiDataSource && (
-                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiDataSource}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Expected Score (%)")} <span className="text-red-500">*</span></Label>
-                    <Input
-                      type="number"
-                      placeholder={t("Enter expected score")}
-                      value={kpiForm.kpiExpectedScore}
-                      onChange={(e) => handleKpiFieldChange("kpiExpectedScore", e.target.value)}
-                      disabled={!kpiEditMode}
-                      className={kpiFormErrors.kpiExpectedScore ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
-                    />
-                    {kpiFormErrors.kpiExpectedScore && (
-                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiExpectedScore}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")} <span className="text-red-500">*</span></Label>
-                    <Textarea
-                      placeholder={t("Enter KPI Description")}
-                      value={kpiForm.kpiDescription}
-                      onChange={(e) => handleKpiFieldChange("kpiDescription", e.target.value)}
-                      disabled={!kpiEditMode}
-                      rows={3}
-                      className={kpiFormErrors.kpiDescription ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
-                    />
-                    {kpiFormErrors.kpiDescription && (
-                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiDescription}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Calculation Formula")} <span className="text-red-500">*</span></Label>
-                    <Textarea
-                      placeholder={t("Enter the KPI Calculation Formula")}
-                      value={kpiForm.kpiCalculationFormula}
-                      onChange={(e) => handleKpiFieldChange("kpiCalculationFormula", e.target.value)}
-                      disabled={!kpiEditMode}
-                      rows={3}
-                      className={kpiFormErrors.kpiCalculationFormula ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
-                    />
-                    {kpiFormErrors.kpiCalculationFormula && (
-                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiCalculationFormula}</p>
-                    )}
-                  </div>
-                  {/* KPI Actual Score - visible when KPI Expected Score AND Description are not empty */}
-                  {kpiForm.kpiExpectedScore && kpiForm.kpiDescription && (
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Actual Score")} <span className="text-red-500">*</span></Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          placeholder={t("Enter actual score")}
-                          value={kpiActualScoreValue}
-                          onChange={(e) => setKpiActualScoreValue(e.target.value)}
-                          disabled={!kpiActualScoreEditMode}
-                          className="flex-1"
-                        />
-                        {kpiActualScoreEditMode ? (
-                          <Button
-                            variant="default"
-                            size="icon"
-                            className="bg-primary hover:bg-primary/90"
-                            onClick={handleSaveKpiActualScore}
-                            disabled={!kpiActualScoreValue || kpiActualScoreSaving || !evidence?.kpis?.[0]?.id}
-                            title={!evidence?.kpis?.[0]?.id ? t("Save KPI details first") : t("Save actual score")}
-                          >
-                            {kpiActualScoreSaving ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Save className="h-4 w-4" />
-                            )}
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="default"
-                            size="icon"
-                            className="bg-primary hover:bg-primary/90"
-                            onClick={() => setKpiActualScoreEditMode(true)}
-                            title={t("Edit actual score")}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      {kpiActualScoreEditMode && !evidence?.kpis?.[0]?.id && (
-                        <p className="text-xs text-amber-600">{t("Save KPI details first to enable saving actual score")}</p>
-                      )}
-                    </div>
-                  )}
-                  {/* Empty placeholder when KPI Actual Score is not shown */}
-                  {!(kpiForm.kpiExpectedScore && kpiForm.kpiDescription) && <div></div>}
-                </div>
-                {kpiEditMode && (
-                  <div className="flex gap-2">
-                    <Button onClick={handleSaveKpi} disabled={kpiSaving}>
-                      {kpiSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {t("Saving...")}
-                        </>
-                      ) : (
-                        t("Save")
-                      )}
-                    </Button>
-                    {evidence.kpis && evidence.kpis.length > 0 && (
-                      <Button variant="outline" onClick={() => setKpiEditMode(false)} disabled={kpiSaving}>
-                        {t("Cancel")}
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Published Section */}
-          {evidence.status === "Published" && (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">{t("Published")}</h3>
-                <Button variant="outline" onClick={handleUnpublish}>
-                  {t("Unpublish")}
+        {/* KPI Details - Show if KPI Required */}
+        {evidence.kpiRequired && (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">{t("KPI Details")}</h3>
+              {!kpiEditMode && evidence.kpis && evidence.kpis.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setKpiEditMode(true)}>
+                  {t("Edit")}
                 </Button>
-              </div>
-              <div className="p-5">
+              )}
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  {evidence.attachments?.map((att) => (
-                    <div key={att.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="text-sm text-slate-500">
-                          {t("Published On:")} {new Date(att.uploadedAt).toLocaleString()}
-                        </p>
-                        <p className="font-medium">{att.fileName}</p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-1" />
-                        {t("Download")}
-                      </Button>
-                    </div>
-                  ))}
-                  {(!evidence.attachments || evidence.attachments.length === 0) && (
-                    <p className="text-slate-500 text-center py-4">{t("No published files")}</p>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")} <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    placeholder={t("Enter Objective")}
+                    value={kpiForm.kpiObjective}
+                    onChange={(e) => handleKpiFieldChange("kpiObjective", e.target.value)}
+                    disabled={!kpiEditMode}
+                    rows={3}
+                    className={kpiFormErrors.kpiObjective ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
+                  />
+                  {kpiFormErrors.kpiObjective && (
+                    <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiObjective}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Data Source")} <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    placeholder={t("Enter Data Source")}
+                    value={kpiForm.kpiDataSource}
+                    onChange={(e) => handleKpiFieldChange("kpiDataSource", e.target.value)}
+                    disabled={!kpiEditMode}
+                    rows={3}
+                    className={kpiFormErrors.kpiDataSource ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
+                  />
+                  {kpiFormErrors.kpiDataSource && (
+                    <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiDataSource}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Expected Score (%)")} <span className="text-red-500">*</span></Label>
+                  <Input
+                    type="number"
+                    placeholder={t("Enter expected score")}
+                    value={kpiForm.kpiExpectedScore}
+                    onChange={(e) => handleKpiFieldChange("kpiExpectedScore", e.target.value)}
+                    disabled={!kpiEditMode}
+                    className={kpiFormErrors.kpiExpectedScore ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
+                  />
+                  {kpiFormErrors.kpiExpectedScore && (
+                    <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiExpectedScore}</p>
                   )}
                 </div>
               </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")} <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    placeholder={t("Enter KPI Description")}
+                    value={kpiForm.kpiDescription}
+                    onChange={(e) => handleKpiFieldChange("kpiDescription", e.target.value)}
+                    disabled={!kpiEditMode}
+                    rows={3}
+                    className={kpiFormErrors.kpiDescription ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
+                  />
+                  {kpiFormErrors.kpiDescription && (
+                    <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiDescription}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Calculation Formula")} <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    placeholder={t("Enter the KPI Calculation Formula")}
+                    value={kpiForm.kpiCalculationFormula}
+                    onChange={(e) => handleKpiFieldChange("kpiCalculationFormula", e.target.value)}
+                    disabled={!kpiEditMode}
+                    rows={3}
+                    className={kpiFormErrors.kpiCalculationFormula ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}
+                  />
+                  {kpiFormErrors.kpiCalculationFormula && (
+                    <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{kpiFormErrors.kpiCalculationFormula}</p>
+                  )}
+                </div>
+                {/* KPI Actual Score - visible when KPI Expected Score AND Description are not empty */}
+                {kpiForm.kpiExpectedScore && kpiForm.kpiDescription && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Actual Score")} <span className="text-red-500">*</span></Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder={t("Enter actual score")}
+                        value={kpiActualScoreValue}
+                        onChange={(e) => setKpiActualScoreValue(e.target.value)}
+                        disabled={!kpiActualScoreEditMode}
+                        className="flex-1"
+                      />
+                      {kpiActualScoreEditMode ? (
+                        <Button
+                          variant="default"
+                          size="icon"
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={handleSaveKpiActualScore}
+                          disabled={!kpiActualScoreValue || kpiActualScoreSaving || !evidence?.kpis?.[0]?.id}
+                          title={!evidence?.kpis?.[0]?.id ? t("Save KPI details first") : t("Save actual score")}
+                        >
+                          {kpiActualScoreSaving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="default"
+                          size="icon"
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => setKpiActualScoreEditMode(true)}
+                          title={t("Edit actual score")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {kpiActualScoreEditMode && !evidence?.kpis?.[0]?.id && (
+                      <p className="text-xs text-amber-600">{t("Save KPI details first to enable saving actual score")}</p>
+                    )}
+                  </div>
+                )}
+                {/* Empty placeholder when KPI Actual Score is not shown */}
+                {!(kpiForm.kpiExpectedScore && kpiForm.kpiDescription) && <div></div>}
+              </div>
+              {kpiEditMode && (
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveKpi} disabled={kpiSaving}>
+                    {kpiSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {t("Saving...")}
+                      </>
+                    ) : (
+                      t("Save")
+                    )}
+                  </Button>
+                  {evidence.kpis && evidence.kpis.length > 0 && (
+                    <Button variant="outline" onClick={() => setKpiEditMode(false)} disabled={kpiSaving}>
+                      {t("Cancel")}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Published Section */}
+        {evidence.status === "Published" && (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">{t("Published")}</h3>
+              <Button variant="outline" onClick={handleUnpublish}>
+                {t("Unpublish")}
+              </Button>
+            </div>
+            <div className="p-5">
+              <div className="space-y-2">
+                {evidence.attachments?.map((att) => (
+                  <div key={att.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="text-sm text-slate-500">
+                        {t("Published On:")} {new Date(att.uploadedAt).toLocaleString()}
+                      </p>
+                      <p className="font-medium">{att.fileName}</p>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4 mr-1" />
+                      {t("Download")}
+                    </Button>
+                  </div>
+                ))}
+                {(!evidence.attachments || evidence.attachments.length === 0) && (
+                  <p className="text-slate-500 text-center py-4">{t("No published files")}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Attachments Card */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -2217,21 +2252,19 @@ export default function EvidenceDetailPage() {
           <div className="flex border-b">
             <button
               onClick={() => setActiveTab("controls")}
-              className={`px-4 py-2 ${
-                activeTab === "controls"
-                  ? "border-b-2 border-primary-600 text-primary-600"
-                  : "text-slate-500"
-              }`}
+              className={`px-4 py-2 ${activeTab === "controls"
+                ? "border-b-2 border-primary-600 text-primary-600"
+                : "text-slate-500"
+                }`}
             >
               {t("Linked Controls")}
             </button>
             <button
               onClick={() => setActiveTab("artifacts")}
-              className={`px-4 py-2 ${
-                activeTab === "artifacts"
-                  ? "border-b-2 border-primary-600 text-primary-600"
-                  : "text-slate-500"
-              }`}
+              className={`px-4 py-2 ${activeTab === "artifacts"
+                ? "border-b-2 border-primary-600 text-primary-600"
+                : "text-slate-500"
+                }`}
             >
               {t("Linked Artifacts")}
             </button>
@@ -2242,15 +2275,15 @@ export default function EvidenceDetailPage() {
               <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("Controls")}</h3>
                 <Dialog open={linkControlsOpen} onOpenChange={(open) => {
-                      setLinkControlsOpen(open);
-                      if (!open) {
-                        setControlSearchQuery("");
-                        setSelectedControlIds([]);
-                        setControlDomainFilter("all");
-                        setControlFunctionalGroupingFilter("all");
-                        setControlFrameworkFilter("all");
-                      }
-                    }}>
+                  setLinkControlsOpen(open);
+                  if (!open) {
+                    setControlSearchQuery("");
+                    setSelectedControlIds([]);
+                    setControlDomainFilter("all");
+                    setControlFunctionalGroupingFilter("all");
+                    setControlFrameworkFilter("all");
+                  }
+                }}>
                   <DialogTrigger asChild>
                     <Button size="sm">{t("Link Controls")}</Button>
                   </DialogTrigger>
@@ -2320,9 +2353,8 @@ export default function EvidenceDetailPage() {
                         {availableControls.map((control) => (
                           <div
                             key={control.id}
-                            className={`flex items-start gap-3 p-4 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50/60 transition-colors ${
-                              selectedControlIds.includes(control.id) ? "bg-primary-50" : ""
-                            }`}
+                            className={`flex items-start gap-3 p-4 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50/60 transition-colors ${selectedControlIds.includes(control.id) ? "bg-primary-50" : ""
+                              }`}
                             onClick={() => {
                               setSelectedControlIds((prev) =>
                                 prev.includes(control.id)
@@ -2572,11 +2604,10 @@ export default function EvidenceDetailPage() {
 
               {/* Drag and Drop Area */}
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                  isDraggingFile
-                    ? "border-primary-400 bg-primary-50"
-                    : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
-                }`}
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${isDraggingFile
+                  ? "border-primary-400 bg-primary-50"
+                  : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
+                  }`}
                 onDragOver={(e) => {
                   e.preventDefault();
                   setIsDraggingFile(true);
@@ -2714,8 +2745,8 @@ export default function EvidenceDetailPage() {
                   if (artifactSearchQuery.trim()) {
                     const query = artifactSearchQuery.toLowerCase().trim();
                     return artifact.artifactCode?.toLowerCase().includes(query) ||
-                           artifact.name?.toLowerCase().includes(query) ||
-                           artifact.fileName?.toLowerCase().includes(query);
+                      artifact.name?.toLowerCase().includes(query) ||
+                      artifact.fileName?.toLowerCase().includes(query);
                   }
                   return true;
                 });
@@ -2738,9 +2769,8 @@ export default function EvidenceDetailPage() {
                 return filteredArtifacts.map((artifact) => (
                   <div
                     key={artifact.id}
-                    className={`flex items-start gap-3 px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer transition-colors ${
-                      selectedArtifactIds.includes(artifact.id) ? "bg-primary-50/60" : "hover:bg-slate-50/60"
-                    }`}
+                    className={`flex items-start gap-3 px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer transition-colors ${selectedArtifactIds.includes(artifact.id) ? "bg-primary-50/60" : "hover:bg-slate-50/60"
+                      }`}
                     onClick={() => {
                       setSelectedArtifactIds((prev) =>
                         prev.includes(artifact.id)

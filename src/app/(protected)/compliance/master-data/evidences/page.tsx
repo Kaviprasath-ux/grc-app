@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Table,
   TableBody,
@@ -632,13 +633,13 @@ export default function EvidencesMasterDataPage() {
           <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Delete All")}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Import")}
-        </Button>
         <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Import")}
         </Button>
         <Button size="sm" onClick={() => { resetNewForm(); setIsNewDialogOpen(true); }}>
           <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -683,7 +684,7 @@ export default function EvidencesMasterDataPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => handleEdit(evidence)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -691,7 +692,7 @@ export default function EvidencesMasterDataPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => handleDelete(evidence.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -727,7 +728,7 @@ export default function EvidencesMasterDataPage() {
         setIsNewDialogOpen(open);
         if (!open) resetNewForm();
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">
               {newStep === 1 ? t("Evidence Details") : newStep === 2 ? t("Controls") : t("Review Information")}
@@ -738,18 +739,16 @@ export default function EvidencesMasterDataPage() {
           <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${
-                  step === newStep
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${step === newStep
                     ? "bg-primary text-primary-foreground border-primary"
                     : step < newStep
                       ? "bg-success text-white border-success"
                       : "bg-white border-slate-300 text-slate-500"
-                }`}>
+                  }`}>
                   {step < newStep ? <Check className="h-4 w-4" /> : step}
                 </div>
-                <span className={`ltr:ml-2 rtl:mr-2 text-sm ${
-                  step === newStep ? "text-slate-800 font-medium" : "text-slate-500"
-                }`}>
+                <span className={`ltr:ml-2 rtl:mr-2 text-sm ${step === newStep ? "text-slate-800 font-medium" : "text-slate-500"
+                  }`}>
                   {step === 1 ? t("Evidence Details") : step === 2 ? t("Controls") : t("Review")}
                 </span>
                 {step < 3 && <div className="w-12 h-0.5 bg-slate-200 mx-3" />}
@@ -957,9 +956,8 @@ export default function EvidencesMasterDataPage() {
                     filteredControls.map((control) => (
                       <div
                         key={control.id}
-                        className={`p-4 border-b border-slate-200 last:border-b-0 cursor-pointer hover:bg-slate-50 ${
-                          newFormData.controlIds.includes(control.id) ? "bg-primary/5" : ""
-                        }`}
+                        className={`p-4 border-b border-slate-200 last:border-b-0 cursor-pointer hover:bg-slate-50 ${newFormData.controlIds.includes(control.id) ? "bg-primary/5" : ""
+                          }`}
                         onClick={() => {
                           if (newFormData.controlIds.includes(control.id)) {
                             setNewFormData({
@@ -1072,7 +1070,7 @@ export default function EvidencesMasterDataPage() {
           setEditControlId("");
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Evidence")}</DialogTitle>
           </div>
@@ -1163,15 +1161,26 @@ export default function EvidencesMasterDataPage() {
                 </RadioGroup>
               </div>
 
-              <div>
-                <Label className="text-sm font-medium text-slate-700">Review date</Label>
-                <Input
-                  type="date"
-                  value={editingEvidence.reviewDate?.split("T")[0] || ""}
-                  onChange={(e) =>
-                    setEditingEvidence({ ...editingEvidence, reviewDate: e.target.value })
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">
+                  Review date
+                </Label>
+
+                <DatePicker
+                  value={
+                    editingEvidence.reviewDate
+                      ? new Date(editingEvidence.reviewDate)
+                      : undefined
                   }
-                  className="mt-1.5 w-full bg-white"
+                  onChange={(date) =>
+                    setEditingEvidence({
+                      ...editingEvidence,
+                      reviewDate: date
+                        ? date.toISOString().split("T")[0]
+                        : "",
+                    })
+                  }
+                  placeholder="Select review date"
                 />
               </div>
 
@@ -1414,7 +1423,7 @@ export default function EvidencesMasterDataPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-4">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">{t("Are you sure you want to delete this?")}</DialogDescription>
@@ -1432,7 +1441,7 @@ export default function EvidencesMasterDataPage() {
 
       {/* Delete All Confirmation Dialog */}
       <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-4">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -1458,7 +1467,7 @@ export default function EvidencesMasterDataPage() {
           setImportFile(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Import Evidences")}</DialogTitle>
           </div>

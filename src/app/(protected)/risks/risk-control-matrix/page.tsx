@@ -13,8 +13,6 @@ import {
   Search,
   AlertTriangle,
   Trash2,
-  Shield,
-  Layers,
   Eye,
 } from "lucide-react";
 import Link from "next/link";
@@ -203,10 +201,6 @@ export default function RiskControlMatrixPage() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Summary stats
-  const withControls = entries.filter(e => e.linkedControls?.length > 0).length;
-  const withoutControls = entries.filter(e => !e.linkedControls?.length).length;
-
   // Pagination
   const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
   const paginatedEntries = filteredEntries.slice(
@@ -316,43 +310,6 @@ export default function RiskControlMatrixPage() {
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Total Entries")}</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{entries.length}</p>
-            </div>
-            <div className="h-10 w-10 rounded-lg bg-primary-50 flex items-center justify-center">
-              <Layers className="h-5 w-5 text-primary-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("With Controls")}</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{withControls}</p>
-            </div>
-            <div className="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Without Controls")}</p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">{withoutControls}</p>
-            </div>
-            <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search Bar */}
@@ -385,14 +342,14 @@ export default function RiskControlMatrixPage() {
         {/* Rows */}
         <div className="divide-y divide-slate-100">
           {filteredEntries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                <AlertTriangle className="h-6 w-6 text-slate-400" />
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <AlertTriangle className="h-6 w-6 text-primary-400" />
               </div>
               {entries.length === 0 ? (
                 <>
-                  <p className="text-sm font-medium text-slate-600">{t("No entries in the Risk Control Matrix")}</p>
-                  <p className="text-xs text-slate-400 mt-1 mb-4">{t("Import risks from the risk register to get started")}</p>
+                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No entries in the Risk Control Matrix")}</p>
+                  <p className="text-xs text-slate-400 mb-4">{t("Import risks from the risk register to get started")}</p>
                   {canCreate && (
                     <Button
                       variant="outline"
@@ -407,8 +364,8 @@ export default function RiskControlMatrixPage() {
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-medium text-slate-600">{t("No risks found")}</p>
-                  <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search")}</p>
+                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No risks found")}</p>
+                  <p className="text-xs text-slate-400">{t("Try adjusting your search")}</p>
                 </>
               )}
             </div>

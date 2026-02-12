@@ -615,11 +615,11 @@ export default function ControlsMasterDataPage() {
           </Button>
         )}
         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}
         </Button>
         <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
         </Button>
         <Dialog

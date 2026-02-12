@@ -359,7 +359,7 @@ export default function GovernanceTemplatesPage() {
       {/* Action Buttons above card */}
       <div className="flex items-center justify-end gap-2">
         <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
         </Button>
         <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); resetForm(); setTemplateErrors({}); setFileError(""); } else { setCreateDialogOpen(true); } }}>

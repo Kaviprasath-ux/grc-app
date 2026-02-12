@@ -221,7 +221,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                   </button>
                 )}
                 <button
-                  className="text-xs text-primary-600 hover:text-primary-700 hover:underline transition-colors"
+                  className="text-xs text-primary-600 hover:text-primary-700 cursor-pointer transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -319,6 +319,17 @@ export function Header({ onMenuClick }: HeaderProps) {
             <DropdownMenuItem className="py-2.5 cursor-pointer">
               <User className="me-3 h-4 w-4 text-slate-500" />
               <span className="text-sm">{t("Profile")}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="py-2.5 cursor-pointer">
+              <Link href="/notifications">
+                <Bell className="me-3 h-4 w-4 text-slate-500" />
+                <span className="text-sm">{t("Notifications")}</span>
+                {unreadCount > 0 && (
+                  <span className="ltr:ml-auto rtl:mr-auto text-[10px] font-medium bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem className="py-2.5 cursor-pointer">
               <Settings className="me-3 h-4 w-4 text-slate-500" />
