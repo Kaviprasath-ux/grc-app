@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 // GET all actions for an issue
 export async function GET(
@@ -89,18 +89,25 @@ export const POST = withAuth(
         },
       });
 
-      // Notify issue owner about new action
+      // Notify issue owner about new planned action
       if (issue.ownerId && issue.ownerId !== session.id && session.customerAccountId) {
         await notificationService.send({
           customerAccountId: session.customerAccountId,
           actorId: session.id,
           recipientId: issue.ownerId,
-          event: 'COMMENT_ADDED',
-          title: 'New action on issue',
-          message: `New action "${title || actionType}" added to issue "${issue.title}"`,
+          event: NOTIFICATION_EVENTS.PLANNED_ACTION_RAISE,
+          title: 'New Planned Action',
+          message: `New planned action "${title || actionType}" has been raised for issue "${issue.title}"`,
           relatedEntityType: 'issue',
           relatedEntityId: issue.id,
           link: `/organization/context/issues/${issue.id}`,
+          metadata: {
+            issueTitle: issue.title,
+            actionType: actionType,
+            actionTitle: title,
+            raisedBy: session.name || 'User',
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

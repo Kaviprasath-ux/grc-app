@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -94,7 +94,7 @@ export const PUT = withAuth(
       } = body;
 
       // Verify the process belongs to the same customer account
-      // Also fetch current RACI assignments for change detection
+      // Also fetch current RACI assignments and status for change detection
       const existingProcess = await prisma.process.findUnique({
         where: { id },
         select: {
@@ -104,6 +104,9 @@ export const PUT = withAuth(
           accountableId: true,
           consultedId: true,
           informedId: true,
+          status: true,
+          name: true,
+          processCode: true,
         },
       });
 
@@ -173,6 +176,93 @@ export const PUT = withAuth(
       await notifyIfChanged(accountableId, existingProcess.accountableId, 'Accountable');
       await notifyIfChanged(consultedId, existingProcess.consultedId, 'Consulted');
       await notifyIfChanged(informedId, existingProcess.informedId, 'Informed');
+
+      // Process approval workflow notifications
+      if (session.customerAccountId && status !== existingProcess.status) {
+        const processOwner = ownerId || existingProcess.ownerId;
+
+        // Notify when process is submitted for approval
+        if (status === "Pending Approval" && processOwner && processOwner !== session.id) {
+          // Get reviewer users to notify (CustomerAdministrator and Reviewer roles)
+          const reviewers = await prisma.user.findMany({
+            where: {
+              customerAccountId: session.customerAccountId,
+              userRoles: {
+                some: {
+                  role: {
+                    name: { in: ['CustomerAdministrator', 'Reviewer'] },
+                  },
+                },
+              },
+            },
+            select: { id: true },
+          });
+
+          for (const reviewer of reviewers) {
+            if (reviewer.id !== session.id) {
+              await notificationService.send({
+                customerAccountId: session.customerAccountId,
+                actorId: session.id,
+                recipientId: reviewer.id,
+                event: NOTIFICATION_EVENTS.PROCESS_SUBMIT_FOR_APPROVAL,
+                title: 'Process Submitted for Approval',
+                message: `Process "${process.processCode}: ${process.name}" has been submitted for your approval.`,
+                relatedEntityType: 'process',
+                relatedEntityId: process.id,
+                link: `/organization/process/${process.id}`,
+                metadata: {
+                  processCode: process.processCode,
+                  processName: process.name,
+                  submittedBy: session.name || 'User',
+                },
+                channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+              });
+            }
+          }
+        }
+
+        // Notify owner when process is approved
+        if (status === "Approved" && processOwner && processOwner !== session.id) {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: processOwner,
+            event: NOTIFICATION_EVENTS.PROCESS_APPROVED,
+            title: 'Process Approved',
+            message: `Process "${process.processCode}: ${process.name}" has been approved.`,
+            relatedEntityType: 'process',
+            relatedEntityId: process.id,
+            link: `/organization/process/${process.id}`,
+            metadata: {
+              processCode: process.processCode,
+              processName: process.name,
+              approvedBy: session.name || 'Approver',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+
+        // Notify owner when process is rejected
+        if (status === "Rejected" && processOwner && processOwner !== session.id) {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: processOwner,
+            event: NOTIFICATION_EVENTS.PROCESS_REJECTION,
+            title: 'Process Rejected',
+            message: `Process "${process.processCode}: ${process.name}" has been rejected.`,
+            relatedEntityType: 'process',
+            relatedEntityId: process.id,
+            link: `/organization/process/${process.id}`,
+            metadata: {
+              processCode: process.processCode,
+              processName: process.name,
+              rejectedBy: session.name || 'Reviewer',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+      }
 
       return NextResponse.json(process);
     } catch (error) {

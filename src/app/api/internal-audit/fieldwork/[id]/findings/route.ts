@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getAuditHeadId, getTenantFilter } from '@/lib/api-auth';
-import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -170,6 +170,29 @@ export const POST = withAuth(
           department: true,
         },
       });
+
+      // Send FINDINGS_CREATED notification to the Audit Head
+      if (auditHeadId && auditHeadId !== session.id) {
+        await notificationService.send({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: auditHeadId,
+          event: NOTIFICATION_EVENTS.FINDINGS_CREATED,
+          title: 'New Finding Created',
+          message: `A new finding "${finding.findingId}: ${finding.finding}" has been created for engagement ${engagement.auditId}.`,
+          relatedEntityType: 'finding',
+          relatedEntityId: finding.id,
+          link: `/internal-audit/fieldwork/${engagementId}/findings`,
+          metadata: {
+            findingId: finding.findingId,
+            findingTitle: finding.finding,
+            severity: finding.severity,
+            engagementId: engagement.auditId,
+            createdBy: session.name || 'User',
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+      }
 
       // Send CAPA_ASSIGNED notification if a responsible person was assigned
       if (finding.responsiblePersonId && finding.responsiblePersonId !== session.id) {

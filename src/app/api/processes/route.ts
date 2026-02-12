@@ -162,7 +162,28 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Notify all assigned users
+    // Send PROCESS_CREATED notification to owner (if different from creator)
+    if (ownerId && ownerId !== session?.user?.id && customerAccountId) {
+      await notificationService.send({
+        customerAccountId: customerAccountId,
+        actorId: session?.user?.id || '',
+        recipientId: ownerId,
+        event: NOTIFICATION_EVENTS.PROCESS_CREATED,
+        title: 'New Process Created',
+        message: `A new process "${process.processCode}: ${process.name}" has been created and assigned to you.`,
+        relatedEntityType: 'process',
+        relatedEntityId: process.id,
+        link: `/organization/process/${process.id}`,
+        metadata: {
+          processCode: process.processCode,
+          processName: process.name,
+          createdBy: session?.user?.name || 'User',
+        },
+        channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+      });
+    }
+
+    // Notify all assigned users (RACI)
     if (ownerId) await notifyProcessAssignment(ownerId, 'Owner');
     if (responsibleId) await notifyProcessAssignment(responsibleId, 'Responsible');
     if (accountableId) await notifyProcessAssignment(accountableId, 'Accountable');

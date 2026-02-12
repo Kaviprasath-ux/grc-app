@@ -193,6 +193,65 @@ export const PUT = withAuth(
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
+
+        // Notify reviewers when issue is submitted for closure (Pending Closure status)
+        if (status === "Pending Closure" && existingIssue.ownerId !== session.id) {
+          // Get reviewer users to notify (CustomerAdministrator and Reviewer roles)
+          const reviewers = await prisma.user.findMany({
+            where: {
+              customerAccountId: session.customerAccountId,
+              userRoles: {
+                some: {
+                  role: {
+                    name: { in: ['CustomerAdministrator', 'Reviewer'] },
+                  },
+                },
+              },
+            },
+            select: { id: true },
+          });
+
+          for (const reviewer of reviewers) {
+            if (reviewer.id !== session.id) {
+              await notificationService.send({
+                customerAccountId: session.customerAccountId,
+                actorId: session.id,
+                recipientId: reviewer.id,
+                event: NOTIFICATION_EVENTS.ISSUE_SUBMIT_FOR_CLOSURE,
+                title: 'Issue Submitted for Closure',
+                message: `Issue "${issue.title}" has been submitted for closure and requires your review.`,
+                relatedEntityType: 'issue',
+                relatedEntityId: issue.id,
+                link: `/organization/context/issues/${issue.id}`,
+                metadata: {
+                  issueTitle: issue.title,
+                  submittedBy: session.name || 'User',
+                },
+                channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+              });
+            }
+          }
+        }
+
+        // Notify owner when issue is escalated
+        if (status === "Escalated" && existingIssue.ownerId && existingIssue.ownerId !== session.id) {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: existingIssue.ownerId,
+            event: NOTIFICATION_EVENTS.ISSUE_ESCALATED,
+            title: 'Issue Escalated',
+            message: `Issue "${issue.title}" has been escalated and requires immediate attention.`,
+            relatedEntityType: 'issue',
+            relatedEntityId: issue.id,
+            link: `/organization/context/issues/${issue.id}`,
+            metadata: {
+              issueTitle: issue.title,
+              escalatedBy: session.name || 'Reviewer',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
       }
 
       return NextResponse.json(issue);

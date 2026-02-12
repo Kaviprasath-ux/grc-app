@@ -2864,6 +2864,283 @@ Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'evidenceName', 'entityLink']),
   },
+
+  // ===================== WORKFLOW EVENTS =====================
+  {
+    code: 'SYSTEM_ANNOUNCEMENT',
+    name: 'System Announcement',
+    description: 'Sent for system-wide announcements',
+    category: 'system',
+    subject: 'System Announcement: {title}',
+    bodyHtml: createEmailHtml(
+      'System Announcement',
+      colors.info,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">{message}</p>`,
+      'View Details'
+    ),
+    bodyText: `Dear {recipientName},
+
+{message}
+
+View Details: {entityLink}
+
+Best regards,
+GRC Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'title', 'message', 'entityLink']),
+  },
+  {
+    code: 'COMMENT_ADDED',
+    name: 'Comment Added',
+    description: 'Sent when a comment is added to an entity',
+    category: 'notification',
+    subject: 'New Comment on {entityType}: {entityName}',
+    bodyHtml: createEmailHtml(
+      'New Comment',
+      colors.primary,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">A new comment has been added:</p>
+      <table style="${emailStyles.table}">
+        ${tableRow('Entity Type', '{entityType}')}
+        ${tableRow('Entity Name', '{entityName}')}
+        ${tableRow('Comment By', '{actorName}')}
+      </table>
+      <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid ${colors.primary}; margin: 15px 0;">
+        <p style="margin: 0; font-style: italic;">"{commentPreview}"</p>
+      </div>`,
+      'View Comment'
+    ),
+    bodyText: `Dear {recipientName},
+
+A new comment has been added:
+
+Entity Type: {entityType}
+Entity Name: {entityName}
+Comment By: {actorName}
+
+Comment: "{commentPreview}"
+
+View Comment: {entityLink}
+
+Best regards,
+GRC Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'commentPreview', 'entityLink']),
+  },
+  {
+    code: 'APPROVAL_REQUESTED',
+    name: 'Approval Requested',
+    description: 'Sent when approval is requested from a user',
+    category: 'notification',
+    subject: 'Approval Required: {entityType} - {entityName}',
+    bodyHtml: createEmailHtml(
+      'Approval Required',
+      colors.warning,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">Your approval is required for the following:</p>
+      <table style="${emailStyles.table}">
+        ${tableRow('Type', '{entityType}')}
+        ${tableRow('Name', '{entityName}')}
+        ${tableRow('Requested By', '{actorName}')}
+      </table>
+      <p style="${emailStyles.paragraph}">Please review and take appropriate action.</p>`,
+      'Review & Approve'
+    ),
+    bodyText: `Dear {recipientName},
+
+Your approval is required for the following:
+
+Type: {entityType}
+Name: {entityName}
+Requested By: {actorName}
+
+Please review and take appropriate action.
+
+Review & Approve: {entityLink}
+
+Best regards,
+GRC Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'entityLink']),
+  },
+  {
+    code: 'APPROVAL_GRANTED',
+    name: 'Approval Granted',
+    description: 'Sent when an approval is granted',
+    category: 'notification',
+    subject: 'Approved: {entityType} - {entityName}',
+    bodyHtml: createEmailHtml(
+      'Approval Granted',
+      colors.success,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">Your request has been approved:</p>
+      <table style="${emailStyles.table}">
+        ${tableRow('Type', '{entityType}')}
+        ${tableRow('Name', '{entityName}')}
+        ${tableRow('Approved By', '{actorName}')}
+      </table>
+      <p style="${emailStyles.paragraph}">You may now proceed with the next steps.</p>`,
+      'View Details'
+    ),
+    bodyText: `Dear {recipientName},
+
+Your request has been approved:
+
+Type: {entityType}
+Name: {entityName}
+Approved By: {actorName}
+
+You may now proceed with the next steps.
+
+View Details: {entityLink}
+
+Best regards,
+GRC Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'entityLink']),
+  },
+  {
+    code: 'APPROVAL_DENIED',
+    name: 'Approval Denied',
+    description: 'Sent when an approval is denied/rejected',
+    category: 'notification',
+    subject: 'Rejected: {entityType} - {entityName}',
+    bodyHtml: createEmailHtml(
+      'Approval Denied',
+      colors.danger,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">Your request has been rejected:</p>
+      <table style="${emailStyles.table}">
+        ${tableRow('Type', '{entityType}')}
+        ${tableRow('Name', '{entityName}')}
+        ${tableRow('Rejected By', '{actorName}')}
+        ${tableRow('Reason', '{reason}')}
+      </table>
+      <p style="${emailStyles.paragraph}">Please review and address the concerns before resubmitting.</p>`,
+      'View Details'
+    ),
+    bodyText: `Dear {recipientName},
+
+Your request has been rejected:
+
+Type: {entityType}
+Name: {entityName}
+Rejected By: {actorName}
+Reason: {reason}
+
+Please review and address the concerns before resubmitting.
+
+View Details: {entityLink}
+
+Best regards,
+GRC Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'reason', 'entityLink']),
+  },
+  {
+    code: 'SENT_BACK',
+    name: 'Sent Back for Revision',
+    description: 'Sent when an item is sent back for revision',
+    category: 'notification',
+    subject: 'Revision Required: {entityType} - {entityName}',
+    bodyHtml: createEmailHtml(
+      'Sent Back for Revision',
+      colors.warning,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">The following has been sent back for revision:</p>
+      <table style="${emailStyles.table}">
+        ${tableRow('Type', '{entityType}')}
+        ${tableRow('Name', '{entityName}')}
+        ${tableRow('Sent Back By', '{actorName}')}
+        ${tableRow('Reason', '{reason}')}
+      </table>
+      <p style="${emailStyles.paragraph}">Please address the feedback and resubmit.</p>`,
+      'View & Revise'
+    ),
+    bodyText: `Dear {recipientName},
+
+The following has been sent back for revision:
+
+Type: {entityType}
+Name: {entityName}
+Sent Back By: {actorName}
+Reason: {reason}
+
+Please address the feedback and resubmit.
+
+View & Revise: {entityLink}
+
+Best regards,
+GRC Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'reason', 'entityLink']),
+  },
+  {
+    code: 'FEEDBACK_REQUESTED',
+    name: 'Feedback Requested',
+    description: 'Sent when feedback is requested from a user',
+    category: 'notification',
+    subject: 'Feedback Requested: {entityType} - {entityName}',
+    bodyHtml: createEmailHtml(
+      'Feedback Requested',
+      colors.primary,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">Your feedback has been requested for the following:</p>
+      <table style="${emailStyles.table}">
+        ${tableRow('Type', '{entityType}')}
+        ${tableRow('Name', '{entityName}')}
+        ${tableRow('Requested By', '{actorName}')}
+      </table>
+      <p style="${emailStyles.paragraph}">Please provide your feedback at your earliest convenience.</p>`,
+      'Provide Feedback'
+    ),
+    bodyText: `Dear {recipientName},
+
+Your feedback has been requested for the following:
+
+Type: {entityType}
+Name: {entityName}
+Requested By: {actorName}
+
+Please provide your feedback at your earliest convenience.
+
+Provide Feedback: {entityLink}
+
+Best regards,
+GRC Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'entityLink']),
+  },
+  {
+    code: 'STATUS_CHANGED',
+    name: 'Status Changed',
+    description: 'Sent when the status of an entity changes',
+    category: 'notification',
+    subject: 'Status Update: {entityType} - {entityName}',
+    bodyHtml: createEmailHtml(
+      'Status Update',
+      colors.info,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">The status has been updated for the following:</p>
+      <table style="${emailStyles.table}">
+        ${tableRow('Type', '{entityType}')}
+        ${tableRow('Name', '{entityName}')}
+        ${tableRow('Previous Status', '{previousStatus}')}
+        ${tableRow('New Status', '{newStatus}')}
+        ${tableRow('Changed By', '{actorName}')}
+      </table>`,
+      'View Details'
+    ),
+    bodyText: `Dear {recipientName},
+
+The status has been updated for the following:
+
+Type: {entityType}
+Name: {entityName}
+Previous Status: {previousStatus}
+New Status: {newStatus}
+Changed By: {actorName}
+
+View Details: {entityLink}
+
+Best regards,
+GRC Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'previousStatus', 'newStatus', 'actorName', 'entityLink']),
+  },
 ];
 
 async function seedEmailTemplates() {

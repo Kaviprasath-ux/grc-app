@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string; requestId: string }>;
@@ -150,13 +151,24 @@ export const GET = withAuth(
 
 // POST /api/internal-audit/fieldwork/[id]/evidence-requests/[requestId]/attachments - Upload attachments
 export const POST = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId, requestId } = await context.params;
 
-      // Verify evidence request exists
+      // Verify evidence request exists and get engagement info for notifications
       const evidenceRequest = await prisma.fieldworkEvidenceRequest.findUnique({
         where: { id: requestId },
+        include: {
+          engagement: {
+            select: {
+              id: true,
+              auditId: true,
+              engagementTitle: true,
+              assignedAuditorId: true,
+              customerAccountId: true,
+            },
+          },
+        },
       });
 
       if (!evidenceRequest || evidenceRequest.engagementId !== engagementId) {
@@ -244,6 +256,37 @@ export const POST = withAuth(
           status: 'Submitted',
         },
       });
+
+      // Send EVIDENCE_SUBMITTED notification to the assigned auditor
+      const engagement = evidenceRequest.engagement;
+      if (engagement?.assignedAuditorId && engagement.assignedAuditorId !== session.id && engagement.customerAccountId) {
+        // Determine if this is workpaper or regular evidence
+        const isWorkpaper = evidenceRequest.category === 'workpapers';
+        const notificationEvent = isWorkpaper
+          ? NOTIFICATION_EVENTS.WORKPAPER_SUBMITTED
+          : NOTIFICATION_EVENTS.EVIDENCE_SUBMITTED;
+
+        await notificationService.send({
+          customerAccountId: engagement.customerAccountId,
+          actorId: session.id,
+          recipientId: engagement.assignedAuditorId,
+          event: notificationEvent,
+          title: isWorkpaper ? 'Workpaper Submitted' : 'Evidence Submitted',
+          message: `${isWorkpaper ? 'Workpaper' : 'Evidence'} "${evidenceRequest.title}" has been submitted for audit ${engagement.auditId}. AI Review: ${aiResult.status}`,
+          relatedEntityType: 'evidence',
+          relatedEntityId: evidenceRequest.id,
+          link: `/internal-audit/fieldwork/${engagementId}`,
+          metadata: {
+            engagementId: engagement.auditId,
+            engagementTitle: engagement.engagementTitle,
+            evidenceTitle: evidenceRequest.title,
+            aiReviewStatus: aiResult.status,
+            filesCount: uploadedFiles.length,
+            submittedBy: session.name || 'Auditee',
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+      }
 
       return NextResponse.json({
         message: 'Files uploaded and AI review completed',

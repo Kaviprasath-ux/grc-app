@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
-import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 
 // GET /api/internal-audit/engagements - Get all audit engagements
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -217,6 +217,28 @@ export const POST = withAuth(
             data: { engagementId: engagement.id }
           });
         }
+      }
+
+      // Send AUDIT_CREATED notification to the Audit Head (if exists and different from creator)
+      if (auditHeadId && auditHeadId !== session.id && customerAccountId) {
+        await notificationService.send({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: auditHeadId,
+          event: NOTIFICATION_EVENTS.AUDIT_CREATED,
+          title: 'New Audit Engagement Created',
+          message: `A new audit engagement "${engagement.engagementTitle || engagement.auditId}" has been created.`,
+          relatedEntityType: 'audit',
+          relatedEntityId: engagement.id,
+          link: `/internal-audit/fieldwork/${engagement.id}`,
+          metadata: {
+            auditId: engagement.auditId,
+            engagementTitle: engagement.engagementTitle,
+            auditType: engagement.auditType,
+            createdBy: session.name || 'User',
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
       }
 
       // Notify assigned auditor if different from creator
