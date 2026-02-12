@@ -9,6 +9,7 @@ export const GET = withAuth(
       const { searchParams } = new URL(req.url);
       const departmentId = searchParams.get('departmentId');
       const status = searchParams.get('status');
+      const engagementStatus = searchParams.get('engagementStatus') || 'Completed'; // Default to Completed
       const search = searchParams.get('search');
       const page = parseInt(searchParams.get('page') || '1');
       const limit = parseInt(searchParams.get('limit') || '20');
@@ -33,12 +34,31 @@ export const GET = withAuth(
       // Build where clause with tenant filter
       const where: Record<string, unknown> = { ...tenantFilter };
 
+      // IMPORTANT: Filter findings by engagement status (default: Completed)
+      // This ensures findings appear in CAPA tracking only when engagement reaches the specified status
+      const engagementFilter: Record<string, unknown> = engagementStatus === "All"
+        ? {}
+        : { status: engagementStatus };
+
       // For auditee-only users, filter to show only their assigned findings
       if (isAuditeeOnly && session.id) {
         where.responsiblePersonId = session.id;
+        // Apply engagement status filter for auditees too
+        if (Object.keys(engagementFilter).length > 0) {
+          where.engagement = engagementFilter;
+        }
       } else if (isAuditTeam) {
         // For AuditHead/AuditManager/Auditor, filter through engagement
-        where.engagement = auditHeadFilter;
+        // Merge audit head filter with engagement status filter
+        where.engagement = {
+          ...auditHeadFilter,
+          ...engagementFilter,
+        };
+      } else {
+        // For other users, filter by engagement status
+        if (Object.keys(engagementFilter).length > 0) {
+          where.engagement = engagementFilter;
+        }
       }
 
       if (departmentId) {
@@ -58,8 +78,7 @@ export const GET = withAuth(
       // Get total count
       const total = await prisma.internalAuditFinding.count({ where });
 
-      // Get findings with relations
-      // NOTE: attachments and AI review fields are not in the schema yet
+      // Get findings with relations including attachments and AI review fields
       const findings = await prisma.internalAuditFinding.findMany({
         where,
         include: {
@@ -74,6 +93,9 @@ export const GET = withAuth(
               id: true,
               name: true,
             },
+          },
+          attachments: {
+            orderBy: { uploadedAt: 'desc' },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -106,15 +128,23 @@ export const GET = withAuth(
           effect: finding.effect,
           recommendation: finding.recommendation,
           auditeeComment: finding.description, // Map description to auditeeComment for now
-          // Attachments - not in schema yet
-          attachments: [],
-          // AI Review fields - not in schema yet
-          aiReviewStatus: null,
-          aiReviewDescription: null,
-          aiReviewedAt: null,
-          aiReviewApproved: false,
-          aiApprovedAt: null,
-          aiApprovedBy: null,
+          // Attachments from database
+          attachments: finding.attachments.map(att => ({
+            id: att.id,
+            fileName: att.fileName,
+            fileType: att.fileType,
+            fileSize: att.fileSize,
+            filePath: att.filePath,
+            uploadedBy: null,
+            uploadedAt: att.uploadedAt.toISOString(),
+          })),
+          // AI Review fields from database
+          aiReviewStatus: finding.aiReviewStatus,
+          aiReviewDescription: finding.aiReviewDescription,
+          aiReviewedAt: finding.aiReviewedAt,
+          aiReviewApproved: finding.aiReviewApproved,
+          aiApprovedAt: finding.aiApprovedAt,
+          aiApprovedBy: finding.aiApprovedBy,
         };
       });
 

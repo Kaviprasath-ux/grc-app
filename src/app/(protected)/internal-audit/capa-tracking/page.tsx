@@ -135,6 +135,7 @@ export default function CAPATrackingPage() {
 
   // Filters
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [engagementStatusFilter, setEngagementStatusFilter] = useState<string>("Completed");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Delete dialog
@@ -181,7 +182,7 @@ export default function CAPATrackingPage() {
 
   useEffect(() => {
     fetchFindings();
-  }, [selectedDepartment, searchQuery, pagination.page]);
+  }, [selectedDepartment, engagementStatusFilter, searchQuery, pagination.page]);
 
   const fetchDepartments = async () => {
     try {
@@ -213,6 +214,9 @@ export default function CAPATrackingPage() {
       const params = new URLSearchParams();
       if (selectedDepartment) {
         params.append("departmentId", selectedDepartment);
+      }
+      if (engagementStatusFilter) {
+        params.append("engagementStatus", engagementStatusFilter);
       }
       if (searchQuery.trim()) {
         params.append("search", searchQuery.trim());
@@ -311,7 +315,7 @@ export default function CAPATrackingPage() {
       });
 
       const response = await fetch(
-        `/api/internal-audit/capa-tracking/${findingId}/attachments`,
+        `/api/internal-audit/findings/${findingId}/attachments`,
         {
           method: 'POST',
           body: formData,
@@ -319,8 +323,9 @@ export default function CAPATrackingPage() {
       );
 
       if (response.ok) {
-        const newAttachments = await response.json();
-        setExistingAttachments((prev) => [...newAttachments, ...prev]);
+        const data = await response.json();
+        const newAttachments = data.files || data;
+        setExistingAttachments((prev) => [...(Array.isArray(newAttachments) ? newAttachments : []), ...prev]);
         setUploadedFiles([]);
         return true;
       } else {
@@ -341,7 +346,7 @@ export default function CAPATrackingPage() {
 
     try {
       const response = await fetch(
-        `/api/internal-audit/capa-tracking/${findingToEdit.id}/attachments/${attachmentId}`,
+        `/api/internal-audit/findings/${findingToEdit.id}/attachments?attachmentId=${attachmentId}`,
         { method: 'DELETE' }
       );
 
@@ -515,6 +520,23 @@ export default function CAPATrackingPage() {
             />
           </div>
           <div className="flex items-center gap-3 ml-auto">
+            <Select
+              value={engagementStatusFilter}
+              onValueChange={(value) => {
+                setEngagementStatusFilter(value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
+            >
+              <SelectTrigger className="w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("Engagement Status")} />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="Completed">{t("Completed")}</SelectItem>
+                <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                <SelectItem value="Planned">{t("Planned")}</SelectItem>
+                <SelectItem value="All">{t("All Status")}</SelectItem>
+              </SelectContent>
+            </Select>
             <Select
               value={selectedDepartment}
               onValueChange={(value) => {
@@ -1096,9 +1118,10 @@ export default function CAPATrackingPage() {
               </div>
             )}
 
-            {/* File Upload - EDITABLE for auditee */}
+            {/* File Upload - Only for auditees */}
+            {isAuditeeOnly && (
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-              <Label className="text-slate-800 font-medium pt-2"></Label>
+              <Label className="text-slate-800 font-medium pt-2">{t("Upload Document")}</Label>
               <div
                 className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
@@ -1143,6 +1166,7 @@ export default function CAPATrackingPage() {
                 )}
               </div>
             </div>
+            )}
 
             {/* AI Review Section for Audit Head (visible when AI review exists) */}
             {isAuditHead && findingToEdit?.aiReviewStatus && (
