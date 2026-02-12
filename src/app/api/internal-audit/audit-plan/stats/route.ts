@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
 
 // GET /api/internal-audit/audit-plan/stats - Get risk and finding counts for a year or date range
 export const GET = withAuth(
@@ -11,6 +11,9 @@ export const GET = withAuth(
       const year = searchParams.get('year') || new Date().getFullYear().toString();
       const startDateParam = searchParams.get('startDate');
       const endDateParam = searchParams.get('endDate');
+
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
 
       let startDate: Date;
       let endDate: Date;
@@ -23,19 +26,23 @@ export const GET = withAuth(
         endDate = new Date(`${year}-12-31T23:59:59.999Z`);
       }
 
-      // Count risks from Risk table (main risk register) for the date range
-      const riskCount = await prisma.risk.count({
+      // Count risks from InternalAuditRisk for the date range (scoped to tenant/audit head)
+      const riskCount = await prisma.internalAuditRisk.count({
         where: {
-          createdAt: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+          creationDate: {
             gte: startDate,
             lte: endDate,
           },
         },
       });
 
-      // Count findings from InternalAuditFinding for the date range
+      // Count findings from InternalAuditFinding for the date range (scoped to tenant/audit head)
       const findingCount = await prisma.internalAuditFinding.count({
         where: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
           createdAt: {
             gte: startDate,
             lte: endDate,

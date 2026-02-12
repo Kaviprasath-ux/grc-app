@@ -586,6 +586,25 @@ export default function RiskAssessmentConfigPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {/* Formula Display */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                <p className="text-xs font-medium text-blue-900 mb-1">{t("Calculation Formula")}:</p>
+                {scoringConfig?.probabilityImpactCalcType === "Product of all" && (
+                  <p className="text-sm text-blue-800">
+                    {t("Inherent Score")} = {factors.length > 0 ? factors.map(f => f.label).join(" × ") + " × " : ""}{t("Probability")} × {t("Impact")}
+                  </p>
+                )}
+                {scoringConfig?.probabilityImpactCalcType === "Addition of all" && (
+                  <p className="text-sm text-blue-800">
+                    {t("Inherent Score")} = {factors.length > 0 ? factors.map(f => f.label).join(" + ") + " + " : ""}{t("Probability")} + {t("Impact")}
+                  </p>
+                )}
+                {scoringConfig?.probabilityImpactCalcType === "High of all" && (
+                  <p className="text-sm text-blue-800">
+                    {t("Inherent Score")} = {t("MAX")}({factors.length > 0 ? factors.map(f => f.label).join(", ") + ", " : ""}{t("Probability")}, {t("Impact")})
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Risk Rating Scoring Calculation */}
@@ -606,6 +625,25 @@ export default function RiskAssessmentConfigPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {/* Formula Display */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+                <p className="text-xs font-medium text-green-900 mb-1">{t("Calculation Formula")}:</p>
+                {scoringConfig?.riskRatingCalcType === "Product of all" && (
+                  <p className="text-sm text-green-800">
+                    {t("Risk Rating")} = {t("Inherent Score")} × {t("Control Effectiveness Factor")}
+                  </p>
+                )}
+                {scoringConfig?.riskRatingCalcType === "Addition of all" && (
+                  <p className="text-sm text-green-800">
+                    {t("Risk Rating")} = {t("Inherent Score")} + {t("Control Effectiveness Factor")}
+                  </p>
+                )}
+                {scoringConfig?.riskRatingCalcType === "High of all" && (
+                  <p className="text-sm text-green-800">
+                    {t("Risk Rating")} = {t("Inherent Score")} {t("(based on highest value)")}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Scoring Range */}

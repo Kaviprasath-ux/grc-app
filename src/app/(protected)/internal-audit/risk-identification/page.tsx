@@ -72,7 +72,7 @@ export default function RiskIdentificationPage() {
 
   useEffect(() => {
     fetchDepartments();
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = sessionStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Array<Omit<RecentSearch, "timestamp"> & { timestamp: string }>;
@@ -83,6 +83,11 @@ export default function RiskIdentificationPage() {
         setRecentSearches([]);
       }
     }
+
+    // Cleanup: Clear searches when component unmounts (navigating away)
+    return () => {
+      sessionStorage.removeItem(STORAGE_KEY);
+    };
   }, []);
 
   const fetchDepartments = async () => {
@@ -186,7 +191,7 @@ export default function RiskIdentificationPage() {
 
       const updated = [newSearch, ...recentSearches].slice(0, 10);
       setRecentSearches(updated);
-      localStorage.setItem(
+      sessionStorage.setItem(
         STORAGE_KEY,
         JSON.stringify(
           updated.map((s) => ({ ...s, timestamp: s.timestamp.toISOString() }))

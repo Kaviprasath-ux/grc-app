@@ -346,6 +346,7 @@ model User {
   memberOfEngagements AuditEngagement[]   @relation("EngagementTeamMembers")
   // Audit Head owned data
   ownedEngagements    AuditEngagement[]   @relation("AuditHeadEngagements")
+  engagementComments  EngagementComment[] @relation("EngagementComments")
   ownedAuditRisks     InternalAuditRisk[] @relation("AuditHeadRisks")
   ownedAuditFindings  InternalAuditFinding[] @relation("AuditHeadFindings")
   ownedAuditCAPAs     InternalAuditCAPA[] @relation("AuditHeadCAPAs")
@@ -2562,9 +2563,23 @@ model AuditEngagement {
   evidenceRequests    FieldworkEvidenceRequest[]
   linkedRisks         InternalAuditRisk[]
   aiWorkpapers        AiWorkpaper[]
+  comments            EngagementComment[]
 
   @@unique([customerAccountId, auditId])
   @@index([customerAccountId])
+}
+
+// Engagement Comments
+model EngagementComment {
+  id            String          @id @default(cuid())
+  engagementId  String
+  engagement    AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User            @relation("EngagementComments", fields: [userId], references: [id])
+  comment       String
+  createdAt     DateTime        @default(now())
+
+  @@index([engagementId])
 }
 
 // ==================== INTERNAL AUDIT - FIELDWORK ====================
@@ -2859,7 +2874,7 @@ model DocumentLibraryIngestJob {
   id              String    @id @default(cuid())
   documentId      String
   document        InternalAuditDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  runpodJobId     String    @unique // RunPod job ID
+  runpodJobId     String    // RunPod job ID (multiple docs can share one job)
   customerId      String?   // customer_id sent to RunPod
   status          String    @default("queued") // queued, processing, completed, failed
   error           String?   @db.Text

@@ -112,11 +112,21 @@ export const POST = withAuth(
       const url = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.SIMPLE_INGEST);
       console.log('[Document Ingest] Calling RunPod ' + url + ', files=' + appended);
 
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { auth: secret },
-        body: form,
-      });
+      let res: Response;
+      try {
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { auth: secret },
+          body: form,
+          signal: AbortSignal.timeout(120000), // 2 minute timeout
+        });
+      } catch (fetchError) {
+        console.error('[Document Ingest] Network error calling RunPod:', fetchError);
+        return NextResponse.json(
+          { error: 'AI service is unreachable. Please check if the RunPod server is running.' },
+          { status: 503 }
+        );
+      }
 
       const resText = await res.text();
       console.log('[Document Ingest] RunPod response status: ' + res.status);

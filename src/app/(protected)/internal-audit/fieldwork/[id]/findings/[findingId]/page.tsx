@@ -94,9 +94,14 @@ export default function ViewFindingPage() {
   useEffect(() => {
     const loadData = async () => {
       if (engagementId && findingId) {
-        await fetchFinding();
-        await fetchUsers();
-        await fetchAttachments();
+        try {
+          await fetchFinding();
+          await fetchUsers();
+          await fetchAttachments();
+        } catch (error) {
+          console.error('Error loading finding data:', error);
+          setLoading(false);
+        }
       }
     };
     loadData();
@@ -129,13 +134,20 @@ export default function ViewFindingPage() {
   const fetchUsers = async () => {
     try {
       // Fetch only auditees associated with the current audit head
+      // Skip for auditees (they don't need to see this dropdown)
       const response = await fetch("/api/users/my-auditees");
       if (response.ok) {
         const data = await response.json();
         setUsers(data.auditees || data || []);
+      } else if (response.status === 403) {
+        // Auditees don't have access to this endpoint, which is fine
+        // They only view findings, not edit them
+        setUsers([]);
       }
     } catch (error) {
       console.error("Failed to fetch auditees:", error);
+      // Don't block page load if this fails
+      setUsers([]);
     }
   };
 

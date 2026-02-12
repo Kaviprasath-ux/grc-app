@@ -247,6 +247,10 @@ export default function FieldworkDetailsPage() {
 
   // Dialog states
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [comments, setComments] = useState<Array<{ id: string; comment: string; createdAt: string; user: { fullName: string; designation?: string } }>>([]);
+  const [newComment, setNewComment] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [addFindingDialogOpen, setAddFindingDialogOpen] = useState(false);
   const [addFullFindingDialogOpen, setAddFullFindingDialogOpen] = useState(false);
@@ -301,6 +305,11 @@ export default function FieldworkDetailsPage() {
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
   const [evidenceForAttachment, setEvidenceForAttachment] = useState<EvidenceRequest | null>(null);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+
+  // View Finding Dialog states
+  const [viewFindingDialogOpen, setViewFindingDialogOpen] = useState(false);
+  const [selectedFindingForView, setSelectedFindingForView] = useState<any>(null);
+  const [loadingFindingDetails, setLoadingFindingDetails] = useState(false);
 
   // AI Review states
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([]);
@@ -485,6 +494,69 @@ export default function FieldworkDetailsPage() {
       }
     } catch (error) {
       console.error("Failed to fetch findings:", error);
+    }
+  };
+
+  const fetchFindingDetails = async (findingId: string) => {
+    setLoadingFindingDetails(true);
+    try {
+      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings/${findingId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedFindingForView(data);
+      } else {
+        toast.error(t("Failed to fetch finding details"));
+      }
+    } catch (error) {
+      console.error("Failed to fetch finding details:", error);
+      toast.error(t("Failed to fetch finding details"));
+    } finally {
+      setLoadingFindingDetails(false);
+    }
+  };
+
+  const fetchComments = async () => {
+    setLoadingComments(true);
+    try {
+      const response = await fetch(`/api/internal-audit/engagements/${engagementId}/comments`);
+      if (response.ok) {
+        const data = await response.json();
+        setComments(data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch comments:", error);
+      toast.error(t("Failed to fetch comments"));
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) {
+      toast.error(t("Please enter a comment"));
+      return;
+    }
+
+    setSubmittingComment(true);
+    try {
+      const response = await fetch(`/api/internal-audit/engagements/${engagementId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: newComment }),
+      });
+
+      if (response.ok) {
+        toast.success(t("Comment added successfully"));
+        setNewComment("");
+        fetchComments(); // Refresh comments list
+      } else {
+        toast.error(t("Failed to add comment"));
+      }
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      toast.error(t("Failed to add comment"));
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -2664,7 +2736,10 @@ export default function FieldworkDetailsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}`)}
+                            onClick={() => {
+                              fetchFindingDetails(finding.id);
+                              setViewFindingDialogOpen(true);
+                            }}
                             title={t("View")}
                           >
                             <Eye className="h-4 w-4 text-slate-600" />
@@ -2708,7 +2783,12 @@ export default function FieldworkDetailsPage() {
       </CollapsibleSection>
 
       {/* Comments Dialog */}
-      <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>
+      <Dialog open={commentsDialogOpen} onOpenChange={(open) => {
+        setCommentsDialogOpen(open);
+        if (open) {
+          fetchComments();
+        }
+      }}>
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
@@ -2718,15 +2798,62 @@ export default function FieldworkDetailsPage() {
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <Textarea placeholder={t("Add a comment...")} rows={4} />
-            <div className="text-sm text-slate-500">{t("No comments yet")}</div>
+            {/* Add Comment Textarea */}
+            <div className="space-y-2">
+              <Label>{t("Add a comment")}</Label>
+              <Textarea
+                placeholder={t("Type your comment here...")}
+                rows={4}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                disabled={submittingComment}
+              />
+            </div>
+
+            {/* Comments List */}
+            {loadingComments ? (
+              <div className="flex justify-center py-8">
+                <div className="w-8 h-8 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+              </div>
+            ) : comments.length > 0 ? (
+              <div className="space-y-4">
+                <div className="text-sm font-medium text-slate-700">{t("Comments")}</div>
+                {comments.map((comment) => (
+                  <div key={comment.id} className="bg-slate-50 rounded-lg p-4 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium text-slate-900">{comment.user.fullName}</div>
+                        {comment.user.designation && (
+                          <div className="text-xs text-slate-500">{comment.user.designation}</div>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="text-sm text-slate-700 whitespace-pre-wrap">{comment.comment}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <div className="text-sm">{t("No comments yet")}</div>
+              </div>
+            )}
           </div>
           {/* Fixed Footer */}
           <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setCommentsDialogOpen(false)}>
               {t("Close")}
             </Button>
-            <Button size="sm">{t("Add Comment")}</Button>
+            <Button
+              size="sm"
+              onClick={handleAddComment}
+              disabled={!newComment.trim() || submittingComment}
+            >
+              {submittingComment ? t("Adding...") : t("Add Comment")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -4507,6 +4634,150 @@ export default function FieldworkDetailsPage() {
               )}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Finding Dialog */}
+      <Dialog open={viewFindingDialogOpen} onOpenChange={(open) => {
+        setViewFindingDialogOpen(open);
+        if (!open) setSelectedFindingForView(null);
+      }}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("View Finding")} - {selectedFindingForView?.findingId || ''}</DialogTitle>
+          </DialogHeader>
+
+          {loadingFindingDetails ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+            </div>
+          ) : selectedFindingForView ? (
+            <div className="space-y-6">
+              {/* Audit Plan */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Audit Plan")}</Label>
+                <p className="mt-1 text-sm text-slate-900">{selectedFindingForView.engagement?.engagementTitle || '-'}</p>
+              </div>
+
+              {/* Finding Details */}
+              <div className="space-y-4">
+                <h3 className="text-base font-semibold text-slate-900">{t("Finding Details")}</h3>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Finding Title")}</Label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedFindingForView.finding || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Severity")}</Label>
+                  <div className="mt-1">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      selectedFindingForView.severity === 'Critical' ? 'bg-red-100 text-red-800' :
+                      selectedFindingForView.severity === 'High' ? 'bg-orange-100 text-orange-800' :
+                      selectedFindingForView.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {selectedFindingForView.severity}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Criteria (What should be)")}</Label>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.criteria || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Condition (What is)")}</Label>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.condition || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Cause (Why it happened)")}</Label>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.cause || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Effect (The consequence)")}</Label>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.effect || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Recommendation")}</Label>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.recommendation || '-'}</p>
+                </div>
+
+                {selectedFindingForView.attachments && selectedFindingForView.attachments.length > 0 ? (
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Attachments")}</Label>
+                    <div className="mt-2 space-y-2">
+                      {selectedFindingForView.attachments.map((attachment: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-slate-600" />
+                            <span className="text-sm text-slate-900">{attachment.fileName}</span>
+                          </div>
+                          <a
+                            href={attachment.filePath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary-600 hover:underline"
+                          >
+                            {t("View")}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* CAPA Details */}
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-base font-semibold text-slate-900">{t("Corrective & Preventive Actions (CAPA)")}</h3>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Responsible Person")}</Label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedFindingForView.responsiblePerson || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                  <p className="mt-1 text-sm text-slate-900">{selectedFindingForView.status || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Target Closure Date")}</Label>
+                  <p className="mt-1 text-sm text-slate-900">{formatDate(selectedFindingForView.targetDate)}</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setViewFindingDialogOpen(false);
+                    setSelectedFindingForView(null);
+                  }}
+                >
+                  {t("Close")}
+                </Button>
+                {(isAuditHead || isAuditManager || isAuditor) && (
+                  <Button
+                    onClick={() => {
+                      setViewFindingDialogOpen(false);
+                      router.push(`/internal-audit/fieldwork/${engagementId}/findings/${selectedFindingForView.id}?edit=true`);
+                    }}
+                    disabled={isReadOnly}
+                  >
+                    <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Edit Finding")}
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>
