@@ -125,9 +125,11 @@ export const ROLES = {
     name: 'Reviewer',
     description: 'Reviews and approves compliance, risk, and asset content (no admin access)',
   },
+  // NOTE: Contributor role is HIDDEN/DISABLED - not available for user selection in UI
+  // Kept in code for backward compatibility with existing users who may have this role
   Contributor: {
     name: 'Contributor',
-    description: 'Creates and edits content across modules',
+    description: 'Creates and edits content across modules (DISABLED - use DepartmentContributor instead)',
   },
   DepartmentReviewer: {
     name: 'DepartmentReviewer',
@@ -300,6 +302,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   ],
 
   // Contributor - Creates and edits across modules
+  // NOTE: This role is HIDDEN/DISABLED - not available for selection in UI
+  // Permissions kept for backward compatibility with existing users
   Contributor: [
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'organization.process', actions: ['view', 'create', 'edit'], scope: 'all' },

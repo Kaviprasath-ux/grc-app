@@ -84,8 +84,9 @@ interface User {
 
 // RBAC roles mapped by function
 // Note: For Audit function, roles are filtered based on who is creating the user
+// Note: Contributor role is hidden/disabled - not available for selection
 const rolesByFunction: Record<string, string[]> = {
-  Business: ["DepartmentReviewer", "DepartmentContributor", "Contributor"],
+  Business: ["DepartmentReviewer", "DepartmentContributor"],
   Security: ["Reviewer"],
   Audit: ["AuditHead", "AuditManager", "Auditor", "Auditee", "AuditUser"],
 };
@@ -96,6 +97,7 @@ const customerAdminAuditRoles = ["AuditHead"];
 const auditHeadAuditRoles = ["AuditManager", "Auditee"];
 
 // All assignable roles for filtering (excludes GRCAdministrator)
+// Note: Contributor role is hidden/disabled - not available for filtering
 const allUserRoles = [
   "CustomerAdministrator",
   "AuditHead",
@@ -104,7 +106,6 @@ const allUserRoles = [
   "Auditor",
   "Auditee",
   "Reviewer",
-  "Contributor",
   "DepartmentReviewer",
   "DepartmentContributor",
 ];
