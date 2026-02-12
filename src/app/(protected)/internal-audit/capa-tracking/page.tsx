@@ -315,7 +315,7 @@ export default function CAPATrackingPage() {
       });
 
       const response = await fetch(
-        `/api/internal-audit/capa-tracking/${findingId}/attachments`,
+        `/api/internal-audit/findings/${findingId}/attachments`,
         {
           method: 'POST',
           body: formData,
@@ -323,8 +323,9 @@ export default function CAPATrackingPage() {
       );
 
       if (response.ok) {
-        const newAttachments = await response.json();
-        setExistingAttachments((prev) => [...newAttachments, ...prev]);
+        const data = await response.json();
+        const newAttachments = data.files || data;
+        setExistingAttachments((prev) => [...(Array.isArray(newAttachments) ? newAttachments : []), ...prev]);
         setUploadedFiles([]);
         return true;
       } else {
@@ -345,7 +346,7 @@ export default function CAPATrackingPage() {
 
     try {
       const response = await fetch(
-        `/api/internal-audit/capa-tracking/${findingToEdit.id}/attachments/${attachmentId}`,
+        `/api/internal-audit/findings/${findingToEdit.id}/attachments?attachmentId=${attachmentId}`,
         { method: 'DELETE' }
       );
 
@@ -1082,7 +1083,7 @@ export default function CAPATrackingPage() {
                       <span className="text-sm text-slate-700 flex-1 truncate">{att.fileName}</span>
                       <div className="flex items-center gap-1">
                         <a
-                          href={att.filePath}
+                          href={`/api${att.filePath}`}
                           download={att.fileName}
                           className="text-slate-400 hover:text-primary-600 p-1"
                           title={t("Download")}
@@ -1090,7 +1091,7 @@ export default function CAPATrackingPage() {
                           <Download className="h-4 w-4" />
                         </a>
                         <a
-                          href={att.filePath}
+                          href={`/api${att.filePath}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-slate-400 hover:text-primary-600 p-1"
@@ -1098,18 +1099,15 @@ export default function CAPATrackingPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </a>
-                        {/* Delete only for Audit Head, not Auditee */}
-                        {!isAuditeeOnly && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-red-500 hover:text-red-700"
-                            onClick={() => handleDeleteAttachment(att.id)}
-                            title={t("Delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-red-500 hover:text-red-700"
+                          onClick={() => handleDeleteAttachment(att.id)}
+                          title={t("Delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1168,51 +1166,26 @@ export default function CAPATrackingPage() {
             )}
 
             {/* AI Review Section for Audit Head (visible when AI review exists) */}
-            {isAuditHead && findingToEdit?.aiReviewStatus && (
+            {isAuditHead && (
               <div className="border-t pt-4 mt-4 bg-purple-50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Bot className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-slate-800">
-                    {!findingToEdit.aiReviewApproved
-                      ? t("AI Review Result (Pending Approval)")
-                      : t("AI Review Result")}
-                  </h3>
+                  <h3 className="font-semibold text-slate-800">{t("AI Review")}</h3>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                   <Label className="text-slate-800 font-medium">{t("Status")}</Label>
-                  <div className="flex items-center gap-2">
-                    {findingToEdit.aiReviewStatus === "Satisfactory" ? (
-                      <>
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        <span className="text-green-600 font-medium">{t("Satisfactory")}</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-5 w-5 text-red-600" />
-                        <span className="text-red-600 font-medium">{t("Unsatisfactory")}</span>
-                      </>
-                    )}
-                  </div>
+                  <span className="text-sm text-slate-600">{findingToEdit?.aiReviewStatus || "-"}</span>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
                   <Label className="text-slate-800 font-medium pt-2">{t("Description")}</Label>
                   <Textarea
-                    value={findingToEdit.aiReviewDescription || ""}
+                    value={findingToEdit?.aiReviewDescription || ""}
                     readOnly
+                    placeholder="-"
                     className="bg-white"
                     rows={3}
                   />
                 </div>
-                {!findingToEdit.aiReviewApproved && (
-                  <p className="text-sm text-purple-700 mt-3">
-                    {t("Click \"Save\" to approve this AI review and close the finding.")}
-                  </p>
-                )}
-                {findingToEdit.aiReviewApproved && (
-                  <p className="text-sm text-green-600 mt-3">
-                    {t("AI review has been approved.")}
-                  </p>
-                )}
               </div>
             )}
 
