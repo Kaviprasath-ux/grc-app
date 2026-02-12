@@ -359,6 +359,12 @@ export default function ProcessPage() {
   const [kpiErrors, setKpiErrors] = useState<Record<string, string>>({});
   const [kpiSaving, setKpiSaving] = useState(false);
 
+  // Import dialog state
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Process Form state
   const [processForm, setProcessForm] = useState({
     name: "",
@@ -1083,6 +1089,254 @@ export default function ProcessPage() {
     setKpiSaving(false);
   };
 
+  // Export Repository processes to CSV
+  const handleExportRepository = () => {
+    if (filteredProcesses.length === 0) {
+      toast({ title: t("No Data"), description: t("No processes to export"), variant: "destructive" });
+      return;
+    }
+
+    const headers = ["Reference ID", "Name", "Description", "Department", "Process Owner", "Process Frequency", "Nature Of Implementation", "Status"];
+    const csvRows = [headers.join(",")];
+
+    filteredProcesses.forEach((process) => {
+      const row = [
+        process.processCode || "",
+        process.name || "",
+        (process.description || "").replace(/,/g, ";").replace(/\n/g, " "),
+        process.department?.name || "",
+        process.owner?.fullName || "",
+        process.processFrequency || process.frequency || "",
+        process.natureOfImplementation || "",
+        process.status || "",
+      ].map(val => `"${val}"`);
+      csvRows.push(row.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `processes_repository_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Export BIA processes to CSV
+  const handleExportBIA = () => {
+    const biaProcesses = filteredProcesses.filter((p) => p.biaCompleted);
+    if (biaProcesses.length === 0) {
+      toast({ title: t("No Data"), description: t("No BIA processes to export"), variant: "destructive" });
+      return;
+    }
+
+    const headers = ["Reference ID", "Name", "Department", "Process Owner", "Process Criticality"];
+    const csvRows = [headers.join(",")];
+
+    biaProcesses.forEach((process) => {
+      const row = [
+        process.processCode || "",
+        process.name || "",
+        process.department?.name || "",
+        process.owner?.fullName || "",
+        process.processCriticality || "",
+      ].map(val => `"${val}"`);
+      csvRows.push(row.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `processes_bia_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Download process template
+  const handleDownloadTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/templates/process_template.xlsx";
+    link.download = "process_template.xlsx";
+    link.click();
+  };
+
+  // Handle file selection for import
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+    }
+  };
+
+  // Import processes from Excel file
+  const handleImportProcesses = async () => {
+    if (!importFile) return;
+
+    setImporting(true);
+    try {
+      // Read Excel file using fetch and xlsx library
+      const arrayBuffer = await importFile.arrayBuffer();
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json<Record<string, string>>(sheet);
+
+      if (data.length === 0) {
+        toast({ title: t("Error"), description: t("Excel file is empty"), variant: "destructive" });
+        setImporting(false);
+        return;
+      }
+
+      let importedCount = 0;
+      let errorCount = 0;
+
+      for (const row of data) {
+        const processName = row["Process Name"]?.trim();
+        if (!processName) continue;
+
+        const description = row["Description"]?.trim() || "";
+        const departmentName = row["Department"]?.trim() || "";
+        const frequencyName = row["Process frequency"]?.trim() || "";
+        const natureName = row["Nature of  implementation"]?.trim() || "";
+        const locationName = row["Location"]?.trim() || "";
+
+        try {
+          // Find or create department
+          let departmentId = "";
+          if (departmentName) {
+            const existingDept = departments.find(d => d.name.toLowerCase() === departmentName.toLowerCase());
+            if (existingDept) {
+              departmentId = existingDept.id;
+            } else {
+              // Create new department
+              const deptRes = await fetch("/api/departments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: departmentName }),
+              });
+              if (deptRes.ok) {
+                const newDept = await deptRes.json();
+                departmentId = newDept.id;
+                setDepartments(prev => [...prev, newDept]);
+              }
+            }
+          }
+
+          // Find or create process frequency
+          let processFrequency = "";
+          if (frequencyName) {
+            const existingFreq = processFrequencies.find(f => f.toLowerCase() === frequencyName.toLowerCase());
+            if (existingFreq) {
+              processFrequency = existingFreq;
+            } else {
+              // Create new process frequency
+              const freqRes = await fetch("/api/organization-settings/process-frequency", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: frequencyName }),
+              });
+              if (freqRes.ok) {
+                const newFreq = await freqRes.json();
+                processFrequency = newFreq.name;
+                setProcessFrequencies(prev => [...prev, newFreq.name]);
+              }
+            }
+          }
+
+          // Find or create nature of implementation
+          let natureOfImplementation = "";
+          if (natureName) {
+            const existingNature = natureOfImplementations.find(n => n.toLowerCase() === natureName.toLowerCase());
+            if (existingNature) {
+              natureOfImplementation = existingNature;
+            } else {
+              // Create new nature of implementation
+              const natureRes = await fetch("/api/organization-settings/nature-of-implementation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: natureName }),
+              });
+              if (natureRes.ok) {
+                const newNature = await natureRes.json();
+                natureOfImplementation = newNature.name;
+                setNatureOfImplementations(prev => [...prev, newNature.name]);
+              }
+            }
+          }
+
+          // Find or create location
+          let location: string[] = [];
+          if (locationName) {
+            const existingLoc = locationOptions.find(l => l.label.toLowerCase() === locationName.toLowerCase());
+            if (existingLoc) {
+              location = [existingLoc.label];
+            } else {
+              // Create new location
+              const locRes = await fetch("/api/organization-settings/location", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: locationName }),
+              });
+              if (locRes.ok) {
+                const newLoc = await locRes.json();
+                location = [newLoc.name];
+                setLocationOptions(prev => [...prev, { value: newLoc.id || newLoc.name, label: newLoc.name }]);
+              }
+            }
+          }
+
+          // Create the process
+          const processData = {
+            name: processName,
+            description,
+            departmentId: departmentId || null,
+            processFrequency: processFrequency || null,
+            natureOfImplementation: natureOfImplementation || null,
+            location: location.length > 0 ? JSON.stringify(location) : null,
+          };
+
+          const res = await fetch("/api/processes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(processData),
+          });
+
+          if (res.ok) {
+            importedCount++;
+          } else {
+            errorCount++;
+          }
+        } catch (err) {
+          console.error("Error importing row:", err);
+          errorCount++;
+        }
+      }
+
+      if (importedCount > 0) {
+        toast({
+          title: t("Success"),
+          description: t("Imported {count} processes").replace("{count}", String(importedCount)) +
+            (errorCount > 0 ? ` (${errorCount} ${t("failed")})` : "")
+        });
+        fetchData();
+      } else {
+        toast({ title: t("Warning"), description: t("No processes were imported"), variant: "destructive" });
+      }
+
+      setShowImportDialog(false);
+      setImportFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (error) {
+      console.error("Import error:", error);
+      toast({ title: t("Error"), description: t("Failed to import processes"), variant: "destructive" });
+    }
+    setImporting(false);
+  };
+
   // BIA columns
   const biaColumns: ColumnDef<Process>[] = [
     {
@@ -1170,7 +1424,20 @@ export default function ProcessPage() {
           );
         }
 
-        // Open/New - show Perform BIA button
+        // If BIA record exists (even with Open status) - show View button
+        if (biaStatus) {
+          return (
+            <button
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+              onClick={() => router.push(`/organization/process/bia/${row.original.id}`)}
+            >
+              <Eye className="h-3.5 w-3.5" />
+              {t("View")}
+            </button>
+          );
+        }
+
+        // No BIA record - show Perform BIA button
         return (
           <button
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
@@ -1344,12 +1611,12 @@ export default function ProcessPage() {
         <TabsContent value="repository" className="mt-6">
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2 mb-4">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExportRepository}>
               <Download className="h-4 w-4 me-2" />
               {t("Export")}
             </Button>
             {!isDepartmentContributor && (
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
@@ -1431,7 +1698,7 @@ export default function ProcessPage() {
         <TabsContent value="bia" className="mt-6">
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2 mb-4">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExportBIA}>
               <Download className="h-4 w-4 me-2" />
               {t("Export")}
             </Button>
@@ -3153,6 +3420,76 @@ export default function ProcessPage() {
             <Button type="button" onClick={handleSaveKpi} disabled={kpiSaving}>
               {kpiSaving ? t("Saving...") : t("Save")}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Process Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      }}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {t("Import Processes")}
+              </DialogTitle>
+              <DialogDescription>
+                {t("Import processes from an Excel file. The file should have columns: Process Name (required), Description, Department, Process frequency, Nature of implementation, Location.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
+              <div className="flex gap-2 mt-1.5">
+                <Input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="flex-1"
+                />
+              </div>
+              {importFile && (
+                <p className="text-sm text-slate-500 mt-1">
+                  {t("Selected")}: {importFile.name}
+                </p>
+              )}
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>{t("Note")}:</strong> {t("If Department, Process frequency, Nature of implementation, or Location values don't exist, they will be automatically created.")}
+              </p>
+            </div>
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-between gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              {t("Download Template")}
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowImportDialog(false);
+                  setImportFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+              >
+                {t("Cancel")}
+              </Button>
+              <Button onClick={handleImportProcesses} disabled={!importFile || importing}>
+                {importing ? t("Importing...") : t("Import")}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
