@@ -910,7 +910,7 @@ export default function ExceptionsPage() {
                       onChange={(date) => {
                         setCreateForm({
                           ...createForm,
-                          endDate: date ? date.toISOString().split("T")[0] : "",
+                          endDate: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "",
                         });
                         if (exceptionErrors.endDate) {
                           setExceptionErrors((prev) => { const { endDate, ...rest } = prev; return rest; });
@@ -1706,7 +1706,7 @@ export default function ExceptionsPage() {
                       onChange={(date) =>
                         setEditForm({
                           ...editForm,
-                          endDate: date ? date.toISOString().split("T")[0] : "",
+                          endDate: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "",
                         })
                       }
                       placeholder={t("Select end date")}
