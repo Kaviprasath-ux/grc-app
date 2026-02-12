@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -536,9 +536,10 @@ export default function ProcessPage() {
     ? processes.filter((p) => p.departmentId === userDepartmentId)
     : processes;
 
-  // Get unique process owners - only users who own at least one process
-  const processOwners = users.filter((user) =>
-    processes.some((process) => process.ownerId === user.id)
+  // Only show users who are assigned as owners to at least one process
+  const processOwners = useMemo(() =>
+    users.filter((user) => processes.some((process) => process.ownerId === user.id)),
+    [users, processes]
   );
 
   const filteredProcesses = departmentFilteredProcesses.filter((p) => {
@@ -1360,6 +1361,11 @@ export default function ProcessPage() {
       cell: ({ row }) => row.original.owner?.fullName || "-",
     },
     {
+      accessorKey: "processFrequency",
+      header: t("Process Frequency"),
+      cell: ({ row }) => row.original.processFrequency || "-",
+    },
+    {
       accessorKey: "processCriticality",
       header: t("Process Criticality"),
       cell: ({ row }) => {
@@ -1662,7 +1668,7 @@ export default function ProcessPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="all">{t("All Owners")}</SelectItem>
-                    {users.map((user) => (
+                    {processOwners.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
@@ -1736,7 +1742,7 @@ export default function ProcessPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="all">{t("All Owners")}</SelectItem>
-                    {users.map((user) => (
+                    {processOwners.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
                       </SelectItem>
