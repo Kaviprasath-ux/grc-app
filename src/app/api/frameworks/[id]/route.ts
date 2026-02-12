@@ -358,6 +358,7 @@ export const DELETE = withAuth(
         select: {
           customerAccountId: true,
           name: true,
+          status: true,
           isMasterTemplate: true,
           sourceFrameworkId: true,
           _count: {
@@ -409,11 +410,94 @@ export const DELETE = withAuth(
         });
       }
 
-      // For customer copies (subscriptions) - allow full deletion
-      // This is the "unsubscribe" action
-      await prisma.framework.delete({
-        where: { id },
+      // For customer copies (subscriptions) - delete all linked data
+      await prisma.$transaction(async (tx) => {
+        // Get all control IDs linked to this framework
+        const controls = await tx.control.findMany({
+          where: { frameworkId: id },
+          select: { id: true },
+        });
+        const controlIds = controls.map((c) => c.id);
+
+        // Get all evidence IDs linked to this framework
+        const evidences = await tx.evidence.findMany({
+          where: { frameworkId: id },
+          select: { id: true },
+        });
+        const evidenceIds = evidences.map((e) => e.id);
+
+        // Get all policy IDs linked to these controls (via PolicyControl)
+        const policyControls = await tx.policyControl.findMany({
+          where: { controlId: { in: controlIds } },
+          select: { policyId: true },
+        });
+        const policyIds = [...new Set(policyControls.map((pc) => pc.policyId))];
+
+        // 1. Nullify references in Exception (non-cascade FKs)
+        if (controlIds.length > 0) {
+          await tx.exception.updateMany({
+            where: { controlId: { in: controlIds } },
+            data: { controlId: null },
+          });
+        }
+        if (policyIds.length > 0) {
+          await tx.exception.updateMany({
+            where: { policyId: { in: policyIds } },
+            data: { policyId: null },
+          });
+        }
+        if (evidenceIds.length > 0) {
+          // Nullify legacy controlId on evidences before deleting controls
+          await tx.evidence.updateMany({
+            where: { controlId: { in: controlIds } },
+            data: { controlId: null },
+          });
+        }
+
+        // 2. Delete evidences linked to this framework (cascades: EvidenceControl, EvidenceCycle, EvidenceArtifact, Artifact, EvidenceCycleComment)
+        if (evidenceIds.length > 0) {
+          await tx.evidence.deleteMany({
+            where: { id: { in: evidenceIds } },
+          });
+        }
+
+        // 3. Delete policies linked to this framework's controls (cascades: PolicyControl, PolicyVersion, PolicyReview)
+        if (policyIds.length > 0) {
+          await tx.policy.deleteMany({
+            where: { id: { in: policyIds } },
+          });
+        }
+
+        // 4. Delete controls linked to this framework (cascades: RequirementControl, EvidenceControl, PolicyControl, ControlRisk)
+        if (controlIds.length > 0) {
+          await tx.control.deleteMany({
+            where: { id: { in: controlIds } },
+          });
+        }
+
+        // 5. Delete the framework (cascades: RequirementCategory, Requirement)
+        await tx.framework.delete({
+          where: { id },
+        });
       });
+
+      // Decrement frameworksUsed in the active subscription plan
+      if (existingFramework.customerAccountId && existingFramework.status === "Subscribed") {
+        const now = new Date();
+        const activePlan = await prisma.subscriptionPlan.findFirst({
+          where: {
+            customerAccountId: existingFramework.customerAccountId,
+            status: "Active",
+            expiryDate: { gte: now },
+          },
+        });
+        if (activePlan && activePlan.frameworksUsed > 0) {
+          await prisma.subscriptionPlan.update({
+            where: { id: activePlan.id },
+            data: { frameworksUsed: { decrement: 1 } },
+          });
+        }
+      }
 
       return NextResponse.json({
         message: existingFramework.sourceFrameworkId

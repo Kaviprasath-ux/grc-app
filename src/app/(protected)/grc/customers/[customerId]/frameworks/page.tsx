@@ -315,7 +315,7 @@ export default function CustomerFrameworkOverviewPage() {
   const handleSubscribeFramework = async (frameworkId: string, action: "subscribe" | "suggest") => {
     // Check subscription status before subscribing
     try {
-      const statusRes = await fetch("/api/subscription-status");
+      const statusRes = await fetch(`/api/subscription-status?customerId=${customerId}`);
       if (statusRes.ok) {
         const statusData = await statusRes.json();
         if (!statusData.allowed) {
