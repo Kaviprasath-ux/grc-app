@@ -529,6 +529,24 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return newFramework;
     });
 
+    // Increment frameworksUsed in the active subscription plan
+    if (action === "subscribe") {
+      const now = new Date();
+      const activePlan = await prisma.subscriptionPlan.findFirst({
+        where: {
+          customerAccountId,
+          status: "Active",
+          expiryDate: { gte: now },
+        },
+      });
+      if (activePlan) {
+        await prisma.subscriptionPlan.update({
+          where: { id: activePlan.id },
+          data: { frameworksUsed: { increment: 1 } },
+        });
+      }
+    }
+
     return NextResponse.json(
       {
         message: `Framework "${sourceFramework.name}" ${action === "subscribe" ? "subscribed" : "added to suggestions"} successfully`,

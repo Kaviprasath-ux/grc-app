@@ -2,9 +2,10 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
-import { Download, Home, ChevronRight } from "lucide-react";
+import { Download, Home, ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Framework {
@@ -58,6 +59,8 @@ function ManagementReportContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
+  const { toast } = useToast();
+  const [downloading, setDownloading] = useState(false);
 
   // Read parameters from URL
   const showOverallCompliance = searchParams.get("overallCompliance") === "true";
@@ -232,9 +235,56 @@ function ManagementReportContent() {
     governanceByFramework[fwName].push(doc);
   });
 
-  const handleDownloadReport = () => {
-    // Future implementation: generate and download PDF
-    alert(t("Download functionality will be implemented soon"));
+  const handleDownloadReport = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/reports/generate/management", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          overallCompliance: showOverallCompliance,
+          frameworkCompliance: showFrameworkCompliance,
+          controlRequirementsByFramework: showControlRequirementsByFramework,
+          controlImplementationsByFramework: showControlImplementationsByFramework,
+          complianceRequirementsExceptions: showComplianceRequirementsExceptions,
+          controlExceptions: showControlExceptions,
+          frameworkWithGovernanceData: showFrameworkWithGovernanceData,
+          complianceIssues: showComplianceIssues,
+          domainBasedProgressCompliance: showDomainBasedProgressCompliance,
+          frameworkId: frameworkId || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Download failed" }));
+        throw new Error(err.error || "Failed to generate report");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = res.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename="?([^"]+)"?/);
+      a.download = match?.[1] || "Compliance_Management_Report.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: t("Success"),
+        description: t("Report downloaded successfully"),
+      });
+    } catch (error) {
+      toast({
+        title: t("Error"),
+        description: error instanceof Error ? error.message : t("Failed to generate report"),
+        variant: "destructive",
+      });
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (loading) {
@@ -264,9 +314,13 @@ function ManagementReportContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Compliance Management Report")}</h1>
-        <Button onClick={handleDownloadReport}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Download Report")}
+        <Button onClick={handleDownloadReport} disabled={downloading}>
+          {downloading ? (
+            <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          )}
+          {downloading ? t("Downloading...") : t("Download Report")}
         </Button>
       </div>
 

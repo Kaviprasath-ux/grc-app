@@ -216,6 +216,10 @@ export default function CustomerFrameworkOverviewPage() {
   const [deleteItem, setDeleteItem] = useState<{ id: string; name: string; type: string } | null>(null);
   const [isDeleteItemDialogOpen, setIsDeleteItemDialogOpen] = useState(false);
 
+  // Subscription error dialog
+  const [showSubscriptionErrorDialog, setShowSubscriptionErrorDialog] = useState(false);
+  const [subscriptionErrorMessage, setSubscriptionErrorMessage] = useState("");
+
   // Framework Select dialog states
   const [isSelectDialogOpen, setIsSelectDialogOpen] = useState(false);
   const [availableFrameworks, setAvailableFrameworks] = useState<AvailableFramework[]>([]);
@@ -309,6 +313,31 @@ export default function CustomerFrameworkOverviewPage() {
   };
 
   const handleSubscribeFramework = async (frameworkId: string, action: "subscribe" | "suggest") => {
+    // Check subscription status before subscribing
+    try {
+      const statusRes = await fetch("/api/subscription-status");
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        if (!statusData.allowed) {
+          if (statusData.reason === "expired") {
+            setSubscriptionErrorMessage(t("Subscription plan has expired, kindly contact VerifAI support"));
+          } else {
+            setSubscriptionErrorMessage(t("You don't have an active Subscription plan, kindly contact VerifAI support"));
+          }
+          setShowSubscriptionErrorDialog(true);
+          return;
+        }
+        // Check max frameworks limit
+        if (statusData.maxFrameworksAllowed !== undefined && statusData.frameworksUsed >= statusData.maxFrameworksAllowed) {
+          setSubscriptionErrorMessage(t("Maximum frameworks limit reached. Your plan allows") + ` ${statusData.maxFrameworksAllowed} ` + t("frameworks") + `. ` + t("Kindly contact VerifAI support to upgrade your plan."));
+          setShowSubscriptionErrorDialog(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+    }
+
     setSubscribingId(frameworkId);
     try {
       const response = await fetch(`/api/grc/customers/${customerId}/frameworks/subscribe`, {
@@ -2397,6 +2426,25 @@ export default function CustomerFrameworkOverviewPage() {
                 )}
               </Button>
             </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subscription Error Dialog */}
+      <Dialog open={showSubscriptionErrorDialog} onOpenChange={setShowSubscriptionErrorDialog}>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-red-600">{t("Error")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5">
+            <p className="text-slate-600">{subscriptionErrorMessage}</p>
+          </div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+            <Button size="sm" onClick={() => setShowSubscriptionErrorDialog(false)}>
+              {t("OK")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

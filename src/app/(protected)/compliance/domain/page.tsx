@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
+
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -68,7 +69,6 @@ export default function DomainPage() {
   const [formData, setFormData] = useState({
     code: "",
     name: "",
-    description: "",
   });
 
   const [domainErrors, setDomainErrors] = useState<Record<string, string>>({});
@@ -107,7 +107,7 @@ export default function DomainPage() {
 
   const handleOpenCreate = async () => {
     setEditingDomain(null);
-    setFormData({ code: "", name: "", description: "" });
+    setFormData({ code: "", name: "" });
     setDomainErrors({});
     try {
       const response = await fetch("/api/control-domains/next-code");
@@ -136,7 +136,6 @@ export default function DomainPage() {
     setFormData({
       code: domain.code || "",
       name: domain.name,
-      description: domain.description || "",
     });
     setDomainErrors({});
     setIsDialogOpen(true);
@@ -153,7 +152,7 @@ export default function DomainPage() {
         const response = await fetch("/api/control-domains/" + editingDomain.id, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: formData.name.trim(), description: formData.description }),
+          body: JSON.stringify({ name: formData.name.trim() }),
         });
         if (response.ok) {
           toast({ title: t("Success"), description: t("Domain updated successfully") });
@@ -167,7 +166,7 @@ export default function DomainPage() {
         const response = await fetch("/api/control-domains", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: formData.name.trim(), description: formData.description }),
+          body: JSON.stringify({ name: formData.name.trim() }),
         });
         if (response.ok) {
           toast({ title: t("Success"), description: t("Domain created successfully") });
@@ -310,14 +309,13 @@ export default function DomainPage() {
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Domain Code")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain Name")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedDomains.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-0">
+                <TableCell colSpan={3} className="py-0">
                   <div className="py-16 text-center">
                     <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                       <Layers className="h-6 w-6 text-primary-400" />
@@ -332,7 +330,6 @@ export default function DomainPage() {
                 <TableRow key={domain.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                   <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{domain.code || "-"}</TableCell>
                   <TableCell className="py-3 text-sm font-medium text-slate-800">{domain.name}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-600 max-w-[300px] truncate">{domain.description || "-"}</TableCell>
                   <TableCell className="py-3 pe-5">
                     <div className="flex items-center gap-0.5">
                       <Button
@@ -419,15 +416,8 @@ export default function DomainPage() {
                 </div>
               )}
             </div>
-            <div>
-              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t("Enter description")}
-                className="mt-1.5 w-full bg-white min-h-[100px]"
-              />
-            </div>
+
+
           </div>
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsDialogOpen(false); setDomainErrors({}); }}>

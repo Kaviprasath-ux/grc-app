@@ -183,13 +183,10 @@ export const PATCH = withAuth(
       if (body.status !== undefined) {
         updateData.status = body.status;
       }
-      if (body.completionDate !== undefined) {
-        updateData.completionDate = body.completionDate ? new Date(body.completionDate) : null;
-      }
 
-      // If marking as completed, set completion date if not provided
-      if (body.status === 'Completed' && !body.completionDate) {
-        updateData.completionDate = new Date();
+      // If marking as completed, set actualEndDate if not already set
+      if (body.status === 'Completed' && !existingEngagement.actualEndDate) {
+        updateData.actualEndDate = new Date();
       }
 
       const engagement = await prisma.auditEngagement.update({

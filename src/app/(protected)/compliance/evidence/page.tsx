@@ -178,6 +178,8 @@ export default function EvidencePage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const searchTermRef = useRef(searchTerm);
+  searchTermRef.current = searchTerm;
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
 
@@ -228,7 +230,7 @@ export default function EvidencePage() {
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
       if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
-      if (searchTerm) params.append("search", searchTerm);
+      if (searchTermRef.current) params.append("search", searchTermRef.current);
       // Don't include status filter - we want total counts
       params.append("limit", "1000"); // Get all to count
 
@@ -260,7 +262,7 @@ export default function EvidencePage() {
     } catch (error) {
       console.error("Error fetching status counts:", error);
     }
-  }, [frameworkFilter, departmentFilter, searchTerm]);
+  }, [frameworkFilter, departmentFilter]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -300,7 +302,7 @@ export default function EvidencePage() {
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
       if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
-      if (searchTerm) params.append("search", searchTerm);
+      if (searchTermRef.current) params.append("search", searchTermRef.current);
       if (selectedStatus) params.append("status", selectedStatus);
       params.append("page", currentPage.toString());
       params.append("limit", itemsPerPage.toString());
@@ -317,7 +319,7 @@ export default function EvidencePage() {
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, departmentFilter, searchTerm, selectedStatus, currentPage]);
+  }, [frameworkFilter, departmentFilter, selectedStatus, currentPage]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
@@ -412,6 +414,7 @@ export default function EvidencePage() {
   const handleSearch = () => {
     setCurrentPage(1);
     fetchEvidences();
+    fetchStatusCounts();
   };
 
   const handleCreate = async () => {

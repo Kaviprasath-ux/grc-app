@@ -84,8 +84,9 @@ interface User {
 
 // RBAC roles mapped by function
 // Note: For Audit function, roles are filtered based on who is creating the user
+// Note: Contributor role is hidden/disabled - not available for selection
 const rolesByFunction: Record<string, string[]> = {
-  Business: ["DepartmentReviewer", "DepartmentContributor", "Contributor"],
+  Business: ["DepartmentReviewer", "DepartmentContributor"],
   Security: ["Reviewer"],
   Audit: ["AuditHead", "AuditManager", "Auditor", "Auditee", "AuditUser"],
 };
@@ -96,6 +97,7 @@ const customerAdminAuditRoles = ["AuditHead"];
 const auditHeadAuditRoles = ["AuditManager", "Auditee"];
 
 // All assignable roles for filtering (excludes GRCAdministrator)
+// Note: Contributor role is hidden/disabled - not available for filtering
 const allUserRoles = [
   "CustomerAdministrator",
   "AuditHead",
@@ -104,7 +106,6 @@ const allUserRoles = [
   "Auditor",
   "Auditee",
   "Reviewer",
-  "Contributor",
   "DepartmentReviewer",
   "DepartmentContributor",
 ];
@@ -157,6 +158,10 @@ export default function UsersPage() {
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Subscription error dialog
+  const [showSubscriptionErrorDialog, setShowSubscriptionErrorDialog] = useState(false);
+  const [subscriptionErrorMessage, setSubscriptionErrorMessage] = useState("");
+
   // Validation error states
   const [userFormErrors, setUserFormErrors] = useState<Record<string, string>>({});
   const [changePasswordErrors, setChangePasswordErrors] = useState<Record<string, string>>({});
@@ -195,7 +200,11 @@ export default function UsersPage() {
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
-      if (userRes.ok) setUsers(await userRes.json());
+      if (userRes.ok) {
+        const allUsers = await userRes.json();
+        // Hide CustomerAdministrator from the users list
+        setUsers(allUsers.filter((u: User) => u.role !== "CustomerAdministrator"));
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -212,6 +221,34 @@ export default function UsersPage() {
     } catch (error) {
       console.error("Error fetching reporting managers:", error);
     }
+  };
+
+  // Check subscription before opening new user dialog
+  const handleNewAccountClick = async () => {
+    try {
+      const res = await fetch("/api/subscription-status");
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.allowed) {
+          if (data.reason === "expired") {
+            setSubscriptionErrorMessage(t("Subscription plan has expired, kindly contact VerifAI support"));
+          } else {
+            setSubscriptionErrorMessage(t("You don't have an active Subscription plan, kindly contact VerifAI support"));
+          }
+          setShowSubscriptionErrorDialog(true);
+          return;
+        }
+        // Check max accounts limit
+        if (data.maxAccountsAllowed !== undefined && data.accountsUsed >= data.maxAccountsAllowed) {
+          setSubscriptionErrorMessage(t("Maximum accounts limit reached. Your plan allows") + ` ${data.maxAccountsAllowed} ` + t("accounts") + `. ` + t("Kindly contact VerifAI support to upgrade your plan."));
+          setShowSubscriptionErrorDialog(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+    }
+    setIsAddUserOpen(true);
   };
 
   // User CRUD
@@ -358,11 +395,16 @@ export default function UsersPage() {
       const res = await fetch(`/api/users/${userToDelete.id}`, { method: "DELETE" });
       if (res.ok) {
         setUsers(users.filter((u) => u.id !== userToDelete.id));
+        toast({ title: t("Success"), description: t("User deleted successfully") });
         setDeleteDialogOpen(false);
         setUserToDelete(null);
+      } else {
+        const data = await res.json();
+        toast({ title: t("Error"), description: data.error || t("Failed to delete user"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting user:", error);
+      toast({ title: t("Error"), description: t("Failed to delete user"), variant: "destructive" });
     }
   };
 
@@ -775,7 +817,7 @@ export default function UsersPage() {
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
-              <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
+              <Button size="sm" onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New Account")}
               </Button>
@@ -926,7 +968,7 @@ export default function UsersPage() {
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
-              <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
+              <Button size="sm" onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New Account")}
               </Button>
@@ -2001,6 +2043,53 @@ export default function UsersPage() {
             </Button>
             <Button onClick={handleChangePassword} disabled={changingPassword}>
               {changingPassword ? t("Changing...") : t("Change Password")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete User")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to delete")} <strong>{userToDelete?.fullName}</strong>? {t("This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setDeleteDialogOpen(false); setUserToDelete(null); }}>
+              {t("Cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeleteUser}
+            >
+              {t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Subscription Error Dialog */}
+      <Dialog open={showSubscriptionErrorDialog} onOpenChange={setShowSubscriptionErrorDialog}>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-red-600">{t("Error")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-5">
+            <p className="text-slate-600">{subscriptionErrorMessage}</p>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+            <Button size="sm" onClick={() => setShowSubscriptionErrorDialog(false)}>
+              {t("OK")}
             </Button>
           </div>
         </DialogContent>

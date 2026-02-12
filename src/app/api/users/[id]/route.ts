@@ -145,6 +145,25 @@ export const DELETE = withAuth(
       }
 
       await prisma.user.delete({ where: { id } });
+
+      // Decrement accountsUsed in active subscription plan
+      if (existingUser.customerAccountId) {
+        const now = new Date();
+        const activePlan = await prisma.subscriptionPlan.findFirst({
+          where: {
+            customerAccountId: existingUser.customerAccountId,
+            status: "Active",
+            expiryDate: { gte: now },
+          },
+        });
+        if (activePlan && activePlan.accountsUsed > 0) {
+          await prisma.subscriptionPlan.update({
+            where: { id: activePlan.id },
+            data: { accountsUsed: { decrement: 1 } },
+          });
+        }
+      }
+
       return NextResponse.json({ message: "User deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting user:", error);
