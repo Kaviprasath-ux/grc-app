@@ -20,7 +20,9 @@ const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 function resolveDiskPath(filePath: string): string {
   const p = (filePath || '').replace(/^\/+/, '');
   if (path.isAbsolute(p)) return p;
-  return path.join(process.cwd(), p || 'uploads');
+  // On Vercel, files are stored in /tmp/uploads
+  const baseDir = process.env.VERCEL ? '/tmp' : process.cwd();
+  return path.join(baseDir, p || 'uploads');
 }
 
 /**

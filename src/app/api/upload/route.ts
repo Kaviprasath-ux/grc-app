@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { saveUploadedFile } from "@/lib/file-upload";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,36 +14,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get file details
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "artifacts");
-    await mkdir(uploadsDir, { recursive: true });
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const originalName = file.name;
-    const extension = path.extname(originalName);
-    const baseName = path.basename(originalName, extension);
-    const uniqueFileName = `${baseName}-${timestamp}${extension}`;
-
-    // Save file
-    const filePath = path.join(uploadsDir, uniqueFileName);
-    await writeFile(filePath, buffer);
+    const { urlPath, fileName } = await saveUploadedFile(file, "artifacts");
 
     // Return file info
+    const extension = path.extname(file.name);
     const fileType = extension.replace(".", "").toLowerCase();
 
     return NextResponse.json({
       success: true,
       file: {
-        originalName,
-        fileName: uniqueFileName,
+        originalName: file.name,
+        fileName,
         fileType,
         fileSize: file.size,
-        filePath: `/uploads/artifacts/${uniqueFileName}`,
+        filePath: urlPath,
       },
     });
   } catch (error) {

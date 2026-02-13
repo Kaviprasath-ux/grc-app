@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { saveUploadedFile } from '@/lib/file-upload';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -41,25 +40,13 @@ export const POST = withAuth(
         );
       }
 
-      // Create upload directory
-      const uploadDir = path.join(process.cwd(), 'uploads', 'fieldwork', engagementId);
-      await mkdir(uploadDir, { recursive: true });
-
       const uploadedFiles = [];
 
       for (const file of files) {
         if (file instanceof File) {
-          // Generate unique filename
-          const timestamp = Date.now();
+          const subDir = `fieldwork/${engagementId}`;
+          const { urlPath, fileName } = await saveUploadedFile(file, subDir);
           const originalName = file.name;
-          const ext = path.extname(originalName);
-          const baseName = path.basename(originalName, ext);
-          const fileName = `${baseName}_${timestamp}${ext}`;
-          const filePath = path.join(uploadDir, fileName);
-
-          // Write file to disk
-          const buffer = Buffer.from(await file.arrayBuffer());
-          await writeFile(filePath, buffer);
 
           // For workpapers, we need to create an evidence request first to attach files
           // For simplicity, we'll create a general evidence request for workpapers
@@ -96,7 +83,7 @@ export const POST = withAuth(
                 fileName: originalName,
                 fileType: documentType || file.type,
                 fileSize: file.size,
-                filePath: `/uploads/fieldwork/${engagementId}/${fileName}`,
+                filePath: urlPath,
               },
             });
 
@@ -136,7 +123,7 @@ export const POST = withAuth(
                 fileName: originalName,
                 fileType: documentType || file.type,
                 fileSize: file.size,
-                filePath: `/uploads/fieldwork/${engagementId}/${fileName}`,
+                filePath: urlPath,
               },
             });
 

@@ -16,7 +16,9 @@ interface RouteContext {
 function resolveDiskPath(filePath: string): string {
   const p = (filePath || '').replace(/^\/+/, '');
   if (path.isAbsolute(p)) return p;
-  return path.join(process.cwd(), p || 'uploads');
+  // On Vercel, files are stored in /tmp/uploads
+  const baseDir = process.env.VERCEL ? '/tmp' : process.cwd();
+  return path.join(baseDir, p || 'uploads');
 }
 
 /**

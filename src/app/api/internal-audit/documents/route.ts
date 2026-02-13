@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
-import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { saveUploadedFile } from "@/lib/file-upload";
 
 // GET documents organized by category with pagination
 export const GET = withAuth(
@@ -135,22 +135,10 @@ export const POST = withAuth(
         );
       }
 
-      // Create uploads directory if it doesn't exist
-      const uploadsDir = path.join(process.cwd(), "uploads", "documents");
-      await mkdir(uploadsDir, { recursive: true });
-
-      // Generate unique filename
-      const timestamp = Date.now();
+      // Save file to disk (uses /tmp on Vercel)
+      const { urlPath, buffer } = await saveUploadedFile(file, "documents");
       const originalName = file.name;
       const ext = path.extname(originalName);
-      const baseName = path.basename(originalName, ext);
-      const uniqueFileName = `${baseName}-${timestamp}${ext}`;
-      const filePath = path.join(uploadsDir, uniqueFileName);
-
-      // Write file to disk
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      await writeFile(filePath, buffer);
 
       // Generate document code - find the highest existing code and increment
       const lastDoc = await prisma.internalAuditDocument.findFirst({
@@ -177,7 +165,7 @@ export const POST = withAuth(
           fileName: originalName,
           fileType: ext.replace(".", "").toLowerCase(),
           fileSize: buffer.length,
-          filePath: `/uploads/documents/${uniqueFileName}`,
+          filePath: urlPath,
           uploadedAt: new Date(),
           ...(customerAccountId ? { customerAccountId } : {}),
           ...(auditHeadId ? { auditHeadId } : {}),

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
-import { writeFile, mkdir, unlink } from 'fs/promises';
+import { unlink } from 'fs/promises';
 import path from 'path';
+import { saveUploadedFile, getUploadBaseDir } from '@/lib/file-upload';
 
 interface RouteContext {
   params: Promise<{ id: string; taskId: string }>;
@@ -56,24 +57,12 @@ export const POST = withAuth(
         );
       }
 
-      // Create upload directory
-      const uploadDir = path.join(process.cwd(), 'uploads', 'fieldwork', engagementId, 'tasks');
-      await mkdir(uploadDir, { recursive: true });
-
-      // Generate unique filename
-      const timestamp = Date.now();
+      const subDir = `fieldwork/${engagementId}/tasks`;
+      const { urlPath } = await saveUploadedFile(file, subDir);
       const originalName = file.name;
-      const ext = path.extname(originalName);
-      const baseName = path.basename(originalName, ext);
-      const fileName = `${baseName}_${timestamp}${ext}`;
-      const filePath = path.join(uploadDir, fileName);
-
-      // Write file to disk
-      const buffer = Buffer.from(await file.arrayBuffer());
-      await writeFile(filePath, buffer);
 
       // Return file info (task update is done separately via PATCH)
-      const documentPath = `/uploads/fieldwork/${engagementId}/tasks/${fileName}`;
+      const documentPath = urlPath;
 
       return NextResponse.json({
         document: documentPath,
@@ -119,7 +108,9 @@ export const DELETE = withAuth(
 
       // Delete the file
       try {
-        const filePath = path.join(process.cwd(), documentPath);
+        const baseDir = getUploadBaseDir();
+        const relativePath = documentPath.replace(/^\/uploads\//, '');
+        const filePath = path.join(baseDir, relativePath);
         await unlink(filePath);
       } catch (err) {
         console.warn('Could not delete document file:', err);

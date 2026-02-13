@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile, stat } from 'fs/promises';
 import path from 'path';
+import { getUploadBaseDir } from '@/lib/file-upload';
 
 interface RouteContext {
   params: Promise<{ path: string[] }>;
@@ -30,14 +31,14 @@ export async function GET(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'File path required' }, { status: 400 });
     }
 
-    // Construct the file path
+    // Construct the file path (uses /tmp/uploads on Vercel)
     const relativePath = pathSegments.join('/');
-    const filePath = path.join(process.cwd(), 'uploads', relativePath);
+    const uploadsDir = getUploadBaseDir();
+    const filePath = path.join(uploadsDir, relativePath);
 
     // Security check: ensure the path doesn't escape the uploads directory
-    const uploadsDir = path.join(process.cwd(), 'uploads');
     const resolvedPath = path.resolve(filePath);
-    if (!resolvedPath.startsWith(uploadsDir)) {
+    if (!resolvedPath.startsWith(path.resolve(uploadsDir))) {
       return NextResponse.json({ error: 'Invalid file path' }, { status: 403 });
     }
 
