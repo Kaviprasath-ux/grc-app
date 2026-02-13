@@ -3787,6 +3787,11 @@ export default function AssetSettingsPage() {
         {/* CIA Range Warning Dialog */}
         <Dialog open={isCiaRangeWarningOpen} onOpenChange={setIsCiaRangeWarningOpen}>
           <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</DialogTitle>
+              </DialogHeader>
+            </div>
             <div className="px-6 py-6">
               <p className="text-sm text-slate-600">
                 {t("Value is not in CIA Range..")}
