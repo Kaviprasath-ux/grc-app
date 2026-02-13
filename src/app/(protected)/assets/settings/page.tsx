@@ -245,6 +245,7 @@ export default function AssetSettingsPage() {
   const [isScoringDeleteOpen, setIsScoringDeleteOpen] = useState(false);
   const [selectedScoringConfig, setSelectedScoringConfig] = useState<ScoringConfig | null>(null);
   const [isCiaWarningOpen, setIsCiaWarningOpen] = useState(false);
+  const [isCiaRangeWarningOpen, setIsCiaRangeWarningOpen] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -1007,6 +1008,19 @@ export default function AssetSettingsPage() {
 
     setFieldErrors({});
 
+    // Validate high_of_all value is within CIA range
+    if (scoringCalculationType === "high_of_all") {
+      const allCiaValues = ciaRatings.map(r => r.value);
+      if (allCiaValues.length > 0) {
+        const minCia = Math.min(...allCiaValues);
+        const maxCia = Math.max(...allCiaValues);
+        if (scoringConfigForm.maxScore < minCia || scoringConfigForm.maxScore > maxCia) {
+          setIsCiaRangeWarningOpen(true);
+          return;
+        }
+      }
+    }
+
     const currentConfigs = getCurrentConfigs();
 
     // Check for duplicate rating name
@@ -1107,6 +1121,19 @@ export default function AssetSettingsPage() {
     }
 
     setFieldErrors({});
+
+    // Validate high_of_all value is within CIA range
+    if (scoringCalculationType === "high_of_all") {
+      const allCiaValues = ciaRatings.map(r => r.value);
+      if (allCiaValues.length > 0) {
+        const minCia = Math.min(...allCiaValues);
+        const maxCia = Math.max(...allCiaValues);
+        if (scoringConfigForm.maxScore < minCia || scoringConfigForm.maxScore > maxCia) {
+          setIsCiaRangeWarningOpen(true);
+          return;
+        }
+      }
+    }
 
     // Check that low range and high range are not the same (for addition/product types)
     if (scoringCalculationType !== "high_of_all" && scoringConfigForm.minScore === scoringConfigForm.maxScore) {
@@ -3753,6 +3780,20 @@ export default function AssetSettingsPage() {
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button onClick={() => setIsCiaWarningOpen(false)}>{t("OK")}</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* CIA Range Warning Dialog */}
+        <Dialog open={isCiaRangeWarningOpen} onOpenChange={setIsCiaRangeWarningOpen}>
+          <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <div className="px-6 py-6">
+              <p className="text-sm text-slate-600">
+                {t("Value is not in CIA Range..")}
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <Button onClick={() => setIsCiaRangeWarningOpen(false)}>{t("OK")}</Button>
             </div>
           </DialogContent>
         </Dialog>
