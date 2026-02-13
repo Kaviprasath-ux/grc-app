@@ -127,8 +127,20 @@ export default function KPIDetailsPage() {
     fetchData();
   }, [fetchData]);
 
+  // Check if KPI configuration has been set up
+  const hasKpiConfig = kpiConfig.objective.trim() !== "" ||
+                       kpiConfig.dataSource.trim() !== "" ||
+                       kpiConfig.expectedValue > 0 ||
+                       kpiConfig.description.trim() !== "" ||
+                       kpiConfig.formula.trim() !== "";
+
   // Generate chart data based on KPI records
   const generateChartData = () => {
+    // Only generate data if there's KPI config or records
+    if (!hasKpiConfig && kpiRecords.length === 0) {
+      return [];
+    }
+
     const chartData = months.map((month, index) => {
       const record = kpiRecords.find((r) => {
         const recordDate = new Date(r.reviewDate);
@@ -136,8 +148,8 @@ export default function KPIDetailsPage() {
       });
       return {
         month,
-        achievedValue: record?.achievedValue || null,
-        expectedValue: kpiConfig.expectedValue || 0,
+        achievedValue: record?.achievedValue ?? null,
+        expectedValue: hasKpiConfig ? kpiConfig.expectedValue : null,
       };
     });
     return chartData;
@@ -337,31 +349,37 @@ export default function KPIDetailsPage() {
 
           {/* Line Chart */}
           <div className="h-[300px] mb-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={generateChartData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="achievedValue"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  dot={{ fill: "#3b82f6", r: 4 }}
-                  name={t("Achieved Value")}
-                  connectNulls={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="expectedValue"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  name={t("Expected Value")}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {generateChartData().length === 0 ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                {t("No KPI data available. Configure KPI details below to see the performance chart.")}
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={generateChartData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="achievedValue"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ fill: "#3b82f6", r: 4 }}
+                    name={t("Achieved Value")}
+                    connectNulls={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="expectedValue"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    name={t("Expected Value")}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Legend */}

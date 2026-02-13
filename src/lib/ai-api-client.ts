@@ -8,6 +8,7 @@
  */
 
 import { getEndpointName } from './ai-endpoints';
+import { getAIUserFriendlyError, formatAIErrorForToast, AIUserError } from './ai-config';
 
 // ============================================================================
 // CONFIGURATION
@@ -164,11 +165,14 @@ class AIApiClient {
         console.log(`[${requestId}] Raw Response:`);
         console.log(responseText.substring(0, 500));
         console.log(`${'═'.repeat(80)}\n`);
+        const userError = getAIUserFriendlyError(response.status || 502, responseText.substring(0, 100));
         throw {
           status: response.status || 502,
           message: `AI service returned non-JSON response: ${responseText.substring(0, 100)}`,
           rawResponse: responseText,
           requestId,
+          userError,
+          userMessage: formatAIErrorForToast(userError),
         };
       }
 
@@ -206,11 +210,14 @@ class AIApiClient {
           }
         }
 
+        const userError = getAIUserFriendlyError(response.status, errorMessage);
         throw {
           status: response.status,
           message: errorMessage,
           data: data,
           requestId,
+          userError,
+          userMessage: formatAIErrorForToast(userError),
         };
       }
 
@@ -239,10 +246,13 @@ class AIApiClient {
         console.error(`[${requestId}] ❌ TIMEOUT ERROR after ${responseTime}ms`);
         console.error(`[${requestId}] Request timed out after 120 seconds`);
         console.log(`${'═'.repeat(80)}\n`);
+        const userError = getAIUserFriendlyError(504, 'Request timed out');
         throw {
           status: 504,
           message: 'AI service request timed out. Please try again.',
           requestId,
+          userError,
+          userMessage: formatAIErrorForToast(userError),
         };
       }
 
@@ -254,10 +264,13 @@ class AIApiClient {
       }
       console.log(`${'═'.repeat(80)}\n`);
 
+      const userError = getAIUserFriendlyError(0, err.message || 'Connection failed');
       throw {
         status: 500,
         message: err.message || 'Failed to connect to AI service',
         requestId,
+        userError,
+        userMessage: formatAIErrorForToast(userError),
       };
     }
   }

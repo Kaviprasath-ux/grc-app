@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 // Force Node.js runtime
@@ -38,17 +38,22 @@ export const GET = withAuth(
         filename = `Annual_Audit_Plan_${year}.pdf`;
       }
 
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
       const engagements = await prisma.auditEngagement.findMany({
         where: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
           OR: [
             {
-              plannedStartDate: {
+              startDate: {
                 gte: startDate,
                 lte: endDate,
               },
             },
             {
-              createdAt: {
+              endDate: {
                 gte: startDate,
                 lte: endDate,
               },
@@ -66,19 +71,23 @@ export const GET = withAuth(
         orderBy: { auditId: 'asc' },
       });
 
-      // Count risks from Risk table (main risk register) for the date range
-      const riskCount = await prisma.risk.count({
+      // Count risks from InternalAuditRisk for the date range (scoped to tenant/audit head)
+      const riskCount = await prisma.internalAuditRisk.count({
         where: {
-          createdAt: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+          creationDate: {
             gte: startDate,
             lte: endDate,
           },
         },
       });
 
-      // Count findings from InternalAuditFinding for the date range
+      // Count findings from InternalAuditFinding for the date range (scoped to tenant/audit head)
       const findingCount = await prisma.internalAuditFinding.count({
         where: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
           createdAt: {
             gte: startDate,
             lte: endDate,

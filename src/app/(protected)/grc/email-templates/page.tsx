@@ -29,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Upload, FileDown, FileUp,Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Upload, FileDown, FileUp,Download, RefreshCw, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -67,6 +67,9 @@ export default function EmailTemplatesPage() {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -280,6 +283,73 @@ export default function EmailTemplatesPage() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSeedTemplates = async () => {
+    setSeeding(true);
+    try {
+      const response = await fetch("/api/grc/email-templates/seed", {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: t("Success"),
+          description: result.message || t("Default templates seeded successfully"),
+        });
+        fetchData();
+      } else {
+        toast({
+          title: t("Error"),
+          description: result.error || t("Failed to seed templates"),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: t("Error"),
+        description: t("Failed to seed templates"),
+        variant: "destructive",
+      });
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const response = await fetch("/api/grc/email-templates/delete-all", {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: t("Success"),
+          description: result.message || t("All templates deleted successfully"),
+        });
+        setShowDeleteAllDialog(false);
+        fetchData();
+      } else {
+        toast({
+          title: t("Error"),
+          description: result.error || t("Failed to delete templates"),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: t("Error"),
+        description: t("Failed to delete templates"),
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -720,6 +790,27 @@ export default function EmailTemplatesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Email Templates")}</h1>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSeedTemplates}
+            disabled={seeding}
+            title={t("Seed default email templates")}
+          >
+            <RefreshCw className={`h-4 w-4 ltr:mr-2 rtl:ml-2 ${seeding ? 'animate-spin' : ''}`} />
+            {seeding ? t("Seeding...") : t("Seed Defaults")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteAllDialog(true)}
+            disabled={templates.length === 0}
+            title={t("Delete all email templates")}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -1183,6 +1274,38 @@ export default function EmailTemplatesPage() {
             </Button>
             <Button onClick={handleDelete} disabled={submitting} size="sm" variant="destructive">
               {submitting ? t("Deleting...") : t("Delete")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete All Confirmation Dialog */}
+      <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                {t("Delete All Templates")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="px-6 py-5">
+            <p className="text-sm text-slate-600">
+              {t("Are you sure you want to delete ALL")} <strong>{templates.length}</strong> {t("email templates? This action cannot be undone.")}
+            </p>
+            <p className="text-sm text-slate-500 mt-2">
+              {t("You can use the 'Seed Defaults' button to restore the default templates after deletion.")}
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setShowDeleteAllDialog(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleDeleteAll} disabled={deletingAll} size="sm" variant="destructive">
+              {deletingAll ? t("Deleting...") : t("Delete All")}
             </Button>
           </div>
         </DialogContent>

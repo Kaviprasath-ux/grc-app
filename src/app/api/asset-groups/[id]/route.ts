@@ -9,7 +9,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description } = body;
+    const { name, description, status, subCategoryId } = body;
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -23,8 +23,11 @@ export async function PUT(
       data: {
         name: name.trim(),
         description: description?.trim() || null,
+        status: status || "Active",
+        subCategoryId: subCategoryId || null,
       },
       include: {
+        subCategory: true,
         _count: {
           select: { assets: true, assetCIAClassifications: true },
         },

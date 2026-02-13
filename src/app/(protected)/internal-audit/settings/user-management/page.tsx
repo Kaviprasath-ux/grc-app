@@ -67,9 +67,9 @@ interface Department {
 
 // Role restrictions:
 // - CustomerAdmin can ONLY create AuditHead users
-// - AuditHead can ONLY create AuditManager and Auditee users
+// - AuditHead can create AuditHead, AuditManager and Auditee users
 const CUSTOMER_ADMIN_ALLOWED_ROLES = ["AuditHead"];
-const AUDIT_HEAD_ALLOWED_ROLES = ["AuditManager", "Auditee"];
+const AUDIT_HEAD_ALLOWED_ROLES = ["AuditHead", "AuditManager", "Auditee"];
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -98,7 +98,7 @@ export default function UserManagementPage() {
       // Customer Admin can ONLY create AuditHead
       return CUSTOMER_ADMIN_ALLOWED_ROLES;
     } else if (isAuditHead) {
-      // Audit Head can ONLY create AuditManager and Auditee
+      // Audit Head can create AuditHead, AuditManager and Auditee
       return AUDIT_HEAD_ALLOWED_ROLES;
     }
     return [];
@@ -201,7 +201,7 @@ export default function UserManagementPage() {
       firstName: "",
       lastName: "",
       fullName: "",
-      userName: "",
+      userName: nextUserId, // Auto-populate with generated ID
       email: "",
       designation: "",
       departmentId: "",
@@ -341,13 +341,14 @@ export default function UserManagementPage() {
       const url = editItem ? `/api/internal-audit/users/${editItem.id}` : "/api/internal-audit/users";
       const method = editItem ? "PUT" : "POST";
 
-      const generatedUserName = formData.userName || nextUserId;
+      // For new users, always use auto-generated ID. For edit, keep existing userName.
+      const userIdToUse = editItem ? formData.userName : nextUserId;
       const body: any = {
-        userId: generatedUserName, // API requires userId
+        userId: userIdToUse, // API requires userId
         firstName: formData.firstName,
         lastName: formData.lastName,
         fullName: formData.fullName || `${formData.firstName} ${formData.lastName}`,
-        userName: generatedUserName,
+        userName: userIdToUse, // Use same value for userName
         email: formData.email,
         designation: formData.designation || null,
         departmentId: formData.departmentId || null,
@@ -588,23 +589,14 @@ export default function UserManagementPage() {
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-5">
-              {/* Row 1: User ID & Username */}
+              {/* Row 1: User ID (System Generated) */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("User ID")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("User ID")} <span className="text-xs text-slate-500">({t("Auto-generated")})</span></Label>
                   <Input
                     value={editItem ? editItem.userName : nextUserId}
                     disabled
                     className="mt-1.5 w-full bg-slate-50"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Username")} <span className="text-red-500">*</span></Label>
-                  <Input
-                    value={formData.userName}
-                    onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-                    placeholder={t("Enter username")}
-                    className="mt-1.5 w-full bg-white"
                   />
                 </div>
               </div>

@@ -212,16 +212,33 @@ export const POST = withAuth(
         );
       }
 
-      // Check if user has a customer account assigned
-      if (!session.customerAccountId) {
+      // Get customerAccountId from session, with fallback DB lookup
+      let customerAccountId = session.customerAccountId;
+
+      if (!customerAccountId && session.id) {
+        const currentUser = await prisma.user.findUnique({
+          where: { id: session.id },
+          select: { customerAccountId: true, customerCode: true },
+        });
+
+        customerAccountId = currentUser?.customerAccountId || null;
+
+        if (!customerAccountId && currentUser?.customerCode) {
+          const account = await prisma.customerAccount.findUnique({
+            where: { code: currentUser.customerCode },
+            select: { id: true },
+          });
+          customerAccountId = account?.id || null;
+        }
+      }
+
+      if (!customerAccountId) {
         console.error("User does not have a customer account assigned:", session.id, session.roles);
         return NextResponse.json(
           { error: "User does not have a customer account assigned. Please contact an administrator." },
           { status: 400 }
         );
       }
-
-      const customerAccountId = session.customerAccountId;
 
       // Check subscription plan limits before creating framework
       const now = new Date();

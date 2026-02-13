@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { notificationService } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -71,14 +71,21 @@ export const POST = withAuth(
 
       // Notify policy assignee that their policy was approved
       if (policy.assigneeId && policy.assigneeId !== session.id && session.customerAccountId) {
-        await notificationService.notifyApprovalGranted({
+        await notificationService.send({
           customerAccountId: session.customerAccountId,
           actorId: session.id,
-          requesterId: policy.assigneeId,
-          entityType: 'Policy',
-          entityId: policy.id,
-          entityName: policy.name,
+          recipientId: policy.assigneeId,
+          event: NOTIFICATION_EVENTS.GOVERNANCE_APPROVED,
+          title: 'Policy Approved',
+          message: `Your policy "${policy.name}" has been approved.`,
+          relatedEntityType: 'policy',
+          relatedEntityId: policy.id,
           link: `/compliance/governance/${policy.id}`,
+          metadata: {
+            policyName: policy.name,
+            approvedBy: session.name || 'Approver',
+          },
+          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
 

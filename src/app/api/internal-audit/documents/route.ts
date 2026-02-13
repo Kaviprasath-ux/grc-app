@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { writeFile, mkdir } from "fs/promises";
+import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
 import path from "path";
+import { saveUploadedFile } from "@/lib/file-upload";
 
 // GET documents organized by category with pagination
-// NOTE: InternalAuditDocument doesn't have auditHeadId - using tenant filter only
 export const GET = withAuth(
   async (request: NextRequest, context, session) => {
     try {
@@ -15,9 +14,9 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get("limit") || "10");
       const skip = (page - 1) * limit;
 
-      // Apply tenant filter only (model doesn't have auditHeadId)
       const tenantFilter = getTenantFilter(session);
-      const baseWhere = { ...tenantFilter };
+      const auditHeadId = getAuditHeadId(session);
+      const baseWhere = { ...tenantFilter, ...(auditHeadId ? { auditHeadId } : {}) };
 
       const where = category ? { ...baseWhere, category } : baseWhere;
 
@@ -116,7 +115,6 @@ export const GET = withAuth(
 );
 
 // POST - Upload a new document
-// NOTE: InternalAuditDocument doesn't have auditHeadId - using tenant filter only
 export const POST = withAuth(
   async (request: NextRequest, context, session) => {
     try {
@@ -126,8 +124,9 @@ export const POST = withAuth(
       const name = formData.get("name") as string;
       const description = formData.get("description") as string;
 
-      // Get tenant ID for data isolation
+      // Get tenant ID and audit head for data isolation
       const customerAccountId = getCustomerAccountId(session);
+      const auditHeadId = getAuditHeadId(session);
 
       if (!file) {
         return NextResponse.json(
@@ -136,22 +135,10 @@ export const POST = withAuth(
         );
       }
 
-      // Create uploads directory if it doesn't exist
-      const uploadsDir = path.join(process.cwd(), "uploads", "documents");
-      await mkdir(uploadsDir, { recursive: true });
-
-      // Generate unique filename
-      const timestamp = Date.now();
+      // Save file to disk (uses /tmp on Vercel)
+      const { urlPath, buffer } = await saveUploadedFile(file, "documents");
       const originalName = file.name;
       const ext = path.extname(originalName);
-      const baseName = path.basename(originalName, ext);
-      const uniqueFileName = `${baseName}-${timestamp}${ext}`;
-      const filePath = path.join(uploadsDir, uniqueFileName);
-
-      // Write file to disk
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      await writeFile(filePath, buffer);
 
       // Generate document code - find the highest existing code and increment
       const lastDoc = await prisma.internalAuditDocument.findFirst({
@@ -178,9 +165,10 @@ export const POST = withAuth(
           fileName: originalName,
           fileType: ext.replace(".", "").toLowerCase(),
           fileSize: buffer.length,
-          filePath: `/uploads/documents/${uniqueFileName}`,
+          filePath: urlPath,
           uploadedAt: new Date(),
           ...(customerAccountId ? { customerAccountId } : {}),
+          ...(auditHeadId ? { auditHeadId } : {}),
         },
       });
 

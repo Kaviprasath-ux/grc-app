@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -434,7 +435,7 @@ export default function AddEvidenceRequestPage() {
           </Label>
           <DatePicker
             value={formData.dueDate}
-            onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : "" })}
+            onChange={(date) => setFormData({ ...formData, dueDate: date ? formatLocalDate(date) : "" })}
             placeholder={t("Select due date")}
             className={validationErrors.dueDate ? 'border-red-500' : ''}
           />

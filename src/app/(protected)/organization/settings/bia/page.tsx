@@ -86,6 +86,7 @@ export default function BIASettingsPage() {
   const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
   const [isRangeDialogOpen, setIsRangeDialogOpen] = useState(false);
   const [isBcpDialogOpen, setIsBcpDialogOpen] = useState(false);
+  const [isRatingWarningOpen, setIsRatingWarningOpen] = useState(false);
 
   // Form states
   const [editingCategory, setEditingCategory] = useState<BIACategory | null>(null);
@@ -220,6 +221,22 @@ export default function BIASettingsPage() {
     if (!rangeLabel?.trim()) errors.rangeLabel = t("Please enter the rating");
     if (highValue === "" || highValue === null || highValue === undefined) errors.rangeHigh = t("Please enter the high range");
     if (lowValue === "" || lowValue === undefined) errors.rangeLow = t("Please enter the low range");
+    if (lowValue !== "" && lowValue !== undefined && highValue !== "" && highValue !== null && highValue !== undefined && Number(lowValue) >= Number(highValue)) {
+      errors.rangeLow = t("Low range must be less than high range");
+    }
+    // Validate High Range based on calculation type
+    if ((calculationType === "Product of all" || calculationType === "Addition of all") && highValue !== "" && highValue !== null && highValue !== undefined) {
+      const maxScore = ratings.length > 0 ? Math.max(...ratings.map(r => r.score)) : 0;
+      const categoryCount = categories.length;
+      if (maxScore > 0) {
+        const maxAllowed = calculationType === "Product of all"
+          ? Math.pow(maxScore, categoryCount)
+          : categoryCount * maxScore;
+        if (Number(highValue) > maxAllowed) {
+          errors.rangeHigh = t("High range must be less than or equal to") + ` ${maxAllowed}`;
+        }
+      }
+    }
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -644,6 +661,10 @@ export default function BIASettingsPage() {
                   <Button
                     size="sm"
                     onClick={() => {
+                      if (ratings.length === 0) {
+                        setIsRatingWarningOpen(true);
+                        return;
+                      }
                       setEditingRange(null);
                       setNewRange({ label: "", lowValue: "", highValue: "" });
                       setFormErrors({});
@@ -1038,6 +1059,25 @@ export default function BIASettingsPage() {
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t("Cancel")}</Button>
             <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* BIA Rating Warning Dialog */}
+      <Dialog open={isRatingWarningOpen} onOpenChange={setIsRatingWarningOpen}>
+        <DialogContent className="sm:max-w-[420px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Warning")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <p className="text-sm text-slate-600">
+              {t("Please add BIA rating before adding scoring ranges.")}
+            </p>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button onClick={() => setIsRatingWarningOpen(false)}>{t("OK")}</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { formatLocalDate } from "@/lib/utils";
 
 interface Process {
   id: string;
@@ -147,7 +148,7 @@ export default function ProcessPage() {
   const [saving, setSaving] = useState(false);
   const [nextProcessId, setNextProcessId] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [formErrors, setFormErrors] = useState({ name: "", ownerId: "" });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const TOTAL_STEPS = 3;
 
@@ -293,7 +294,7 @@ export default function ProcessPage() {
       lastAuditDate: "",
     });
     setUploadedFiles([]);
-    setFormErrors({ name: "", ownerId: "" });
+    setFormErrors({});
 
     // Recalculate next process ID to ensure it's current
     const maxId = processes.reduce((max: number, p: Process) => {
@@ -331,14 +332,27 @@ export default function ProcessPage() {
       piiCapture: process.piiCapture || false,
       operationalComplexity: process.operationalComplexity || "",
       lastAuditDate: process.lastAuditDate
-        ? new Date(process.lastAuditDate).toISOString().split("T")[0]
+        ? formatLocalDate(new Date(process.lastAuditDate))
         : "",
     });
-    setFormErrors({ name: "", ownerId: "" });
+    setFormErrors({});
     setDialogOpen(true);
   };
 
+  const validateStep1 = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = t("Process Name is required");
+    if (!formData.ownerId) errors.ownerId = t("Process Owner is required");
+    if (!formData.processFrequency) errors.processFrequency = t("Process Frequency is required");
+    if (!formData.natureOfImplementation) errors.natureOfImplementation = t("Nature of Implementation is required");
+    if (!formData.operationalComplexity) errors.operationalComplexity = t("Operational Complexity is required");
+    if (!formData.lastAuditDate) errors.lastAuditDate = t("Last Audit Date is required");
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleNext = () => {
+    if (currentStep === 1 && !validateStep1()) return;
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
     }
@@ -353,29 +367,12 @@ export default function ProcessPage() {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setCurrentStep(1);
-    setFormErrors({ name: "", ownerId: "" });
+    setFormErrors({});
   };
 
   const handleSave = async () => {
-    // Clear all errors first
-    setFormErrors({ name: "", ownerId: "" });
-
-    // Validate required fields
-    let hasError = false;
-    const newErrors = { name: "", ownerId: "" };
-
-    if (!formData.name.trim()) {
-      newErrors.name = t("Process name is required");
-      hasError = true;
-    }
-
-    if (!formData.ownerId || !formData.ownerId.trim()) {
-      newErrors.ownerId = t("Process owner is required");
-      hasError = true;
-    }
-
-    if (hasError) {
-      setFormErrors(newErrors);
+    if (!validateStep1()) {
+      setCurrentStep(1);
       return;
     }
 
@@ -980,12 +977,12 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Process Frequency */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Process Frequency")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Process Frequency")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.processFrequency}
-                  onValueChange={(value) => setFormData({ ...formData, processFrequency: value })}
+                  onValueChange={(value) => { setFormData({ ...formData, processFrequency: value }); setFormErrors(prev => ({ ...prev, processFrequency: "" })); }}
                 >
-                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
+                  <SelectTrigger className={`mt-1.5 w-full bg-white border-slate-200 ${formErrors.processFrequency ? "border-red-500" : ""}`}>
                     <SelectValue placeholder={t("Select Process Frequency")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -996,18 +993,17 @@ export default function ProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {formErrors.processFrequency && <p className="text-sm text-red-500 mt-1">{formErrors.processFrequency}</p>}
               </div>
 
               {/* Nature of Implementation */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Nature of Implementation")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Nature of Implementation")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.natureOfImplementation}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, natureOfImplementation: value })
-                  }
+                  onValueChange={(value) => { setFormData({ ...formData, natureOfImplementation: value }); setFormErrors(prev => ({ ...prev, natureOfImplementation: "" })); }}
                 >
-                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
+                  <SelectTrigger className={`mt-1.5 w-full bg-white border-slate-200 ${formErrors.natureOfImplementation ? "border-red-500" : ""}`}>
                     <SelectValue placeholder={t("Select Nature Of Implementation")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1018,6 +1014,7 @@ export default function ProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {formErrors.natureOfImplementation && <p className="text-sm text-red-500 mt-1">{formErrors.natureOfImplementation}</p>}
               </div>
             </div>
 
@@ -1084,14 +1081,15 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Operational Complexity */}
               <div>
-                <Label>{t("Operational Complexity")}</Label>
+                <Label>{t("Operational Complexity")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.operationalComplexity}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, operationalComplexity: value })
-                  }
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, operationalComplexity: value });
+                    setFormErrors({ ...formErrors, operationalComplexity: "" });
+                  }}
                 >
-                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
+                  <SelectTrigger className={`mt-1.5 w-full bg-white border-slate-200 ${formErrors.operationalComplexity ? "border-red-500" : ""}`}>
                     <SelectValue placeholder={t("Select Complexity")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1102,17 +1100,22 @@ export default function ProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {formErrors.operationalComplexity && <p className="text-sm text-red-500 mt-1">{formErrors.operationalComplexity}</p>}
               </div>
 
               {/* Last Audit Date */}
               <div>
-                <Label htmlFor="lastAuditDate">{t("Last Audit Date")}</Label>
+                <Label htmlFor="lastAuditDate">{t("Last Audit Date")} <span className="text-red-500">*</span></Label>
                 <DatePicker
                   value={formData.lastAuditDate}
-                  onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" })}
+                  onChange={(date) => {
+                    setFormData({ ...formData, lastAuditDate: date ? formatLocalDate(date) : "" });
+                    setFormErrors({ ...formErrors, lastAuditDate: "" });
+                  }}
                   placeholder={t("Select date")}
-                  className="mt-1.5"
+                  className={`mt-1.5 ${formErrors.lastAuditDate ? "border-red-500" : ""}`}
                 />
+                {formErrors.lastAuditDate && <p className="text-sm text-red-500 mt-1">{formErrors.lastAuditDate}</p>}
               </div>
             </div>
             </>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { formatLocalDate } from "@/lib/utils";
 import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -295,17 +296,20 @@ export default function ProcessPage() {
           });
         }
       } else {
+        // Use user-friendly error message if available
+        const errorTitle = result.userError?.title || t("AI Generation Failed");
+        const errorDescription = result.userMessage || result.error || t("Please try again later.");
         toast({
-          title: t("AI Generation Failed"),
-          description: result.error || t("Please try again later."),
+          title: t(errorTitle),
+          description: errorDescription,
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("[Process] AI evaluation error:", error);
       toast({
-        title: t("Error"),
-        description: t("Communication with AI service failed."),
+        title: t("Connection Error"),
+        description: t("Unable to reach the AI service. Please check your connection and try again."),
         variant: "destructive",
       });
     } finally {
@@ -389,6 +393,12 @@ export default function ProcessPage() {
     informed: "",
   });
 
+  // Process Form errors
+  const [processFormErrors, setProcessFormErrors] = useState<Record<string, string>>({});
+
+  // Validation helper - allows letters, numbers, and spaces
+  const isAlphanumericWithSpaces = (str: string) => /^[a-zA-Z0-9\s]+$/.test(str);
+
   const resetProcessForm = () => {
     setProcessForm({
       name: "",
@@ -412,6 +422,7 @@ export default function ProcessPage() {
       consulted: "",
       informed: "",
     });
+    setProcessFormErrors({});
     setPendingOnboardingFiles([]);
   };
 
@@ -870,6 +881,19 @@ export default function ProcessPage() {
 
   // Handle Add Process
   const handleAddProcess = async () => {
+    // Validate form
+    const errors: Record<string, string> = {};
+    if (!processForm.name.trim()) {
+      errors.name = t("Please enter the Process Name");
+    } else if (!isAlphanumericWithSpaces(processForm.name.trim())) {
+      errors.name = t("Process Name should only contain letters, numbers and spaces");
+    }
+    if (Object.keys(errors).length > 0) {
+      setProcessFormErrors(errors);
+      return;
+    }
+    setProcessFormErrors({});
+
     setSaving(true);
     try {
       const { responsible, accountable, consulted, informed, frequency, location, kpiRecurrence, kpiReviewDate, assetId, ...rest } = processForm;
@@ -1003,12 +1027,24 @@ export default function ProcessPage() {
     setSaving(false);
   };
 
-  // Generate KPI chart data
+  // Generate KPI chart data - only show data if KPI config exists
   const generateKPIChartData = () => {
+    // Check if KPI config has any meaningful data
+    const hasKpiConfigData = kpiConfig.objective.trim() !== "" ||
+                              kpiConfig.dataSource.trim() !== "" ||
+                              kpiConfig.expectedValue > 0 ||
+                              kpiConfig.description.trim() !== "" ||
+                              kpiConfig.formula.trim() !== "";
+
+    // Return empty array if no KPI config
+    if (!hasKpiConfigData) {
+      return [];
+    }
+
     return kpiMonths.map((month) => ({
       month,
       achievedValue: null,
-      expectedValue: 80,
+      expectedValue: kpiConfig.expectedValue,
     }));
   };
 
@@ -1050,12 +1086,32 @@ export default function ProcessPage() {
       .catch(() => {});
   };
 
-  // Open KPI Modal
-  const openKPIModal = (process: Process) => {
+  // Open KPI Modal and fetch existing KPI data
+  const openKPIModal = async (process: Process) => {
     setSelectedKPIProcess(process);
     setKpiConfig({ objective: "", description: "", dataSource: "", formula: "", expectedValue: 0, targetedAchievedValue: 0 });
     setKpiErrors({});
     setIsKPIModalOpen(true);
+
+    // Fetch existing KPI config for this process
+    try {
+      const res = await fetch(`/api/process-kpi/${process.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) {
+          setKpiConfig({
+            objective: data.config.objective || "",
+            description: data.config.description || "",
+            dataSource: data.config.dataSource || "",
+            formula: data.config.formula || "",
+            expectedValue: data.config.expectedValue || 0,
+            targetedAchievedValue: data.config.targetedAchievedValue || 0,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching KPI config:", error);
+    }
   };
 
   // Save KPI Config
@@ -2445,14 +2501,18 @@ export default function ProcessPage() {
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Basic Information")}</h4>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">{t("Process Name")}</Label>
+                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-red-500">*</span></Label>
                   <Input
                     id="name"
                     value={processForm.name}
-                    onChange={(e) => setProcessForm({ ...processForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setProcessForm({ ...processForm, name: e.target.value });
+                      if (processFormErrors.name) setProcessFormErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("Enter process name")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${processFormErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {processFormErrors.name && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{processFormErrors.name}</p></div>)}
                 </div>
                 <div>
                   <Label htmlFor="description" className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2629,7 +2689,7 @@ export default function ProcessPage() {
                     <div className="mt-1.5">
                       <DatePicker
                         value={processForm.kpiReviewDate}
-                        onChange={(date) => setProcessForm({ ...processForm, kpiReviewDate: date ? date.toISOString().split("T")[0] : "" })}
+                        onChange={(date) => setProcessForm({ ...processForm, kpiReviewDate: date ? formatLocalDate(date) : "" })}
                         placeholder={t("Select date")}
                       />
                     </div>
@@ -2999,8 +3059,8 @@ export default function ProcessPage() {
                       <Label className="text-sm font-medium text-slate-700">{t("Review Date")}</Label>
                       <div className="mt-1.5">
                         <DatePicker
-                          value={editingProcess.reviewDate ? new Date(editingProcess.reviewDate).toISOString().split('T')[0] : ""}
-                          onChange={(date) => setEditingProcess({ ...editingProcess, reviewDate: date ? date.toISOString().split("T")[0] : undefined })}
+                          value={editingProcess.reviewDate ? formatLocalDate(new Date(editingProcess.reviewDate)) : ""}
+                          onChange={(date) => setEditingProcess({ ...editingProcess, reviewDate: date ? formatLocalDate(date) : undefined })}
                           placeholder={t("Select date")}
                         />
                       </div>
@@ -3264,44 +3324,52 @@ export default function ProcessPage() {
                   <div>
                     {/* Line Chart */}
                     <div className="h-[250px] mb-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={generateKPIChartData()}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis domain={[0, 100]} />
-                          <RechartsTooltip />
-                          <Legend />
-                          <Line
-                            type="monotone"
-                            dataKey="achievedValue"
-                            stroke="#3b82f6"
-                            strokeWidth={2}
-                            dot={{ fill: "#3b82f6", r: 4 }}
-                            name={t("Achieved Value")}
-                            connectNulls={false}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="expectedValue"
-                            stroke="#f59e0b"
-                            strokeWidth={2}
-                            name={t("Expected Value")}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      {generateKPIChartData().length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          {t("No KPI data available. Configure KPI details below to see the performance chart.")}
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={generateKPIChartData()}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis domain={[0, 100]} />
+                            <RechartsTooltip />
+                            <Legend />
+                            <Line
+                              type="monotone"
+                              dataKey="achievedValue"
+                              stroke="#3b82f6"
+                              strokeWidth={2}
+                              dot={{ fill: "#3b82f6", r: 4 }}
+                              name={t("Achieved Value")}
+                              connectNulls={false}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="expectedValue"
+                              stroke="#f59e0b"
+                              strokeWidth={2}
+                              name={t("Expected Value")}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
 
-                    {/* Legend */}
-                    <div className="flex justify-end gap-6">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-1 bg-blue-500" />
-                        <span className="text-sm text-slate-600">{t("Achieved Value")}</span>
+                    {/* Legend - only show if chart has data */}
+                    {generateKPIChartData().length > 0 && (
+                      <div className="flex justify-end gap-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-1 bg-blue-500" />
+                          <span className="text-sm text-slate-600">{t("Achieved Value")}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-1 bg-amber-500" />
+                          <span className="text-sm text-slate-600">{t("Expected Value")}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-1 bg-amber-500" />
-                        <span className="text-sm text-slate-600">{t("Expected Value")}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

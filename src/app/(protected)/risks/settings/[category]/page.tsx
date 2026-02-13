@@ -46,6 +46,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
 
 // Type definitions
 interface VulnerabilityCategory {
@@ -196,6 +197,11 @@ export default function RiskSettingsCategoryPage() {
   const [isVulnImportOpen, setIsVulnImportOpen] = useState(false);
   const [vulnImportLoading, setVulnImportLoading] = useState(false);
   const [vulnSelectedFile, setVulnSelectedFile] = useState<File | null>(null);
+
+  // Import dialog states for threats
+  const [isThreatImportOpen, setIsThreatImportOpen] = useState(false);
+  const [threatImportLoading, setThreatImportLoading] = useState(false);
+  const [threatSelectedFile, setThreatSelectedFile] = useState<File | null>(null);
 
   // Form states
   const [vulnCatForm, setVulnCatForm] = useState({ name: "" });
@@ -1156,59 +1162,258 @@ export default function RiskSettingsCategoryPage() {
     }
   };
 
+  // Export handler for threats
+  const handleThreatExport = async () => {
+    try {
+      const response = await fetch("/api/risk-threats/export?format=csv");
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Threats.csv";
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast({ title: t("Success"), description: t("Threats exported successfully") });
+      } else {
+        toast({ title: t("Error"), description: t("Failed to export threats"), variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Failed to export threats:", error);
+      toast({ title: t("Error"), description: t("Failed to export threats"), variant: "destructive" });
+    }
+  };
+
+  // Import handler for threats
+  const handleThreatImport = async () => {
+    if (!threatSelectedFile) return;
+
+    setThreatImportLoading(true);
+    try {
+      const fileName = threatSelectedFile.name.toLowerCase();
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+
+      let headers: string[] = [];
+      const data: Record<string, string>[] = [];
+
+      if (isExcel) {
+        // Parse Excel file
+        const arrayBuffer = await threatSelectedFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1 });
+
+        if (jsonData.length < 2) {
+          toast({ title: t("Error"), description: t("File is empty or has no data rows"), variant: "destructive" });
+          setThreatImportLoading(false);
+          return;
+        }
+
+        const headerRow = jsonData[0];
+        if (Array.isArray(headerRow)) {
+          headers = headerRow.map(h => String(h || "").trim());
+        }
+
+        for (let i = 1; i < jsonData.length; i++) {
+          const rowArray = jsonData[i];
+          if (!Array.isArray(rowArray) || rowArray.length === 0) continue;
+
+          const row: Record<string, string> = {};
+          headers.forEach((header, index) => {
+            row[header] = String(rowArray[index] || "").trim();
+          });
+
+          if (Object.values(row).every(v => !v)) continue;
+          data.push(row);
+        }
+      } else {
+        // Parse CSV file
+        const text = await threatSelectedFile.text();
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+
+        if (lines.length < 2) {
+          toast({ title: t("Error"), description: t("File is empty or has no data rows"), variant: "destructive" });
+          setThreatImportLoading(false);
+          return;
+        }
+
+        headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line.trim()) continue;
+
+          const values: string[] = [];
+          let current = "";
+          let inQuotes = false;
+
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              values.push(current.trim().replace(/^"|"$/g, ""));
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim().replace(/^"|"$/g, ""));
+
+          const row: Record<string, string> = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || "";
+          });
+          data.push(row);
+        }
+      }
+
+      if (data.length === 0) {
+        toast({ title: t("Error"), description: t("No valid data rows found in the file"), variant: "destructive" });
+        setThreatImportLoading(false);
+        return;
+      }
+
+      // Send to API
+      const response = await fetch("/api/risk-threats/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data, columns: headers }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast({ title: t("Import Failed"), description: result.error || t("Failed to import threats"), variant: "destructive" });
+        if (result.results?.errors?.length > 0) {
+          console.error("Import errors:", result.results.errors);
+        }
+      } else {
+        toast({ title: t("Import Successful"), description: result.message });
+        setIsThreatImportOpen(false);
+        setThreatSelectedFile(null);
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      toast({ title: t("Error"), description: t("Failed to process file. Please check the format."), variant: "destructive" });
+    } finally {
+      setThreatImportLoading(false);
+    }
+  };
+
   // Import handler for vulnerabilities
   const handleVulnerabilityImport = async () => {
     if (!vulnSelectedFile) return;
 
     setVulnImportLoading(true);
     try {
-      // Parse CSV file
-      const text = await vulnSelectedFile.text();
-      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      const fileName = vulnSelectedFile.name.toLowerCase();
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
 
-      if (lines.length < 2) {
+      let headers: string[] = [];
+      const data: Record<string, string>[] = [];
+
+      if (isExcel) {
+        // Parse Excel file
+        const arrayBuffer = await vulnSelectedFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        // header: 1 returns array of arrays
+        const jsonData = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1 });
+
+        if (jsonData.length < 2) {
+          toast({
+            title: t("Error"),
+            description: t("File is empty or has no data rows"),
+            variant: "destructive",
+          });
+          setVulnImportLoading(false);
+          return;
+        }
+
+        // First row is headers
+        const headerRow = jsonData[0];
+        if (Array.isArray(headerRow)) {
+          headers = headerRow.map(h => String(h || "").trim());
+        }
+
+        // Rest are data rows
+        for (let i = 1; i < jsonData.length; i++) {
+          const rowArray = jsonData[i];
+          if (!Array.isArray(rowArray) || rowArray.length === 0) continue;
+
+          const row: Record<string, string> = {};
+          headers.forEach((header, index) => {
+            row[header] = String(rowArray[index] || "").trim();
+          });
+
+          // Skip completely empty rows
+          if (Object.values(row).every(v => !v)) continue;
+          data.push(row);
+        }
+      } else {
+        // Parse CSV file
+        const text = await vulnSelectedFile.text();
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+
+        if (lines.length < 2) {
+          toast({
+            title: t("Error"),
+            description: t("File is empty or has no data rows"),
+            variant: "destructive",
+          });
+          setVulnImportLoading(false);
+          return;
+        }
+
+        // Parse headers
+        headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+        // Parse data rows
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line.trim()) continue;
+
+          // Simple CSV parsing (handles basic quoted values)
+          const values: string[] = [];
+          let current = "";
+          let inQuotes = false;
+
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              values.push(current.trim().replace(/^"|"$/g, ""));
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim().replace(/^"|"$/g, ""));
+
+          // Create row object
+          const row: Record<string, string> = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || "";
+          });
+          data.push(row);
+        }
+      }
+
+      if (data.length === 0) {
         toast({
           title: t("Error"),
-          description: t("File is empty or has no data rows"),
+          description: t("No valid data rows found in the file"),
           variant: "destructive",
         });
         setVulnImportLoading(false);
         return;
-      }
-
-      // Parse headers
-      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
-
-      // Parse data rows
-      const data = [];
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line.trim()) continue;
-
-        // Simple CSV parsing (handles basic quoted values)
-        const values: string[] = [];
-        let current = "";
-        let inQuotes = false;
-
-        for (let j = 0; j < line.length; j++) {
-          const char = line[j];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === "," && !inQuotes) {
-            values.push(current.trim().replace(/^"|"$/g, ""));
-            current = "";
-          } else {
-            current += char;
-          }
-        }
-        values.push(current.trim().replace(/^"|"$/g, ""));
-
-        // Create row object
-        const row: Record<string, string> = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || "";
-        });
-        data.push(row);
       }
 
       // Send to API
@@ -1599,11 +1804,21 @@ export default function RiskSettingsCategoryPage() {
         <>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
-            {canCreate && (
-              <Button size="sm" onClick={() => { setThreatForm({ name: "", description: "", categoryId: "" }); setIsAddOpen(true); }}>
-                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Threat")}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsThreatImportOpen(true)}>
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
               </Button>
-            )}
+              <Button variant="outline" size="sm" onClick={handleThreatExport}>
+                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Export")}
+              </Button>
+              {canCreate && (
+                <Button size="sm" onClick={() => { setThreatForm({ name: "", description: "", categoryId: "" }); setIsAddOpen(true); }}>
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Threat")}
+                </Button>
+              )}
+            </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {renderSearchBar(t("Search threats..."))}
@@ -2947,7 +3162,7 @@ export default function RiskSettingsCategoryPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <p className="text-sm text-slate-500">
-                {t("Upload a CSV file to import vulnerabilities. Download the template first to see the required format.")}
+                {t("Upload a CSV or Excel file to import vulnerabilities. Download the template first to see the required format.")}
               </p>
               <div className="bg-slate-50 p-3 rounded-md text-sm">
                 <p className="font-medium mb-1 text-slate-700">{t("Required columns:")}</p>
@@ -2998,12 +3213,12 @@ export default function RiskSettingsCategoryPage() {
                   <p className="text-sm font-medium text-primary-600">{vulnSelectedFile.name}</p>
                 ) : (
                   <p className="text-sm text-slate-500">
-                    {t("Click to select a CSV file")}
+                    {t("Click to select a CSV or Excel file")}
                   </p>
                 )}
                 <input
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   className="hidden"
                   id="vuln-file-upload"
                   onChange={(e) => {
@@ -3037,6 +3252,133 @@ export default function RiskSettingsCategoryPage() {
                 disabled={vulnImportLoading}
               >
                 {vulnImportLoading ? (
+                  <>
+                    <div className="relative h-4 w-4 ltr:mr-2 rtl:ml-2">
+                      <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                    </div>
+                    {t("Importing...")}
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Import")}
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ============================================================ */}
+      {/* Threat Import Dialog                                         */}
+      {/* ============================================================ */}
+      <Dialog open={isThreatImportOpen} onOpenChange={(open) => {
+        setIsThreatImportOpen(open);
+        if (!open) {
+          setThreatSelectedFile(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Threats")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              <p className="text-sm text-slate-500">
+                {t("Upload a CSV or Excel file to import threats. Download the template first to see the required format.")}
+              </p>
+              <div className="bg-slate-50 p-3 rounded-md text-sm">
+                <p className="font-medium mb-1 text-slate-700">{t("Required columns:")}</p>
+                <p className="text-slate-500">
+                  {t("Name, Description, Category")}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch("/api/risk-threats/import");
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "Threat-Import-Template.csv";
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      } else {
+                        toast({
+                          title: t("Error"),
+                          description: t("Failed to download template"),
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Failed to download template:", error);
+                      toast({
+                        title: t("Error"),
+                        description: t("Failed to download template"),
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Download Template")}
+                </Button>
+              </div>
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center">
+                <Upload className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                {threatSelectedFile ? (
+                  <p className="text-sm font-medium text-primary-600">{threatSelectedFile.name}</p>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    {t("Click to select a CSV or Excel file")}
+                  </p>
+                )}
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  className="hidden"
+                  id="threat-file-upload"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setThreatSelectedFile(file);
+                    }
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => document.getElementById("threat-file-upload")?.click()}
+                >
+                  {t("Select File")}
+                </Button>
+              </div>
+            </div>
+          </div>
+          {threatSelectedFile && (
+            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <Button
+                variant="outline"
+                onClick={() => setThreatSelectedFile(null)}
+                disabled={threatImportLoading}
+              >
+                {t("Clear")}
+              </Button>
+              <Button
+                onClick={handleThreatImport}
+                disabled={threatImportLoading}
+              >
+                {threatImportLoading ? (
                   <>
                     <div className="relative h-4 w-4 ltr:mr-2 rtl:ml-2">
                       <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>

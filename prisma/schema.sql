@@ -5,6 +5,7 @@ CREATE TABLE "CustomerAccount" (
     "name" TEXT NOT NULL,
     "logoUrl" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "emailNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -1009,11 +1010,12 @@ CREATE TABLE "AssetCIAClassification" (
     "customerAccountId" TEXT,
     "subCategoryId" TEXT NOT NULL,
     "groupId" TEXT NOT NULL,
-    "confidentiality" TEXT NOT NULL DEFAULT 'low',
-    "confidentialityScore" INTEGER NOT NULL DEFAULT 1,
-    "integrity" TEXT NOT NULL DEFAULT 'low',
-    "integrityScore" INTEGER NOT NULL DEFAULT 1,
-    "availability" TEXT NOT NULL DEFAULT 'low',
+    "sensitivityId" TEXT,
+    "confidentiality" TEXT NOT NULL DEFAULT '',
+    "confidentialityScore" INTEGER NOT NULL DEFAULT 0,
+    "integrity" TEXT NOT NULL DEFAULT '',
+    "integrityScore" INTEGER NOT NULL DEFAULT 0,
+    "availability" TEXT NOT NULL DEFAULT '',
     "availabilityScore" INTEGER NOT NULL DEFAULT 0,
     "assetCriticality" TEXT NOT NULL DEFAULT 'low',
     "assetCriticalityScore" INTEGER NOT NULL DEFAULT 1,
@@ -1812,6 +1814,17 @@ CREATE TABLE "AuditEngagement" (
 );
 
 -- CreateTable
+CREATE TABLE "EngagementComment" (
+    "id" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "comment" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EngagementComment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "AuditFieldwork" (
     "id" TEXT NOT NULL,
     "engagementId" TEXT NOT NULL,
@@ -2242,7 +2255,6 @@ CREATE TABLE "NotificationPreference" (
 -- CreateTable
 CREATE TABLE "EmailSettings" (
     "id" TEXT NOT NULL,
-    "customerAccountId" TEXT NOT NULL,
     "smtpHost" TEXT NOT NULL,
     "smtpPort" INTEGER NOT NULL DEFAULT 587,
     "smtpUser" TEXT NOT NULL,
@@ -2265,7 +2277,6 @@ CREATE TABLE "EmailSettings" (
 -- CreateTable
 CREATE TABLE "EmailTemplate" (
     "id" TEXT NOT NULL,
-    "customerAccountId" TEXT,
     "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -2518,6 +2529,9 @@ CREATE UNIQUE INDEX "AssetSensitivity_customerAccountId_name_key" ON "AssetSensi
 
 -- CreateIndex
 CREATE INDEX "AssetCIAClassification_customerAccountId_idx" ON "AssetCIAClassification"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AssetCIAClassification_sensitivityId_idx" ON "AssetCIAClassification"("sensitivityId");
 
 -- CreateIndex
 CREATE INDEX "AssetScoringConfig_customerAccountId_idx" ON "AssetScoringConfig"("customerAccountId");
@@ -2847,6 +2861,9 @@ CREATE INDEX "AuditEngagement_customerAccountId_idx" ON "AuditEngagement"("custo
 CREATE UNIQUE INDEX "AuditEngagement_customerAccountId_auditId_key" ON "AuditEngagement"("customerAccountId", "auditId");
 
 -- CreateIndex
+CREATE INDEX "EngagementComment_engagementId_idx" ON "EngagementComment"("engagementId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "AuditFieldwork_engagementId_key" ON "AuditFieldwork"("engagementId");
 
 -- CreateIndex
@@ -2875,9 +2892,6 @@ CREATE UNIQUE INDEX "InternalAuditCAPA_customerAccountId_capaId_key" ON "Interna
 
 -- CreateIndex
 CREATE UNIQUE INDEX "InternalAuditDocument_documentCode_key" ON "InternalAuditDocument"("documentCode");
-
--- CreateIndex
-CREATE UNIQUE INDEX "DocumentLibraryIngestJob_runpodJobId_key" ON "DocumentLibraryIngestJob"("runpodJobId");
 
 -- CreateIndex
 CREATE INDEX "DocumentLibraryIngestJob_documentId_idx" ON "DocumentLibraryIngestJob"("documentId");
@@ -2946,19 +2960,10 @@ CREATE INDEX "NotificationPreference_customerAccountId_idx" ON "NotificationPref
 CREATE UNIQUE INDEX "NotificationPreference_userId_notificationType_key" ON "NotificationPreference"("userId", "notificationType");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "EmailSettings_customerAccountId_key" ON "EmailSettings"("customerAccountId");
-
--- CreateIndex
-CREATE INDEX "EmailSettings_customerAccountId_idx" ON "EmailSettings"("customerAccountId");
-
--- CreateIndex
-CREATE INDEX "EmailTemplate_customerAccountId_idx" ON "EmailTemplate"("customerAccountId");
+CREATE UNIQUE INDEX "EmailTemplate_code_key" ON "EmailTemplate"("code");
 
 -- CreateIndex
 CREATE INDEX "EmailTemplate_code_idx" ON "EmailTemplate"("code");
-
--- CreateIndex
-CREATE UNIQUE INDEX "EmailTemplate_customerAccountId_code_key" ON "EmailTemplate"("customerAccountId", "code");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
@@ -3330,6 +3335,9 @@ ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_subC
 ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "AssetGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_sensitivityId_fkey" FOREIGN KEY ("sensitivityId") REFERENCES "AssetSensitivity"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AssetScoringConfig" ADD CONSTRAINT "AssetScoringConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -3645,6 +3653,12 @@ ALTER TABLE "AuditEngagement" ADD CONSTRAINT "AuditEngagement_auditeeId_fkey" FO
 ALTER TABLE "AuditEngagement" ADD CONSTRAINT "AuditEngagement_processId_fkey" FOREIGN KEY ("processId") REFERENCES "Process"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "EngagementComment" ADD CONSTRAINT "EngagementComment_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EngagementComment" ADD CONSTRAINT "EngagementComment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditFieldwork" ADD CONSTRAINT "AuditFieldwork_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -3745,12 +3759,6 @@ ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_cust
 
 -- AddForeignKey
 ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "EmailSettings" ADD CONSTRAINT "EmailSettings_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "EmailTemplate" ADD CONSTRAINT "EmailTemplate_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

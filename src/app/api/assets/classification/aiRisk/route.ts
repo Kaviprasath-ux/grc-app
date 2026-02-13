@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 
-export const maxDuration = 60;
+export const maxDuration = 300; // 5 minutes - requires Vercel Pro plan
 
 /** Set to true to use semantic match API (async job + polling). Currently inactive - use Generate Risks V2. */
 const USE_SEMANTIC_MATCH = false;

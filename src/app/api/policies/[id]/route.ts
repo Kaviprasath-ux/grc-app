@@ -150,18 +150,22 @@ export const PUT = withAuth(
           });
         }
 
-        // Notify new approver if changed and different from actor
+        // Notify new approver if changed and different from actor (submit for approval)
         if (approverId && approverId !== existing.approverId && approverId !== session.id) {
           await notificationService.send({
             customerAccountId: existing.customerAccountId,
             actorId: session.id,
             recipientId: approverId,
-            event: NOTIFICATION_EVENTS.POLICY_ASSIGNED,
-            title: "Policy assigned for your approval",
-            message: `Policy "${policy.name}" has been assigned to you for approval`,
+            event: NOTIFICATION_EVENTS.GOVERNANCE_SUBMIT_FOR_APPROVAL,
+            title: "Policy Submitted for Approval",
+            message: `Policy "${policy.name}" has been submitted for your approval.`,
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            metadata: {
+              policyName: policy.name,
+              submittedBy: session.name || 'User',
+            },
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
@@ -271,18 +275,22 @@ export const PATCH = withAuth(
           });
         }
 
-        // Notify new approver if changed and different from actor
+        // Notify new approver if changed and different from actor (submit for approval)
         if (approverId !== undefined && approverId !== existing.approverId && approverId && approverId !== session.id) {
           await notificationService.send({
             customerAccountId: existing.customerAccountId,
             actorId: session.id,
             recipientId: approverId,
-            event: NOTIFICATION_EVENTS.POLICY_ASSIGNED,
-            title: "Policy assigned for your approval",
-            message: `Policy "${policy.name}" has been assigned to you for approval`,
+            event: NOTIFICATION_EVENTS.GOVERNANCE_SUBMIT_FOR_APPROVAL,
+            title: "Policy Submitted for Approval",
+            message: `Policy "${policy.name}" has been submitted for your approval.`,
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            metadata: {
+              policyName: policy.name,
+              submittedBy: session.name || 'User',
+            },
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }

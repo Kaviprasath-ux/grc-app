@@ -225,6 +225,7 @@ async function main() {
       where: { userName: user.userName },
       update: {
         password: password,
+        customerAccountId, // Ensure customerAccountId is set on update
       },
       create: {
         userId: user.userId,
@@ -238,6 +239,7 @@ async function main() {
         role: user.role,
         function: user.function,
         departmentId: createdDepts[user.department],
+        customerAccountId, // Link to customer account for multi-tenancy
       },
     });
     createdUsers[user.userName] = created.id;

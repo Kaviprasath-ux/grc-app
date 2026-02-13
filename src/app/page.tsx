@@ -19,5 +19,10 @@ export default async function Home() {
     redirect("/internal-audit/dashboard");
   }
 
+  // Redirect Auditee users to Fieldwork (they don't have dashboard access)
+  if (session?.user?.roles?.includes("Auditee")) {
+    redirect("/internal-audit/fieldwork");
+  }
+
   redirect("/dashboard");
 }

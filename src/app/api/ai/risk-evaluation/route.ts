@@ -9,6 +9,7 @@ import {
   notFoundResponse,
   errorResponse,
 } from "@/lib/ai-route-helpers";
+import { getAIUserFriendlyError, formatAIErrorForToast } from "@/lib/ai-config";
 
 /**
  * POST /api/ai/risk-evaluation
@@ -255,7 +256,12 @@ async function handler(
 
     } catch (error: unknown) {
         const latencyMs = Date.now() - startTime;
-        const err = error as { message?: string; status?: number };
+        const err = error as {
+            message?: string;
+            status?: number;
+            userError?: { title: string; description: string; suggestion?: string; retryable: boolean };
+            userMessage?: string;
+        };
         console.error("[Risk Evaluation] Error:", err);
 
         await aiAuditService.logOperation({
@@ -268,7 +274,19 @@ async function handler(
             userId: session.id
         });
 
-        return errorResponse(err.message || "Failed to generate risk evaluation", err.status || 500);
+        // Include user-friendly error in response
+        const statusCode = err.status || 500;
+        const userError = err.userError || getAIUserFriendlyError(statusCode, err.message);
+        const userMessage = err.userMessage || formatAIErrorForToast(userError);
+
+        return NextResponse.json(
+            {
+                error: err.message || "Failed to generate risk evaluation",
+                userError,
+                userMessage,
+            },
+            { status: statusCode }
+        );
     }
 }
 

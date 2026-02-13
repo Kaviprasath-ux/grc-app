@@ -58,6 +58,7 @@ import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DatePicker } from "@/components/ui/date-picker";
+import { formatLocalDate } from "@/lib/utils";
 
 interface Department {
   id: string;
@@ -247,6 +248,9 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [findingDetailMode, setFindingDetailMode] = useState<"view" | "edit">("view");
   const [selectedFindingData, setSelectedFindingData] = useState<any>(null);
   const [loadingFindingDetail, setLoadingFindingDetail] = useState(false);
+  const [editFinding, setEditFinding] = useState({ findingTitle: "", severity: "", criteria: "", condition: "", cause: "", effect: "", recommendation: "", responsiblePersonId: "", status: "", targetClosureDate: "" });
+  const [savingEditFinding, setSavingEditFinding] = useState(false);
+  const [editFindingTitleError, setEditFindingTitleError] = useState("");
 
   // Other Documents states
   const [newDocumentDialogOpen, setNewDocumentDialogOpen] = useState(false);
@@ -422,7 +426,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     } catch (error) { console.error("Failed to fetch findings:", error); }
   };
 
-  const fetchFindingDetails = async (findingId: string) => {
+  const fetchFindingDetails = async (findingId: string, mode?: "view" | "edit") => {
     setLoadingFindingDetail(true);
     setSelectedFindingData(null);
     try {
@@ -430,6 +434,21 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       if (response.ok) {
         const data = await response.json();
         setSelectedFindingData(data);
+        if (mode === "edit") {
+          setEditFinding({
+            findingTitle: data.title || "",
+            severity: data.severity || "Medium",
+            criteria: data.criteria || "",
+            condition: data.condition || "",
+            cause: data.cause || "",
+            effect: data.effect || "",
+            recommendation: data.recommendation || "",
+            responsiblePersonId: data.responsiblePersonId || "",
+            status: data.status || "Open",
+            targetClosureDate: data.targetDate ? data.targetDate.split("T")[0] : "",
+          });
+          setEditFindingTitleError("");
+        }
       } else {
         toast.error(t("Failed to fetch finding details"));
       }
@@ -607,6 +626,46 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     } catch (error) { console.error("Error deleting finding:", error); toast.error(t("Failed to delete finding")); } finally { setDeletingFinding(false); }
   };
 
+  const handleSaveEditFinding = async () => {
+    if (!selectedFindingId) return;
+    if (!editFinding.findingTitle.trim()) { setEditFindingTitleError(t("Finding title is required")); return; }
+    setEditFindingTitleError("");
+    setSavingEditFinding(true);
+    try {
+      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings/${selectedFindingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editFinding.findingTitle,
+          severity: editFinding.severity || "Medium",
+          criteria: editFinding.criteria || null,
+          condition: editFinding.condition || null,
+          cause: editFinding.cause || null,
+          effect: editFinding.effect || null,
+          recommendation: editFinding.recommendation || null,
+          responsiblePersonId: editFinding.responsiblePersonId || null,
+          status: editFinding.status || "Open",
+          targetDate: editFinding.targetClosureDate || null,
+        }),
+      });
+      if (response.ok) {
+        toast.success(t("Finding updated successfully"));
+        setFindingDetailDialogOpen(false);
+        setSelectedFindingId(null);
+        setSelectedFindingData(null);
+        fetchFindings();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t("Failed to update finding"));
+      }
+    } catch (error) {
+      console.error("Error updating finding:", error);
+      toast.error(t("Failed to update finding"));
+    } finally {
+      setSavingEditFinding(false);
+    }
+  };
+
   const handleUploadDocument = async () => {
     if (!newDocument.title.trim()) { setNewDocumentTitleError(t("Document title is required")); return; }
     if (uploadedFiles.length === 0) { setNewDocumentFileError(t("Please select a file to upload")); return; }
@@ -769,15 +828,16 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   };
 
   const handleSendResponse = async () => {
-    if (!auditeeClariEvidence) return;
+    const pendingRequests = filteredEvidenceRequests.filter((er) => er.status === 'Pending');
+    if (pendingRequests.length === 0) return;
     setSendingResponse(true);
     try {
       if (respondFiles.length > 0) {
         const formData = new FormData();
         respondFiles.forEach((file) => formData.append("files", file));
-        await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${auditeeClariEvidence.id}/attachments`, { method: "POST", body: formData });
+        await Promise.all(pendingRequests.map((er) => fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${er.id}/attachments`, { method: "POST", body: formData })));
       }
-      await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${auditeeClariEvidence.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "Submitted", clarificationComment: null, clarificationDocumentName: null, clarificationByUserId: null, clarificationByUserName: null, clarificationSentAt: null }) });
+      await Promise.all(pendingRequests.map((er) => fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${er.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "Submitted", clarificationComment: null, clarificationDocumentName: null, clarificationByUserId: null, clarificationByUserName: null, clarificationSentAt: null }) })));
       toast.success(t("Response submitted successfully")); setRespondDialogOpen(false); setAuditeeClariDialogOpen(false); setAuditeeClariEvidence(null); setRespondComment(""); setRespondFiles([]); setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); fetchEvidenceRequests();
     } catch (error) { console.error("Error sending response:", error); toast.error(t("Failed to send response")); } finally { setSendingResponse(false); }
   };
@@ -1354,6 +1414,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                     <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)} className="h-8 w-8"><Paperclip className="h-5 w-5 text-slate-700" /></Button>
                                   </div>
                                 </div>
+                                </div>
+                            ))}
                                 {er.status === 'Pending' && (
                                   <div className="flex justify-end mt-4">
                                     <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setAuditeeClariEvidence(er); setRespondDialogOpen(true); }}>{t("Submit Response")}</Button>
@@ -1512,7 +1574,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                   <TableCell className="py-3 pe-5">
                                     <div className="flex items-center gap-0.5">
                                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("view"); fetchFindingDetails(finding.id); setFindingDetailDialogOpen(true); }} title={t("View")}><Eye className="h-4 w-4" /></Button>
-                                      {isAuditHead && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("edit"); fetchFindingDetails(finding.id); setFindingDetailDialogOpen(true); }} title={t("Edit")} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setFindingToDelete(finding); setDeleteFindingDialogOpen(true); }} title={t("Delete")} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
+                                      {isAuditHead && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("edit"); fetchFindingDetails(finding.id, "edit"); setFindingDetailDialogOpen(true); }} title={t("Edit")} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setFindingToDelete(finding); setDeleteFindingDialogOpen(true); }} title={t("Delete")} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -1914,7 +1976,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                   <DatePicker
                     value={fullFinding.targetClosureDate}
                     onChange={(date) =>
-                      setFullFinding({ ...fullFinding, targetClosureDate: date ? date.toISOString().split("T")[0] : "" })
+                      setFullFinding({ ...fullFinding, targetClosureDate: date ? formatLocalDate(date) : "" })
                     }
                     placeholder={t("Select target closure date")}
                     className="w-full"
@@ -2416,6 +2478,112 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
             </div>
+          ) : selectedFindingData && findingDetailMode === "edit" ? (
+            <>
+              {/* Edit Form - Scrollable Content */}
+              <div className="px-6 py-6 space-y-8 overflow-y-auto flex-1">
+                {/* Basic Information Section */}
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2 pb-2">
+                    <div className="h-1 w-1 rounded-full bg-primary-600"></div>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Basic Information")}</h3>
+                  </div>
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">{t("Finding Title")} <span className="text-red-500">*</span></Label>
+                      <Input value={editFinding.findingTitle} onChange={(e) => { setEditFinding({ ...editFinding, findingTitle: e.target.value }); setEditFindingTitleError(""); }} placeholder={t("Enter a descriptive title for this finding")} className={`w-full bg-white focus:border-primary-500 focus:ring-primary-200 ${editFindingTitleError ? "border-red-500" : "border-slate-300"}`} />
+                      {editFindingTitleError && <p className="text-sm text-red-500 mt-1">{editFindingTitleError}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">{t("Severity")}</Label>
+                      <Select value={editFinding.severity} onValueChange={(value) => setEditFinding({ ...editFinding, severity: value })}>
+                        <SelectTrigger className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200"><SelectValue placeholder={t("Select severity level")} /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>{t("Low")}</span></SelectItem>
+                          <SelectItem value="Medium"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-yellow-500"></span>{t("Medium")}</span></SelectItem>
+                          <SelectItem value="High"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-500"></span>{t("High")}</span></SelectItem>
+                          <SelectItem value="Critical"><span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500"></span>{t("Critical")}</span></SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4Cs Analysis Section */}
+                <div className="space-y-5 pt-4 border-t border-slate-200">
+                  <div className="flex items-center gap-2 pb-2">
+                    <div className="h-1 w-1 rounded-full bg-primary-600"></div>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Finding Analysis (4Cs)")}</h3>
+                  </div>
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 flex items-center gap-2"><span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">1</span>{t("Criteria (What should be)")}</Label>
+                      <Textarea value={editFinding.criteria} onChange={(e) => setEditFinding({ ...editFinding, criteria: e.target.value })} placeholder={t("Describe the standard, policy, or expected condition")} rows={3} className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 flex items-center gap-2"><span className="flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">2</span>{t("Condition (What is)")}</Label>
+                      <Textarea value={editFinding.condition} onChange={(e) => setEditFinding({ ...editFinding, condition: e.target.value })} placeholder={t("Describe the actual situation observed")} rows={3} className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 flex items-center gap-2"><span className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">3</span>{t("Cause (Why it happened)")}</Label>
+                      <Textarea value={editFinding.cause} onChange={(e) => setEditFinding({ ...editFinding, cause: e.target.value })} placeholder={t("Identify the root cause of the finding")} rows={3} className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 flex items-center gap-2"><span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-700 text-xs font-bold">4</span>{t("Effect (The consequence)")}</Label>
+                      <Textarea value={editFinding.effect} onChange={(e) => setEditFinding({ ...editFinding, effect: e.target.value })} placeholder={t("Describe the impact or potential consequences")} rows={3} className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">{t("Recommendation")}</Label>
+                      <Textarea value={editFinding.recommendation} onChange={(e) => setEditFinding({ ...editFinding, recommendation: e.target.value })} placeholder={t("Provide recommendations to address the finding")} rows={3} className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200 resize-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CAPA Section */}
+                <div className="space-y-5 pt-4 border-t border-slate-200">
+                  <div className="flex items-center gap-2 pb-2">
+                    <div className="h-1 w-1 rounded-full bg-primary-600"></div>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Corrective & Preventive Actions (CAPA)")}</h3>
+                  </div>
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">{t("Responsible Person")}</Label>
+                      <Select value={editFinding.responsiblePersonId} onValueChange={(value) => setEditFinding({ ...editFinding, responsiblePersonId: value })}>
+                        <SelectTrigger className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200"><SelectValue placeholder={t("Select responsible person")} /></SelectTrigger>
+                        <SelectContent>
+                          {auditees.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>{user.fullName}{user.department?.name && (<span className="text-slate-500 text-xs ml-2">({user.department.name})</span>)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                      <Select value={editFinding.status} onValueChange={(value) => setEditFinding({ ...editFinding, status: value })}>
+                        <SelectTrigger className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200"><SelectValue placeholder={t("Select status")} /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Open">{t("Open")}</SelectItem>
+                          <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
+                          <SelectItem value="Closed">{t("Closed")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">{t("Target Closure Date")}</Label>
+                      <DatePicker value={editFinding.targetClosureDate} onChange={(date) => setEditFinding({ ...editFinding, targetClosureDate: date ? formatLocalDate(date) : "" })} placeholder={t("Select target closure date")} className="w-full" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg flex justify-end gap-3 flex-shrink-0">
+                <Button variant="outline" onClick={() => { setFindingDetailDialogOpen(false); setSelectedFindingId(null); setSelectedFindingData(null); }} className="px-5">{t("Cancel")}</Button>
+                <Button onClick={handleSaveEditFinding} disabled={savingEditFinding} className="bg-primary-600 hover:bg-primary-700 px-5">
+                  {savingEditFinding ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : (<><Save className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Save Finding")}</>)}
+                </Button>
+              </div>
+            </>
           ) : selectedFindingData ? (
             <>
               <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">

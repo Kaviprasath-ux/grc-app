@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,6 +128,7 @@ export default function EditProcessPage() {
   const [locationError, setLocationError] = useState("");
 
   const TOTAL_STEPS = 3;
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     name: "",
@@ -196,11 +198,11 @@ export default function EditProcessPage() {
           piiCapture: process.piiCapture || false,
           recurrence: process.recurrence || "",
           reviewDate: process.reviewDate
-            ? new Date(process.reviewDate).toISOString().split("T")[0]
+            ? formatLocalDate(new Date(process.reviewDate))
             : "",
           operationalComplexity: process.operationalComplexity || "",
           lastAuditDate: process.lastAuditDate
-            ? new Date(process.lastAuditDate).toISOString().split("T")[0]
+            ? formatLocalDate(new Date(process.lastAuditDate))
             : "",
         });
       } else {
@@ -243,7 +245,21 @@ export default function EditProcessPage() {
     }
   };
 
+  const validateStep1 = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = t("Process Name is required");
+    if (!formData.ownerId) errors.ownerId = t("Process Owner is required");
+    if (!formData.processFrequency) errors.processFrequency = t("Process Frequency is required");
+    if (!formData.natureOfImplementation) errors.natureOfImplementation = t("Nature of Implementation is required");
+    if (!formData.location) errors.location = t("Location is required");
+    if (!formData.operationalComplexity) errors.operationalComplexity = t("Operational Complexity is required");
+    if (!formData.lastAuditDate) errors.lastAuditDate = t("Last Audit Date is required");
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleNext = () => {
+    if (currentStep === 1 && !validateStep1()) return;
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
     }
@@ -256,8 +272,9 @@ export default function EditProcessPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast({ title: t("Error"), description: t("Please enter a process name"), variant: "destructive" });
+    if (!validateStep1()) {
+      setCurrentStep(1);
+      toast({ title: t("Error"), description: t("Please fill all required fields in Step 1"), variant: "destructive" });
       return;
     }
 
@@ -461,14 +478,15 @@ export default function EditProcessPage() {
                   <Input value={processCode} disabled className="mt-2 bg-muted" />
                 </div>
                 <div>
-                  <Label htmlFor="name">{t("Process Name")} *</Label>
+                  <Label htmlFor="name">{t("Process Name")} <span className="text-red-500">*</span></Label>
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFieldErrors(prev => ({ ...prev, name: "" })); }}
                     placeholder={t("Enter Process Name")}
-                    className="mt-2"
+                    className={`mt-2 ${fieldErrors.name ? "border-red-500" : ""}`}
                   />
+                  {fieldErrors.name && <p className="text-sm text-red-500 mt-1">{fieldErrors.name}</p>}
                 </div>
               </div>
 
@@ -504,12 +522,12 @@ export default function EditProcessPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>{t("Process Owner")}</Label>
+                  <Label>{t("Process Owner")} <span className="text-red-500">*</span></Label>
                   <Select
                     value={formData.ownerId}
-                    onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
+                    onValueChange={(value) => { setFormData({ ...formData, ownerId: value }); setFieldErrors(prev => ({ ...prev, ownerId: "" })); }}
                   >
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className={`mt-2 ${fieldErrors.ownerId ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select Owner")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -520,18 +538,19 @@ export default function EditProcessPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.ownerId && <p className="text-sm text-red-500 mt-1">{fieldErrors.ownerId}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>{t("Process Frequency")}</Label>
+                  <Label>{t("Process Frequency")} <span className="text-red-500">*</span></Label>
                   <div className="flex gap-2 mt-2">
                     <Select
                       value={formData.processFrequency}
-                      onValueChange={(value) => setFormData({ ...formData, processFrequency: value })}
+                      onValueChange={(value) => { setFormData({ ...formData, processFrequency: value }); setFieldErrors(prev => ({ ...prev, processFrequency: "" })); }}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.processFrequency ? "border-red-500" : ""}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -552,15 +571,16 @@ export default function EditProcessPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.processFrequency && <p className="text-sm text-red-500 mt-1">{fieldErrors.processFrequency}</p>}
                 </div>
                 <div>
-                  <Label>{t("Nature of Implementation")}</Label>
+                  <Label>{t("Nature of Implementation")} <span className="text-red-500">*</span></Label>
                   <div className="flex gap-2 mt-2">
                     <Select
                       value={formData.natureOfImplementation}
-                      onValueChange={(value) => setFormData({ ...formData, natureOfImplementation: value })}
+                      onValueChange={(value) => { setFormData({ ...formData, natureOfImplementation: value }); setFieldErrors(prev => ({ ...prev, natureOfImplementation: "" })); }}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.natureOfImplementation ? "border-red-500" : ""}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -581,17 +601,18 @@ export default function EditProcessPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.natureOfImplementation && <p className="text-sm text-red-500 mt-1">{fieldErrors.natureOfImplementation}</p>}
                 </div>
               </div>
 
               <div>
-                <Label>{t("Location")}</Label>
+                <Label>{t("Location")} <span className="text-red-500">*</span></Label>
                 <div className="flex gap-2 mt-2">
                   <Select
                     value={formData.location}
-                    onValueChange={(value) => setFormData({ ...formData, location: value })}
+                    onValueChange={(value) => { setFormData({ ...formData, location: value }); setFieldErrors(prev => ({ ...prev, location: "" })); }}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className={`flex-1 ${fieldErrors.location ? "border-red-500" : ""}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -612,6 +633,7 @@ export default function EditProcessPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+                {fieldErrors.location && <p className="text-sm text-red-500 mt-1">{fieldErrors.location}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -737,7 +759,7 @@ export default function EditProcessPage() {
                     <Label htmlFor="reviewDate">{t("Review Date")}</Label>
                     <DatePicker
                       value={formData.reviewDate}
-                      onChange={(date) => setFormData({ ...formData, reviewDate: date ? date.toISOString().split('T')[0] : "" })}
+                      onChange={(date) => setFormData({ ...formData, reviewDate: date ? formatLocalDate(date) : "" })}
                       placeholder={t("Select date")}
                       className="mt-2"
                     />
@@ -747,12 +769,12 @@ export default function EditProcessPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>{t("Operational Complexity")}</Label>
+                  <Label>{t("Operational Complexity")} <span className="text-red-500">*</span></Label>
                   <Select
                     value={formData.operationalComplexity}
-                    onValueChange={(value) => setFormData({ ...formData, operationalComplexity: value })}
+                    onValueChange={(value) => { setFormData({ ...formData, operationalComplexity: value }); setFieldErrors(prev => ({ ...prev, operationalComplexity: "" })); }}
                   >
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className={`mt-2 ${fieldErrors.operationalComplexity ? "border-red-500" : ""}`}>
                       <SelectValue placeholder={t("Select Complexity")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -763,15 +785,17 @@ export default function EditProcessPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.operationalComplexity && <p className="text-sm text-red-500 mt-1">{fieldErrors.operationalComplexity}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="lastAuditDate">{t("Last Audit Date")}</Label>
+                  <Label htmlFor="lastAuditDate">{t("Last Audit Date")} <span className="text-red-500">*</span></Label>
                   <DatePicker
                     value={formData.lastAuditDate}
-                    onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" })}
+                    onChange={(date) => { setFormData({ ...formData, lastAuditDate: date ? formatLocalDate(date) : "" }); setFieldErrors(prev => ({ ...prev, lastAuditDate: "" })); }}
                     placeholder={t("Select date")}
-                    className="mt-2"
+                    className={`mt-2 ${fieldErrors.lastAuditDate ? "[&>button]:border-red-500" : ""}`}
                   />
+                  {fieldErrors.lastAuditDate && <p className="text-sm text-red-500 mt-1">{fieldErrors.lastAuditDate}</p>}
                 </div>
               </div>
             </div>
@@ -970,12 +994,12 @@ export default function EditProcessPage() {
               {currentStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             {currentStep < TOTAL_STEPS ? (
-              <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
+              <Button onClick={handleNext}>
                 {t("Next")}
                 <ChevronRight className="h-4 w-4 ms-1" />
               </Button>
             ) : (
-              <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
+              <Button onClick={handleSave} disabled={saving}>
                 {saving ? t("Saving...") : t("Update")}
               </Button>
             )}

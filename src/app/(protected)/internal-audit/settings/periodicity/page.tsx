@@ -141,9 +141,24 @@ export default function PeriodicityPage() {
       if (response.ok) {
         setDialogOpen(false);
         fetchItems();
+        toast({
+          title: t("Success"),
+          description: editItem ? t("Periodicity updated successfully") : t("Periodicity created successfully"),
+        });
+      } else {
+        toast({
+          title: t("Error"),
+          description: t("Failed to save periodicity"),
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Failed to save:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to save periodicity"),
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -164,9 +179,24 @@ export default function PeriodicityPage() {
 
       if (response.ok) {
         fetchItems();
+        toast({
+          title: t("Success"),
+          description: t("Periodicity deleted successfully"),
+        });
+      } else {
+        toast({
+          title: t("Error"),
+          description: t("Failed to delete periodicity"),
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Failed to delete:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to delete periodicity"),
+        variant: "destructive",
+      });
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);

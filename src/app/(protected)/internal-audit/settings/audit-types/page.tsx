@@ -121,6 +121,16 @@ export default function AuditTypesPage() {
       if (response.ok) {
         setDialogOpen(false);
         fetchItems();
+        toast({
+          title: t("Success"),
+          description: editItem ? t("Audit type updated successfully") : t("Audit type created successfully"),
+        });
+      } else {
+        toast({
+          title: t("Error"),
+          description: t("Failed to save audit type"),
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Failed to save:", error);
@@ -144,6 +154,16 @@ export default function AuditTypesPage() {
 
       if (response.ok) {
         fetchItems();
+        toast({
+          title: t("Success"),
+          description: t("Audit type deleted successfully"),
+        });
+      } else {
+        toast({
+          title: t("Error"),
+          description: t("Failed to delete audit type"),
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Failed to delete:", error);

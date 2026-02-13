@@ -30,11 +30,16 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
-  // Convert string to Date if needed
+  // Convert string to Date if needed (using local timezone to avoid UTC date shift)
   const dateValue = React.useMemo(() => {
     if (!value) return undefined
     if (value instanceof Date) return value
-    // Parse string date (YYYY-MM-DD format)
+    // Parse YYYY-MM-DD as local date (not UTC) to prevent off-by-one day issue
+    const parts = value.split('-')
+    if (parts.length === 3) {
+      const parsed = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+      return isNaN(parsed.getTime()) ? undefined : parsed
+    }
     const parsed = new Date(value)
     return isNaN(parsed.getTime()) ? undefined : parsed
   }, [value])

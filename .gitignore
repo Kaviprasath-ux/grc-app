@@ -48,6 +48,9 @@ next-env.d.ts
 # Claude Code configuration
 .claude/
 
+# VS Code
+.vscode/
+
 # Database
 *.db
 *.sqlite
@@ -75,6 +78,8 @@ check-capa.ts
 check-user.ts
 test-auth.ts
 cookies.txt
+
+prisma/seed-abhishek.ts
 
 # Prisma debug/migration scripts
 prisma/assign-orphaned-data.ts

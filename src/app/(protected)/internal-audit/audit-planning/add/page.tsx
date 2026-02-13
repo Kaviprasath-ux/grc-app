@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { formatLocalDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -652,7 +653,7 @@ export default function AddEngagementPage() {
             </Label>
             <DatePicker
               value={formData.startDate}
-              onChange={(date) => setFormData({ ...formData, startDate: date ? date.toISOString().split('T')[0] : "" })}
+              onChange={(date) => setFormData({ ...formData, startDate: date ? formatLocalDate(date) : "" })}
               placeholder={t("Select start date")}
             />
           </div>
@@ -662,7 +663,7 @@ export default function AddEngagementPage() {
             </Label>
             <DatePicker
               value={formData.targetDate}
-              onChange={(date) => setFormData({ ...formData, targetDate: date ? date.toISOString().split('T')[0] : "" })}
+              onChange={(date) => setFormData({ ...formData, targetDate: date ? formatLocalDate(date) : "" })}
               placeholder={t("Select target date")}
             />
           </div>

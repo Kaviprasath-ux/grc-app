@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
 
-export const maxDuration = 60;
+export const maxDuration = 300; // 5 minutes - requires Vercel Pro plan
 
 /**
  * POST: Start semantic match job for "Add to Risk Register".

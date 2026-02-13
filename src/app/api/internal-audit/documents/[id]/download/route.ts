@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
 import path from "path";
+import { getUploadBaseDir } from "@/lib/file-upload";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -23,8 +24,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Read file from disk
-    const filePath = path.join(process.cwd(), document.filePath);
+    // Read file from disk (uses /tmp on Vercel)
+    const baseDir = getUploadBaseDir();
+    const relativePath = document.filePath.replace(/^\/uploads\//, '');
+    const filePath = path.join(baseDir, relativePath);
 
     try {
       const fileBuffer = await readFile(filePath);

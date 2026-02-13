@@ -4,10 +4,20 @@ import { withAuthOnly } from "@/lib/api-auth";
 
 export const GET = withAuthOnly(async (req, context, session) => {
   try {
+    const { searchParams } = new URL(req.url);
+    const customerId = searchParams.get("customerId");
+
     let customerAccountId = session.customerAccountId;
 
-    // Fallback: if customerAccountId is not on session, look up via user record
-    if (!customerAccountId) {
+    // If customerId is provided (GRC Admin checking a specific customer), look up that customer's account
+    if (customerId) {
+      const customerUser = await prisma.user.findUnique({
+        where: { id: customerId },
+        select: { customerAccountId: true },
+      });
+      customerAccountId = customerUser?.customerAccountId || null;
+    } else if (!customerAccountId) {
+      // Fallback: if customerAccountId is not on session, look up via user record
       const user = await prisma.user.findUnique({
         where: { id: session.id },
         select: { customerAccountId: true, customerCode: true },
@@ -24,9 +34,13 @@ export const GET = withAuthOnly(async (req, context, session) => {
       }
     }
 
-    // If no customer account (e.g. GRC Admin), allow access
+    // If no customer account found, return not allowed
     if (!customerAccountId) {
-      return NextResponse.json({ allowed: true, reason: null });
+      // For GRC Admin without customerId param, allow access (backwards compat)
+      if (!customerId) {
+        return NextResponse.json({ allowed: true, reason: null });
+      }
+      return NextResponse.json({ allowed: false, reason: "inactive" });
     }
 
     // Get all subscription plans for this customer

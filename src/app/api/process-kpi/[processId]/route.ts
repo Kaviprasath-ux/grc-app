@@ -6,20 +6,24 @@ interface RouteContext {
   params: Promise<{ processId: string }>;
 }
 
-// GET - Fetch KPI config and records for a process
+// GET - Fetch KPI config for a process
 export const GET = withAuth(
   async (req: NextRequest, context: RouteContext) => {
     const { processId } = await context.params;
 
     try {
-      // For now, return empty data since we don't have a ProcessKPI model yet
-      // This can be extended later to store actual KPI data
       const process = await prisma.process.findUnique({
         where: { id: processId },
         select: {
           id: true,
           name: true,
           kpiMeasurementRequired: true,
+          kpiObjective: true,
+          kpiDataSource: true,
+          kpiExpectedValue: true,
+          kpiDescription: true,
+          kpiFormula: true,
+          kpiTargetedValue: true,
         },
       });
 
@@ -27,15 +31,15 @@ export const GET = withAuth(
         return NextResponse.json({ error: "Process not found" }, { status: 404 });
       }
 
-      // Return placeholder KPI data
+      // Return KPI config from process fields
       return NextResponse.json({
         config: {
-          objective: "",
-          dataSource: "",
-          expectedValue: 0,
-          description: "",
-          formula: "",
-          targetedAchievedValue: 0,
+          objective: process.kpiObjective || "",
+          dataSource: process.kpiDataSource || "",
+          expectedValue: process.kpiExpectedValue || 0,
+          description: process.kpiDescription || "",
+          formula: process.kpiFormula || "",
+          targetedAchievedValue: process.kpiTargetedValue || 0,
         },
         records: [],
       });
@@ -54,12 +58,25 @@ export const PUT = withAuth(
 
     try {
       const body = await req.json();
+      const { config } = body;
 
-      // For now, just return success since we don't have a KPI model
-      // This can be extended later to actually store KPI config
+      // Update the process with KPI config fields
+      const updatedProcess = await prisma.process.update({
+        where: { id: processId },
+        data: {
+          kpiObjective: config.objective || null,
+          kpiDataSource: config.dataSource || null,
+          kpiExpectedValue: config.expectedValue || null,
+          kpiDescription: config.description || null,
+          kpiFormula: config.formula || null,
+          kpiTargetedValue: config.targetedAchievedValue || null,
+        },
+      });
+
       return NextResponse.json({
         success: true,
         message: "KPI configuration saved",
+        process: updatedProcess,
       });
     } catch (error) {
       console.error("Error saving KPI config:", error);

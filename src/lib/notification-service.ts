@@ -23,7 +23,7 @@
  * ARCHITECTURAL NOTES:
  * - Centralized and reusable notification creation
  * - Event-driven, not scattered across UI logic
- * - Channel-aware: Inbox now, Email later (via NotificationChannel)
+ * - Multi-channel: Both Inbox and Email by default (via NotificationChannel)
  * - Decoupled from UI pages and widgets
  */
 
@@ -131,7 +131,10 @@ class NotificationService {
       return { success: false, error: validationError };
     }
 
-    const channels = payload.channels || [NOTIFICATION_CHANNELS.INBOX];
+    // Default to both INBOX and EMAIL channels for all notifications
+    const channels = payload.channels || [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL];
+    console.log(`[NotificationService] Sending notification - Event: ${payload.event}, Channels: ${channels.join(', ')}`);
+    console.log(`[NotificationService] Payload channels param:`, payload.channels);
 
     try {
       let notificationId: string | undefined;
@@ -173,7 +176,8 @@ class NotificationService {
       return { success: true, count: 0 };
     }
 
-    const channels = payload.channels || [NOTIFICATION_CHANNELS.INBOX];
+    // Default to both INBOX and EMAIL channels for bulk notifications
+    const channels = payload.channels || [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL];
     let successCount = 0;
 
     try {
@@ -242,17 +246,22 @@ class NotificationService {
    * Respects customer account email notifications toggle (non-mandatory emails).
    */
   private async sendEmailNotification(payload: NotificationPayload): Promise<void> {
+    console.log('[NotificationService] sendEmailNotification called for event:', payload.event);
+    console.log('[NotificationService] Recipient:', payload.recipientId);
+
     try {
       // Check if customer account has email notifications enabled
       const customerAccount = await prisma.customerAccount.findUnique({
         where: { id: payload.customerAccountId },
-        select: { emailNotificationsEnabled: true },
+        select: { emailNotificationsEnabled: true, name: true },
       });
+
+      console.log('[NotificationService] Customer account:', customerAccount?.name, '- Email enabled:', customerAccount?.emailNotificationsEnabled);
 
       // If email notifications are disabled for this customer, skip sending
       // Note: All notifications are currently non-mandatory
       if (customerAccount && !customerAccount.emailNotificationsEnabled) {
-        console.log('[NotificationService] Email notifications disabled for customer account:', payload.customerAccountId);
+        console.log('[NotificationService] Email notifications DISABLED for customer account:', payload.customerAccountId);
         return;
       }
 

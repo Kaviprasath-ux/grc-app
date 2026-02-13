@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { saveUploadedFile } from '@/lib/file-upload';
 
 interface RouteContext {
   params: Promise<{ findingId: string }>;
@@ -76,34 +75,21 @@ export const POST = withAuth(
         );
       }
 
-      // Create upload directory
-      const uploadDir = path.join(process.cwd(), 'uploads', 'findings', findingId);
-      await mkdir(uploadDir, { recursive: true });
-
       const uploadedFiles = [];
 
       for (const file of files) {
         if (file instanceof File) {
-          // Generate unique filename
-          const timestamp = Date.now();
-          const originalName = file.name;
-          const ext = path.extname(originalName);
-          const baseName = path.basename(originalName, ext);
-          const fileName = `${baseName}_${timestamp}${ext}`;
-          const filePath = path.join(uploadDir, fileName);
-
-          // Write file to disk
-          const buffer = Buffer.from(await file.arrayBuffer());
-          await writeFile(filePath, buffer);
+          const subDir = `findings/${findingId}`;
+          const { urlPath } = await saveUploadedFile(file, subDir);
 
           // Create attachment record
           const attachment = await prisma.findingAttachment.create({
             data: {
               findingId: findingId,
-              fileName: originalName,
+              fileName: file.name,
               fileType: file.type,
               fileSize: file.size,
-              filePath: `/uploads/findings/${findingId}/${fileName}`,
+              filePath: urlPath,
             },
           });
 

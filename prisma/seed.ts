@@ -2763,220 +2763,222 @@ async function main() {
   console.log("✅ Artifacts created");
 
   // ==================== INTERNAL AUDIT SETTINGS ====================
+  // NOTE: Audit settings dummy data removed - only User Management data is kept
+  // Users can add their own Categories, Types, Periodicity, Nature of Controls, etc. through the UI
 
-  // Audit Categories
-  const auditCategories = [
-    "Financial Audit",
-    "Operational Audit",
-    "Compliance Audit",
-    "IT Audit",
-    "Performance Audit",
-    "Management Audit",
-    "Special Investigation",
-  ];
+  // // Audit Categories
+  // const auditCategories = [
+  //   "Financial Audit",
+  //   "Operational Audit",
+  //   "Compliance Audit",
+  //   "IT Audit",
+  //   "Performance Audit",
+  //   "Management Audit",
+  //   "Special Investigation",
+  // ];
 
-  for (const name of auditCategories) {
-    // AuditCategory is shared master data (no customerAccountId)
-    const existing = await prisma.auditCategory.findFirst({
-      where: { name },
-    });
-    if (!existing) {
-      await prisma.auditCategory.create({
-        data: { name },
-      });
-    }
-  }
-  console.log("✅ Audit Categories created");
+  // for (const name of auditCategories) {
+  //   // AuditCategory is shared master data (no customerAccountId)
+  //   const existing = await prisma.auditCategory.findFirst({
+  //     where: { name },
+  //   });
+  //   if (!existing) {
+  //     await prisma.auditCategory.create({
+  //       data: { name },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Audit Categories created");
 
-  // Nature of Controls
-  const natureOfControls = [
-    "Preventive",
-    "Detective",
-    "Corrective",
-    "Directive",
-    "Compensating",
-  ];
+  // // Nature of Controls
+  // const natureOfControls = [
+  //   "Preventive",
+  //   "Detective",
+  //   "Corrective",
+  //   "Directive",
+  //   "Compensating",
+  // ];
 
-  for (const label of natureOfControls) {
-    // AuditNatureOfControl is shared master data (no customerAccountId)
-    const existing = await prisma.auditNatureOfControl.findFirst({
-      where: { label },
-    });
-    if (!existing) {
-      await prisma.auditNatureOfControl.create({
-        data: { label },
-      });
-    }
-  }
-  console.log("✅ Nature of Controls created");
+  // for (const label of natureOfControls) {
+  //   // AuditNatureOfControl is shared master data (no customerAccountId)
+  //   const existing = await prisma.auditNatureOfControl.findFirst({
+  //     where: { label },
+  //   });
+  //   if (!existing) {
+  //     await prisma.auditNatureOfControl.create({
+  //       data: { label },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Nature of Controls created");
 
-  // Risk Factors
-  const riskFactors = [
-    "Financial Impact",
-    "Regulatory Compliance",
-    "Operational Efficiency",
-    "Reputational Risk",
-    "Strategic Alignment",
-    "Data Security",
-    "Business Continuity",
-  ];
+  // // Risk Factors
+  // const riskFactors = [
+  //   "Financial Impact",
+  //   "Regulatory Compliance",
+  //   "Operational Efficiency",
+  //   "Reputational Risk",
+  //   "Strategic Alignment",
+  //   "Data Security",
+  //   "Business Continuity",
+  // ];
 
-  for (const label of riskFactors) {
-    // AuditRiskFactor is shared master data (no customerAccountId)
-    const existing = await prisma.auditRiskFactor.findFirst({
-      where: { label },
-    });
-    if (!existing) {
-      await prisma.auditRiskFactor.create({
-        data: { label },
-      });
-    }
-  }
-  console.log("✅ Risk Factors created");
+  // for (const label of riskFactors) {
+  //   // AuditRiskFactor is shared master data (no customerAccountId)
+  //   const existing = await prisma.auditRiskFactor.findFirst({
+  //     where: { label },
+  //   });
+  //   if (!existing) {
+  //     await prisma.auditRiskFactor.create({
+  //       data: { label },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Risk Factors created");
 
-  // Probability Ratings
-  const probabilities = [
-    { label: "Very Low", value: 1 },
-    { label: "Low", value: 2 },
-    { label: "Medium", value: 3 },
-    { label: "High", value: 4 },
-    { label: "Very High", value: 5 },
-  ];
+  // // Probability Ratings
+  // const probabilities = [
+  //   { label: "Very Low", value: 1 },
+  //   { label: "Low", value: 2 },
+  //   { label: "Medium", value: 3 },
+  //   { label: "High", value: 4 },
+  //   { label: "Very High", value: 5 },
+  // ];
 
-  for (const prob of probabilities) {
-    // AuditProbability is shared master data (no customerAccountId)
-    const existing = await prisma.auditProbability.findFirst({
-      where: { label: prob.label },
-    });
-    if (!existing) {
-      await prisma.auditProbability.create({
-        data: { ...prob },
-      });
-    }
-  }
-  console.log("✅ Probability Ratings created");
+  // for (const prob of probabilities) {
+  //   // AuditProbability is shared master data (no customerAccountId)
+  //   const existing = await prisma.auditProbability.findFirst({
+  //     where: { label: prob.label },
+  //   });
+  //   if (!existing) {
+  //     await prisma.auditProbability.create({
+  //       data: { ...prob },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Probability Ratings created");
 
-  // Impact Ratings
-  const impacts = [
-    { label: "Insignificant", value: 1 },
-    { label: "Minor", value: 2 },
-    { label: "Moderate", value: 3 },
-    { label: "Major", value: 4 },
-    { label: "Catastrophic", value: 5 },
-  ];
+  // // Impact Ratings
+  // const impacts = [
+  //   { label: "Insignificant", value: 1 },
+  //   { label: "Minor", value: 2 },
+  //   { label: "Moderate", value: 3 },
+  //   { label: "Major", value: 4 },
+  //   { label: "Catastrophic", value: 5 },
+  // ];
 
-  for (const impact of impacts) {
-    // AuditImpact is shared master data (no customerAccountId)
-    const existing = await prisma.auditImpact.findFirst({
-      where: { label: impact.label },
-    });
-    if (!existing) {
-      await prisma.auditImpact.create({
-        data: { ...impact },
-      });
-    }
-  }
-  console.log("✅ Impact Ratings created");
+  // for (const impact of impacts) {
+  //   // AuditImpact is shared master data (no customerAccountId)
+  //   const existing = await prisma.auditImpact.findFirst({
+  //     where: { label: impact.label },
+  //   });
+  //   if (!existing) {
+  //     await prisma.auditImpact.create({
+  //       data: { ...impact },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Impact Ratings created");
 
-  // Scoring Ranges
-  const scoringRanges = [
-    { label: "Low", lowValue: 1, highValue: 6, calculationType: "Product of all" },
-    { label: "Medium", lowValue: 7, highValue: 14, calculationType: "Product of all" },
-    { label: "High", lowValue: 15, highValue: 20, calculationType: "Product of all" },
-    { label: "Extreme", lowValue: 21, highValue: 25, calculationType: "Product of all" },
-  ];
+  // // Scoring Ranges
+  // const scoringRanges = [
+  //   { label: "Low", lowValue: 1, highValue: 6, calculationType: "Product of all" },
+  //   { label: "Medium", lowValue: 7, highValue: 14, calculationType: "Product of all" },
+  //   { label: "High", lowValue: 15, highValue: 20, calculationType: "Product of all" },
+  //   { label: "Extreme", lowValue: 21, highValue: 25, calculationType: "Product of all" },
+  // ];
 
-  for (const range of scoringRanges) {
-    // AuditScoringRange is shared master data (no customerAccountId)
-    const existing = await prisma.auditScoringRange.findFirst({
-      where: { label: range.label, calculationType: range.calculationType },
-    });
-    if (!existing) {
-      await prisma.auditScoringRange.create({
-        data: { ...range },
-      });
-    }
-  }
-  console.log("✅ Scoring Ranges created");
+  // for (const range of scoringRanges) {
+  //   // AuditScoringRange is shared master data (no customerAccountId)
+  //   const existing = await prisma.auditScoringRange.findFirst({
+  //     where: { label: range.label, calculationType: range.calculationType },
+  //   });
+  //   if (!existing) {
+  //     await prisma.auditScoringRange.create({
+  //       data: { ...range },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Scoring Ranges created");
 
-  // Scoring Configuration - shared master data (no customerAccountId)
-  const scoringConfigId = "scoring-config-default";
-  const existingScoringConfig = await prisma.auditScoringConfig.findFirst({
-    where: { id: scoringConfigId },
-  });
-  if (!existingScoringConfig) {
-    await prisma.auditScoringConfig.create({
-      data: {
-        id: scoringConfigId,
-        probabilityImpactCalcType: "Product of all",
-        riskRatingCalcType: "High of all",
-      },
-    });
-  }
-  console.log("✅ Scoring Configuration created");
+  // // Scoring Configuration - shared master data (no customerAccountId)
+  // const scoringConfigId = "scoring-config-default";
+  // const existingScoringConfig = await prisma.auditScoringConfig.findFirst({
+  //   where: { id: scoringConfigId },
+  // });
+  // if (!existingScoringConfig) {
+  //   await prisma.auditScoringConfig.create({
+  //     data: {
+  //       id: scoringConfigId,
+  //       probabilityImpactCalcType: "Product of all",
+  //       riskRatingCalcType: "High of all",
+  //     },
+  //   });
+  // }
+  // console.log("✅ Scoring Configuration created");
 
-  // Periodicity
-  const periodicities = [
-    { interval: "Annual", months: 12 },
-    { interval: "Semiannual", months: 6 },
-    { interval: "Quarterly", months: 3 },
-    { interval: "Monthly", months: 1 },
-    { interval: "Weekly", months: 0 },
-    { interval: "Ad-hoc", months: 0 },
-  ];
+  // // Periodicity
+  // const periodicities = [
+  //   { interval: "Annual", months: 12 },
+  //   { interval: "Semiannual", months: 6 },
+  //   { interval: "Quarterly", months: 3 },
+  //   { interval: "Monthly", months: 1 },
+  //   { interval: "Weekly", months: 0 },
+  //   { interval: "Ad-hoc", months: 0 },
+  // ];
 
-  for (const period of periodicities) {
-    // AuditPeriodicity is shared master data (no customerAccountId)
-    const existing = await prisma.auditPeriodicity.findFirst({
-      where: { interval: period.interval },
-    });
-    if (!existing) {
-      await prisma.auditPeriodicity.create({
-        data: { ...period },
-      });
-    }
-  }
-  console.log("✅ Periodicity created");
+  // for (const period of periodicities) {
+  //   // AuditPeriodicity is shared master data (no customerAccountId)
+  //   const existing = await prisma.auditPeriodicity.findFirst({
+  //     where: { interval: period.interval },
+  //   });
+  //   if (!existing) {
+  //     await prisma.auditPeriodicity.create({
+  //       data: { ...period },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Periodicity created");
 
-  // Escalation Configuration - shared master data (no customerAccountId)
-  const escalationConfigId = "escalation-config-default";
-  const existingEscalationConfig = await prisma.auditEscalationConfig.findFirst({
-    where: { id: escalationConfigId },
-  });
-  if (!existingEscalationConfig) {
-    await prisma.auditEscalationConfig.create({
-      data: {
-        id: escalationConfigId,
-        responseSubmission: 5,
-        acknowledgement: 1,
-        clarification: 2,
-        issueResolution: 3,
-      },
-    });
-  }
-  console.log("✅ Escalation Configuration created");
+  // // Escalation Configuration - shared master data (no customerAccountId)
+  // const escalationConfigId = "escalation-config-default";
+  // const existingEscalationConfig = await prisma.auditEscalationConfig.findFirst({
+  //   where: { id: escalationConfigId },
+  // });
+  // if (!existingEscalationConfig) {
+  //   await prisma.auditEscalationConfig.create({
+  //     data: {
+  //       id: escalationConfigId,
+  //       responseSubmission: 5,
+  //       acknowledgement: 1,
+  //       clarification: 2,
+  //       issueResolution: 3,
+  //     },
+  //   });
+  // }
+  // console.log("✅ Escalation Configuration created");
 
-  // Audit Types
-  const auditTypes = [
-    "Assurance",
-    "Consulting",
-    "Follow-up",
-    "Special Investigation",
-    "Compliance Review",
-  ];
+  // // Audit Types
+  // const auditTypes = [
+  //   "Assurance",
+  //   "Consulting",
+  //   "Follow-up",
+  //   "Special Investigation",
+  //   "Compliance Review",
+  // ];
 
-  for (const name of auditTypes) {
-    // AuditType is shared master data (no customerAccountId)
-    const existing = await prisma.auditType.findFirst({
-      where: { name },
-    });
-    if (!existing) {
-      await prisma.auditType.create({
-        data: { name },
-      });
-    }
-  }
-  console.log("✅ Audit Types created");
+  // for (const name of auditTypes) {
+  //   // AuditType is shared master data (no customerAccountId)
+  //   const existing = await prisma.auditType.findFirst({
+  //     where: { name },
+  //   });
+  //   if (!existing) {
+  //     await prisma.auditType.create({
+  //       data: { name },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Audit Types created");
 
   // Processes for Audit Library
   const auditProcesses = [
@@ -3187,673 +3189,673 @@ async function main() {
   }
   console.log("✅ Audit Processes created");
 
-  // Internal Audit Risk Register entries
-  const fetchedAuditCategories = await prisma.auditCategory.findMany();
-  const fetchedAuditTypes = await prisma.auditType.findMany();
+  // Internal Audit Risk Register entries - REMOVED (no dummy data)
+  // const fetchedAuditCategories = await prisma.auditCategory.findMany();
+  // const fetchedAuditTypes = await prisma.auditType.findMany();
 
-  const internalAuditRisks = [
-    // Human Resources Department
-    {
-      riskId: "RID001",
-      riskName: "Inadequate Employee Background Verification",
-      department: "Human Resources",
-      sectionProcess: "Recruitment",
-      subProcess: "Pre-employment Screening",
-      activity: "Background Check",
-      category: "Operational Audit",
-      auditType: "Assurance",
-      riskDescription: "Risk of hiring individuals with undisclosed criminal records or false credentials",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "Third-party background verification service for all new hires",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID002",
-      riskName: "Payroll Fraud",
-      department: "Human Resources",
-      sectionProcess: "Payroll Processing",
-      subProcess: "Salary Calculation",
-      activity: "Payroll Reconciliation",
-      category: "Financial Audit",
-      auditType: "Assurance",
-      riskDescription: "Risk of unauthorized payments or ghost employees in payroll system",
-      inherentLikelihood: 2,
-      inherentImpact: 4,
-      controlDescription: "Segregation of duties with monthly payroll audits",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID003",
-      riskName: "Non-compliance with Labor Laws",
-      department: "Human Resources",
-      sectionProcess: "Employee Relations",
-      subProcess: "Leave Management",
-      activity: "Leave Policy Adherence",
-      category: "Compliance Audit",
-      auditType: "Compliance Review",
-      riskDescription: "Risk of legal penalties due to violations of labor regulations",
-      inherentLikelihood: 2,
-      inherentImpact: 4,
-      controlDescription: "Automated HRMS with built-in compliance checks",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 3,
-      status: "Closed",
-    },
-    // Revenue Department
-    {
-      riskId: "RID004",
-      riskName: "Inadequate Financial Controls",
-      department: "Revenue",
-      sectionProcess: "Financial Reporting",
-      subProcess: "Month-end Close",
-      activity: "Journal Entry Review",
-      category: "Financial Audit",
-      auditType: "Assurance",
-      riskDescription: "Risk of material misstatement due to inadequate review of journal entries",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "Dual approval required for journal entries above $10,000",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID005",
-      riskName: "Revenue Recognition Errors",
-      department: "Revenue",
-      sectionProcess: "Revenue Accounting",
-      subProcess: "Sales Order Processing",
-      activity: "Revenue Recognition",
-      category: "Financial Audit",
-      auditType: "Assurance",
-      riskDescription: "Risk of premature or delayed revenue recognition affecting financial statements",
-      inherentLikelihood: 3,
-      inherentImpact: 5,
-      controlDescription: "Automated revenue recognition based on ASC 606 standards",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 2,
-      residualImpact: 4,
-      status: "Under Review",
-    },
-    {
-      riskId: "RID006",
-      riskName: "Accounts Receivable Mismanagement",
-      department: "Revenue",
-      sectionProcess: "Collections",
-      subProcess: "Aging Analysis",
-      activity: "Credit Risk Assessment",
-      category: "Financial Audit",
-      auditType: "Consulting",
-      riskDescription: "Risk of bad debts and cash flow issues due to inadequate collections",
-      inherentLikelihood: 3,
-      inherentImpact: 3,
-      controlDescription: "Weekly aging reports with automated dunning process",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 2,
-      status: "Open",
-    },
-    // IT Operations Department
-    {
-      riskId: "RID007",
-      riskName: "Access Control Weakness",
-      department: "IT Operations",
-      sectionProcess: "Identity Management",
-      subProcess: "User Provisioning",
-      activity: "Access Request Approval",
-      category: "IT Audit",
-      auditType: "Assurance",
-      riskDescription: "Unauthorized access to critical systems due to weak access controls",
-      inherentLikelihood: 4,
-      inherentImpact: 5,
-      controlDescription: "Role-based access control with quarterly access reviews",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 3,
-      residualImpact: 4,
-      status: "Under Review",
-    },
-    {
-      riskId: "RID008",
-      riskName: "Inadequate Backup and Recovery",
-      department: "IT Operations",
-      sectionProcess: "Data Management",
-      subProcess: "Backup Operations",
-      activity: "Disaster Recovery Testing",
-      category: "IT Audit",
-      auditType: "Assurance",
-      riskDescription: "Risk of data loss and extended downtime due to inadequate backup procedures",
-      inherentLikelihood: 3,
-      inherentImpact: 5,
-      controlDescription: "Daily automated backups with quarterly DR drills",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 4,
-      status: "Open",
-    },
-    {
-      riskId: "RID009",
-      riskName: "Change Management Failures",
-      department: "IT Operations",
-      sectionProcess: "Release Management",
-      subProcess: "Change Approval",
-      activity: "Production Deployment",
-      category: "IT Audit",
-      auditType: "Assurance",
-      riskDescription: "System outages or data corruption due to unauthorized or poorly tested changes",
-      inherentLikelihood: 4,
-      inherentImpact: 4,
-      controlDescription: "CAB approval required with rollback procedures for all production changes",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 3,
-      residualImpact: 3,
-      status: "Under Review",
-    },
-    {
-      riskId: "RID010",
-      riskName: "Insufficient System Monitoring",
-      department: "IT Operations",
-      sectionProcess: "Infrastructure Monitoring",
-      subProcess: "Performance Monitoring",
-      activity: "Alert Management",
-      category: "IT Audit",
-      auditType: "Consulting",
-      riskDescription: "Undetected system failures or performance degradation affecting business operations",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "24/7 NOC with automated monitoring and alerting tools",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Open",
-    },
-    // IT Support Department
-    {
-      riskId: "RID011",
-      riskName: "Data Breach Risk",
-      department: "IT Support",
-      sectionProcess: "Data Protection",
-      subProcess: "Data Classification",
-      activity: "Sensitive Data Handling",
-      category: "IT Audit",
-      auditType: "Special Investigation",
-      riskDescription: "Exposure of sensitive customer data due to inadequate protection",
-      inherentLikelihood: 3,
-      inherentImpact: 5,
-      controlDescription: "Data encryption at rest and in transit, DLP tools deployed",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 2,
-      residualImpact: 4,
-      status: "Under Review",
-    },
-    {
-      riskId: "RID012",
-      riskName: "Inadequate Incident Response",
-      department: "IT Support",
-      sectionProcess: "Incident Management",
-      subProcess: "Ticket Resolution",
-      activity: "Security Incident Handling",
-      category: "IT Audit",
-      auditType: "Assurance",
-      riskDescription: "Extended impact of security incidents due to slow or ineffective response",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "CSIRT team with documented incident response playbooks",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID013",
-      riskName: "Phishing and Social Engineering",
-      department: "IT Support",
-      sectionProcess: "Security Awareness",
-      subProcess: "User Training",
-      activity: "Security Education",
-      category: "IT Audit",
-      auditType: "Assurance",
-      riskDescription: "Risk of credential theft and malware infection through phishing attacks",
-      inherentLikelihood: 4,
-      inherentImpact: 4,
-      controlDescription: "Quarterly security awareness training with simulated phishing tests",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 3,
-      residualImpact: 3,
-      status: "Under Review",
-    },
-    // Product Development Department
-    {
-      riskId: "RID014",
-      riskName: "Insecure Code Practices",
-      department: "Product Development",
-      sectionProcess: "Software Development",
-      subProcess: "Code Development",
-      activity: "Security Code Review",
-      category: "IT Audit",
-      auditType: "Assurance",
-      riskDescription: "Security vulnerabilities in production code due to insecure coding practices",
-      inherentLikelihood: 4,
-      inherentImpact: 5,
-      controlDescription: "SAST/DAST tools integrated in CI/CD pipeline with mandatory security training",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 2,
-      residualImpact: 4,
-      status: "Under Review",
-    },
-    {
-      riskId: "RID015",
-      riskName: "Third-Party Library Vulnerabilities",
-      department: "Product Development",
-      sectionProcess: "Dependency Management",
-      subProcess: "Library Updates",
-      activity: "Vulnerability Scanning",
-      category: "IT Audit",
-      auditType: "Assurance",
-      riskDescription: "Exploitation of known vulnerabilities in outdated third-party libraries",
-      inherentLikelihood: 4,
-      inherentImpact: 4,
-      controlDescription: "Automated dependency scanning with monthly update cycles",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID016",
-      riskName: "Inadequate Testing Coverage",
-      department: "Product Development",
-      sectionProcess: "Quality Assurance",
-      subProcess: "Testing",
-      activity: "Test Execution",
-      category: "Operational Audit",
-      auditType: "Consulting",
-      riskDescription: "Production bugs and failures due to insufficient testing before release",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "Mandatory 80% code coverage requirement with automated regression tests",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Open",
-    },
-    // Compliance Department
-    {
-      riskId: "RID017",
-      riskName: "Regulatory Non-Compliance",
-      department: "Compliance",
-      sectionProcess: "Regulatory Monitoring",
-      subProcess: "Compliance Tracking",
-      activity: "Regulatory Updates",
-      category: "Compliance Audit",
-      auditType: "Compliance Review",
-      riskDescription: "Risk of regulatory fines due to failure to comply with new regulations",
-      inherentLikelihood: 2,
-      inherentImpact: 5,
-      controlDescription: "Automated regulatory feed with compliance mapping",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 4,
-      status: "Closed",
-    },
-    {
-      riskId: "RID018",
-      riskName: "Inadequate Privacy Controls",
-      department: "Compliance",
-      sectionProcess: "Privacy Management",
-      subProcess: "GDPR Compliance",
-      activity: "Data Subject Rights",
-      category: "Compliance Audit",
-      auditType: "Assurance",
-      riskDescription: "Non-compliance with data privacy regulations leading to fines and reputational damage",
-      inherentLikelihood: 3,
-      inherentImpact: 5,
-      controlDescription: "Privacy by design framework with automated DSAR workflow",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 4,
-      status: "Open",
-    },
-    {
-      riskId: "RID019",
-      riskName: "Anti-Money Laundering Gaps",
-      department: "Compliance",
-      sectionProcess: "AML Monitoring",
-      subProcess: "Transaction Monitoring",
-      activity: "Suspicious Activity Reporting",
-      category: "Compliance Audit",
-      auditType: "Compliance Review",
-      riskDescription: "Risk of facilitating money laundering due to inadequate monitoring",
-      inherentLikelihood: 2,
-      inherentImpact: 5,
-      controlDescription: "Automated transaction monitoring with quarterly KYC refresh",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 4,
-      status: "Open",
-    },
-    // Procurement Department
-    {
-      riskId: "RID020",
-      riskName: "Vendor Performance Issues",
-      department: "Procurement",
-      sectionProcess: "Vendor Management",
-      subProcess: "Performance Monitoring",
-      activity: "SLA Review",
-      category: "Operational Audit",
-      auditType: "Consulting",
-      riskDescription: "Service disruption due to vendor underperformance",
-      inherentLikelihood: 3,
-      inherentImpact: 3,
-      controlDescription: "Monthly vendor scorecards with escalation procedures",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 2,
-      status: "Open",
-    },
-    {
-      riskId: "RID021",
-      riskName: "Procurement Fraud",
-      department: "Procurement",
-      sectionProcess: "Purchase Order Processing",
-      subProcess: "Vendor Selection",
-      activity: "Bid Evaluation",
-      category: "Financial Audit",
-      auditType: "Special Investigation",
-      riskDescription: "Risk of kickbacks or favoritism in vendor selection process",
-      inherentLikelihood: 2,
-      inherentImpact: 4,
-      controlDescription: "Three-quote requirement with conflict of interest declarations",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID022",
-      riskName: "Third-Party Risk Exposure",
-      department: "Procurement",
-      sectionProcess: "Vendor Onboarding",
-      subProcess: "Vendor Due Diligence",
-      activity: "Risk Assessment",
-      category: "Operational Audit",
-      auditType: "Assurance",
-      riskDescription: "Business disruption or data breaches through third-party vendors",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "Vendor risk assessment program with annual reviews",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Under Review",
-    },
-    // Operations Department
-    {
-      riskId: "RID023",
-      riskName: "Process Inefficiency",
-      department: "Operations",
-      sectionProcess: "Business Operations",
-      subProcess: "Workflow Management",
-      activity: "Process Optimization",
-      category: "Operational Audit",
-      auditType: "Consulting",
-      riskDescription: "Operational delays and cost overruns due to inefficient processes",
-      inherentLikelihood: 3,
-      inherentImpact: 3,
-      controlDescription: "BPM tools with continuous improvement program",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 2,
-      status: "Open",
-    },
-    {
-      riskId: "RID024",
-      riskName: "Business Continuity Gaps",
-      department: "Operations",
-      sectionProcess: "Business Continuity",
-      subProcess: "BCP Planning",
-      activity: "BCP Testing",
-      category: "Operational Audit",
-      auditType: "Assurance",
-      riskDescription: "Extended business disruption due to inadequate continuity planning",
-      inherentLikelihood: 2,
-      inherentImpact: 5,
-      controlDescription: "Annual BCP testing with documented recovery procedures",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 4,
-      status: "Open",
-    },
-    {
-      riskId: "RID025",
-      riskName: "Capacity Management Issues",
-      department: "Operations",
-      sectionProcess: "Resource Planning",
-      subProcess: "Capacity Planning",
-      activity: "Demand Forecasting",
-      category: "Operational Audit",
-      auditType: "Consulting",
-      riskDescription: "Service degradation during peak periods due to insufficient capacity",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "Quarterly capacity reviews with auto-scaling capabilities",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Open",
-    },
-    // Risk Management Department
-    {
-      riskId: "RID026",
-      riskName: "Inadequate Risk Assessment",
-      department: "Risk Management",
-      sectionProcess: "Risk Identification",
-      subProcess: "Risk Analysis",
-      activity: "Risk Scoring",
-      category: "Operational Audit",
-      auditType: "Assurance",
-      riskDescription: "Failure to identify and mitigate critical enterprise risks",
-      inherentLikelihood: 3,
-      inherentImpact: 5,
-      controlDescription: "Quarterly enterprise risk assessments with board reporting",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 4,
-      status: "Open",
-    },
-    {
-      riskId: "RID027",
-      riskName: "Cybersecurity Risk Exposure",
-      department: "Risk Management",
-      sectionProcess: "Cyber Risk Management",
-      subProcess: "Threat Intelligence",
-      activity: "Vulnerability Management",
-      category: "IT Audit",
-      auditType: "Assurance",
-      riskDescription: "Cyber attacks exploiting unpatched vulnerabilities",
-      inherentLikelihood: 4,
-      inherentImpact: 5,
-      controlDescription: "Continuous vulnerability scanning with 30-day patching SLA",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 3,
-      residualImpact: 4,
-      status: "Under Review",
-    },
-    {
-      riskId: "RID028",
-      riskName: "Fraud Risk Exposure",
-      department: "Risk Management",
-      sectionProcess: "Fraud Prevention",
-      subProcess: "Fraud Detection",
-      activity: "Anomaly Detection",
-      category: "Financial Audit",
-      auditType: "Special Investigation",
-      riskDescription: "Financial losses due to internal or external fraud",
-      inherentLikelihood: 2,
-      inherentImpact: 5,
-      controlDescription: "AI-powered fraud detection system with whistleblower hotline",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 4,
-      status: "Open",
-    },
-    // Quality Assurance Department
-    {
-      riskId: "RID029",
-      riskName: "Quality Control Failures",
-      department: "Quality Assurance",
-      sectionProcess: "Quality Management",
-      subProcess: "Product Testing",
-      activity: "Quality Inspection",
-      category: "Operational Audit",
-      auditType: "Assurance",
-      riskDescription: "Product defects reaching customers due to inadequate quality controls",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "Multi-stage inspection process with statistical sampling",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID030",
-      riskName: "Non-compliance with Standards",
-      department: "Quality Assurance",
-      sectionProcess: "Standards Compliance",
-      subProcess: "ISO Certification",
-      activity: "Compliance Verification",
-      category: "Compliance Audit",
-      auditType: "Compliance Review",
-      riskDescription: "Loss of ISO certification due to non-compliance with quality standards",
-      inherentLikelihood: 2,
-      inherentImpact: 4,
-      controlDescription: "Internal audits aligned with ISO 9001 requirements",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID031",
-      riskName: "Customer Complaint Escalation",
-      department: "Quality Assurance",
-      sectionProcess: "Customer Feedback",
-      subProcess: "Complaint Management",
-      activity: "Root Cause Analysis",
-      category: "Operational Audit",
-      auditType: "Consulting",
-      riskDescription: "Reputational damage from unresolved customer complaints",
-      inherentLikelihood: 2,
-      inherentImpact: 3,
-      controlDescription: "CRM-integrated complaint tracking with 48-hour response SLA",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 2,
-      status: "Open",
-    },
-    // Internal Audit Department
-    {
-      riskId: "RID032",
-      riskName: "Audit Coverage Gaps",
-      department: "Internal Audit",
-      sectionProcess: "Audit Planning",
-      subProcess: "Risk-Based Planning",
-      activity: "Audit Universe Review",
-      category: "Operational Audit",
-      auditType: "Assurance",
-      riskDescription: "High-risk areas not covered by internal audit due to inadequate planning",
-      inherentLikelihood: 2,
-      inherentImpact: 4,
-      controlDescription: "Annual risk-based audit plan approved by audit committee",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 3,
-      status: "Open",
-    },
-    {
-      riskId: "RID033",
-      riskName: "Audit Finding Follow-up Delays",
-      department: "Internal Audit",
-      sectionProcess: "CAPA Tracking",
-      subProcess: "Finding Resolution",
-      activity: "Follow-up Reviews",
-      category: "Operational Audit",
-      auditType: "Assurance",
-      riskDescription: "Unresolved audit findings leading to continued risk exposure",
-      inherentLikelihood: 3,
-      inherentImpact: 4,
-      controlDescription: "Automated CAPA tracking with management escalation for overdue items",
-      controlEffectiveness: "Partially Effective",
-      residualLikelihood: 2,
-      residualImpact: 3,
-      status: "Under Review",
-    },
-    {
-      riskId: "RID034",
-      riskName: "Auditor Independence Concerns",
-      department: "Internal Audit",
-      sectionProcess: "Audit Independence",
-      subProcess: "Objectivity Safeguards",
-      activity: "Independence Assessment",
-      category: "Operational Audit",
-      auditType: "Assurance",
-      riskDescription: "Compromised audit objectivity due to conflicts of interest",
-      inherentLikelihood: 1,
-      inherentImpact: 4,
-      controlDescription: "Annual independence declarations with functional reporting to audit committee",
-      controlEffectiveness: "Effective",
-      residualLikelihood: 1,
-      residualImpact: 3,
-      status: "Open",
-    },
-  ];
+  // const internalAuditRisks = [
+  //     // Human Resources Department
+  //     {
+  //       riskId: "RID001",
+  //       riskName: "Inadequate Employee Background Verification",
+  //       department: "Human Resources",
+  //       sectionProcess: "Recruitment",
+  //       subProcess: "Pre-employment Screening",
+  //       activity: "Background Check",
+  //       category: "Operational Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Risk of hiring individuals with undisclosed criminal records or false credentials",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "Third-party background verification service for all new hires",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID002",
+  //       riskName: "Payroll Fraud",
+  //       department: "Human Resources",
+  //       sectionProcess: "Payroll Processing",
+  //       subProcess: "Salary Calculation",
+  //       activity: "Payroll Reconciliation",
+  //       category: "Financial Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Risk of unauthorized payments or ghost employees in payroll system",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 4,
+  //       controlDescription: "Segregation of duties with monthly payroll audits",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID003",
+  //       riskName: "Non-compliance with Labor Laws",
+  //       department: "Human Resources",
+  //       sectionProcess: "Employee Relations",
+  //       subProcess: "Leave Management",
+  //       activity: "Leave Policy Adherence",
+  //       category: "Compliance Audit",
+  //       auditType: "Compliance Review",
+  //       riskDescription: "Risk of legal penalties due to violations of labor regulations",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 4,
+  //       controlDescription: "Automated HRMS with built-in compliance checks",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 3,
+  //       status: "Closed",
+  //     },
+  //     // Revenue Department
+  //     {
+  //       riskId: "RID004",
+  //       riskName: "Inadequate Financial Controls",
+  //       department: "Revenue",
+  //       sectionProcess: "Financial Reporting",
+  //       subProcess: "Month-end Close",
+  //       activity: "Journal Entry Review",
+  //       category: "Financial Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Risk of material misstatement due to inadequate review of journal entries",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "Dual approval required for journal entries above $10,000",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID005",
+  //       riskName: "Revenue Recognition Errors",
+  //       department: "Revenue",
+  //       sectionProcess: "Revenue Accounting",
+  //       subProcess: "Sales Order Processing",
+  //       activity: "Revenue Recognition",
+  //       category: "Financial Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Risk of premature or delayed revenue recognition affecting financial statements",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 5,
+  //       controlDescription: "Automated revenue recognition based on ASC 606 standards",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 4,
+  //       status: "Under Review",
+  //     },
+  //     {
+  //       riskId: "RID006",
+  //       riskName: "Accounts Receivable Mismanagement",
+  //       department: "Revenue",
+  //       sectionProcess: "Collections",
+  //       subProcess: "Aging Analysis",
+  //       activity: "Credit Risk Assessment",
+  //       category: "Financial Audit",
+  //       auditType: "Consulting",
+  //       riskDescription: "Risk of bad debts and cash flow issues due to inadequate collections",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 3,
+  //       controlDescription: "Weekly aging reports with automated dunning process",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 2,
+  //       status: "Open",
+  //     },
+  //     // IT Operations Department
+  //     {
+  //       riskId: "RID007",
+  //       riskName: "Access Control Weakness",
+  //       department: "IT Operations",
+  //       sectionProcess: "Identity Management",
+  //       subProcess: "User Provisioning",
+  //       activity: "Access Request Approval",
+  //       category: "IT Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Unauthorized access to critical systems due to weak access controls",
+  //       inherentLikelihood: 4,
+  //       inherentImpact: 5,
+  //       controlDescription: "Role-based access control with quarterly access reviews",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 3,
+  //       residualImpact: 4,
+  //       status: "Under Review",
+  //     },
+  //     {
+  //       riskId: "RID008",
+  //       riskName: "Inadequate Backup and Recovery",
+  //       department: "IT Operations",
+  //       sectionProcess: "Data Management",
+  //       subProcess: "Backup Operations",
+  //       activity: "Disaster Recovery Testing",
+  //       category: "IT Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Risk of data loss and extended downtime due to inadequate backup procedures",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 5,
+  //       controlDescription: "Daily automated backups with quarterly DR drills",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 4,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID009",
+  //       riskName: "Change Management Failures",
+  //       department: "IT Operations",
+  //       sectionProcess: "Release Management",
+  //       subProcess: "Change Approval",
+  //       activity: "Production Deployment",
+  //       category: "IT Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "System outages or data corruption due to unauthorized or poorly tested changes",
+  //       inherentLikelihood: 4,
+  //       inherentImpact: 4,
+  //       controlDescription: "CAB approval required with rollback procedures for all production changes",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 3,
+  //       residualImpact: 3,
+  //       status: "Under Review",
+  //     },
+  //     {
+  //       riskId: "RID010",
+  //       riskName: "Insufficient System Monitoring",
+  //       department: "IT Operations",
+  //       sectionProcess: "Infrastructure Monitoring",
+  //       subProcess: "Performance Monitoring",
+  //       activity: "Alert Management",
+  //       category: "IT Audit",
+  //       auditType: "Consulting",
+  //       riskDescription: "Undetected system failures or performance degradation affecting business operations",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "24/7 NOC with automated monitoring and alerting tools",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     // IT Support Department
+  //     {
+  //       riskId: "RID011",
+  //       riskName: "Data Breach Risk",
+  //       department: "IT Support",
+  //       sectionProcess: "Data Protection",
+  //       subProcess: "Data Classification",
+  //       activity: "Sensitive Data Handling",
+  //       category: "IT Audit",
+  //       auditType: "Special Investigation",
+  //       riskDescription: "Exposure of sensitive customer data due to inadequate protection",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 5,
+  //       controlDescription: "Data encryption at rest and in transit, DLP tools deployed",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 4,
+  //       status: "Under Review",
+  //     },
+  //     {
+  //       riskId: "RID012",
+  //       riskName: "Inadequate Incident Response",
+  //       department: "IT Support",
+  //       sectionProcess: "Incident Management",
+  //       subProcess: "Ticket Resolution",
+  //       activity: "Security Incident Handling",
+  //       category: "IT Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Extended impact of security incidents due to slow or ineffective response",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "CSIRT team with documented incident response playbooks",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID013",
+  //       riskName: "Phishing and Social Engineering",
+  //       department: "IT Support",
+  //       sectionProcess: "Security Awareness",
+  //       subProcess: "User Training",
+  //       activity: "Security Education",
+  //       category: "IT Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Risk of credential theft and malware infection through phishing attacks",
+  //       inherentLikelihood: 4,
+  //       inherentImpact: 4,
+  //       controlDescription: "Quarterly security awareness training with simulated phishing tests",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 3,
+  //       residualImpact: 3,
+  //       status: "Under Review",
+  //     },
+  //     // Product Development Department
+  //     {
+  //       riskId: "RID014",
+  //       riskName: "Insecure Code Practices",
+  //       department: "Product Development",
+  //       sectionProcess: "Software Development",
+  //       subProcess: "Code Development",
+  //       activity: "Security Code Review",
+  //       category: "IT Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Security vulnerabilities in production code due to insecure coding practices",
+  //       inherentLikelihood: 4,
+  //       inherentImpact: 5,
+  //       controlDescription: "SAST/DAST tools integrated in CI/CD pipeline with mandatory security training",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 4,
+  //       status: "Under Review",
+  //     },
+  //     {
+  //       riskId: "RID015",
+  //       riskName: "Third-Party Library Vulnerabilities",
+  //       department: "Product Development",
+  //       sectionProcess: "Dependency Management",
+  //       subProcess: "Library Updates",
+  //       activity: "Vulnerability Scanning",
+  //       category: "IT Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Exploitation of known vulnerabilities in outdated third-party libraries",
+  //       inherentLikelihood: 4,
+  //       inherentImpact: 4,
+  //       controlDescription: "Automated dependency scanning with monthly update cycles",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID016",
+  //       riskName: "Inadequate Testing Coverage",
+  //       department: "Product Development",
+  //       sectionProcess: "Quality Assurance",
+  //       subProcess: "Testing",
+  //       activity: "Test Execution",
+  //       category: "Operational Audit",
+  //       auditType: "Consulting",
+  //       riskDescription: "Production bugs and failures due to insufficient testing before release",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "Mandatory 80% code coverage requirement with automated regression tests",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     // Compliance Department
+  //     {
+  //       riskId: "RID017",
+  //       riskName: "Regulatory Non-Compliance",
+  //       department: "Compliance",
+  //       sectionProcess: "Regulatory Monitoring",
+  //       subProcess: "Compliance Tracking",
+  //       activity: "Regulatory Updates",
+  //       category: "Compliance Audit",
+  //       auditType: "Compliance Review",
+  //       riskDescription: "Risk of regulatory fines due to failure to comply with new regulations",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 5,
+  //       controlDescription: "Automated regulatory feed with compliance mapping",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 4,
+  //       status: "Closed",
+  //     },
+  //     {
+  //       riskId: "RID018",
+  //       riskName: "Inadequate Privacy Controls",
+  //       department: "Compliance",
+  //       sectionProcess: "Privacy Management",
+  //       subProcess: "GDPR Compliance",
+  //       activity: "Data Subject Rights",
+  //       category: "Compliance Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Non-compliance with data privacy regulations leading to fines and reputational damage",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 5,
+  //       controlDescription: "Privacy by design framework with automated DSAR workflow",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 4,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID019",
+  //       riskName: "Anti-Money Laundering Gaps",
+  //       department: "Compliance",
+  //       sectionProcess: "AML Monitoring",
+  //       subProcess: "Transaction Monitoring",
+  //       activity: "Suspicious Activity Reporting",
+  //       category: "Compliance Audit",
+  //       auditType: "Compliance Review",
+  //       riskDescription: "Risk of facilitating money laundering due to inadequate monitoring",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 5,
+  //       controlDescription: "Automated transaction monitoring with quarterly KYC refresh",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 4,
+  //       status: "Open",
+  //     },
+  //     // Procurement Department
+  //     {
+  //       riskId: "RID020",
+  //       riskName: "Vendor Performance Issues",
+  //       department: "Procurement",
+  //       sectionProcess: "Vendor Management",
+  //       subProcess: "Performance Monitoring",
+  //       activity: "SLA Review",
+  //       category: "Operational Audit",
+  //       auditType: "Consulting",
+  //       riskDescription: "Service disruption due to vendor underperformance",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 3,
+  //       controlDescription: "Monthly vendor scorecards with escalation procedures",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 2,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID021",
+  //       riskName: "Procurement Fraud",
+  //       department: "Procurement",
+  //       sectionProcess: "Purchase Order Processing",
+  //       subProcess: "Vendor Selection",
+  //       activity: "Bid Evaluation",
+  //       category: "Financial Audit",
+  //       auditType: "Special Investigation",
+  //       riskDescription: "Risk of kickbacks or favoritism in vendor selection process",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 4,
+  //       controlDescription: "Three-quote requirement with conflict of interest declarations",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID022",
+  //       riskName: "Third-Party Risk Exposure",
+  //       department: "Procurement",
+  //       sectionProcess: "Vendor Onboarding",
+  //       subProcess: "Vendor Due Diligence",
+  //       activity: "Risk Assessment",
+  //       category: "Operational Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Business disruption or data breaches through third-party vendors",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "Vendor risk assessment program with annual reviews",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Under Review",
+  //     },
+  //     // Operations Department
+  //     {
+  //       riskId: "RID023",
+  //       riskName: "Process Inefficiency",
+  //       department: "Operations",
+  //       sectionProcess: "Business Operations",
+  //       subProcess: "Workflow Management",
+  //       activity: "Process Optimization",
+  //       category: "Operational Audit",
+  //       auditType: "Consulting",
+  //       riskDescription: "Operational delays and cost overruns due to inefficient processes",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 3,
+  //       controlDescription: "BPM tools with continuous improvement program",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 2,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID024",
+  //       riskName: "Business Continuity Gaps",
+  //       department: "Operations",
+  //       sectionProcess: "Business Continuity",
+  //       subProcess: "BCP Planning",
+  //       activity: "BCP Testing",
+  //       category: "Operational Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Extended business disruption due to inadequate continuity planning",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 5,
+  //       controlDescription: "Annual BCP testing with documented recovery procedures",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 4,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID025",
+  //       riskName: "Capacity Management Issues",
+  //       department: "Operations",
+  //       sectionProcess: "Resource Planning",
+  //       subProcess: "Capacity Planning",
+  //       activity: "Demand Forecasting",
+  //       category: "Operational Audit",
+  //       auditType: "Consulting",
+  //       riskDescription: "Service degradation during peak periods due to insufficient capacity",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "Quarterly capacity reviews with auto-scaling capabilities",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     // Risk Management Department
+  //     {
+  //       riskId: "RID026",
+  //       riskName: "Inadequate Risk Assessment",
+  //       department: "Risk Management",
+  //       sectionProcess: "Risk Identification",
+  //       subProcess: "Risk Analysis",
+  //       activity: "Risk Scoring",
+  //       category: "Operational Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Failure to identify and mitigate critical enterprise risks",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 5,
+  //       controlDescription: "Quarterly enterprise risk assessments with board reporting",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 4,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID027",
+  //       riskName: "Cybersecurity Risk Exposure",
+  //       department: "Risk Management",
+  //       sectionProcess: "Cyber Risk Management",
+  //       subProcess: "Threat Intelligence",
+  //       activity: "Vulnerability Management",
+  //       category: "IT Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Cyber attacks exploiting unpatched vulnerabilities",
+  //       inherentLikelihood: 4,
+  //       inherentImpact: 5,
+  //       controlDescription: "Continuous vulnerability scanning with 30-day patching SLA",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 3,
+  //       residualImpact: 4,
+  //       status: "Under Review",
+  //     },
+  //     {
+  //       riskId: "RID028",
+  //       riskName: "Fraud Risk Exposure",
+  //       department: "Risk Management",
+  //       sectionProcess: "Fraud Prevention",
+  //       subProcess: "Fraud Detection",
+  //       activity: "Anomaly Detection",
+  //       category: "Financial Audit",
+  //       auditType: "Special Investigation",
+  //       riskDescription: "Financial losses due to internal or external fraud",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 5,
+  //       controlDescription: "AI-powered fraud detection system with whistleblower hotline",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 4,
+  //       status: "Open",
+  //     },
+  //     // Quality Assurance Department
+  //     {
+  //       riskId: "RID029",
+  //       riskName: "Quality Control Failures",
+  //       department: "Quality Assurance",
+  //       sectionProcess: "Quality Management",
+  //       subProcess: "Product Testing",
+  //       activity: "Quality Inspection",
+  //       category: "Operational Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Product defects reaching customers due to inadequate quality controls",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "Multi-stage inspection process with statistical sampling",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID030",
+  //       riskName: "Non-compliance with Standards",
+  //       department: "Quality Assurance",
+  //       sectionProcess: "Standards Compliance",
+  //       subProcess: "ISO Certification",
+  //       activity: "Compliance Verification",
+  //       category: "Compliance Audit",
+  //       auditType: "Compliance Review",
+  //       riskDescription: "Loss of ISO certification due to non-compliance with quality standards",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 4,
+  //       controlDescription: "Internal audits aligned with ISO 9001 requirements",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID031",
+  //       riskName: "Customer Complaint Escalation",
+  //       department: "Quality Assurance",
+  //       sectionProcess: "Customer Feedback",
+  //       subProcess: "Complaint Management",
+  //       activity: "Root Cause Analysis",
+  //       category: "Operational Audit",
+  //       auditType: "Consulting",
+  //       riskDescription: "Reputational damage from unresolved customer complaints",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 3,
+  //       controlDescription: "CRM-integrated complaint tracking with 48-hour response SLA",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 2,
+  //       status: "Open",
+  //     },
+  //     // Internal Audit Department
+  //     {
+  //       riskId: "RID032",
+  //       riskName: "Audit Coverage Gaps",
+  //       department: "Internal Audit",
+  //       sectionProcess: "Audit Planning",
+  //       subProcess: "Risk-Based Planning",
+  //       activity: "Audit Universe Review",
+  //       category: "Operational Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "High-risk areas not covered by internal audit due to inadequate planning",
+  //       inherentLikelihood: 2,
+  //       inherentImpact: 4,
+  //       controlDescription: "Annual risk-based audit plan approved by audit committee",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //       residualImpact: 3,
+  //       status: "Open",
+  //     },
+  //     {
+  //       riskId: "RID033",
+  //       riskName: "Audit Finding Follow-up Delays",
+  //       department: "Internal Audit",
+  //       sectionProcess: "CAPA Tracking",
+  //       subProcess: "Finding Resolution",
+  //       activity: "Follow-up Reviews",
+  //       category: "Operational Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Unresolved audit findings leading to continued risk exposure",
+  //       inherentLikelihood: 3,
+  //       inherentImpact: 4,
+  //       controlDescription: "Automated CAPA tracking with management escalation for overdue items",
+  //       controlEffectiveness: "Partially Effective",
+  //       residualLikelihood: 2,
+  //       residualImpact: 3,
+  //       status: "Under Review",
+  //     },
+  //     {
+  //       riskId: "RID034",
+  //       riskName: "Auditor Independence Concerns",
+  //       department: "Internal Audit",
+  //       sectionProcess: "Audit Independence",
+  //       subProcess: "Objectivity Safeguards",
+  //       activity: "Independence Assessment",
+  //       category: "Operational Audit",
+  //       auditType: "Assurance",
+  //       riskDescription: "Compromised audit objectivity due to conflicts of interest",
+  //       inherentLikelihood: 1,
+  //       inherentImpact: 4,
+  //       controlDescription: "Annual independence declarations with functional reporting to audit committee",
+  //       controlEffectiveness: "Effective",
+  //       residualLikelihood: 1,
+  //   //     residualImpact: 3,
+  //   //     status: "Open",
+  //   //   },
+  //   // ];
 
-  for (const risk of internalAuditRisks) {
-    const category = fetchedAuditCategories.find(c => c.name === risk.category);
-    const auditType = fetchedAuditTypes.find(t => t.name === risk.auditType);
+  // for (const risk of internalAuditRisks) {
+  //   const category = fetchedAuditCategories.find(c => c.name === risk.category);
+  //   const auditType = fetchedAuditTypes.find(t => t.name === risk.auditType);
 
-    // Use findFirst to check if internal audit risk exists for this customer
-    const existing = await prisma.internalAuditRisk.findFirst({
-      where: { customerAccountId, riskId: risk.riskId },
-    });
-    if (!existing) {
-      await prisma.internalAuditRisk.create({
-        data: {
-          customerAccountId,
-          riskId: risk.riskId,
-          riskName: risk.riskName,
-          departmentId: createdDepts[risk.department],
-          sectionProcess: risk.sectionProcess,
-          subProcess: risk.subProcess,
-          activity: risk.activity,
-          categoryId: category?.id,
-          auditTypeId: auditType?.id,
-          riskDescription: risk.riskDescription,
-          inherentLikelihood: risk.inherentLikelihood,
-          inherentImpact: risk.inherentImpact,
-          inherentScore: risk.inherentLikelihood * risk.inherentImpact,
-          controlDescription: risk.controlDescription,
-          controlEffectiveness: risk.controlEffectiveness,
-          residualLikelihood: risk.residualLikelihood,
-          residualImpact: risk.residualImpact,
-          residualScore: risk.residualLikelihood * risk.residualImpact,
-          riskLevel: risk.residualLikelihood * risk.residualImpact > 14 ? "High" :
-                     risk.residualLikelihood * risk.residualImpact > 6 ? "Medium" : "Low",
-          status: risk.status,
-        },
-      });
-    }
-  }
-  console.log("✅ Internal Audit Risks created");
+  //   // Use findFirst to check if internal audit risk exists for this customer
+  //   const existing = await prisma.internalAuditRisk.findFirst({
+  //     where: { customerAccountId, riskId: risk.riskId },
+  //   });
+  //   if (!existing) {
+  //     await prisma.internalAuditRisk.create({
+  //       data: {
+  //         customerAccountId,
+  //         riskId: risk.riskId,
+  //         riskName: risk.riskName,
+  //         departmentId: createdDepts[risk.department],
+  //         sectionProcess: risk.sectionProcess,
+  //         subProcess: risk.subProcess,
+  //         activity: risk.activity,
+  //         categoryId: category?.id,
+  //         auditTypeId: auditType?.id,
+  //         riskDescription: risk.riskDescription,
+  //         inherentLikelihood: risk.inherentLikelihood,
+  //         inherentImpact: risk.inherentImpact,
+  //         inherentScore: risk.inherentLikelihood * risk.inherentImpact,
+  //         controlDescription: risk.controlDescription,
+  //         controlEffectiveness: risk.controlEffectiveness,
+  //         residualLikelihood: risk.residualLikelihood,
+  //         residualImpact: risk.residualImpact,
+  //         residualScore: risk.residualLikelihood * risk.residualImpact,
+  //         riskLevel: risk.residualLikelihood * risk.residualImpact > 14 ? "High" :
+  //                    risk.residualLikelihood * risk.residualImpact > 6 ? "Medium" : "Low",
+  //         status: risk.status,
+  //       },
+  //     });
+  //   }
+  // }
+  // console.log("✅ Internal Audit Risks created");
 
   // ==================== AUDITABLE ENTITIES (AUDIT UNIVERSE) ====================
 

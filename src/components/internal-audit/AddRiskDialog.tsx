@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -100,7 +101,7 @@ export function AddRiskDialog({ open, onOpenChange, onSuccess }: AddRiskDialogPr
     controlEffectiveness: "",
     residualLikelihood: "",
     residualImpact: "",
-    creationDate: new Date().toISOString().split("T")[0],
+    creationDate: formatLocalDate(new Date()),
     auditComment: "",
     status: "Open",
   });
@@ -261,7 +262,7 @@ export function AddRiskDialog({ open, onOpenChange, onSuccess }: AddRiskDialogPr
       controlEffectiveness: "",
       residualLikelihood: "",
       residualImpact: "",
-      creationDate: new Date().toISOString().split("T")[0],
+      creationDate: formatLocalDate(new Date()),
       auditComment: "",
       status: "Open",
     });
@@ -693,7 +694,7 @@ export function AddRiskDialog({ open, onOpenChange, onSuccess }: AddRiskDialogPr
                   <Label className="text-sm font-medium text-slate-700">{t("Creation Date")}</Label>
                   <DatePicker
                     value={formData.creationDate}
-                    onChange={(date) => setFormData({ ...formData, creationDate: date ? date.toISOString().split('T')[0] : "" })}
+                    onChange={(date) => setFormData({ ...formData, creationDate: date ? formatLocalDate(date) : "" })}
                     placeholder={t("Select date")}
                     className="mt-1.5 w-full"
                   />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { DataGrid } from "@/components/shared";
@@ -635,10 +636,7 @@ export default function MyAssetInventoryPage() {
     total: filteredAssets.length,
     active: filteredAssets.filter((a) => a.status === "Active").length,
     critical: filteredAssets.filter((a) => a.classification?.name === "Critical").length,
-    needsReview: filteredAssets.filter((a) => {
-      if (!a.nextReviewDate) return false;
-      return new Date(a.nextReviewDate) <= new Date();
-    }).length,
+    needsReview: filteredAssets.filter((a) => !a.classificationId).length,
   };
 
   // Columns matching UAT: Asset ID, Asset Name, Asset Owner, Asset Category, Asset Sub Category, Group, Action
@@ -691,10 +689,10 @@ export default function MyAssetInventoryPage() {
                 setEditingAsset({
                   ...row.original,
                   acquisitionDate: row.original.acquisitionDate
-                    ? new Date(row.original.acquisitionDate).toISOString().split('T')[0]
+                    ? formatLocalDate(new Date(row.original.acquisitionDate))
                     : null,
                   nextReviewDate: row.original.nextReviewDate
-                    ? new Date(row.original.nextReviewDate).toISOString().split('T')[0]
+                    ? formatLocalDate(new Date(row.original.nextReviewDate))
                     : null,
                 });
                 setIsEditAssetOpen(true);

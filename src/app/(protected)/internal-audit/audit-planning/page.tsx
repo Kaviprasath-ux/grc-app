@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1028,7 +1029,7 @@ export default function AuditPlanningPage() {
           </Label>
           <DatePicker
             value={engagementForm.startDate}
-            onChange={(date) => setEngagementForm({ ...engagementForm, startDate: date ? date.toISOString().split('T')[0] : "" })}
+            onChange={(date) => setEngagementForm({ ...engagementForm, startDate: date ? formatLocalDate(date) : "" })}
             placeholder={t("Select start date")}
             className={`w-full h-10 bg-white ${validationErrors.startDate ? 'border-red-500' : ''}`}
           />
@@ -1042,7 +1043,7 @@ export default function AuditPlanningPage() {
           </Label>
           <DatePicker
             value={engagementForm.targetDate}
-            onChange={(date) => setEngagementForm({ ...engagementForm, targetDate: date ? date.toISOString().split('T')[0] : "" })}
+            onChange={(date) => setEngagementForm({ ...engagementForm, targetDate: date ? formatLocalDate(date) : "" })}
             placeholder={t("Select target date")}
             className={`w-full h-10 bg-white ${validationErrors.targetDate ? 'border-red-500' : ''}`}
           />
@@ -1555,7 +1556,7 @@ export default function AuditPlanningPage() {
                   </Label>
                   <DatePicker
                     value={reportStartDate}
-                    onChange={(date) => setReportStartDate(date ? date.toISOString().split('T')[0] : "")}
+                    onChange={(date) => setReportStartDate(date ? formatLocalDate(date) : "")}
                     placeholder={t("Select start date")}
                     className="w-full h-10 bg-white"
                   />
@@ -1566,7 +1567,7 @@ export default function AuditPlanningPage() {
                   </Label>
                   <DatePicker
                     value={reportEndDate}
-                    onChange={(date) => setReportEndDate(date ? date.toISOString().split('T')[0] : "")}
+                    onChange={(date) => setReportEndDate(date ? formatLocalDate(date) : "")}
                     placeholder={t("Select end date")}
                     className="w-full h-10 bg-white"
                   />

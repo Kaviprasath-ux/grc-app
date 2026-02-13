@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { Plus, Pencil, Trash2, Upload, Download, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, Home, ChevronRight, ChevronLeft, Eye } from "lucide-react";
+import * as XLSX from "xlsx";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
@@ -201,6 +203,12 @@ export default function AssetInventoryPage() {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
+
+  // Import dialog states
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Inline add dialog states
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -691,77 +699,198 @@ export default function AssetInventoryPage() {
     document.body.removeChild(link);
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleDownloadTemplate = () => {
+    const templateCsv = [
+      [
+        "Asset ID",
+        "Asset Name",
+        "Asset Type",
+        "Department",
+        "Owner",
+        "Custodian",
+        "Category",
+        "Sub Category",
+        "Group",
+        "Location",
+        "Acquisition Date",
+        "Next Review Date",
+      ],
+      [
+        "ASSET0001",
+        "Example Asset",
+        "Hardware",
+        "IT Department",
+        "John Doe",
+        "Jane Smith",
+        "IT Assets",
+        "Servers",
+        "Data Center",
+        "Building A, Floor 2",
+        "2025-01-15",
+        "2026-01-15",
+      ],
+    ]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const text = e.target?.result as string;
-      const lines = text.split("\n").filter(line => line.trim());
+    const blob = new Blob([templateCsv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "assets_template.csv";
+    a.click();
+  };
 
-      if (lines.length < 2) {
-        toast({ title: "Error", description: "Invalid CSV file: No data rows found", variant: "destructive" });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+    }
+  };
+
+  const parseFileToRows = async (file: File): Promise<string[][]> => {
+    const fileName = file.name.toLowerCase();
+    const isExcel = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+
+    if (isExcel) {
+      // Parse Excel file using xlsx library
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) return [];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: "",
+      }) as (string | number | null)[][];
+      // Convert all values to strings
+      return jsonData
+        .filter((row) => row.some((cell) => cell !== null && cell !== undefined && String(cell).trim() !== ""))
+        .map((row) => row.map((cell) => String(cell ?? "").trim()));
+    } else {
+      // Parse CSV file
+      const text = await file.text();
+      const lines = text.split("\n").filter((line) => line.trim());
+      return lines.map((line) => {
+        const matches = line.match(/("([^"]*)"|[^,]+)/g) || [];
+        return matches.map((v) => v.replace(/^"|"$/g, "").trim());
+      });
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+
+    setImporting(true);
+    try {
+      const rows = await parseFileToRows(importFile);
+
+      if (rows.length < 2) {
+        toast({ title: "Error", description: "Invalid file: No data rows found", variant: "destructive" });
+        setImporting(false);
         return;
       }
 
-      // Skip header row
-      const dataRows = lines.slice(1);
-      let imported = 0;
-      let errors = 0;
+      // First row is header, rest is data
+      const dataRows = rows.slice(1);
+      let successCount = 0;
+      let errorCount = 0;
 
-      for (const line of dataRows) {
-        // Parse CSV line (handle quoted fields)
-        const matches = line.match(/("([^"]*(?:""[^"]*)*)"|[^,]*)(,|$)/g);
-        if (!matches) continue;
+      for (const values of dataRows) {
+        if (values.length >= 2) {
+          const [
+            assetId,
+            name,
+            assetType,
+            departmentName,
+            ownerName,
+            custodianName,
+            categoryName,
+            subCategoryName,
+            groupName,
+            location,
+            acquisitionDate,
+            nextReviewDate,
+          ] = values;
 
-        const cells = matches.slice(0, -1).map(cell => {
-          cell = cell.replace(/,$/, "");
-          if (cell.startsWith('"') && cell.endsWith('"')) {
-            cell = cell.slice(1, -1).replace(/""/g, '"');
+          if (!assetId || !name) continue;
+
+          // Check if asset already exists
+          const existing = assets.find((a) => a.assetId === assetId);
+          if (existing) continue;
+
+          // Lookup IDs by name
+          const department = departments.find(
+            (d) => d.name.toLowerCase() === departmentName?.toLowerCase()
+          );
+          const owner = users.find(
+            (u) => u.fullName?.toLowerCase() === ownerName?.toLowerCase()
+          );
+          const custodian = users.find(
+            (u) => u.fullName?.toLowerCase() === custodianName?.toLowerCase()
+          );
+          const category = categories.find(
+            (c) => c.name.toLowerCase() === categoryName?.toLowerCase()
+          );
+          const subCategory = subCategories.find(
+            (sc) => sc.name.toLowerCase() === subCategoryName?.toLowerCase()
+          );
+          const group = groups.find(
+            (g) => g.name.toLowerCase() === groupName?.toLowerCase()
+          );
+
+          try {
+            const res = await fetch("/api/assets", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                assetId,
+                name,
+                assetType: assetType || null,
+                departmentId: department?.id || null,
+                ownerId: owner?.id || null,
+                custodianId: custodian?.id || null,
+                categoryId: category?.id || null,
+                subCategoryId: subCategory?.id || null,
+                groupId: group?.id || null,
+                location: location || null,
+                acquisitionDate: acquisitionDate || null,
+                nextReviewDate: nextReviewDate || null,
+                status: "Active",
+              }),
+            });
+
+            if (res.ok) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
+          } catch {
+            errorCount++;
           }
-          return cell.trim();
-        });
-
-        const [assetId, name] = cells;
-        if (!assetId || !name) continue;
-
-        try {
-          // Check if asset exists
-          const existing = assets.find(a => a.assetId === assetId);
-          if (existing) {
-            // Skip existing assets
-            continue;
-          }
-
-          const res = await fetch("/api/assets", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              assetId,
-              name,
-              status: "Active",
-            }),
-          });
-
-          if (res.ok) {
-            imported++;
-          } else {
-            errors++;
-          }
-        } catch {
-          errors++;
         }
       }
 
-      // Refresh data
+      toast({
+        title: "Success",
+        description: `Import completed: ${successCount} assets imported, ${errorCount} errors`,
+      });
+      setIsImportDialogOpen(false);
+      setImportFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       fetchData();
-      toast({ title: "Success", description: `Import completed: ${imported} assets imported, ${errors} errors` });
-    };
-
-    reader.readAsText(file);
-    // Reset the input
-    event.target.value = "";
+    } catch (error) {
+      console.error("Error importing assets:", error);
+      toast({
+        title: "Error",
+        description: "Failed to import assets. Please check the file format.",
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
+    }
   };
 
   // Stats
@@ -769,10 +898,7 @@ export default function AssetInventoryPage() {
     total: assets.length,
     active: assets.filter((a) => a.status === "Active").length,
     critical: assets.filter((a) => a.classification?.name === "Critical").length,
-    needsReview: assets.filter((a) => {
-      if (!a.nextReviewDate) return false;
-      return new Date(a.nextReviewDate) <= new Date();
-    }).length,
+    needsReview: assets.filter((a) => !a.classificationId).length,
   };
 
   // Show loading state while permissions or data is being fetched
@@ -875,20 +1001,10 @@ export default function AssetInventoryPage() {
           {t("Export")}
         </Button>
         <PermissionGate resource="asset.inventory" action="create">
-          <label>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleImport}
-              className="hidden"
-            />
-            <Button variant="outline" size="sm" asChild>
-              <span>
-                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Import")}
-              </span>
-            </Button>
-          </label>
+          <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Import")}
+          </Button>
         </PermissionGate>
         
         <PermissionGate resource="asset.inventory" action="create">
@@ -1000,10 +1116,10 @@ export default function AssetInventoryPage() {
                           setEditingAsset({
                             ...asset,
                             acquisitionDate: asset.acquisitionDate
-                              ? new Date(asset.acquisitionDate).toISOString().split('T')[0]
+                              ? formatLocalDate(new Date(asset.acquisitionDate))
                               : null,
                             nextReviewDate: asset.nextReviewDate
-                              ? new Date(asset.nextReviewDate).toISOString().split('T')[0]
+                              ? formatLocalDate(new Date(asset.nextReviewDate))
                               : null,
                           });
                           setFieldErrors({});
@@ -1927,6 +2043,91 @@ export default function AssetInventoryPage() {
               {t("Cancel")}
             </Button>
             <Button onClick={handleAddLifecycle}>{t("Save")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog
+        open={isImportDialogOpen}
+        onOpenChange={(open) => {
+          setIsImportDialogOpen(open);
+          if (!open) {
+            setImportFile(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[550px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">
+                {t("Import Assets")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="px-6 py-6 space-y-4">
+            <p className="text-sm text-slate-500">
+              {t("Upload a CSV file to import assets. You can download a template to see the required format.")}
+            </p>
+
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("File")} *</Label>
+              <div className="flex items-center gap-3 mt-1.5">
+                <Input
+                  readOnly
+                  value={importFile?.name || ""}
+                  placeholder={t("Choose a file...")}
+                  className="flex-1 bg-white min-w-0"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-shrink-0"
+                >
+                  {t("Browse...")}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileChange}
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5">
+                {t("Supported formats: CSV, XLSX, XLS")}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Download Template")}
+            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsImportDialogOpen(false);
+                  setImportFile(null);
+                }}
+              >
+                {t("Cancel")}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleImport}
+                disabled={!importFile || importing}
+              >
+                {importing ? t("Importing...") : t("Import")}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -346,6 +346,7 @@ model User {
   memberOfEngagements AuditEngagement[]   @relation("EngagementTeamMembers")
   // Audit Head owned data
   ownedEngagements    AuditEngagement[]   @relation("AuditHeadEngagements")
+  engagementComments  EngagementComment[] @relation("EngagementComments")
   ownedAuditRisks     InternalAuditRisk[] @relation("AuditHeadRisks")
   ownedAuditFindings  InternalAuditFinding[] @relation("AuditHeadFindings")
   ownedAuditCAPAs     InternalAuditCAPA[] @relation("AuditHeadCAPAs")
@@ -777,6 +778,13 @@ model Process {
   externalParty          String?         // Name of external party when externalDependency is true
   location               String?         // JSON array of locations
   kpiMeasurementRequired Boolean         @default(false)
+  // KPI Configuration fields
+  kpiObjective           String?
+  kpiDataSource          String?
+  kpiExpectedValue       Float?
+  kpiDescription         String?
+  kpiFormula             String?
+  kpiTargetedValue       Float?
   piiCapture             Boolean         @default(false)
   recurrence             String?         // Daily, Weekly, Monthly, Quarterly, Annually
   reviewDate             DateTime?       // Review date for KPI or PII
@@ -863,14 +871,14 @@ model BIARating {
 
 // BIA Scoring Configuration (High of All, Addition of All, Product of All)
 model BIAScoringConfig {
-  id                String          @id @default(cuid())
-  // Multi-tenant: Link to customer account
-  customerAccountId String
-  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
-  calculationType   String          @default("High of all") // High of all, Addition of all, Product of all
-  isActive          Boolean         @default(true)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account (optional for backward compatibility)
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  calculationType   String           @default("High of all") // High of all, Addition of all, Product of all
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@index([customerAccountId])
 }
@@ -2562,9 +2570,23 @@ model AuditEngagement {
   evidenceRequests    FieldworkEvidenceRequest[]
   linkedRisks         InternalAuditRisk[]
   aiWorkpapers        AiWorkpaper[]
+  comments            EngagementComment[]
 
   @@unique([customerAccountId, auditId])
   @@index([customerAccountId])
+}
+
+// Engagement Comments
+model EngagementComment {
+  id            String          @id @default(cuid())
+  engagementId  String
+  engagement    AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User            @relation("EngagementComments", fields: [userId], references: [id])
+  comment       String
+  createdAt     DateTime        @default(now())
+
+  @@index([engagementId])
 }
 
 // ==================== INTERNAL AUDIT - FIELDWORK ====================
@@ -2859,7 +2881,7 @@ model DocumentLibraryIngestJob {
   id              String    @id @default(cuid())
   documentId      String
   document        InternalAuditDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  runpodJobId     String    @unique // RunPod job ID
+  runpodJobId     String    // RunPod job ID (multiple docs can share one job)
   customerId      String?   // customer_id sent to RunPod
   status          String    @default("queued") // queued, processing, completed, failed
   error           String?   @db.Text

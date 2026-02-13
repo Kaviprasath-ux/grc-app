@@ -322,11 +322,16 @@ export async function sendTemplatedEmail(
   placeholders: TemplatePlaceholders,
   recipientName: string = 'User'
 ): Promise<SendEmailResult> {
+  console.log('[EmailService] sendTemplatedEmail called');
+  console.log('[EmailService] Template:', templateCode);
+  console.log('[EmailService] To:', to);
+  console.log('[EmailService] Recipient Name:', recipientName);
+
   // Get the template
   const template = await getEmailTemplate(templateCode);
 
   if (!template) {
-    console.log('[EmailService] Template not found:', templateCode);
+    console.log('[EmailService] Template NOT FOUND:', templateCode);
     // Fall back to a generic email
     return sendEmail({
       to,
@@ -357,12 +362,15 @@ export async function sendTemplatedEmail(
     ? replacePlaceholders(template.bodyText, allPlaceholders)
     : undefined;
 
-  return sendEmail({
+  console.log('[EmailService] Calling sendEmail with subject:', subject);
+  const result = await sendEmail({
     to,
     subject,
     html,
     text,
   });
+  console.log('[EmailService] sendEmail result:', result.success ? 'SUCCESS' : 'FAILED', result.error || result.messageId);
+  return result;
 }
 
 // ==================== USER EMAIL HELPERS ====================
