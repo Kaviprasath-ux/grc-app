@@ -246,6 +246,7 @@ export default function AssetSettingsPage() {
   const [selectedScoringConfig, setSelectedScoringConfig] = useState<ScoringConfig | null>(null);
   const [isCiaWarningOpen, setIsCiaWarningOpen] = useState(false);
   const [isCiaRangeWarningOpen, setIsCiaRangeWarningOpen] = useState(false);
+  const [scoringErrorMessage, setScoringErrorMessage] = useState("");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -1021,6 +1022,30 @@ export default function AssetSettingsPage() {
       }
     }
 
+    // Validate product_of_all high range <= maxC * maxI * maxA
+    if (scoringCalculationType === "product_of_all") {
+      const maxC = confidentialityRatings.length > 0 ? Math.max(...confidentialityRatings.map(r => r.value)) : 0;
+      const maxI = integrityRatings.length > 0 ? Math.max(...integrityRatings.map(r => r.value)) : 0;
+      const maxA = availabilityRatings.length > 0 ? Math.max(...availabilityRatings.map(r => r.value)) : 0;
+      const maxAllowed = maxC * maxI * maxA;
+      if (maxAllowed > 0 && scoringConfigForm.maxScore > maxAllowed) {
+        setScoringErrorMessage(t("High range must be less than or equal to") + ` ${maxAllowed}`);
+        return;
+      }
+    }
+
+    // Validate addition_of_all high range <= maxC + maxI + maxA
+    if (scoringCalculationType === "addition_of_all") {
+      const maxC = confidentialityRatings.length > 0 ? Math.max(...confidentialityRatings.map(r => r.value)) : 0;
+      const maxI = integrityRatings.length > 0 ? Math.max(...integrityRatings.map(r => r.value)) : 0;
+      const maxA = availabilityRatings.length > 0 ? Math.max(...availabilityRatings.map(r => r.value)) : 0;
+      const maxAllowed = maxC + maxI + maxA;
+      if (maxAllowed > 0 && scoringConfigForm.maxScore > maxAllowed) {
+        setScoringErrorMessage(t("High range must be less than or equal to") + ` ${maxAllowed}`);
+        return;
+      }
+    }
+
     const currentConfigs = getCurrentConfigs();
 
     // Check for duplicate rating name
@@ -1028,13 +1053,13 @@ export default function AssetSettingsPage() {
       c => c.level.toLowerCase() === scoringConfigForm.level.trim().toLowerCase()
     );
     if (duplicateLevel) {
-      toast({ title: t("Error"), description: t("Rating already exists"), variant: "destructive" });
+      setScoringErrorMessage(t("Rating already exists"));
       return;
     }
 
     // Check that low range and high range are not the same (for addition/product types)
     if (scoringCalculationType !== "high_of_all" && scoringConfigForm.minScore === scoringConfigForm.maxScore) {
-      toast({ title: t("Error"), description: t("Low range and High range cannot be the same"), variant: "destructive" });
+      setScoringErrorMessage(t("Low range and High range cannot be the same"));
       return;
     }
 
@@ -1050,14 +1075,14 @@ export default function AssetSettingsPage() {
       });
 
       if (overlappingRange) {
-        toast({ title: t("Error"), description: t("Range overlaps with existing range"), variant: "destructive" });
+        setScoringErrorMessage(t("Range overlaps with existing range"));
         return;
       }
     } else {
       // For high_of_all, just check duplicate high value
       const duplicateRange = currentConfigs.find(c => c.maxScore === scoringConfigForm.maxScore);
       if (duplicateRange) {
-        toast({ title: t("Error"), description: t("Range value already exists"), variant: "destructive" });
+        setScoringErrorMessage(t("Range value already exists"));
         return;
       }
     }
@@ -1135,9 +1160,33 @@ export default function AssetSettingsPage() {
       }
     }
 
+    // Validate product_of_all high range <= maxC * maxI * maxA
+    if (scoringCalculationType === "product_of_all") {
+      const maxC = confidentialityRatings.length > 0 ? Math.max(...confidentialityRatings.map(r => r.value)) : 0;
+      const maxI = integrityRatings.length > 0 ? Math.max(...integrityRatings.map(r => r.value)) : 0;
+      const maxA = availabilityRatings.length > 0 ? Math.max(...availabilityRatings.map(r => r.value)) : 0;
+      const maxAllowed = maxC * maxI * maxA;
+      if (maxAllowed > 0 && scoringConfigForm.maxScore > maxAllowed) {
+        setScoringErrorMessage(t("High range must be less than or equal to") + ` ${maxAllowed}`);
+        return;
+      }
+    }
+
+    // Validate addition_of_all high range <= maxC + maxI + maxA
+    if (scoringCalculationType === "addition_of_all") {
+      const maxC = confidentialityRatings.length > 0 ? Math.max(...confidentialityRatings.map(r => r.value)) : 0;
+      const maxI = integrityRatings.length > 0 ? Math.max(...integrityRatings.map(r => r.value)) : 0;
+      const maxA = availabilityRatings.length > 0 ? Math.max(...availabilityRatings.map(r => r.value)) : 0;
+      const maxAllowed = maxC + maxI + maxA;
+      if (maxAllowed > 0 && scoringConfigForm.maxScore > maxAllowed) {
+        setScoringErrorMessage(t("High range must be less than or equal to") + ` ${maxAllowed}`);
+        return;
+      }
+    }
+
     // Check that low range and high range are not the same (for addition/product types)
     if (scoringCalculationType !== "high_of_all" && scoringConfigForm.minScore === scoringConfigForm.maxScore) {
-      toast({ title: t("Error"), description: t("Low range and High range cannot be the same"), variant: "destructive" });
+      setScoringErrorMessage(t("Low range and High range cannot be the same"));
       return;
     }
 
@@ -1154,7 +1203,7 @@ export default function AssetSettingsPage() {
       });
 
       if (overlappingRange) {
-        toast({ title: t("Error"), description: t("Range overlaps with existing range"), variant: "destructive" });
+        setScoringErrorMessage(t("Range overlaps with existing range"));
         return;
       }
     } else {
@@ -1162,7 +1211,7 @@ export default function AssetSettingsPage() {
         c.id !== selectedScoringConfig.id && c.maxScore === scoringConfigForm.maxScore
       );
       if (duplicateRange) {
-        toast({ title: t("Error"), description: t("Range value already exists"), variant: "destructive" });
+        setScoringErrorMessage(t("Range value already exists"));
         return;
       }
     }
@@ -3799,6 +3848,25 @@ export default function AssetSettingsPage() {
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button onClick={() => setIsCiaRangeWarningOpen(false)}>{t("OK")}</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Scoring Error Dialog */}
+        <Dialog open={!!scoringErrorMessage} onOpenChange={() => setScoringErrorMessage("")}>
+          <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Error")}</DialogTitle>
+              </DialogHeader>
+            </div>
+            <div className="px-6 py-6">
+              <p className="text-sm text-slate-600">
+                {scoringErrorMessage}
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <Button onClick={() => setScoringErrorMessage("")}>{t("OK")}</Button>
             </div>
           </DialogContent>
         </Dialog>
