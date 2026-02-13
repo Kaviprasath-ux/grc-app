@@ -3737,6 +3737,25 @@ export default function AssetSettingsPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* CIA Warning Dialog */}
+        <Dialog open={isCiaWarningOpen} onOpenChange={setIsCiaWarningOpen}>
+          <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</DialogTitle>
+              </DialogHeader>
+            </div>
+            <div className="px-6 py-6">
+              <p className="text-sm text-slate-600">
+                {t("Please Add the CIA Values")}
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <Button onClick={() => setIsCiaWarningOpen(false)}>{t("OK")}</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -4475,24 +4494,6 @@ export default function AssetSettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* CIA Warning Dialog */}
-      <Dialog open={isCiaWarningOpen} onOpenChange={setIsCiaWarningOpen}>
-        <DialogContent className="sm:max-w-[420px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</DialogTitle>
-            </DialogHeader>
-          </div>
-          <div className="px-6 py-6">
-            <p className="text-sm text-slate-600">
-              {t("Please Add the CIA Values")}
-            </p>
-          </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button onClick={() => setIsCiaWarningOpen(false)}>{t("OK")}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
