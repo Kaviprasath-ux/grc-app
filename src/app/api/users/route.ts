@@ -159,83 +159,95 @@ export async function POST(request: NextRequest) {
     // Hash password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        userId,
-        userName,
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        fullName,
-        designation,
-        function: userFunction,
-        role: role || "User",
-        language: language || "English",
-        timezone: timezone || "UTC",
-        isActive: isActive ?? true,
-        isBlocked: isBlocked ?? false,
-        // Use relation connect syntax for foreign keys
-        ...(departmentId && {
-          department: { connect: { id: departmentId } },
-        }),
-        ...(customerAccountId && {
-          customerAccount: { connect: { id: customerAccountId } },
-        }),
-        // Track creator for DR/DC framework visibility
-        ...(createdById && {
-          createdBy: { connect: { id: createdById } },
-        }),
-        // Create UserRole entry if role exists in Role table
-        ...(roleRecord && {
+    // Use transaction to ensure user creation and subscription update are atomic
+    const user = await prisma.$transaction(async (tx) => {
+      // Create the user
+      const newUser = await tx.user.create({
+        data: {
+          userId,
+          userName,
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          fullName,
+          designation,
+          function: userFunction,
+          role: role || "User",
+          language: language || "English",
+          timezone: timezone || "UTC",
+          isActive: isActive ?? true,
+          isBlocked: isBlocked ?? false,
+          // Use relation connect syntax for foreign keys
+          ...(departmentId && {
+            department: { connect: { id: departmentId } },
+          }),
+          ...(customerAccountId && {
+            customerAccount: { connect: { id: customerAccountId } },
+          }),
+          // Track creator for DR/DC framework visibility
+          ...(createdById && {
+            createdBy: { connect: { id: createdById } },
+          }),
+          // Create UserRole entry if role exists in Role table
+          ...(roleRecord && {
+            userRoles: {
+              create: {
+                roleId: roleRecord.id,
+              },
+            },
+          }),
+        },
+        include: {
+          department: true,
           userRoles: {
-            create: {
-              roleId: roleRecord.id,
+            include: {
+              role: true,
             },
           },
-        }),
-      },
-      include: {
-        department: true,
-        userRoles: {
-          include: {
-            role: true,
-          },
-        },
-      },
-    });
-
-    // Increment accountsUsed in the active subscription plan
-    if (customerAccountId) {
-      const now = new Date();
-      const activePlan = await prisma.subscriptionPlan.findFirst({
-        where: {
-          customerAccountId,
-          status: "Active",
-          expiryDate: { gte: now },
         },
       });
-      if (activePlan) {
-        await prisma.subscriptionPlan.update({
-          where: { id: activePlan.id },
-          data: { accountsUsed: { increment: 1 } },
-        });
-      }
-    }
 
-    // Send welcome notification to new user
+      // Increment accountsUsed in the active subscription plan (within same transaction)
+      if (customerAccountId) {
+        const now = new Date();
+        const activePlan = await tx.subscriptionPlan.findFirst({
+          where: {
+            customerAccountId,
+            status: "Active",
+            expiryDate: { gte: now },
+          },
+        });
+        if (activePlan) {
+          await tx.subscriptionPlan.update({
+            where: { id: activePlan.id },
+            data: { accountsUsed: { increment: 1 } },
+          });
+        }
+      }
+
+      return newUser;
+    });
+
+    // Remove password from response BEFORE sending notification
+    const { password: _, ...safeUser } = user;
+
+    // Send welcome notification ONLY after transaction succeeds
+    // This is outside the transaction to ensure DB operations completed successfully
     if (customerAccountId && createdById) {
-      await notificationService.notifyUserCreated({
+      // Don't await - send notification in background to avoid blocking response
+      // If notification fails, user is still created successfully
+      notificationService.notifyUserCreated({
         customerAccountId,
         actorId: createdById,
         newUserId: user.id,
         userName: user.fullName,
         channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+      }).catch((err) => {
+        console.error("Failed to send user creation notification:", err);
       });
     }
 
-    // Remove password from response
-    const { password: _, ...safeUser } = user;
     return NextResponse.json(safeUser, { status: 201 });
   } catch (error: unknown) {
     console.error("Error creating user:", error);
