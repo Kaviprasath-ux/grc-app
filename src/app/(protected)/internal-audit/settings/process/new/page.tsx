@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -702,7 +703,7 @@ export default function NewProcessPage() {
                     <Label htmlFor="reviewDate">{t("Review Date")}</Label>
                     <DatePicker
                       value={formData.reviewDate}
-                      onChange={(date) => setFormData({ ...formData, reviewDate: date ? date.toISOString().split('T')[0] : "" })}
+                      onChange={(date) => setFormData({ ...formData, reviewDate: date ? formatLocalDate(date) : "" })}
                       placeholder={t("Select date")}
                       className="mt-2"
                     />
@@ -734,7 +735,7 @@ export default function NewProcessPage() {
                   <Label htmlFor="lastAuditDate">{t("Last Audit Date")} <span className="text-red-500">*</span></Label>
                   <DatePicker
                     value={formData.lastAuditDate}
-                    onChange={(date) => { setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" }); setFieldErrors(prev => ({ ...prev, lastAuditDate: "" })); }}
+                    onChange={(date) => { setFormData({ ...formData, lastAuditDate: date ? formatLocalDate(date) : "" }); setFieldErrors(prev => ({ ...prev, lastAuditDate: "" })); }}
                     placeholder={t("Select date")}
                     className={`mt-2 ${fieldErrors.lastAuditDate ? "[&>button]:border-red-500" : ""}`}
                   />

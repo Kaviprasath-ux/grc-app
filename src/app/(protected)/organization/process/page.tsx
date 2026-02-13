@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { formatLocalDate } from "@/lib/utils";
 import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -2664,7 +2665,7 @@ export default function ProcessPage() {
                     <div className="mt-1.5">
                       <DatePicker
                         value={processForm.kpiReviewDate}
-                        onChange={(date) => setProcessForm({ ...processForm, kpiReviewDate: date ? date.toISOString().split("T")[0] : "" })}
+                        onChange={(date) => setProcessForm({ ...processForm, kpiReviewDate: date ? formatLocalDate(date) : "" })}
                         placeholder={t("Select date")}
                       />
                     </div>
@@ -3034,8 +3035,8 @@ export default function ProcessPage() {
                       <Label className="text-sm font-medium text-slate-700">{t("Review Date")}</Label>
                       <div className="mt-1.5">
                         <DatePicker
-                          value={editingProcess.reviewDate ? new Date(editingProcess.reviewDate).toISOString().split('T')[0] : ""}
-                          onChange={(date) => setEditingProcess({ ...editingProcess, reviewDate: date ? date.toISOString().split("T")[0] : undefined })}
+                          value={editingProcess.reviewDate ? formatLocalDate(new Date(editingProcess.reviewDate)) : ""}
+                          onChange={(date) => setEditingProcess({ ...editingProcess, reviewDate: date ? formatLocalDate(date) : undefined })}
                           placeholder={t("Select date")}
                         />
                       </div>

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -69,6 +71,14 @@ interface Attachment {
 }
 
 export default function ViewFindingPage() {
+  return (
+    <Suspense fallback={<div className="p-6 flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>}>
+      <ViewFindingContent />
+    </Suspense>
+  );
+}
+
+function ViewFindingContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -222,7 +232,7 @@ export default function ViewFindingPage() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "";
-    return new Date(dateString).toISOString().split("T")[0];
+    return formatLocalDate(new Date(dateString));
   };
 
   const formatDisplayDate = (dateString: string | null) => {
@@ -666,7 +676,7 @@ export default function ViewFindingPage() {
               {isEditing ? (
                 <DatePicker
                   value={formData.targetDate || undefined}
-                  onChange={(date) => handleInputChange("targetDate", date ? date.toISOString().split('T')[0] : "")}
+                  onChange={(date) => handleInputChange("targetDate", date ? formatLocalDate(date) : "")}
                   placeholder={t("Select date")}
                 />
               ) : (

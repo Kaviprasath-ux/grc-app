@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1368,43 +1369,52 @@ export default function FieldworkDetailsPage() {
     }
   };
 
-  // Auditee Send Response handler
+  // Auditee Send Response handler - submits all pending evidence requests
   const handleSendResponse = async () => {
-    if (!auditeeClariEvidence) return;
+    const pendingRequests = filteredEvidenceRequests.filter((er) => er.status === 'Pending');
+    if (pendingRequests.length === 0) return;
 
     setSendingResponse(true);
     try {
-      // Upload file if provided
+      // Upload files to all pending requests if provided
       if (respondFiles.length > 0) {
         const formData = new FormData();
         respondFiles.forEach((file) => {
           formData.append("files", file);
         });
 
-        await fetch(
-          `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${auditeeClariEvidence.id}/attachments`,
-          {
-            method: "POST",
-            body: formData,
-          }
+        await Promise.all(
+          pendingRequests.map((er) =>
+            fetch(
+              `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${er.id}/attachments`,
+              {
+                method: "POST",
+                body: formData,
+              }
+            )
+          )
         );
       }
 
-      // Update status to Submitted and clear clarification
-      await fetch(
-        `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${auditeeClariEvidence.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "Submitted",
-            clarificationComment: null,
-            clarificationDocumentName: null,
-            clarificationByUserId: null,
-            clarificationByUserName: null,
-            clarificationSentAt: null,
-          }),
-        }
+      // Update status to Submitted for all pending requests
+      await Promise.all(
+        pendingRequests.map((er) =>
+          fetch(
+            `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${er.id}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                status: "Submitted",
+                clarificationComment: null,
+                clarificationDocumentName: null,
+                clarificationByUserId: null,
+                clarificationByUserName: null,
+                clarificationSentAt: null,
+              }),
+            }
+          )
+        )
       );
 
       toast.success(t("Response submitted successfully"));
@@ -2420,22 +2430,21 @@ export default function FieldworkDetailsPage() {
                         </Button>
                       </div>
                     </div>
-                    {/* Submit Response Button - only show when status is Pending */}
-                    {er.status === 'Pending' && (
-                      <div className="flex justify-end mt-4">
-                        <Button
-                          className="bg-primary-600 hover:bg-primary-700 text-white"
-                          onClick={() => {
-                            setAuditeeClariEvidence(er);
-                            setRespondDialogOpen(true);
-                          }}
-                        >
-                          {t("Submit Response")}
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 ))}
+                {/* Single Submit Response Button for all pending requests */}
+                {filteredEvidenceRequests.some((er) => er.status === 'Pending') && (
+                  <div className="flex justify-end mt-4">
+                    <Button
+                      className="bg-primary-600 hover:bg-primary-700 text-white"
+                      onClick={() => {
+                        setRespondDialogOpen(true);
+                      }}
+                    >
+                      {t("Submit Response")}
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
@@ -3213,7 +3222,7 @@ export default function FieldworkDetailsPage() {
               <Label className="text-end text-slate-500">{t("Target Closure Date")}</Label>
               <DatePicker
                 value={fullFinding.targetClosureDate}
-                onChange={(date) => setFullFinding({ ...fullFinding, targetClosureDate: date ? date.toISOString().split('T')[0] : "" })}
+                onChange={(date) => setFullFinding({ ...fullFinding, targetClosureDate: date ? formatLocalDate(date) : "" })}
                 placeholder={t("Select date")}
               />
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { DataGrid } from "@/components/shared";
@@ -691,10 +692,10 @@ export default function MyAssetInventoryPage() {
                 setEditingAsset({
                   ...row.original,
                   acquisitionDate: row.original.acquisitionDate
-                    ? new Date(row.original.acquisitionDate).toISOString().split('T')[0]
+                    ? formatLocalDate(new Date(row.original.acquisitionDate))
                     : null,
                   nextReviewDate: row.original.nextReviewDate
-                    ? new Date(row.original.nextReviewDate).toISOString().split('T')[0]
+                    ? formatLocalDate(new Date(row.original.nextReviewDate))
                     : null,
                 });
                 setIsEditAssetOpen(true);

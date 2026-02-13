@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { Plus, Pencil, Trash2, Upload, Download, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, Home, ChevronRight, ChevronLeft, Eye } from "lucide-react";
 import * as XLSX from "xlsx";
 import Link from "next/link";
@@ -1118,10 +1119,10 @@ export default function AssetInventoryPage() {
                           setEditingAsset({
                             ...asset,
                             acquisitionDate: asset.acquisitionDate
-                              ? new Date(asset.acquisitionDate).toISOString().split('T')[0]
+                              ? formatLocalDate(new Date(asset.acquisitionDate))
                               : null,
                             nextReviewDate: asset.nextReviewDate
-                              ? new Date(asset.nextReviewDate).toISOString().split('T')[0]
+                              ? formatLocalDate(new Date(asset.nextReviewDate))
                               : null,
                           });
                           setFieldErrors({});

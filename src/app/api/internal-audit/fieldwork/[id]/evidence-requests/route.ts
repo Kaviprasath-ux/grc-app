@@ -34,7 +34,7 @@ export const GET = withAuth(
         orderBy: { createdAt: 'desc' },
       });
 
-      // Transform to expected format (include attachmentCount for AI Review / simple_ingest)
+      // Transform to expected format (include attachments and attachmentCount)
       const transformed = evidenceRequests.map(er => ({
         id: er.id,
         title: er.title,
@@ -45,6 +45,14 @@ export const GET = withAuth(
         auditeeId: er.auditeeId || null,
         numberOfSamples: er.sampleSize || null,
         attachmentCount: er.attachments?.length ?? 0,
+        attachments: (er.attachments || []).map(att => ({
+          id: att.id,
+          fileName: att.fileName,
+          fileType: att.fileType,
+          fileSize: att.fileSize,
+          filePath: att.filePath,
+          uploadedAt: att.uploadedAt.toISOString(),
+        })),
         aiReviewStatus: er.aiReviewStatus || null,
         aiReviewComment: er.aiReviewComment || null,
       }));

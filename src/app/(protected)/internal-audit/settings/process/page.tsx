@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { formatLocalDate } from "@/lib/utils";
 
 interface Process {
   id: string;
@@ -331,7 +332,7 @@ export default function ProcessPage() {
       piiCapture: process.piiCapture || false,
       operationalComplexity: process.operationalComplexity || "",
       lastAuditDate: process.lastAuditDate
-        ? new Date(process.lastAuditDate).toISOString().split("T")[0]
+        ? formatLocalDate(new Date(process.lastAuditDate))
         : "",
     });
     setFormErrors({});
@@ -1108,7 +1109,7 @@ export default function ProcessPage() {
                 <DatePicker
                   value={formData.lastAuditDate}
                   onChange={(date) => {
-                    setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" });
+                    setFormData({ ...formData, lastAuditDate: date ? formatLocalDate(date) : "" });
                     setFormErrors({ ...formErrors, lastAuditDate: "" });
                   }}
                   placeholder={t("Select date")}

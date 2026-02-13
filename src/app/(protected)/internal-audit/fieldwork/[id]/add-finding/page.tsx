@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -459,7 +460,7 @@ export default function AddFindingPage() {
               <Label className="text-[#1e3a5f] font-medium">{t("Target Closure Date")}</Label>
               <DatePicker
                 value={formData.targetClosureDate}
-                onChange={(date) => handleInputChange("targetClosureDate", date ? date.toISOString().split('T')[0] : "")}
+                onChange={(date) => handleInputChange("targetClosureDate", date ? formatLocalDate(date) : "")}
                 placeholder={t("Select date")}
               />
             </div>

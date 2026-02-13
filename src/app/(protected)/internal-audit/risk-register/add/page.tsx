@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -89,7 +90,7 @@ export default function AddRiskPage() {
     controlEffectiveness: "",
     residualLikelihood: "",
     residualImpact: "",
-    creationDate: new Date().toISOString().split("T")[0],
+    creationDate: formatLocalDate(new Date()),
     auditComment: "",
     status: "Open",
   });
@@ -672,7 +673,7 @@ export default function AddRiskPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Creation Date")}</Label>
                 <DatePicker
                   value={formData.creationDate}
-                  onChange={(date) => setFormData({ ...formData, creationDate: date ? date.toISOString().split('T')[0] : "" })}
+                  onChange={(date) => setFormData({ ...formData, creationDate: date ? formatLocalDate(date) : "" })}
                   placeholder={t("Select date")}
                   className="mt-1.5 w-full"
                 />

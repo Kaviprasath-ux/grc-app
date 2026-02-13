@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -570,6 +571,9 @@ export default function CAPATrackingPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[130px]">{t("Responsible")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Target Date")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Status")}</TableHead>
+              {isAuditHead && (
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("AI Review")}</TableHead>
+              )}
               {showActions && (
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pr-5 min-w-[90px]">{t("Actions")}</TableHead>
               )}
@@ -578,7 +582,7 @@ export default function CAPATrackingPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={showActions ? 9 : 8} className="h-24 text-center">
+                <TableCell colSpan={showActions ? (isAuditHead ? 10 : 9) : 8} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <div className="relative h-6 w-6">
                       <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
@@ -606,6 +610,31 @@ export default function CAPATrackingPage() {
                   <TableCell className="py-3">
                     {getStatusBadge(finding.status)}
                   </TableCell>
+                  {isAuditHead && (
+                    <TableCell className="py-3">
+                      {finding.aiReviewStatus ? (
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                          finding.aiReviewStatus === "Satisfactory"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}>
+                          {finding.aiReviewStatus === "Satisfactory" ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <XCircle className="h-3 w-3" />
+                          )}
+                          {t(finding.aiReviewStatus)}
+                        </span>
+                      ) : finding.status === "Under Review" ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 whitespace-nowrap">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          {t("Pending")}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">-</span>
+                      )}
+                    </TableCell>
+                  )}
                   {showActions && (
                     <TableCell className="py-3 pr-5">
                       <div className="flex items-center gap-0.5">
@@ -657,7 +686,7 @@ export default function CAPATrackingPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={showActions ? 9 : 8} className="h-24 text-center text-sm text-slate-500">
+                <TableCell colSpan={showActions ? (isAuditHead ? 10 : 9) : 8} className="h-24 text-center text-sm text-slate-500">
                   {t("No findings found")}
                 </TableCell>
               </TableRow>
@@ -1053,7 +1082,7 @@ export default function CAPATrackingPage() {
               <DatePicker
                 value={editForm.targetDate}
                 onChange={(date) =>
-                  setEditForm((prev) => ({ ...prev, targetDate: date ? date.toISOString().split('T')[0] : "" }))
+                  setEditForm((prev) => ({ ...prev, targetDate: date ? formatLocalDate(date) : "" }))
                 }
                 disabled={isAuditeeOnly}
                 placeholder={t("Select date")}
@@ -1165,8 +1194,8 @@ export default function CAPATrackingPage() {
             </div>
             )}
 
-            {/* AI Review Section for Audit Head (visible when AI review exists) */}
-            {isAuditHead && (
+            {/* AI Review Section for Audit Head (visible when AI review data exists) */}
+            {isAuditHead && findingToEdit?.aiReviewStatus && (
               <div className="border-t pt-4 mt-4 bg-purple-50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Bot className="h-5 w-5 text-purple-600" />
@@ -1174,18 +1203,35 @@ export default function CAPATrackingPage() {
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                   <Label className="text-slate-800 font-medium">{t("Status")}</Label>
-                  <span className="text-sm text-slate-600">{findingToEdit?.aiReviewStatus || "-"}</span>
+                  <div className="flex items-center gap-2">
+                    {findingToEdit.aiReviewStatus === "Satisfactory" ? (
+                      <>
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <span className="text-green-600 font-medium">{t("Satisfactory")}</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-5 w-5 text-red-600" />
+                        <span className="text-red-600 font-medium">{t("Unsatisfactory")}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
                   <Label className="text-slate-800 font-medium pt-2">{t("Description")}</Label>
                   <Textarea
-                    value={findingToEdit?.aiReviewDescription || ""}
+                    value={findingToEdit.aiReviewDescription || ""}
                     readOnly
                     placeholder="-"
                     className="bg-white"
                     rows={3}
                   />
                 </div>
+                {findingToEdit.aiReviewedAt && (
+                  <p className="text-xs text-slate-500 mt-2 ltr:text-right rtl:text-left">
+                    {t("Reviewed on")} {new Date(findingToEdit.aiReviewedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  </p>
+                )}
               </div>
             )}
 
