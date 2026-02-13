@@ -31,7 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw, Home, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw, Home, ChevronRight, Users, FileText } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -1049,8 +1049,18 @@ export default function CustomerAccountsPage() {
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-sm text-slate-500">
-                  {t("No customer accounts found")}
+                <TableCell colSpan={9} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                      <Users className="h-6 w-6 text-primary-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                      {t("No Customer Accounts Found")}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      {t("Create a new customer account to get started.")}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -1728,8 +1738,18 @@ export default function CustomerAccountsPage() {
                 <TableBody>
                   {subscriptionPlans.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center text-sm text-slate-500">
-                        {t("No subscription plans found")}
+                      <TableCell colSpan={5} className="py-0">
+                        <div className="py-16 text-center">
+                          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                            <FileText className="h-6 w-6 text-primary-500" />
+                          </div>
+                          <h3 className="text-base font-semibold text-slate-800 mb-1">
+                            {t("No Subscription Plans Found")}
+                          </h3>
+                          <p className="text-sm text-slate-500">
+                            {t("Add a subscription plan to get started.")}
+                          </p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (

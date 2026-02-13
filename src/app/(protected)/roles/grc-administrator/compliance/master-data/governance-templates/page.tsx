@@ -52,6 +52,7 @@ import {
   ChevronsRight,
   Upload,
   Home,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -513,13 +514,18 @@ export default function GovernanceTemplatesPage() {
           <TableBody>
             {paginatedTemplates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-2">
-                    <p className="text-slate-500">{t("No templates found")}</p>
-                    <p className="text-sm text-slate-400">
+                <TableCell colSpan={5} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                      <FileText className="h-6 w-6 text-primary-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                      {t("No Templates Found")}
+                    </h3>
+                    <p className="text-sm text-slate-500">
                       {searchTerm
-                        ? t("Try adjusting your search")
-                        : t("Add your first governance template")}
+                        ? t("Try adjusting your search.")
+                        : t("Add your first governance template to get started.")}
                     </p>
                   </div>
                 </TableCell>

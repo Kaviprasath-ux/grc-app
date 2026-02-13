@@ -335,7 +335,7 @@ export default function DomainPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => handleOpenEdit(domain)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -343,7 +343,7 @@ export default function DomainPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error "
                         onClick={() => {
                           setDomainToDelete(domain);
                           setIsDeleteDialogOpen(true);

@@ -47,6 +47,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   FileSpreadsheet,
+  FileText,
   Trash2,
   Pencil,
   ChevronLeft,
@@ -54,6 +55,7 @@ import {
   Upload,
   Home,
   Search,
+  Download,
 } from "lucide-react";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
@@ -500,7 +502,7 @@ export default function GRCAdminGovernancePage() {
               <div className="flex items-center gap-2">
                 <PermissionGate resource="compliance.governance" action="create">
                   <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Import")}
                   </Button>
                 </PermissionGate>
@@ -575,8 +577,18 @@ export default function GRCAdminGovernancePage() {
                     </TableRow>
                   ) : policies.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
-                        {t("No items found")}
+                      <TableCell colSpan={7} className="py-0">
+                        <div className="py-16 text-center">
+                          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                            <FileText className="h-6 w-6 text-primary-500" />
+                          </div>
+                          <h3 className="text-base font-semibold text-slate-800 mb-1">
+                            {t("No Documents Found")}
+                          </h3>
+                          <p className="text-sm text-slate-500">
+                            {t("No governance documents match your current filters.")}
+                          </p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (

@@ -668,7 +668,7 @@ export default function ReportsPage() {
             ) : report ? (
               <div className="space-y-6">
                 {/* Report Title */}
-                <h2 className="text-base font-bold text-center uppercase text-slate-800">
+                <h2 className="text-base font-bold text-start uppercase text-slate-800">
                   {t("REPORT ON INTERNAL AUDIT FOR THE PERIOD FROM")} {formatDate(report.engagement.actualStartDate || report.engagement.plannedStartDate)} {t("TO")} {formatDate(report.engagement.actualEndDate || report.engagement.plannedEndDate)}
                 </h2>
 
@@ -955,7 +955,6 @@ export default function ReportsPage() {
                         variant="outline"
                         onClick={() => setIsEditingAuditeeComment(true)}
                       >
-                        <Pencil className="h-3 w-3 mr-1" />
                         {t("Edit")}
                       </Button>
                     )}
@@ -1029,7 +1028,6 @@ export default function ReportsPage() {
                     className="bg-primary-600 hover:bg-primary-700"
                     onClick={() => setIsEditing(true)}
                   >
-                    <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Edit")}
                   </Button>
                 ) : (

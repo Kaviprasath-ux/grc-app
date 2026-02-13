@@ -24,6 +24,8 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  Upload,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -522,15 +524,24 @@ export default function DocumentLibraryPage() {
   const renderDocumentList = (
     categoryDocs: Document[],
     currentPage: number,
-    setPage: (page: number) => void
+    setPage: (page: number) => void,
+    category: string
   ) => {
     const { items, pagination } = renderPagination(categoryDocs, currentPage, setPage);
+    const categoryInputMap: Record<string, string> = {
+      Policy: "policies",
+      Regulation: "regulations",
+      PreviousReport: "reports",
+    };
 
     if (categoryDocs.length === 0) {
       return (
-        <div className="text-center py-8 text-slate-500">
-          <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-          <p className="text-sm">{t("No documents uploaded yet")}</p>
+        <div className="text-center py-12">
+          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+            <FileText className="h-6 w-6 text-primary-500" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Documents")}</h3>
+          <p className="text-sm text-slate-500">{t("Upload your first document to get started.")}</p>
         </div>
       );
     }
@@ -665,9 +676,12 @@ export default function DocumentLibraryPage() {
             </div>
             <div className="p-6">
               {recentSearches.length === 0 ? (
-                <div className="text-center py-8 text-slate-500">
-                  <Clock className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                  <p className="text-sm">{t("No recent searches")}</p>
+                <div className="text-center py-12">
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                    <Search className="h-6 w-6 text-primary-500" />
+                  </div>
+                  <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Recent Searches")}</h3>
+                  <p className="text-sm text-slate-500">{t("Your search history will appear here.")}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
@@ -723,7 +737,7 @@ export default function DocumentLibraryPage() {
             </div>
             <div className="p-6">
               {renderUploadArea("Policy")}
-              {renderDocumentList(documents.policies, policyPage, setPolicyPage)}
+              {renderDocumentList(documents.policies, policyPage, setPolicyPage, "Policy")}
             </div>
           </div>
         </TabsContent>
@@ -744,7 +758,8 @@ export default function DocumentLibraryPage() {
               {renderDocumentList(
                 documents.regulations,
                 regulationPage,
-                setRegulationPage
+                setRegulationPage,
+                "Regulation"
               )}
             </div>
           </div>
@@ -766,7 +781,8 @@ export default function DocumentLibraryPage() {
               {renderDocumentList(
                 documents.auditReports,
                 reportPage,
-                setReportPage
+                setReportPage,
+                "PreviousReport"
               )}
             </div>
           </div>

@@ -73,16 +73,22 @@ export const navigation: NavItem[] = [
     permission: "grc.customers:view",
   },
   {
-    name: "Email Settings",
-    href: "/grc/email-settings",
+    name: "Email",
     icon: Mail,
-    permission: "grc.email-settings:view",
-  },
-  {
-    name: "Email Templates",
-    href: "/grc/email-templates",
-    icon: FileText,
-    permission: "grc.email-templates:view",
+    children: [
+      {
+        name: "Email Settings",
+        href: "/grc/email-settings",
+        icon: Settings,
+        permission: "grc.email-settings:view",
+      },
+      {
+        name: "Email Templates",
+        href: "/grc/email-templates",
+        icon: FileText,
+        permission: "grc.email-templates:view",
+      },
+    ],
   },
   // ==================== End GRC Administrator Section ====================
 

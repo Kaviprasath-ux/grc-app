@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Image, Trash2, Upload, Home, ChevronRight } from "lucide-react";
+import { Pencil, Image, Trash2, Upload, Home, ChevronRight, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -366,8 +366,18 @@ export default function CustomersPage() {
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-sm text-slate-500">
-                  {t("No customers found")}
+                <TableCell colSpan={6} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                      <Users className="h-6 w-6 text-primary-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                      {t("No Customers Found")}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      {t("Add a new customer to get started.")}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (

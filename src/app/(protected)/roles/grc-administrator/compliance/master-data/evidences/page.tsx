@@ -44,6 +44,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Home,
+  FileText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -666,8 +667,18 @@ export default function EvidencesMasterDataPage() {
           <TableBody>
             {paginatedEvidences.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12">
-                  <p className="text-slate-500">{t("No evidences found")}</p>
+                <TableCell colSpan={4} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                      <FileText className="h-6 w-6 text-primary-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                      {t("No Evidences Found")}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      {t("Create a new evidence to get started.")}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (

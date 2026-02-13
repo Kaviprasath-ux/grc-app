@@ -56,6 +56,7 @@ import {
   Home,
   ChevronRight,
   X,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -217,6 +218,13 @@ export default function AuditPlanningPage() {
   const [engagementForm, setEngagementForm] = useState<EngagementFormData>(emptyFormData);
   const [tasks, setTasks] = useState<AuditTask[]>([...defaultTasks]);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
+  // Task dialog
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [taskForm, setTaskForm] = useState<Omit<AuditTask, "id">>({
+    task: "", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "",
+  });
 
   // File uploads
   const attachFileRef = useRef<HTMLInputElement>(null);
@@ -470,17 +478,28 @@ export default function AuditPlanningPage() {
   };
 
   // Task handlers
-  const addTaskRow = () => {
-    const newTask: AuditTask = {
-      id: Date.now().toString(),
-      task: "",
-      done: false,
-      plannedHours: "",
-      actualHours: "",
-      auditorId: "",
-      comments: "",
-    };
-    setTasks([...tasks, newTask]);
+  const openAddTaskDialog = () => {
+    setEditingTaskId(null);
+    setTaskForm({ task: "", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" });
+    setTaskDialogOpen(true);
+  };
+
+  const openEditTaskDialog = (task: AuditTask) => {
+    setEditingTaskId(task.id);
+    setTaskForm({ task: task.task, done: task.done, plannedHours: task.plannedHours, actualHours: task.actualHours, auditorId: task.auditorId, comments: task.comments });
+    setTaskDialogOpen(true);
+  };
+
+  const handleSaveTask = () => {
+    if (!taskForm.task.trim()) return;
+    if (editingTaskId) {
+      setTasks(tasks.map((t) => (t.id === editingTaskId ? { ...t, ...taskForm } : t)));
+    } else {
+      const newTask: AuditTask = { id: Date.now().toString(), ...taskForm };
+      setTasks([...tasks, newTask]);
+    }
+    setTaskDialogOpen(false);
+    setEditingTaskId(null);
   };
 
   const updateTask = (id: string, field: keyof AuditTask, value: string | boolean) => {
@@ -1165,11 +1184,12 @@ export default function AuditPlanningPage() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-slate-700">{t("Testing Procedure Tasks")}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t("Define tasks and assign auditors for this engagement")}</p>
+                  
                 </div>
                 <Button
                   type="button"
-                  onClick={addTaskRow}
+                  size="sm"
+                  onClick={openAddTaskDialog}
                   className="bg-primary-600 hover:bg-primary-700"
                 >
                   <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1177,167 +1197,91 @@ export default function AuditPlanningPage() {
                 </Button>
               </div>
 
-              {/* Tasks List */}
+              {/* Tasks Table */}
               {tasks.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50/30">
-                  <p className="text-sm text-slate-500">{t("No tasks added yet")}</p>
-                  <p className="text-xs text-slate-400 mt-1">{t("Click 'Add Task' to begin")}</p>
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="text-center py-16">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                      <FileText className="h-6 w-6 text-primary-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">{t("No tasks added yet")}</p>
+                    <p className="text-xs text-slate-400">{t("Click 'Add Task' to begin")}</p>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
-                    >
-                      <div className="space-y-3">
-                        {/* Task Header - Task Description */}
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center mt-1">
-                            <span className="text-xs font-semibold text-slate-600">{index + 1}</span>
-                          </div>
-                          <div className="flex-1">
-                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                              {t("Task Description")}
-                            </Label>
-                            <Input
-                              value={task.task}
-                              onChange={(e) => updateTask(task.id, "task", e.target.value)}
-                              className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200"
-                              placeholder={t("Enter task description")}
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeTask(task.id)}
-                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-
-                        {/* Task Details Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 ltr:pl-10 rtl:pr-10">
-                          {/* Status */}
-                          <div className="md:col-span-3">
-                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                              {t("Status")}
-                            </Label>
-                            <div className="flex items-center gap-2 h-10 px-3 border border-slate-200 rounded-md bg-slate-50/50">
-                              <Checkbox
-                                checked={task.done}
-                                onCheckedChange={(checked) => updateTask(task.id, "done", !!checked)}
-                                id={`task-done-${task.id}`}
-                              />
-                              <label
-                                htmlFor={`task-done-${task.id}`}
-                                className="text-sm cursor-pointer select-none"
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 w-[50px]">#</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Task Description")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[100px]">{t("Status")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[90px]">{t("Planned")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[90px]">{t("Actual")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[80px]">{t("Actions")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tasks.map((task, index) => (
+                        <TableRow key={task.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                          <TableCell className="py-3 ps-5 text-sm text-slate-400 font-medium">{index + 1}</TableCell>
+                          <TableCell className="py-3">
+                            <p className="text-sm text-slate-700 font-medium">{task.task || <span className="text-slate-400 italic">{t("No description")}</span>}</p>
+                            {task.comments && (
+                              <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{task.comments}</p>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-3">
+                            {task.done ? (
+                              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{t("Done")}</span>
+                            ) : (
+                              <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-full">{t("Pending")}</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600 text-center">{task.plannedHours || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600 text-center">{task.actualHours || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">
+                            {auditors.find((a) => a.id === task.auditorId)?.fullName || <span className="text-slate-400">-</span>}
+                          </TableCell>
+                          <TableCell className="py-3 pe-5">
+                            <div className="flex items-center gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                                onClick={() => openEditTaskDialog(task)}
+                                title={t("Edit")}
                               >
-                                {task.done ? (
-                                  <span className="text-green-600 font-medium">{t("Done")}</span>
-                                ) : (
-                                  <span className="text-slate-500">{t("Pending")}</span>
-                                )}
-                              </label>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                                onClick={() => removeTask(task.id)}
+                                title={t("Delete")}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
-                          </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
 
-                          {/* Planned Hours */}
-                          <div className="md:col-span-2">
-                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                              {t("Planned (hrs)")}
-                            </Label>
-                            <Input
-                              type="number"
-                              value={task.plannedHours}
-                              onChange={(e) => updateTask(task.id, "plannedHours", e.target.value)}
-                              className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200 text-center"
-                              placeholder="0"
-                              min="0"
-                              step="0.5"
-                            />
-                          </div>
-
-                          {/* Actual Hours */}
-                          <div className="md:col-span-2">
-                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                              {t("Actual (hrs)")}
-                            </Label>
-                            <Input
-                              type="number"
-                              value={task.actualHours}
-                              onChange={(e) => updateTask(task.id, "actualHours", e.target.value)}
-                              className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200 text-center"
-                              placeholder="0"
-                              min="0"
-                              step="0.5"
-                            />
-                          </div>
-
-                          {/* Auditor */}
-                          <div className="md:col-span-5">
-                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                              {t("Assigned Auditor")}
-                            </Label>
-                            <Select
-                              value={task.auditorId}
-                              onValueChange={(value) => updateTask(task.id, "auditorId", value)}
-                            >
-                              <SelectTrigger className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200">
-                                <SelectValue placeholder={t("Select auditor")} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {auditors.map((user) => (
-                                  <SelectItem key={user.id} value={user.id}>
-                                    {user.fullName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Comments */}
-                          <div className="md:col-span-12">
-                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                              {t("Comments")}
-                            </Label>
-                            <Input
-                              value={task.comments}
-                              onChange={(e) => updateTask(task.id, "comments", e.target.value)}
-                              className="border-slate-200 text-sm bg-white focus:border-primary-300 focus:ring-primary-200"
-                              placeholder={t("Add notes or comments for this task")}
-                            />
-                          </div>
-                        </div>
+                  {/* Totals Footer */}
+                  <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                    <span className="text-xs font-semibold text-slate-600">{t("Total Hours")}</span>
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500">{t("Planned")}:</span>
+                        <span className="text-sm font-bold text-slate-800">{calculateTotalHours("plannedHours")}</span>
                       </div>
-                    </div>
-                  ))}
-
-                  {/* Totals Summary */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-700">
-                        {t("Total Hours")}
-                      </span>
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500">{t("Planned")}:</span>
-                          <div className="bg-white border border-slate-200 rounded-md px-3 py-1.5 min-w-[60px] text-center">
-                            <span className="text-sm font-bold text-slate-800">
-                              {calculateTotalHours("plannedHours")}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500">{t("Actual")}:</span>
-                          <div className="bg-white border border-slate-200 rounded-md px-3 py-1.5 min-w-[60px] text-center">
-                            <span className="text-sm font-bold text-slate-800">
-                              {calculateTotalHours("actualHours")}
-                            </span>
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500">{t("Actual")}:</span>
+                        <span className="text-sm font-bold text-slate-800">{calculateTotalHours("actualHours")}</span>
                       </div>
                     </div>
                   </div>
@@ -1406,7 +1350,7 @@ export default function AuditPlanningPage() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
+            <Upload className="h-4 w-4 mr-2" />
             {t("Export")}
           </Button>
           <Button variant="outline" size="sm" className="border-primary-600 text-primary-600 hover:bg-primary-50" onClick={openReportDialog}>
@@ -1556,7 +1500,7 @@ export default function AuditPlanningPage() {
 
       {/* Report Selection Dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1645,7 +1589,7 @@ export default function AuditPlanningPage() {
 
       {/* Add Engagement Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1684,7 +1628,7 @@ export default function AuditPlanningPage() {
 
       {/* Edit Engagement Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1721,9 +1665,122 @@ export default function AuditPlanningPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Add/Edit Task Dialog */}
+      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">
+                {editingTaskId ? t("Edit Task") : t("Add Task")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Task Description")} <span className="text-red-500">*</span></Label>
+              <Input
+                value={taskForm.task}
+                onChange={(e) => setTaskForm({ ...taskForm, task: e.target.value })}
+                placeholder={t("Enter task description")}
+                className="w-full bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">{t("Planned Hours")}</Label>
+                <Input
+                  type="number"
+                  value={taskForm.plannedHours}
+                  onChange={(e) => setTaskForm({ ...taskForm, plannedHours: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  step="0.5"
+                  className="w-full bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">{t("Actual Hours")}</Label>
+                <Input
+                  type="number"
+                  value={taskForm.actualHours}
+                  onChange={(e) => setTaskForm({ ...taskForm, actualHours: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  step="0.5"
+                  className="w-full bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Assigned Auditor")}</Label>
+              <Select
+                value={taskForm.auditorId}
+                onValueChange={(value) => setTaskForm({ ...taskForm, auditorId: value })}
+              >
+                <SelectTrigger className="w-full bg-white">
+                  <SelectValue placeholder={t("Select auditor")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {auditors.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+              <div className="flex items-center gap-2 h-10 px-3 border border-slate-200 rounded-md bg-white">
+                <Checkbox
+                  checked={taskForm.done}
+                  onCheckedChange={(checked) => setTaskForm({ ...taskForm, done: !!checked })}
+                  id="task-dialog-done"
+                />
+                <label htmlFor="task-dialog-done" className="text-sm cursor-pointer select-none">
+                  {taskForm.done ? (
+                    <span className="text-green-600 font-medium">{t("Done")}</span>
+                  ) : (
+                    <span className="text-slate-500">{t("Pending")}</span>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Comments")}</Label>
+              <Textarea
+                value={taskForm.comments}
+                onChange={(e) => setTaskForm({ ...taskForm, comments: e.target.value })}
+                placeholder={t("Add notes or comments for this task")}
+                rows={3}
+                className="w-full bg-white resize-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleSaveTask}
+              disabled={!taskForm.task.trim()}
+              className="bg-primary-600 hover:bg-primary-700"
+            >
+              {editingTaskId ? t("Save Changes") : t("Add Task")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Report Preview Modal */}
       <Dialog open={reportPreviewOpen} onOpenChange={setReportPreviewOpen}>
-        <DialogContent className="sm:max-w-[900px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>

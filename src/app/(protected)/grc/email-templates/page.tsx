@@ -29,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Upload, FileDown, FileUp } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Upload, FileDown, FileUp,Download } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -726,7 +726,7 @@ export default function EmailTemplatesPage() {
             onClick={() => fileInputRef.current?.click()}
             title={t("Import templates from XML file")}
           >
-            <FileUp className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Import")}
           </Button>
           <Button
@@ -736,7 +736,7 @@ export default function EmailTemplatesPage() {
             disabled={templates.length === 0}
             title={t("Export templates to XML file")}
           >
-            <FileDown className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
           <Button onClick={openAddDialog} size="sm">
@@ -779,11 +779,20 @@ export default function EmailTemplatesPage() {
           </TableHeader>
           <TableBody>
             {filteredTemplates.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-sm text-slate-500">
-                  <div className="flex flex-col items-center gap-2">
-                    <FileText className="h-8 w-8 text-slate-300" />
-                    <p>{t("No email templates found")}</p>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={5}>
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                      <FileText className="h-6 w-6 text-primary-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                      {t("No Email Templates Found")}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      {filterCategory !== "all"
+                        ? t("No templates match the selected category filter.")
+                        : t("Get started by adding your first email template.")}
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>

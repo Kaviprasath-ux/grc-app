@@ -765,7 +765,7 @@ export default function FrameworkOverviewPage() {
                             e.stopPropagation();
                             openEditDialog(framework);
                           }}
-                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -776,7 +776,7 @@ export default function FrameworkOverviewPage() {
                             e.stopPropagation();
                             openDeleteDialog(framework);
                           }}
-                          className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                          className="h-7 w-7 text-slate-400 hover:text-semantic-error"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

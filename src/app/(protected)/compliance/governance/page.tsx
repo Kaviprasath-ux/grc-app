@@ -926,33 +926,36 @@ export default function GovernancePage() {
                           <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
                           <TableCell className="py-3 pe-5">
-                            <div className="flex gap-1">
+                            <div className="flex items-center gap-0.5">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                className="h-8 w-8 text-slate-400 hover:text-slate-600"
                                 onClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                                title={t("View")}
                               >
-                                <Eye className="h-3.5 w-3.5" />
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                className="h-8 w-8 text-slate-400 hover:text-slate-600"
                                 onClick={() => openEditDialog(policy)}
+                                title={t("Edit")}
                               >
-                                <Pencil className="h-3.5 w-3.5" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                                 onClick={() => {
                                   setPolicyToDelete(policy);
                                   setIsDeleteDialogOpen(true);
                                 }}
+                                title={t("Delete")}
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -961,11 +964,21 @@ export default function GovernancePage() {
                       {policies.length === 0 && (
                         <TableRow className="hover:bg-transparent">
                           <TableCell colSpan={7} className="py-16 text-center">
-                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                              <FileText className="h-6 w-6 text-primary-400" />
+                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                              <FileText className="h-6 w-6 text-primary-500" />
                             </div>
-                            <p className="text-sm font-medium text-slate-600 mb-1">{t(`No ${docType.toLowerCase()}s found`)}</p>
-                            <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
+                            <h3 className="text-base font-semibold text-slate-800 mb-1">{t(`No ${docType.toLowerCase()}s found`)}</h3>
+                            {search || statusFilter || frameworkFilter !== "all" ? (
+                              <p className="text-sm text-slate-500">{t("Try adjusting your search or filters")}</p>
+                            ) : (
+                              <>
+                                <p className="text-sm text-slate-500 mb-6">{t(`Create your first ${docType.toLowerCase()} to get started.`)}</p>
+                                <Button size="sm" onClick={() => { setNewPolicy({ ...newPolicy, documentType: docType }); setIsCreateDialogOpen(true); }}>
+                                  <Plus className="h-4 w-4 me-2" />
+                                  {t("New Governance")}
+                                </Button>
+                              </>
+                            )}
                           </TableCell>
                         </TableRow>
                       )}
@@ -1070,11 +1083,11 @@ export default function GovernancePage() {
                           })}
                         </TableCell>
                         <TableCell className="py-3 pe-5">
-                          <div className="flex gap-1">
+                          <div className="flex items-center gap-0.5">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
                               onClick={() => openLinkDialog(doc)}
                               title={t("Link Governance")}
                             >
@@ -1083,7 +1096,7 @@ export default function GovernancePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
                               onClick={() => window.open(`/api/governance-vault/${doc.id}/download`, "_blank")}
                               title={t("Download")}
                             >
@@ -1092,11 +1105,11 @@ export default function GovernancePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                              className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                               onClick={() => handleDeleteVaultDoc(doc.id)}
                               title={t("Delete")}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -1105,11 +1118,15 @@ export default function GovernancePage() {
                     {vaultDocuments.length === 0 && (
                       <TableRow className="hover:bg-transparent">
                         <TableCell colSpan={6} className="py-16 text-center">
-                          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                            <FileText className="h-6 w-6 text-primary-400" />
+                          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                            <FileText className="h-6 w-6 text-primary-500" />
                           </div>
-                          <p className="text-sm font-medium text-slate-600 mb-1">{t("No documents found")}</p>
-                          <p className="text-xs text-slate-400">{t("Upload documents to get started")}</p>
+                          <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Documents")}</h3>
+                          <p className="text-sm text-slate-500 mb-6">{t("Upload your first document to get started.")}</p>
+                          <Button size="sm" onClick={() => document.getElementById("vault-file")?.click()}>
+                            <Upload className="h-4 w-4 me-2" />
+                            {t("Upload Document")}
+                          </Button>
                         </TableCell>
                       </TableRow>
                     )}
@@ -1212,36 +1229,39 @@ export default function GovernancePage() {
                           <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
                           <TableCell className="py-3 pe-5">
-                            <div className="flex gap-1">
+                            <div className="flex items-center gap-0.5">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                className="h-8 w-8 text-slate-400 hover:text-slate-600"
                                 onClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                                title={t("View")}
                               >
-                                <Eye className="h-3.5 w-3.5" />
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <PermissionGate resource="compliance.governance" action="edit">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
                                   onClick={() => openEditDialog(policy)}
+                                  title={t("Edit")}
                                 >
-                                  <Pencil className="h-3.5 w-3.5" />
+                                  <Pencil className="h-4 w-4" />
                                 </Button>
                               </PermissionGate>
                               <PermissionGate resource="compliance.governance" action="delete">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                                   onClick={() => {
                                     setPolicyToDelete(policy);
                                     setIsDeleteDialogOpen(true);
                                   }}
+                                  title={t("Delete")}
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </PermissionGate>
                             </div>
@@ -1251,11 +1271,23 @@ export default function GovernancePage() {
                       {policies.length === 0 && (
                         <TableRow className="hover:bg-transparent">
                           <TableCell colSpan={7} className="py-16 text-center">
-                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                              <FileText className="h-6 w-6 text-primary-400" />
+                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                              <FileText className="h-6 w-6 text-primary-500" />
                             </div>
-                            <p className="text-sm font-medium text-slate-600 mb-1">{t(`No ${docType.toLowerCase()}s found`)}</p>
-                            <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
+                            <h3 className="text-base font-semibold text-slate-800 mb-1">{t(`No ${docType.toLowerCase()}s found`)}</h3>
+                            {search || frameworkFilter !== "all" ? (
+                              <p className="text-sm text-slate-500">{t("Try adjusting your search or filters")}</p>
+                            ) : (
+                              <>
+                                <p className="text-sm text-slate-500 mb-6">{t(`Create your first ${docType.toLowerCase()} to get started.`)}</p>
+                                <PermissionGate resource="compliance.governance" action="create">
+                                  <Button size="sm" onClick={() => { setNewPolicy({ ...newPolicy, documentType: docType }); setIsCreateDialogOpen(true); }}>
+                                    <Plus className="h-4 w-4 me-2" />
+                                    {t("New Governance")}
+                                  </Button>
+                                </PermissionGate>
+                              </>
+                            )}
                           </TableCell>
                         </TableRow>
                       )}

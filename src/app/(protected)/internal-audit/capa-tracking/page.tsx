@@ -42,6 +42,7 @@ import {
   ChevronRight,
   Home,
   Search,
+  ClipboardList,
 } from "lucide-react";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
@@ -120,9 +121,6 @@ export default function CAPATrackingPage() {
   const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
   const isAuditeeOnly = isAuditee && !isAuditTeam;
 
-  // Show actions column for audit team (full actions) or auditee (edit only)
-  const showActions = isAuditHead || isAuditeeOnly;
-
   const [loading, setLoading] = useState(true);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -134,7 +132,7 @@ export default function CAPATrackingPage() {
   });
 
   // Filters
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [engagementStatusFilter, setEngagementStatusFilter] = useState<string>("Completed");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -212,7 +210,7 @@ export default function CAPATrackingPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (selectedDepartment) {
+      if (selectedDepartment && selectedDepartment !== "all") {
         params.append("departmentId", selectedDepartment);
       }
       if (engagementStatusFilter) {
@@ -473,8 +471,6 @@ export default function CAPATrackingPage() {
     );
   };
 
-  const startIndex = (pagination.page - 1) * pagination.limit + 1;
-  const endIndex = Math.min(pagination.page * pagination.limit, pagination.total);
 
   return (
     <div className="space-y-6">
@@ -516,7 +512,7 @@ export default function CAPATrackingPage() {
                 setSearchQuery(e.target.value);
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
-              className="pl-10 w-[300px] h-9 bg-slate-50 border-slate-200"
+              className="pl-10 w-[350px] h-9 bg-slate-50 border-slate-200"
             />
           </div>
           <div className="flex items-center gap-3 ml-auto">
@@ -540,7 +536,7 @@ export default function CAPATrackingPage() {
             <Select
               value={selectedDepartment}
               onValueChange={(value) => {
-                setSelectedDepartment(value === "all" ? "" : value);
+                setSelectedDepartment(value);
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
             >
@@ -556,29 +552,27 @@ export default function CAPATrackingPage() {
                 ))}
               </SelectContent>
             </Select>
+            
           </div>
         </div>
-        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pl-5 min-w-[100px]">{t("Findings ID")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 min-w-[200px]">{t("Finding")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[90px]">{t("Severity")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 min-w-[180px]">{t("Audit Plan")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[120px]">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[130px]">{t("Responsible")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Target Date")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Status")}</TableHead>
-              {showActions && (
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pr-5 min-w-[90px]">{t("Actions")}</TableHead>
-              )}
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Findings ID")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Finding")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Severity")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Plan")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Responsible")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Target Date")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={showActions ? 9 : 8} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <div className="relative h-6 w-6">
                       <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
@@ -590,40 +584,40 @@ export default function CAPATrackingPage() {
             ) : findings.length > 0 ? (
               findings.map((finding) => (
                 <TableRow key={finding.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900 whitespace-nowrap">{finding.findingId}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 max-w-[250px]">
-                    <span className="line-clamp-2">{finding.finding}</span>
+                  <TableCell className="py-4 pl-5 text-sm font-medium text-slate-800 whitespace-nowrap">{finding.findingId}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700 max-w-[200px] truncate">
+                    {finding.finding}
                   </TableCell>
-                  <TableCell className="py-3">
+                  <TableCell className="py-4">
                     {getSeverityBadge(finding.severity)}
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 max-w-[200px]">
-                    <span className="line-clamp-2">{finding.auditPlan}</span>
+                  <TableCell className="py-4 text-sm text-slate-700 max-w-[200px] truncate">
+                    {finding.auditPlan}
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{finding.departmentName}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{finding.responsiblePerson}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(finding.targetDate)}</TableCell>
-                  <TableCell className="py-3">
+                  <TableCell className="py-4 text-sm text-slate-700">{finding.departmentName}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{finding.responsiblePerson}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700 whitespace-nowrap">{formatDate(finding.targetDate)}</TableCell>
+                  <TableCell className="py-4">
                     {getStatusBadge(finding.status)}
                   </TableCell>
-                  {showActions && (
-                    <TableCell className="py-3 pr-5">
-                      <div className="flex items-center gap-0.5">
-                        {finding.status.toLowerCase() === "closed" ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                            title={t("View")}
-                            onClick={() => {
-                              setFindingToView(finding);
-                              setViewDialogOpen(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <>
+                  <TableCell className="py-4 pr-5">
+                    <div className="flex items-center justify-end gap-0.5">
+                      {finding.status.toLowerCase() === "closed" ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          title={t("View")}
+                          onClick={() => {
+                            setFindingToView(finding);
+                            setViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <>
+                          {(isAuditHead || isAuditeeOnly) ? (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -633,38 +627,61 @@ export default function CAPATrackingPage() {
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            {/* Delete only for Audit Head, not Auditee */}
-                            {isAuditHead && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                                title={t("Delete")}
-                                onClick={() => {
-                                  setFindingToDelete(finding);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                              title={t("View")}
+                              onClick={() => {
+                                setFindingToView(finding);
+                                setViewDialogOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {isAuditHead && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                              title={t("Delete")}
+                              onClick={() => {
+                                setFindingToDelete(finding);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={showActions ? 9 : 8} className="h-24 text-center text-sm text-slate-500">
-                  {t("No findings found")}
+                <TableCell colSpan={9} className="py-12">
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                      <ClipboardList className="h-6 w-6 text-primary-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                      {t("No Findings Found")}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      {searchQuery || (selectedDepartment && selectedDepartment !== "all")
+                        ? t("Try adjusting your search or filters.")
+                        : t("Findings from completed audit engagements will appear here.")}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-        </div>
 
         {/* Pagination */}
         <PaginationUI
@@ -720,7 +737,7 @@ export default function CAPATrackingPage() {
 
       {/* View Dialog (for Closed findings) */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -884,7 +901,7 @@ export default function CAPATrackingPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>

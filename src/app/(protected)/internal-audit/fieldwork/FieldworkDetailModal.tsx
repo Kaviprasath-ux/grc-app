@@ -44,12 +44,10 @@ import {
   X,
   XCircle,
   Loader2,
-  Plus,
   MessageSquare,
   FileSpreadsheet,
   Pencil,
   Trash2,
-  Save,
   Paperclip,
   Check,
   AlertCircle,
@@ -231,9 +229,12 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [addFullFindingDialogOpen, setAddFullFindingDialogOpen] = useState(false);
   const [savingFullFinding, setSavingFullFinding] = useState(false);
   const [findingStep, setFindingStep] = useState(1); // Multi-step wizard state (1, 2, or 3)
-  const [addingTask, setAddingTask] = useState(false);
-  const [savingTask, setSavingTask] = useState<string | null>(null);
   const [uploadingTaskDocument, setUploadingTaskDocument] = useState<string | null>(null);
+  // Task dialog states
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
+  const [taskForm, setTaskForm] = useState({ task: "", comments: "", executed: false });
+  const [savingTaskDialog, setSavingTaskDialog] = useState(false);
   const [addEvidenceDialogOpen, setAddEvidenceDialogOpen] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
   const [deleteFindingDialogOpen, setDeleteFindingDialogOpen] = useState(false);
@@ -313,6 +314,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [generatedWorkpapers, setGeneratedWorkpapers] = useState<AIWorkpaper[]>([]);
   const [selectedGeneratedIds, setSelectedGeneratedIds] = useState<string[]>([]);
   const [addingGeneratedWorkpapers, setAddingGeneratedWorkpapers] = useState(false);
+  const [editingGeneratedId, setEditingGeneratedId] = useState<string | null>(null);
+  const [editingGeneratedData, setEditingGeneratedData] = useState({ task: "", steps: "", evidences: "", questionChecklist: "" });
 
   // Form states
   const [newFinding, setNewFinding] = useState({ title: "", description: "", severity: "Medium", recommendation: "" });
@@ -541,7 +544,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   };
 
   const handleGenerateAIWorkpapers = async () => {
-    setGeneratingWorkpapers(true); setGeneratedWorkpapers([]); setSelectedGeneratedIds([]); setGenerateAIDialogOpen(true);
+    setGeneratingWorkpapers(true); setGeneratedWorkpapers([]); setSelectedGeneratedIds([]);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/ai-workpapers/generate`, { method: "POST" });
       if (response.ok) { const data = await response.json(); setGeneratedWorkpapers(data.workpapers || []); }
@@ -799,20 +802,57 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     } catch (error) { console.error("Error generating AI review:", error); toast.error(t("Failed to generate AI review")); } finally { setGeneratingAIReview(false); }
   };
 
-  const handleAddTask = async () => {
-    setAddingTask(true);
-    try {
-      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, { method: "POST" });
-      if (response.ok) fetchTaskList(); else toast.error(t("Failed to add task"));
-    } catch (error) { toast.error(t("Failed to add task")); } finally { setAddingTask(false); }
+  const openAddTaskDialog = () => {
+    setEditingTask(null);
+    setTaskForm({ task: "", comments: "", executed: false });
+    setTaskDialogOpen(true);
   };
 
-  const handleUpdateTask = async (taskId: string, field: string, value: string | boolean) => {
+  const openEditTaskDialog = (task: TaskItem) => {
+    setEditingTask(task);
+    setTaskForm({ task: task.task, comments: task.comments, executed: task.executed });
+    setTaskDialogOpen(true);
+  };
+
+  const handleSaveTaskDialog = async () => {
+    if (!taskForm.task.trim()) return;
+    setSavingTaskDialog(true);
     try {
-      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ taskId, [field]: value }) });
-      if (response.ok) setTaskList((prev) => prev.map((t) => (t.id === taskId ? { ...t, [field]: value } : t)));
-      else toast.error(t("Failed to update task"));
-    } catch (error) { toast.error(t("Failed to update task")); }
+      if (editingTask) {
+        // Update existing task
+        const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId: editingTask.id, task: taskForm.task, executed: taskForm.executed, comments: taskForm.comments }),
+        });
+        if (response.ok) {
+          setTaskList((prev) => prev.map((t) => t.id === editingTask.id ? { ...t, task: taskForm.task, executed: taskForm.executed, comments: taskForm.comments } : t));
+          toast.success(t("Task saved successfully"));
+        } else toast.error(t("Failed to save task"));
+      } else {
+        // Create new task then update with form data
+        const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, { method: "POST" });
+        if (response.ok) {
+          const newTask = await response.json();
+          const taskId = newTask.id || newTask?.data?.id;
+          if (taskId && (taskForm.task || taskForm.comments || taskForm.executed)) {
+            await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ taskId, task: taskForm.task, executed: taskForm.executed, comments: taskForm.comments }),
+            });
+          }
+          fetchTaskList();
+          toast.success(t("Task added successfully"));
+        } else toast.error(t("Failed to add task"));
+      }
+      setTaskDialogOpen(false);
+      setEditingTask(null);
+    } catch (error) {
+      toast.error(t("Failed to save task"));
+    } finally {
+      setSavingTaskDialog(false);
+    }
   };
 
   const handleUploadTaskDocument = async (taskId: string, file: File) => {
@@ -822,7 +862,6 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks/${taskId}/document`, { method: "POST", body: formData });
       if (response.ok) {
         const data = await response.json();
-        await handleUpdateTask(taskId, "document", data.document);
         setTaskList((prev) => prev.map((t) => t.id === taskId ? { ...t, document: data.document, documentName: data.documentName } : t));
         toast.success(t("Document uploaded successfully"));
       } else toast.error(t("Failed to upload document"));
@@ -834,14 +873,6 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks?taskId=${taskId}`, { method: "DELETE" });
       if (response.ok) { fetchTaskList(); toast.success(t("Task deleted successfully")); } else toast.error(t("Failed to delete task"));
     } catch (error) { toast.error(t("Failed to delete task")); }
-  };
-
-  const handleSaveTask = async (task: TaskItem) => {
-    setSavingTask(task.id);
-    try {
-      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ taskId: task.id, task: task.task, executed: task.executed, comments: task.comments }) });
-      if (response.ok) toast.success(t("Task saved successfully")); else toast.error(t("Failed to save task"));
-    } catch (error) { toast.error(t("Failed to save task")); } finally { setSavingTask(null); }
   };
 
   const handleAddEvidence = async () => {
@@ -879,11 +910,10 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0 pr-14">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800 text-center flex items-center justify-center gap-3">
-                <span>{engagement ? `${engagement.engagementTitle} (${engagement.auditId})` : t("Fieldwork Details")}</span>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {engagement ? `${engagement.engagementTitle} (${engagement.auditId})` : t("Fieldwork Details")}
                 {engagement && engagement.status === "Completed" && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-700">
-                    <Check className="h-3.5 w-3.5" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-700 ltr:ml-3 rtl:mr-3">
                     {t("Completed")}
                   </span>
                 )}
@@ -961,39 +991,39 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                         </div>
                       </div>
 
-                      <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl border border-slate-200/80 p-6">
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Engagement ID")}</Label>
-                            <p className="text-sm font-medium text-slate-900">{engagement.auditId}</p>
+                      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                        <div className="grid grid-cols-2 gap-0">
+                          <div className="px-5 py-4 border-b border-slate-100 border-r border-slate-100">
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Engagement ID")}</Label>
+                            <p className="text-sm font-medium text-slate-800 mt-1">{engagement.auditId}</p>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Title")}</Label>
-                            <p className="text-sm font-medium text-slate-900">{engagement.engagementTitle}</p>
+                          <div className="px-5 py-4 border-b border-slate-100">
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Title")}</Label>
+                            <p className="text-sm font-medium text-slate-800 mt-1">{engagement.engagementTitle}</p>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Auditor")}</Label>
-                            <p className="text-sm font-medium text-slate-900">{getAuditorName()}</p>
+                          <div className="px-5 py-4 border-b border-slate-100 border-r border-slate-100">
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Auditor")}</Label>
+                            <p className="text-sm font-medium text-slate-800 mt-1">{getAuditorName()}</p>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Timeline")}</Label>
-                            <p className="text-sm font-medium text-slate-900">{formatDate(engagement.startDate)} {t("to")} {formatDate(engagement.endDate)}</p>
+                          <div className="px-5 py-4 border-b border-slate-100">
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Timeline")}</Label>
+                            <p className="text-sm font-medium text-slate-800 mt-1">{formatDate(engagement.startDate)} {t("to")} {formatDate(engagement.endDate)}</p>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Status")}</Label>
-                            <p className="text-sm font-medium text-slate-900">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
+                          <div className="px-5 py-4 border-r border-slate-100">
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
+                            <div className="mt-1">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                                 engagement.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
                                 engagement.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
                                 'bg-slate-100 text-slate-800'
                               }`}>
                                 {engagement.status}
                               </span>
-                            </p>
+                            </div>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Department")}</Label>
-                            <p className="text-sm font-medium text-slate-900">{engagement.department?.name || "-"}</p>
+                          <div className="px-5 py-4">
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
+                            <p className="text-sm font-medium text-slate-800 mt-1">{engagement.department?.name || "-"}</p>
                           </div>
                         </div>
                       </div>
@@ -1006,57 +1036,131 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-slate-800">{t("Workpapers")}</h3>
-                            {isAuditHead && (
-                              <Button size="sm" onClick={() => { setUploadCategory("workpapers"); setUploadDialogOpen(true); }} disabled={isReadOnly}>
-                                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Upload Workpaper")}
+                            {isAuditHead && !isReadOnly && (
+                              <Button size="sm" onClick={() => { setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); }}>
+                                {t("Upload Workpaper")}
                               </Button>
                             )}
                           </div>
                           {workpapers.length > 0 ? (
-                            <div className="space-y-2">
-                              {workpapers.map((wp) => (
-                                <div key={wp.id} className="flex items-center gap-4 p-3 bg-white rounded border">
-                                  <FileSpreadsheet className="h-8 w-8 text-green-600 flex-shrink-0" />
-                                  <a href={`/api${wp.filePath}`} target="_blank" rel="noopener noreferrer" className="text-slate-700 hover:underline font-medium flex-grow">{wp.fileName}</a>
-                                  <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" title={t("View")} onClick={() => window.open(`/api${wp.filePath}`, "_blank")}><Eye className="h-5 w-5 text-slate-600" /></Button>
-                                    <Button variant="ghost" size="icon" title={t("Download")} onClick={() => { const link = document.createElement("a"); link.href = `/api${wp.filePath}`; link.download = wp.fileName; link.click(); }}><Download className="h-5 w-5 text-slate-600" /></Button>
-                                    {isAuditHead && (
-                                      <Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setWorkpaperToDelete(wp); setDeleteWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-5 w-5 text-red-500" /></Button>
-                                    )}
+                            <div className="space-y-4">
+                              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("File Name")}</TableHead>
+                                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[120px]">{t("Action")}</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {workpapers.map((wp) => (
+                                      <TableRow key={wp.id} className="border-b border-slate-100 last:border-0">
+                                        <TableCell className="py-3 ps-5">
+                                          <div className="flex items-center gap-3">
+                                            <FileSpreadsheet className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                            <a href={`/api${wp.filePath}`} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-700 hover:underline font-medium">{wp.fileName}</a>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="py-3 pe-5">
+                                          <div className="flex items-center gap-0.5">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("View")} onClick={() => window.open(`/api${wp.filePath}`, "_blank")}><Eye className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Download")} onClick={() => { const link = document.createElement("a"); link.href = `/api${wp.filePath}`; link.download = wp.fileName; link.click(); }}><Download className="h-4 w-4" /></Button>
+                                            {isAuditHead && (
+                                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setWorkpaperToDelete(wp); setDeleteWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button>
+                                            )}
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                              {/* Inline upload zone below table */}
+                              {isAuditHead && !isReadOnly && (
+                                <div
+                                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all group ${isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-200 hover:border-primary-400 hover:bg-primary-50/30"}`}
+                                  onClick={() => { setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); }}
+                                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
+                                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); }}
+                                  onDrop={(e) => {
+                                    e.preventDefault(); e.stopPropagation(); setIsDragOver(false);
+                                    const files = Array.from(e.dataTransfer.files);
+                                    if (files.length > 0) {
+                                      setUploadCategory("workpapers");
+                                      setUploadedFiles([]);
+                                      const mapped = files.map((f) => ({ id: Date.now().toString() + Math.random().toString(36).substr(2, 9), name: f.name, size: f.size, type: f.type, file: f }));
+                                      setUploadedFiles(mapped);
+                                      setUploadDialogOpen(true);
+                                    }
+                                  }}
+                                >
+                                  <div className="flex items-center justify-center gap-3">
+                                    <div className="w-9 h-9 rounded-lg bg-slate-100 group-hover:bg-primary-100 flex items-center justify-center transition-colors">
+                                      <Upload className="h-4 w-4 text-slate-400 group-hover:text-primary-500 transition-colors" />
+                                    </div>
+                                    <div className="text-start">
+                                      <p className="text-sm font-medium text-slate-600 group-hover:text-primary-700 transition-colors">{t("Drop files here or click to upload")}</p>
+                                      <p className="text-xs text-slate-400">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
+                                    </div>
                                   </div>
                                 </div>
-                              ))}
+                              )}
                             </div>
                           ) : (
-                            <div className="text-center py-8 text-slate-500">{t("No workpapers uploaded yet")}</div>
+                            <div
+                              className={`border-2 border-dashed rounded-xl p-10 text-center transition-all ${isAuditHead && !isReadOnly ? (isDragOver ? "border-primary-500 bg-primary-50 cursor-pointer" : "cursor-pointer hover:border-primary-400 hover:bg-primary-50/30 border-slate-300") : "border-slate-200"}`}
+                              onClick={() => { if (isAuditHead && !isReadOnly) { setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); } }}
+                              onDragOver={(e) => { if (isAuditHead && !isReadOnly) { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); } }}
+                              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); }}
+                              onDrop={(e) => {
+                                if (!isAuditHead || isReadOnly) return;
+                                e.preventDefault(); e.stopPropagation(); setIsDragOver(false);
+                                const files = Array.from(e.dataTransfer.files);
+                                if (files.length > 0) {
+                                  setUploadCategory("workpapers");
+                                  setUploadedFiles([]);
+                                  const mapped = files.map((f) => ({ id: Date.now().toString() + Math.random().toString(36).substr(2, 9), name: f.name, size: f.size, type: f.type, file: f }));
+                                  setUploadedFiles(mapped);
+                                  setUploadDialogOpen(true);
+                                }
+                              }}
+                            >
+                              <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                                <Upload className="h-6 w-6 text-primary-400" />
+                              </div>
+                              <p className="text-sm font-medium text-slate-600 mb-1">{t("No workpapers uploaded yet")}</p>
+                              <p className="text-xs text-slate-400 mb-4">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
+                              {isAuditHead && !isReadOnly && (
+                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); }}>
+                                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                  {t("Browse Files")}
+                                </Button>
+                              )}
+                            </div>
                           )}
                         </div>
 
                         {/* AI-Generated Workpapers */}
                         <div className="space-y-4 pt-6 border-t border-slate-200">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Sparkles className="h-5 w-5 text-primary-600" />
-                              <h3 className="text-lg font-semibold text-slate-800">{t("AI-Generated Workpapers")}</h3>
-                            </div>
+                            <h3 className="text-lg font-semibold text-slate-800">{t("AI-Generated Workpapers")}</h3>
                             {isAuditHead && (
-                              <Button size="sm" onClick={handleGenerateAIWorkpapers} disabled={generatingWorkpapers || isReadOnly}>
-                                {generatingWorkpapers ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Generating...")}</>) : (<><FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Generate Workpaper with AI")}</>)}
+                              <Button size="sm" onClick={() => { setGeneratedWorkpapers([]); setSelectedGeneratedIds([]); setGeneratedWorkpapersError(""); setGenerateAIDialogOpen(true); }} disabled={isReadOnly}>
+                                {t("Generate Workpaper with AI")}
                               </Button>
                             )}
                           </div>
                           {aiWorkpapers.length > 0 ? (
-                            <div className="bg-white border rounded-lg overflow-hidden">
+                            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                               <Table>
                                 <TableHeader>
-                                  <TableRow className="bg-slate-50 border-b">
-                                    <TableHead className="text-slate-700 font-semibold w-[200px]">{t("Task")}</TableHead>
-                                    <TableHead className="text-slate-700 font-semibold w-[180px]">{t("Evidences")}</TableHead>
-                                    <TableHead className="text-slate-700 font-semibold w-[250px]">{t("Steps")}</TableHead>
-                                    <TableHead className="text-slate-700 font-semibold w-[120px]">{t("Question Checklist")}</TableHead>
-                                    <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Comments")}</TableHead>
-                                    {isAuditHead && <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Action")}</TableHead>}
+                                  <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 w-[200px]">{t("Task")}</TableHead>
+                                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[180px]">{t("Evidences")}</TableHead>
+                                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[250px]">{t("Steps")}</TableHead>
+                                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[120px]">{t("Question Checklist")}</TableHead>
+                                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[100px]">{t("Comments")}</TableHead>
+                                    {isAuditHead && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>}
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1073,10 +1177,10 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                       <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.questionChecklist)}</div></TableCell>
                                       <TableCell className="align-top py-4 text-center">{wp.comments || "-"}</TableCell>
                                       {isAuditHead && (
-                                        <TableCell className="align-top py-4">
-                                          <div className="flex items-center gap-1">
-                                            <Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenEditAIWorkpaper(wp)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button>
-                                            <Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setSelectedAIWorkpaper(wp); setDeleteAIWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                        <TableCell className="align-top py-4 pe-5">
+                                          <div className="flex items-center gap-0.5">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Edit")} onClick={() => handleOpenEditAIWorkpaper(wp)} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setSelectedAIWorkpaper(wp); setDeleteAIWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button>
                                           </div>
                                         </TableCell>
                                       )}
@@ -1086,7 +1190,13 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                               </Table>
                             </div>
                           ) : (
-                            <div className="text-center py-8 text-slate-500">{t("No AI-generated workpapers available")}</div>
+                            <div className="text-center py-12">
+                              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                                <FileText className="h-6 w-6 text-primary-400" />
+                              </div>
+                              <p className="text-sm font-medium text-slate-600 mb-1">{t("No AI-generated workpapers available")}</p>
+                              <p className="text-xs text-slate-400">{t("Generate workpapers with AI to get started")}</p>
+                            </div>
                           )}
                         </div>
                       </TabsContent>
@@ -1097,52 +1207,96 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                       <TabsContent value="tasks" className="mt-0 px-6 pt-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-semibold text-slate-800">{t("Audit Engagement Task List")}</h3>
-                          <Button size="sm" onClick={handleAddTask} disabled={addingTask || isReadOnly}>
-                            {addingTask ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}{t("Add Task")}
-                          </Button>
+                          {!isReadOnly && (
+                            <Button size="sm" onClick={openAddTaskDialog}>
+                              {t("Add Task")}
+                            </Button>
+                          )}
                         </div>
-                        <div className="bg-white border rounded-lg overflow-hidden">
+                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
                           <Table>
                             <TableHeader>
-                              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                                <TableHead className="text-xs font-semibold text-slate-600 w-[80px]">{t("Ref No")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Task")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600 w-[200px]">{t("Document")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600 w-[100px] text-center">{t("Executed")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Comments")}</TableHead>
-                                {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[100px]">{t("Action")}</TableHead>}
+                              <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 w-[60px]">#</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Task Description")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[100px] text-center">{t("Status")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[160px]">{t("Document")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Comments")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[120px]">{t("Actions")}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {taskList.length > 0 ? taskList.map((task) => (
-                                <TableRow key={task.id} className="hover:bg-slate-50">
-                                  <TableCell><Input value={task.refNo} readOnly className="w-16 bg-slate-50 text-center" /></TableCell>
-                                  <TableCell><Input value={task.task} onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)} onBlur={(e) => handleUpdateTask(task.id, "task", e.target.value)} placeholder={t("Enter task description")} className="border-slate-300" /></TableCell>
-                                  <TableCell>
+                              {taskList.length > 0 ? taskList.map((task, idx) => (
+                                <TableRow key={task.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                                  <TableCell className="py-3 ps-5 text-sm text-slate-500 font-medium">{task.refNo || idx + 1}</TableCell>
+                                  <TableCell className="py-3 text-sm text-slate-700 max-w-[250px]">
+                                    <span className="line-clamp-2">{task.task || <span className="text-slate-400 italic">{t("No description")}</span>}</span>
+                                  </TableCell>
+                                  <TableCell className="py-3 text-center">
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                      task.executed
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-amber-100 text-amber-700"
+                                    }`}>
+                                      {task.executed ? t("Done") : t("Pending")}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="py-3">
                                     {task.document ? (
-                                      <div className="flex items-center gap-2">
-                                        <a href={`/api${task.document}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm truncate max-w-[120px]" title={task.documentName || t("Document")}>{task.documentName || t("View")}</a>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click(); }}><Upload className="h-3 w-3" /></Button>
-                                      </div>
+                                      <a href={`/api${task.document}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm truncate max-w-[120px] inline-block" title={task.documentName || t("Document")}>
+                                        <span className="flex items-center gap-1">
+                                          <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                                          <span className="truncate">{task.documentName || t("View")}</span>
+                                        </span>
+                                      </a>
                                     ) : (
-                                      <Button variant="outline" size="sm" className="text-xs" disabled={uploadingTaskDocument === task.id || isReadOnly} onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click(); }}>
-                                        {uploadingTaskDocument === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Upload className="h-3 w-3 mr-1" />{t("Upload")}</>}
-                                      </Button>
+                                      <span className="text-xs text-slate-400">{t("No document")}</span>
                                     )}
                                   </TableCell>
-                                  <TableCell className="text-center"><Checkbox checked={task.executed} onCheckedChange={(checked) => handleUpdateTask(task.id, "executed", checked === true)} /></TableCell>
-                                  <TableCell><Input value={task.comments} onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)} onBlur={(e) => handleUpdateTask(task.id, "comments", e.target.value)} placeholder={t("Enter comments")} className="border-slate-300" /></TableCell>
-                                  {isAuditHead && (
-                                    <TableCell>
-                                      <div className="flex items-center gap-1">
-                                        <Button variant="ghost" size="icon" onClick={() => handleSaveTask(task)} disabled={savingTask === task.id || isReadOnly} title={t("Save task")}>{savingTask === task.id ? <Loader2 className="h-4 w-4 animate-spin text-green-600" /> : <Save className="h-4 w-4 text-green-600" />}</Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(task.id)} title={t("Delete task")} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button>
-                                      </div>
-                                    </TableCell>
-                                  )}
+                                  <TableCell className="py-3 text-sm text-slate-600 max-w-[200px]">
+                                    <span className="line-clamp-1">{task.comments || "-"}</span>
+                                  </TableCell>
+                                  <TableCell className="py-3 pe-5">
+                                    <div className="flex items-center gap-0.5">
+                                      {!isReadOnly && (
+                                        <>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditTaskDialog(task)} title={t("Edit")}>
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost" size="icon"
+                                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                                            disabled={uploadingTaskDocument === task.id}
+                                            title={t("Upload Document")}
+                                            onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click(); }}
+                                          >
+                                            {uploadingTaskDocument === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                          </Button>
+                                        </>
+                                      )}
+                                      {isReadOnly && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditTaskDialog(task)} title={t("View")}>
+                                          <Eye className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                      {isAuditHead && !isReadOnly && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => handleDeleteTask(task.id)} title={t("Delete")}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
                                 </TableRow>
                               )) : (
-                                <TableRow><TableCell colSpan={isAuditHead ? 6 : 5} className="text-center py-8 text-slate-500">{t("No tasks found. Click \"Add Task\" to create one.")}</TableCell></TableRow>
+                                <TableRow className="hover:bg-transparent">
+                                  <TableCell colSpan={6} className="py-16 text-center">
+                                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                                      <FileText className="h-6 w-6 text-primary-400" />
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-600 mb-1">{t("No tasks yet")}</p>
+                                    <p className="text-xs text-slate-400">{t("Click \"Add Task\" to create one")}</p>
+                                  </TableCell>
+                                </TableRow>
                               )}
                             </TableBody>
                           </Table>
@@ -1157,18 +1311,18 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                           <h3 className="text-lg font-semibold text-slate-800">{t("Evidence Request")}</h3>
                           {!isAuditeeOnly && isAuditHead && selectedEvidenceIds.length > 0 && (
                             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 ltr:ml-3 rtl:mr-3" onClick={handleAIReview} disabled={generatingAIReview || isReadOnly}>
-                              {generatingAIReview ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Generating...")}</>) : (<><MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("AI Review")} ({selectedEvidenceIds.length})</>)}
+                              {generatingAIReview ? t("Generating...") : `${t("AI Review")} (${selectedEvidenceIds.length})`}
                             </Button>
                           )}
                           {!isAuditeeOnly && isAuditHead && selectedEvidenceIds.length === 0 && (
                             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 ltr:ml-3 rtl:mr-3" onClick={handleAIReview} disabled={generatingAIReview || isReadOnly}>
-                              {generatingAIReview ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Generating...")}</>) : (<><MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("AI Review")}</>)}
+                              {generatingAIReview ? t("Generating...") : t("AI Review")}
                             </Button>
                           )}
                         </div>
                         {!isAuditeeOnly && isAuditHead && (
                           <Button size="sm" onClick={() => setAddEvidenceDialogOpen(true)} disabled={isReadOnly}>
-                            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Evidence Request")}
+                            {t("Add Evidence Request")}
                           </Button>
                         )}
                       </div>
@@ -1208,21 +1362,29 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                               </div>
                             ))}
                           </div>
-                        ) : <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                              <FileText className="h-6 w-6 text-primary-400" />
+                            </div>
+                            <p className="text-sm font-medium text-slate-600 mb-1">{t("No evidence requests found")}</p>
+                            <p className="text-xs text-slate-400">{t("Add evidence requests to get started")}</p>
+                          </div>
+                        )
                       ) : (
                         filteredEvidenceRequests.length > 0 ? (
-                          <div className="bg-white border rounded-lg overflow-hidden">
+                          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                             <Table>
                               <TableHeader>
-                                <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                                  {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[50px]"><Checkbox checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0} onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)} className="border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-700" /></TableHead>}
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
+                                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                                  {isAuditHead && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 w-[50px]"><Checkbox checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0} onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)} /></TableHead>}
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditee")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Samples")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("AI Review")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Action")}</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -1239,11 +1401,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                         <div className="flex items-start gap-2 max-w-[280px]"><div className="flex-shrink-0 mt-0.5">{getAIReviewStatusIcon(er.aiReviewStatus)}</div><div className="min-w-0 flex-1">{er.aiReviewStatus && <span className="text-xs font-medium text-slate-600 block mb-0.5 capitalize">{er.aiReviewStatus}</span>}{er.aiReviewComment && <p className="text-xs text-slate-600 line-clamp-3">{er.aiReviewComment}</p>}</div></div>
                                       ) : <span className="text-sm text-slate-400">-</span>}
                                     </TableCell>
-                                    <TableCell>
-                                      <div className="flex items-center gap-1">
-                                        <Button variant="ghost" size="icon" title={t("View")} onClick={() => handleOpenViewEvidence(er, false)}><Eye className="h-4 w-4 text-slate-600" /></Button>
-                                        {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)}><Upload className="h-4 w-4 text-green-600" /></Button>}
-                                        {isAuditHead && (<><Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenViewEvidence(er, true)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setEvidenceToDelete(er); setDeleteEvidenceDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
+                                    <TableCell className="pe-5">
+                                      <div className="flex items-center gap-0.5">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("View")} onClick={() => handleOpenViewEvidence(er, false)}><Eye className="h-4 w-4" /></Button>
+                                        {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)}><Upload className="h-4 w-4" /></Button>}
+                                        {isAuditHead && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Edit")} onClick={() => handleOpenViewEvidence(er, true)} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setEvidenceToDelete(er); setDeleteEvidenceDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
                                       </div>
                                     </TableCell>
                                   </TableRow>
@@ -1251,7 +1413,15 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                               </TableBody>
                             </Table>
                           </div>
-                        ) : <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                              <FileText className="h-6 w-6 text-primary-400" />
+                            </div>
+                            <p className="text-sm font-medium text-slate-600 mb-1">{t("No evidence requests found")}</p>
+                            <p className="text-xs text-slate-400">{t("Add evidence requests to get started")}</p>
+                          </div>
+                        )
                       )}
                     </TabsContent>
 
@@ -1261,34 +1431,34 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-semibold text-slate-800">{t("Other Documents")}</h3>
                           <Button size="sm" onClick={() => { setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentDialogOpen(true); }} disabled={isReadOnly}>
-                            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Upload Document")}
+                            {t("Upload Document")}
                           </Button>
                         </div>
                         {otherDocuments.length > 0 ? (
-                          <div className="bg-white border rounded-lg overflow-hidden">
+                          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                             <Table>
                               <TableHeader>
-                                <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Document Type")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("File")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Uploaded")}</TableHead>
-                                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
+                                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Title")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ">{t("Document Type")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("File")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Uploaded")}</TableHead>
+                                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Action")}</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {otherDocuments.map((doc) => (
-                                  <TableRow key={doc.id} className="hover:bg-slate-50">
-                                    <TableCell className="font-medium">{doc.title || doc.fileName}</TableCell>
-                                    <TableCell>{doc.documentType || "-"}</TableCell>
-                                    <TableCell className="max-w-[200px] truncate">{doc.description || "-"}</TableCell>
-                                    <TableCell><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary-600" /><span className="text-sm">{doc.fileName}</span><span className="text-xs text-slate-400">({formatFileSize(doc.fileSize)})</span></div></TableCell>
-                                    <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
-                                    <TableCell>
-                                      <div className="flex items-center gap-1">
-                                        <Button variant="ghost" size="icon" title={t("View")} onClick={() => handleOpenViewDocument(doc, false)}><Eye className="h-4 w-4 text-slate-600" /></Button>
-                                        {isAuditHead && (<><Button variant="ghost" size="icon" title={t("Edit")} onClick={() => handleOpenViewDocument(doc, true)} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" title={t("Delete")} onClick={() => { setDocumentToDelete(doc); setDeleteDocumentDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
+                                  <TableRow key={doc.id} className="border-b border-slate-100 last:border-0">
+                                    <TableCell className="py-3 ps-5 font-medium text-sm text-slate-800">{doc.title || doc.fileName}</TableCell>
+                                    <TableCell className="py-3 text-sm text-slate-700">{doc.documentType || "-"}</TableCell>
+                                    <TableCell className="py-3 max-w-[200px] truncate text-sm text-slate-700">{doc.description || "-"}</TableCell>
+                                    <TableCell className="py-3"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary-600" /><span className="text-sm text-slate-700">{doc.fileName}</span><span className="text-xs text-slate-400">({formatFileSize(doc.fileSize)})</span></div></TableCell>
+                                    <TableCell className="py-3 text-sm text-slate-700">{formatDate(doc.uploadedAt)}</TableCell>
+                                    <TableCell className="py-3 pe-5">
+                                      <div className="flex items-center gap-0.5">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("View")} onClick={() => handleOpenViewDocument(doc, false)}><Eye className="h-4 w-4" /></Button>
+                                        {isAuditHead && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Edit")} onClick={() => handleOpenViewDocument(doc, true)} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setDocumentToDelete(doc); setDeleteDocumentDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
                                       </div>
                                     </TableCell>
                                   </TableRow>
@@ -1296,7 +1466,15 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                               </TableBody>
                             </Table>
                           </div>
-                        ) : <div className="text-center py-8 text-slate-500">{t("No other documents uploaded yet")}</div>}
+                        ) : (
+                          <div className="text-center py-12">
+                            <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                              <FileText className="h-6 w-6 text-primary-400" />
+                            </div>
+                            <p className="text-sm font-medium text-slate-600 mb-1">{t("No other documents uploaded yet")}</p>
+                            <p className="text-xs text-slate-400">{t("Upload documents to get started")}</p>
+                          </div>
+                        )}
                       </TabsContent>
                     )}
 
@@ -1305,36 +1483,36 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-slate-800">{t("Findings")}</h3>
                         {!isAuditeeOnly && (
-                          <Button size="sm" onClick={() => setAddFullFindingDialogOpen(true)} disabled={isReadOnly}><Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Finding")}</Button>
+                          <Button size="sm" onClick={() => setAddFullFindingDialogOpen(true)} disabled={isReadOnly}>{t("Add Finding")}</Button>
                         )}
                       </div>
                       {findings.length > 0 ? (
-                        <div className="bg-white border rounded-lg overflow-hidden">
+                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                           <Table>
                             <TableHeader>
-                              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Finding ID")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Responsible Person")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Target Date")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
-                                <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
+                              <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Finding ID")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Severity")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Responsible Person")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Target Date")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Action")}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {findings.map((finding) => (
-                                <TableRow key={finding.id} className="hover:bg-slate-50">
-                                  <TableCell className="font-medium">{finding.findingId || '-'}</TableCell>
-                                  <TableCell className="max-w-[200px] truncate">{finding.title}</TableCell>
-                                  <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${finding.severity === 'Critical' ? 'bg-red-100 text-red-800' : finding.severity === 'High' ? 'bg-orange-100 text-orange-800' : finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800'}`}>{finding.severity}</span></TableCell>
-                                  <TableCell>{finding.responsiblePerson || '-'}</TableCell>
-                                  <TableCell>{formatDate(finding.targetDate || null)}</TableCell>
-                                  <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' : finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{finding.status}</span></TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-1">
-                                      <Button variant="ghost" size="icon" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("view"); fetchFindingDetails(finding.id); setFindingDetailDialogOpen(true); }} title={t("View")}><Eye className="h-4 w-4 text-slate-600" /></Button>
-                                      {isAuditHead && (<><Button variant="ghost" size="icon" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("edit"); fetchFindingDetails(finding.id); setFindingDetailDialogOpen(true); }} title={t("Edit")} disabled={isReadOnly}><Pencil className="h-4 w-4 text-primary-600" /></Button><Button variant="ghost" size="icon" onClick={() => { setFindingToDelete(finding); setDeleteFindingDialogOpen(true); }} title={t("Delete")} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-600" /></Button></>)}
+                                <TableRow key={finding.id} className="border-b border-slate-100 last:border-0">
+                                  <TableCell className="py-3 ps-5 font-medium text-sm text-slate-800">{finding.findingId || '-'}</TableCell>
+                                  <TableCell className="py-3 max-w-[200px] truncate text-sm text-slate-700">{finding.title}</TableCell>
+                                  <TableCell className="py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${finding.severity === 'Critical' ? 'bg-red-100 text-red-800' : finding.severity === 'High' ? 'bg-orange-100 text-orange-800' : finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800'}`}>{finding.severity}</span></TableCell>
+                                  <TableCell className="py-3 text-sm text-slate-700">{finding.responsiblePerson || '-'}</TableCell>
+                                  <TableCell className="py-3 text-sm text-slate-700">{formatDate(finding.targetDate || null)}</TableCell>
+                                  <TableCell className="py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' : finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{finding.status}</span></TableCell>
+                                  <TableCell className="py-3 pe-5">
+                                    <div className="flex items-center gap-0.5">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("view"); fetchFindingDetails(finding.id); setFindingDetailDialogOpen(true); }} title={t("View")}><Eye className="h-4 w-4" /></Button>
+                                      {isAuditHead && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("edit"); fetchFindingDetails(finding.id); setFindingDetailDialogOpen(true); }} title={t("Edit")} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setFindingToDelete(finding); setDeleteFindingDialogOpen(true); }} title={t("Delete")} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -1342,7 +1520,15 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                             </TableBody>
                           </Table>
                         </div>
-                      ) : <div className="text-center py-8 text-slate-500">{t("No findings recorded yet")}</div>}
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                            <FileText className="h-6 w-6 text-primary-400" />
+                          </div>
+                          <p className="text-sm font-medium text-slate-600 mb-1">{t("No findings recorded yet")}</p>
+                          <p className="text-xs text-slate-400">{t("Add findings to document audit observations")}</p>
+                        </div>
+                      )}
                     </TabsContent>
                   </div>
                 </Tabs>
@@ -1352,26 +1538,15 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
           {/* Fixed Footer with Action Buttons */}
           {!loading && engagement && (
-            <div className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-slate-50/80 flex items-center justify-end gap-3">
+            <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-end gap-3">
               {!isAuditeeOnly && (
                 <Button variant="outline" onClick={() => setCommentsDialogOpen(true)}>
-                  <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Comments")}
                 </Button>
               )}
               {engagement.status !== "Completed" && !isAuditeeOnly && (
                 <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={handleMarkAsCompleted} disabled={markingComplete || isReadOnly}>
-                  {markingComplete ? (
-                    <>
-                      <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
-                      {t("Marking...")}
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                      {t("Mark as Completed")}
-                    </>
-                  )}
+                  {markingComplete ? t("Marking...") : t("Mark as Completed")}
                 </Button>
               )}
             </div>
@@ -1428,15 +1603,18 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-slate-500">
-                <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <div className="text-sm">{t("No comments yet")}</div>
+              <div className="text-center py-12">
+                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <MessageSquare className="h-6 w-6 text-primary-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No comments yet")}</p>
+                <p className="text-xs text-slate-400">{t("Be the first to add a comment")}</p>
               </div>
             )}
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" onClick={() => setCommentsDialogOpen(false)}>{t("Close")}</Button>
-            <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim() || submittingComment}>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => setCommentsDialogOpen(false)}>{t("Close")}</Button>
+            <Button onClick={handleAddComment} disabled={!newComment.trim() || submittingComment}>
               {submittingComment ? t("Adding...") : t("Add Comment")}
             </Button>
           </div>
@@ -1445,19 +1623,23 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
       {/* Upload Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Upload")} {uploadCategory === "workpapers" ? t("Workpaper") : t("Document")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadFilesError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}>
-              <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" /><p className="text-slate-600">{t("Drag and drop files here, or click to browse")}</p><p className="text-sm text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
+            <div className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${uploadFilesError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}>
+              <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                <Upload className="h-6 w-6 text-primary-500" />
+              </div>
+              <p className="text-sm font-medium text-slate-700">{t("Drag and drop files here, or click to browse")}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
               <input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
             </div>
             {uploadFilesError && <p className="text-sm text-red-500 mt-1">{uploadFilesError}</p>}
-            {uploadedFiles.length > 0 && (<div className="space-y-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium">{file.name}</span><span className="text-xs text-slate-400 ml-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="sm" onClick={() => removeFile(file.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50"><X className="h-4 w-4" /></Button></div>))}</div>)}
+            {uploadedFiles.length > 0 && (<div className="space-y-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeFile(file.id)}><X className="h-4 w-4" /></Button></div>))}</div>)}
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(false)}>{t("Cancel")}</Button>
-            <Button size="sm" onClick={handleUploadFiles} disabled={uploading || uploadedFiles.length === 0 || isReadOnly}>{uploading ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Uploading...")}</>) : t("Upload")}</Button>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleUploadFiles} disabled={uploading || uploadedFiles.length === 0 || isReadOnly}>{uploading ? t("Uploading...") : t("Upload")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1478,18 +1660,17 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Severity")}</Label><Select value={newFinding.severity} onValueChange={(value) => setNewFinding({ ...newFinding, severity: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Low">{t("Low")}</SelectItem><SelectItem value="Medium">{t("Medium")}</SelectItem><SelectItem value="High">{t("High")}</SelectItem><SelectItem value="Critical">{t("Critical")}</SelectItem></SelectContent></Select></div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Recommendation")}</Label><Textarea value={newFinding.recommendation} onChange={(e) => setNewFinding({ ...newFinding, recommendation: e.target.value })} placeholder={t("Enter recommendation")} rows={3} /></div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => setAddFindingDialogOpen(false)}>{t("Cancel")}</Button><Button size="sm" onClick={handleAddFinding} disabled={isReadOnly}>{t("Add Finding")}</Button></div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setAddFindingDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleAddFinding} disabled={isReadOnly}>{t("Add Finding")}</Button></div>
         </DialogContent>
       </Dialog>
 
       {/* Add Full Finding Dialog */}
       <Dialog open={addFullFindingDialogOpen} onOpenChange={setAddFullFindingDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] flex flex-col p-0 gap-0 h-[95vh]">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 h-[95vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Header */}
-          <div className="px-6 py-5 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-slate-50 to-white">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-xl font-semibold text-slate-900">{t("Add Finding")}</DialogTitle>
-              <p className="text-sm text-slate-600 mt-1">{t("Document audit findings with details and corrective actions")}</p>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Finding")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1497,10 +1678,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
           <div className="px-6 py-6 space-y-8 overflow-y-auto flex-1">
             {/* Basic Information Section */}
             <div className="space-y-5">
-              <div className="flex items-center gap-2 pb-2">
-                <div className="h-1 w-1 rounded-full bg-primary-600"></div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Basic Information")}</h3>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Basic Information")}</h3>
 
               <div className="space-y-5">
                 <div className="space-y-2">
@@ -1555,15 +1733,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
             {/* 4Cs Analysis Section */}
             <div className="space-y-5 pt-4 border-t border-slate-200">
-              <div className="flex items-center gap-2 pb-2">
-                <div className="h-1 w-1 rounded-full bg-primary-600"></div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Finding Analysis (4Cs)")}</h3>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Finding Analysis (4Cs)")}</h3>
 
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">1</span>
+                  <Label className="text-sm font-medium text-slate-700">
                     {t("Criteria (What should be)")}
                   </Label>
                   <Textarea
@@ -1576,8 +1750,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">2</span>
+                  <Label className="text-sm font-medium text-slate-700">
                     {t("Condition (What is)")}
                   </Label>
                   <Textarea
@@ -1590,8 +1763,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">3</span>
+                  <Label className="text-sm font-medium text-slate-700">
                     {t("Cause (Why it happened)")}
                   </Label>
                   <Textarea
@@ -1604,8 +1776,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-700 text-xs font-bold">4</span>
+                  <Label className="text-sm font-medium text-slate-700">
                     {t("Effect (The consequence)")}
                   </Label>
                   <Textarea
@@ -1632,22 +1803,27 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
             {/* Attachments Section */}
             <div className="space-y-4 pt-4 border-t border-slate-200">
-              <div className="flex items-center gap-2 pb-2">
-                <div className="h-1 w-1 rounded-full bg-primary-600"></div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">{t("Attachments")}</h3>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Attachments")}</h3>
 
               <div className="space-y-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
+                <div
+                  className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors border-slate-300 hover:border-slate-400"
                   onClick={() => findingAttachmentInputRef.current?.click()}
-                  className="border-dashed border-2 h-auto py-3 w-full hover:bg-slate-50"
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files) {
+                      setFindingAttachments((prev) => [...prev, ...Array.from(e.dataTransfer.files)]);
+                    }
+                  }}
                 >
-                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                  {t("Choose Files")}
-                </Button>
+                  <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-2">
+                    <Upload className="h-5 w-5 text-primary-500" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">{t("Drag and drop files here, or click to browse")}</p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
+                </div>
                 <input
                   type="file"
                   ref={findingAttachmentInputRef}
@@ -1692,12 +1868,9 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
             {/* CAPA Section */}
             <div className="space-y-5 pt-4 border-t border-slate-200">
-              <div className="flex items-center gap-2 pb-2">
-                <div className="h-1 w-1 rounded-full bg-primary-600"></div>
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                  {t("Corrective & Preventive Actions (CAPA)")}
-                </h3>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">
+                {t("Corrective & Preventive Actions (CAPA)")}
+              </h3>
 
               <div className="space-y-5">
                 <div className="space-y-2">
@@ -1752,26 +1925,15 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg flex justify-end gap-3 flex-shrink-0">
-            <Button variant="outline" onClick={() => setAddFullFindingDialogOpen(false)} className="px-5">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => setAddFullFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
             <Button
               onClick={handleAddFullFinding}
               disabled={savingFullFinding || isReadOnly}
-              className="bg-primary-600 hover:bg-primary-700 px-5"
             >
-              {savingFullFinding ? (
-                <>
-                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
-                  {t("Saving...")}
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                  {t("Save Finding")}
-                </>
-              )}
+              {savingFullFinding ? t("Saving...") : t("Save Finding")}
             </Button>
           </div>
         </DialogContent>
@@ -1793,7 +1955,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Auditee")} <span className="text-red-500">*</span></Label><Select value={newEvidence.auditeeId} onValueChange={(value) => { const sa = auditees.find(a => a.id === value); setNewEvidence({ ...newEvidence, auditeeId: value, auditee: sa?.fullName || "" }); }}><SelectTrigger><SelectValue placeholder={t("Select auditee")} /></SelectTrigger><SelectContent>{auditees.map((auditee) => (<SelectItem key={auditee.id} value={auditee.id}>{auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}</SelectItem>))}</SelectContent></Select></div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Number of Samples")}</Label><Input type="number" min="1" value={newEvidence.numberOfSamples} onChange={(e) => setNewEvidence({ ...newEvidence, numberOfSamples: e.target.value })} placeholder={t("Enter number of samples required")} /></div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setAddEvidenceDialogOpen(false); setNewEvidenceTitleError(""); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleAddEvidence} disabled={isReadOnly}>{t("Add Evidence Request")}</Button></div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAddEvidenceDialogOpen(false); setNewEvidenceTitleError(""); }}>{t("Cancel")}</Button><Button onClick={handleAddEvidence} disabled={isReadOnly}>{t("Add Evidence Request")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1801,7 +1963,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteFindingDialogOpen} onOpenChange={setDeleteFindingDialogOpen}>
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Finding")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete the finding")} &quot;{findingToDelete?.title}&quot;? {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-6 py-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setDeleteFindingDialogOpen(false); setFindingToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" size="sm" onClick={handleDeleteFinding} disabled={deletingFinding || isReadOnly}>{deletingFinding ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Deleting...")}</>) : t("Delete")}</Button></div>
+          <div className="px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteFindingDialogOpen(false); setFindingToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteFinding} disabled={deletingFinding || isReadOnly}>{deletingFinding ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1810,28 +1972,37 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("New Document")}</DialogTitle></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-end text-slate-500">{t("Title")}</Label>
-              <div>
-                <Input value={newDocument.title} onChange={(e) => { setNewDocument({ ...newDocument, title: e.target.value }); setNewDocumentTitleError(""); }} placeholder={t("Enter document title")} className={newDocumentTitleError ? "border-red-500" : ""} />
-                {newDocumentTitleError && <p className="text-sm text-red-500 mt-1">{newDocumentTitleError}</p>}
-              </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
+              <Input value={newDocument.title} onChange={(e) => { setNewDocument({ ...newDocument, title: e.target.value }); setNewDocumentTitleError(""); }} placeholder={t("Enter document title")} className={`mt-1.5 w-full ${newDocumentTitleError ? "border-red-500" : ""}`} />
+              {newDocumentTitleError && <p className="text-sm text-red-500 mt-1">{newDocumentTitleError}</p>}
             </div>
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Document Type")}</Label><Select value={newDocument.documentType} onValueChange={(value) => setNewDocument({ ...newDocument, documentType: value })}><SelectTrigger><SelectValue placeholder={t("Select document type")} /></SelectTrigger><SelectContent><SelectItem value="Minutes of Meeting">{t("Minutes of Meeting")}</SelectItem><SelectItem value="Approval Document">{t("Approval Document")}</SelectItem><SelectItem value="Email Communication">{t("Email Communication")}</SelectItem><SelectItem value="Contract">{t("Contract")}</SelectItem><SelectItem value="Invoice">{t("Invoice")}</SelectItem><SelectItem value="Policy Document">{t("Policy Document")}</SelectItem><SelectItem value="Other">{t("Other")}</SelectItem></SelectContent></Select></div>
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Description")}</Label><Textarea value={newDocument.description} onChange={(e) => setNewDocument({ ...newDocument, description: e.target.value })} placeholder={t("Enter description")} rows={4} /></div>
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-              <Label className="text-end text-slate-500 pt-2">{t("Attach File")}</Label>
-              <div>
-                <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${newDocumentFileError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}>
-                  <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
-                  <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Document Type")}</Label>
+              <Select value={newDocument.documentType} onValueChange={(value) => setNewDocument({ ...newDocument, documentType: value })}>
+                <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select document type")} /></SelectTrigger>
+                <SelectContent><SelectItem value="Minutes of Meeting">{t("Minutes of Meeting")}</SelectItem><SelectItem value="Approval Document">{t("Approval Document")}</SelectItem><SelectItem value="Email Communication">{t("Email Communication")}</SelectItem><SelectItem value="Contract">{t("Contract")}</SelectItem><SelectItem value="Invoice">{t("Invoice")}</SelectItem><SelectItem value="Policy Document">{t("Policy Document")}</SelectItem><SelectItem value="Other">{t("Other")}</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
+              <Textarea value={newDocument.description} onChange={(e) => setNewDocument({ ...newDocument, description: e.target.value })} placeholder={t("Enter description")} rows={3} className="mt-1.5 w-full" />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Attach File")}</Label>
+              <div className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${newDocumentFileError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-200 hover:border-slate-300"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}>
+                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-2">
+                  <Upload className="h-5 w-5 text-primary-500" />
                 </div>
-                {newDocumentFileError && <p className="text-sm text-red-500 mt-1">{newDocumentFileError}</p>}
-                {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary-500" /><span className="text-sm">{file.name}</span><span className="text-xs text-slate-400">({formatFileSize(file.size)})</span></div><Button variant="ghost" size="sm" onClick={() => removeFile(file.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"><X className="h-4 w-4" /></Button></div>))}</div>)}
+                <p className="text-sm text-slate-600">{t("Drag and drop files here, or click to browse")}</p>
+                <p className="text-xs text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
+                <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
               </div>
+              {newDocumentFileError && <p className="text-sm text-red-500 mt-1">{newDocumentFileError}</p>}
+              {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); removeFile(file.id); }}><X className="h-4 w-4" /></Button></div>))}</div>)}
             </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setNewDocumentDialogOpen(false); setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentTitleError(""); setNewDocumentFileError(""); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleUploadDocument} disabled={uploading || isReadOnly}>{uploading ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save")}</Button></div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setNewDocumentDialogOpen(false); setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentTitleError(""); setNewDocumentFileError(""); }}>{t("Cancel")}</Button><Button onClick={handleUploadDocument} disabled={uploading || isReadOnly}>{uploading ? t("Saving...") : t("Save")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1839,7 +2010,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteDocumentDialogOpen} onOpenChange={setDeleteDocumentDialogOpen}>
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Document")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete")} &quot;{documentToDelete?.title || documentToDelete?.fileName}&quot;? {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-6 py-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setDeleteDocumentDialogOpen(false); setDocumentToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" size="sm" onClick={handleDeleteDocument} disabled={deletingDocument || isReadOnly}>{deletingDocument ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Deleting...")}</>) : t("Delete")}</Button></div>
+          <div className="px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteDocumentDialogOpen(false); setDocumentToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteDocument} disabled={deletingDocument || isReadOnly}>{deletingDocument ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1847,7 +2018,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteWorkpaperDialogOpen} onOpenChange={setDeleteWorkpaperDialogOpen}>
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Workpaper")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete")} &quot;{workpaperToDelete?.fileName}&quot;? {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-6 py-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setDeleteWorkpaperDialogOpen(false); setWorkpaperToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" size="sm" onClick={handleDeleteWorkpaper} disabled={deletingWorkpaper || isReadOnly}>{deletingWorkpaper ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Deleting...")}</>) : t("Delete")}</Button></div>
+          <div className="px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteWorkpaperDialogOpen(false); setWorkpaperToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteWorkpaper} disabled={deletingWorkpaper || isReadOnly}>{deletingWorkpaper ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1868,7 +2039,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Question Checklist")}</Label><Input value={editAIWorkpaper.questionChecklist} onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, questionChecklist: e.target.value })} placeholder={t("Enter question checklist")} /></div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Comments")}</Label><Textarea value={editAIWorkpaper.comments} onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, comments: e.target.value })} placeholder={t("Enter comments")} rows={2} /></div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setEditAIWorkpaperDialogOpen(false); setSelectedAIWorkpaper(null); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleUpdateAIWorkpaper} disabled={savingAIWorkpaper || isReadOnly}>{savingAIWorkpaper ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save Changes")}</Button></div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setEditAIWorkpaperDialogOpen(false); setSelectedAIWorkpaper(null); }}>{t("Cancel")}</Button><Button onClick={handleUpdateAIWorkpaper} disabled={savingAIWorkpaper || isReadOnly}>{savingAIWorkpaper ? t("Saving...") : t("Save Changes")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1876,23 +2047,204 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteAIWorkpaperDialogOpen} onOpenChange={setDeleteAIWorkpaperDialogOpen}>
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete AI Workpaper")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete this AI workpaper?")} {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-6 py-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setDeleteAIWorkpaperDialogOpen(false); setSelectedAIWorkpaper(null); }}>{t("Cancel")}</Button><Button variant="destructive" size="sm" onClick={handleDeleteAIWorkpaper} disabled={deletingAIWorkpaper || isReadOnly}>{deletingAIWorkpaper ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Deleting...")}</>) : t("Delete")}</Button></div>
+          <div className="px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteAIWorkpaperDialogOpen(false); setSelectedAIWorkpaper(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteAIWorkpaper} disabled={deletingAIWorkpaper || isReadOnly}>{deletingAIWorkpaper ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
       {/* Generated Workpaper with AI Dialog */}
-      <Dialog open={generateAIDialogOpen} onOpenChange={setGenerateAIDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Generated Workpaper with AI")}</DialogTitle></DialogHeader></div>
-          <div className="px-6 py-5 overflow-y-auto flex-1">
-            {generatingWorkpapers ? (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-slate-700" /><span className="ltr:ml-3 rtl:mr-3 text-slate-600">{t("Generating workpapers...")}</span></div>)
-            : generatedWorkpapers.length > 0 ? (<div className="space-y-6">{generatedWorkpapers.map((wp) => (<div key={wp.id} className={`border rounded-lg p-4 ${selectedGeneratedIds.includes(wp.id) ? "border-primary-600 bg-primary-50" : "border-slate-200"}`}><div className="flex items-start gap-3"><Checkbox checked={selectedGeneratedIds.includes(wp.id)} onCheckedChange={() => handleToggleGeneratedSelection(wp.id)} className="mt-1" /><div className="flex-1 space-y-4"><h4 className="font-semibold text-slate-900">{wp.task}</h4><div><h5 className="font-medium text-slate-700 mb-2">{t("Steps")}</h5><div className="text-sm text-slate-600 ltr:pl-4 rtl:pr-4 space-y-1">{renderJsonList(wp.steps)}</div></div><div><h5 className="font-medium text-slate-700 mb-2">{t("Evidences")}</h5><div className="text-sm text-slate-600 ltr:pl-4 rtl:pr-4 space-y-1">{renderJsonList(wp.evidences)}</div></div></div></div></div>))}</div>)
-            : (<div className="text-center py-12 text-slate-500">{t("No workpapers generated. Click generate to create AI workpapers.")}</div>)}
+      <Dialog open={generateAIDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) { setEditingGeneratedId(null); } setGenerateAIDialogOpen(isOpen); }}>
+        <DialogContent className="sm:max-w-[750px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary-500" />
+                {t("Generate Workpapers with AI")}
+              </DialogTitle>
+            </DialogHeader>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
-            {generatedWorkpapersError && <p className="text-sm text-red-500 ltr:mr-auto rtl:ml-auto flex items-center">{generatedWorkpapersError}</p>}
-            <Button variant="outline" size="sm" onClick={() => { setGenerateAIDialogOpen(false); setGeneratedWorkpapers([]); setSelectedGeneratedIds([]); setGeneratedWorkpapersError(""); }}>{t("Cancel")}</Button>
-            <Button size="sm" onClick={handleAddSelectedWorkpapers} disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isReadOnly}>{addingGeneratedWorkpapers ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Adding...")}</>) : `${t("Add Selected")} (${selectedGeneratedIds.length})`}</Button>
+          <div className="px-6 py-5 overflow-y-auto flex-1">
+            {generatingWorkpapers ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="relative mb-4">
+                  <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+                  <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
+                <p className="text-sm font-medium text-slate-600">{t("Generating workpapers...")}</p>
+                <p className="text-xs text-slate-400 mt-1">{t("This may take a moment")}</p>
+              </div>
+            ) : generatedWorkpapers.length > 0 ? (
+              <div className="space-y-4">
+                {/* Select All / Deselect All */}
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <p className="text-sm text-slate-500">{generatedWorkpapers.length} {t("workpapers generated")}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-primary-600 hover:text-primary-700"
+                    onClick={() => {
+                      if (selectedGeneratedIds.length === generatedWorkpapers.length) {
+                        setSelectedGeneratedIds([]);
+                      } else {
+                        setSelectedGeneratedIds(generatedWorkpapers.map((wp) => wp.id));
+                      }
+                    }}
+                  >
+                    {selectedGeneratedIds.length === generatedWorkpapers.length ? t("Deselect All") : t("Select All")}
+                  </Button>
+                </div>
+
+                {generatedWorkpapers.map((wp) => (
+                  <div key={wp.id} className={`border rounded-xl overflow-hidden transition-all ${selectedGeneratedIds.includes(wp.id) ? "border-primary-500 bg-primary-50/50 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
+                    {editingGeneratedId === wp.id ? (
+                      /* Inline Edit Mode */
+                      <div className="p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Edit Workpaper")}</h4>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600" onClick={() => setEditingGeneratedId(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-slate-500">{t("Task")}</Label>
+                            <Input
+                              value={editingGeneratedData.task}
+                              onChange={(e) => setEditingGeneratedData({ ...editingGeneratedData, task: e.target.value })}
+                              placeholder={t("Enter task description")}
+                              className="bg-white"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-slate-500">{t("Steps")}</Label>
+                            <Textarea
+                              value={editingGeneratedData.steps}
+                              onChange={(e) => setEditingGeneratedData({ ...editingGeneratedData, steps: e.target.value })}
+                              placeholder={t("Enter steps (one per line)")}
+                              rows={3}
+                              className="bg-white resize-none"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-slate-500">{t("Evidences")}</Label>
+                            <Textarea
+                              value={editingGeneratedData.evidences}
+                              onChange={(e) => setEditingGeneratedData({ ...editingGeneratedData, evidences: e.target.value })}
+                              placeholder={t("Enter evidences (one per line)")}
+                              rows={3}
+                              className="bg-white resize-none"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-slate-500">{t("Question Checklist")}</Label>
+                            <Textarea
+                              value={editingGeneratedData.questionChecklist}
+                              onChange={(e) => setEditingGeneratedData({ ...editingGeneratedData, questionChecklist: e.target.value })}
+                              placeholder={t("Enter question checklist (one per line)")}
+                              rows={2}
+                              className="bg-white resize-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                          <Button variant="outline" size="sm" onClick={() => setEditingGeneratedId(null)}>{t("Cancel")}</Button>
+                          <Button size="sm" onClick={() => {
+                            const serializeField = (field: string) => { const lines = field.split('\n').map(line => line.trim()).filter(line => line.length > 0); return JSON.stringify(lines); };
+                            setGeneratedWorkpapers((prev) => prev.map((item) => item.id === wp.id ? { ...item, task: editingGeneratedData.task, steps: serializeField(editingGeneratedData.steps), evidences: serializeField(editingGeneratedData.evidences), questionChecklist: serializeField(editingGeneratedData.questionChecklist) } : item));
+                            setEditingGeneratedId(null);
+                          }}>{t("Save")}</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* View Mode */
+                      <div className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={selectedGeneratedIds.includes(wp.id)}
+                            onCheckedChange={() => handleToggleGeneratedSelection(wp.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                              <h4 className="font-semibold text-slate-900 text-sm">{wp.task}</h4>
+                              <div className="flex items-center gap-0.5 flex-shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-400 hover:text-primary-600"
+                                  title={t("Edit")}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const parseField = (field: string) => { try { const parsed = JSON.parse(field); return Array.isArray(parsed) ? parsed.join('\n') : field; } catch { return field; } };
+                                    setEditingGeneratedData({ task: wp.task, steps: parseField(wp.steps), evidences: parseField(wp.evidences), questionChecklist: parseField(wp.questionChecklist) });
+                                    setEditingGeneratedId(wp.id);
+                                  }}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-400 hover:text-semantic-error"
+                                  title={t("Delete")}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setGeneratedWorkpapers((prev) => prev.filter((item) => item.id !== wp.id));
+                                    setSelectedGeneratedIds((prev) => prev.filter((id) => id !== wp.id));
+                                  }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">{t("Steps")}</h5>
+                                <div className="text-sm text-slate-600 space-y-1">{renderJsonList(wp.steps)}</div>
+                              </div>
+                              <div>
+                                <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">{t("Evidences")}</h5>
+                                <div className="text-sm text-slate-600 space-y-1">{renderJsonList(wp.evidences)}</div>
+                              </div>
+                            </div>
+                            {wp.questionChecklist && (() => { try { const items = JSON.parse(wp.questionChecklist); return Array.isArray(items) && items.length > 0; } catch { return wp.questionChecklist.trim().length > 0; } })() && (
+                              <div className="mt-3 pt-3 border-t border-slate-100">
+                                <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">{t("Question Checklist")}</h5>
+                                <div className="text-sm text-slate-600 space-y-1">{renderJsonList(wp.questionChecklist)}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="h-7 w-7 text-primary-500" />
+                </div>
+                <p className="text-sm font-semibold text-slate-700 mb-1">{t("No workpapers generated yet")}</p>
+                <p className="text-xs text-slate-400 mb-5 max-w-[280px] mx-auto">{t("Click Generate to create AI workpapers based on the engagement")}</p>
+                <Button size="sm" onClick={handleGenerateAIWorkpapers} disabled={generatingWorkpapers || isReadOnly}>
+                  <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Generate")}
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <div className="flex-1">
+              {generatedWorkpapersError && <p className="text-sm text-red-500 flex items-center">{generatedWorkpapersError}</p>}
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => { setGenerateAIDialogOpen(false); setGeneratedWorkpapers([]); setSelectedGeneratedIds([]); setGeneratedWorkpapersError(""); setEditingGeneratedId(null); }}>{t("Cancel")}</Button>
+              {generatedWorkpapers.length > 0 && (
+                <Button onClick={handleAddSelectedWorkpapers} disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isReadOnly}>
+                  {addingGeneratedWorkpapers ? t("Adding...") : `${t("Add Selected")} (${selectedGeneratedIds.length})`}
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -1915,9 +2267,9 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             </div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Document Type")}</Label>{isEditingDocument ? <Select value={editDocument.documentType} onValueChange={(value) => setEditDocument({ ...editDocument, documentType: value })}><SelectTrigger><SelectValue placeholder={t("Select document type")} /></SelectTrigger><SelectContent><SelectItem value="Minutes of Meeting">{t("Minutes of Meeting")}</SelectItem><SelectItem value="Approval Document">{t("Approval Document")}</SelectItem><SelectItem value="Email Communication">{t("Email Communication")}</SelectItem><SelectItem value="Contract">{t("Contract")}</SelectItem><SelectItem value="Invoice">{t("Invoice")}</SelectItem><SelectItem value="Policy Document">{t("Policy Document")}</SelectItem><SelectItem value="Other">{t("Other")}</SelectItem></SelectContent></Select> : <div className="p-3 bg-slate-50 rounded-md border">{selectedDocument?.documentType || "-"}</div>}</div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Description")}</Label>{isEditingDocument ? <Textarea value={editDocument.description} onChange={(e) => setEditDocument({ ...editDocument, description: e.target.value })} placeholder={t("Enter description")} rows={4} /> : <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">{selectedDocument?.description || "-"}</div>}</div>
-            <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Attached File")}</Label><div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border"><div className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary-600" /><div><p className="text-sm font-medium">{selectedDocument?.fileName}</p><p className="text-xs text-slate-500">{formatFileSize(selectedDocument?.fileSize || 0)}</p></div></div><Button variant="outline" size="sm" onClick={() => { if (selectedDocument?.filePath) { const link = document.createElement("a"); link.href = `/api${selectedDocument.filePath}`; link.download = selectedDocument.fileName; link.click(); } }}><Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Download")}</Button></div></div>
+            <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Attached File")}</Label><div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border"><div className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary-600" /><div><p className="text-sm font-medium">{selectedDocument?.fileName}</p><p className="text-xs text-slate-500">{formatFileSize(selectedDocument?.fileSize || 0)}</p></div></div><Button variant="outline" size="sm" onClick={() => { if (selectedDocument?.filePath) { const link = document.createElement("a"); link.href = `/api${selectedDocument.filePath}`; link.download = selectedDocument.fileName; link.click(); } }}>{t("Download")}</Button></div></div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" onClick={() => { setViewEditDocumentDialogOpen(false); setSelectedDocument(null); setIsEditingDocument(false); setEditDocumentTitleError(""); }}>{isEditingDocument ? t("Cancel") : t("Close")}</Button>{isEditingDocument && <Button size="sm" onClick={handleUpdateDocument} disabled={savingDocument || isReadOnly}>{savingDocument ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save")}</Button>}</div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setViewEditDocumentDialogOpen(false); setSelectedDocument(null); setIsEditingDocument(false); setEditDocumentTitleError(""); }}>{isEditingDocument ? t("Cancel") : t("Close")}</Button>{isEditingDocument && <Button onClick={handleUpdateDocument} disabled={savingDocument || isReadOnly}>{savingDocument ? t("Saving...") : t("Save")}</Button>}</div>
         </DialogContent>
       </Dialog>
 
@@ -1958,16 +2310,16 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Uploaded Attachments")}</Label><div className="p-3 bg-slate-50 rounded-md border text-slate-500 text-sm">{t("No attachments uploaded yet")}</div></div>
             )}
             {!isEditingEvidence && isAuditeeOnly && selectedEvidence?.clarificationComment && (
-              <div className="flex justify-end mt-4"><Button size="sm" onClick={() => { setAuditeeClariEvidence(selectedEvidence); setAuditeeClariDialogOpen(true); }}><MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Comments")}</Button></div>
+              <div className="flex justify-end mt-4"><Button size="sm" onClick={() => { setAuditeeClariEvidence(selectedEvidence); setAuditeeClariDialogOpen(true); }}>{t("Comments")}</Button></div>
             )}
           </div>
-          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); setIsEditingEvidence(false); setEditEvidenceTitleError(""); }}>{isEditingEvidence ? t("Cancel") : t("Close")}</Button>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {!isEditingEvidence && isAuditHead && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
-                <><Button variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-50" onClick={() => { if (selectedEvidence) handleOpenClarificationDialog(selectedEvidence); }}><AlertCircle className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Need Clarification")}</Button><Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { if (selectedEvidence) { handleApproveEvidence(selectedEvidence.id); setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); } }}><Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Approve")}</Button></>
+                <><Button variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-50" onClick={() => { if (selectedEvidence) handleOpenClarificationDialog(selectedEvidence); }}>{t("Need Clarification")}</Button><Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { if (selectedEvidence) { handleApproveEvidence(selectedEvidence.id); setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); } }}>{t("Approve")}</Button></>
               )}
-              {isEditingEvidence && <Button size="sm" onClick={handleUpdateEvidence} disabled={savingEvidence || isReadOnly}>{savingEvidence ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : t("Save")}</Button>}
+              {isEditingEvidence && <Button onClick={handleUpdateEvidence} disabled={savingEvidence || isReadOnly}>{savingEvidence ? t("Saving...") : t("Save")}</Button>}
             </div>
           </div>
         </DialogContent>
@@ -1982,7 +2334,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Comment")}</Label><Textarea value={clarificationComment} onChange={(e) => setClarificationComment(e.target.value)} placeholder={t("Enter your clarification request...")} rows={5} /></div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Previous Comments")}</Label><div className="p-3 bg-slate-50 rounded-md border border-slate-200 text-slate-500 text-sm text-center">{t("No items found")}</div></div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => setClarificationDialogOpen(false)}>{t("Cancel")}</Button><Button size="sm" onClick={handleSendClarification} disabled={sendingClarification || !clarificationDocument || isReadOnly}>{sendingClarification ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Sending...")}</>) : t("Send")}</Button></div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setClarificationDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleSendClarification} disabled={sendingClarification || !clarificationDocument || isReadOnly}>{sendingClarification ? t("Sending...") : t("Send")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2006,7 +2358,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Comment")}</Label><Textarea value={respondComment} onChange={(e) => setRespondComment(e.target.value)} placeholder={t("Enter your response...")} rows={5} /></div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Attach File")}</Label><div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-slate-400 transition-colors" onClick={() => { const input = document.createElement("input"); input.type = "file"; input.multiple = true; input.onchange = (e) => { const files = (e.target as HTMLInputElement).files; if (files) setRespondFiles(Array.from(files)); }; input.click(); }} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const files = e.dataTransfer.files; if (files) setRespondFiles(Array.from(files)); }}><p className="text-slate-500">{t("Drag and drop or select file.")}</p>{respondFiles.length > 0 && <div className="mt-2 text-sm text-emerald-600">{respondFiles.map((f) => f.name).join(", ")}</div>}</div></div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => setRespondDialogOpen(false)}>{t("Cancel")}</Button><Button size="sm" onClick={handleSendResponse} disabled={sendingResponse || isReadOnly}>{sendingResponse ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Sending...")}</>) : t("Send Response")}</Button></div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setRespondDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleSendResponse} disabled={sendingResponse || isReadOnly}>{sendingResponse ? t("Sending...") : t("Send Response")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2014,135 +2366,216 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteEvidenceDialogOpen} onOpenChange={setDeleteEvidenceDialogOpen}>
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Evidence Request")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete")} &quot;{evidenceToDelete?.title}&quot;? {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-6 py-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setDeleteEvidenceDialogOpen(false); setEvidenceToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" size="sm" onClick={handleDeleteEvidence} disabled={deletingEvidence || isReadOnly}>{deletingEvidence ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Deleting...")}</>) : t("Delete")}</Button></div>
+          <div className="px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteEvidenceDialogOpen(false); setEvidenceToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteEvidence} disabled={deletingEvidence || isReadOnly}>{deletingEvidence ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
       {/* AI Review Result Dialog */}
       <Dialog open={aiReviewDialogOpen} onOpenChange={setAiReviewDialogOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800"><MessageSquare className="h-5 w-5 text-green-600" />{t("AI Review Results")}</DialogTitle><DialogDescription className="text-slate-600">{t("AI-generated review of")} {selectedEvidenceIds.length} {t("evidence request(s)")}</DialogDescription></DialogHeader></div>
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("AI Review Results")}</DialogTitle><DialogDescription className="text-slate-600">{t("AI-generated review of")} {selectedEvidenceIds.length} {t("evidence request(s)")}</DialogDescription></DialogHeader></div>
           <div className="px-6 py-5 overflow-y-auto flex-1">{aiReviewResult ? <div className="prose prose-sm max-w-none"><div className="bg-slate-50 rounded-lg p-4 whitespace-pre-wrap text-sm">{aiReviewResult}</div></div> : <div className="text-center py-8 text-slate-500">{t("No review generated yet")}</div>}</div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setAiReviewDialogOpen(false); setAiReviewResult(""); }}>{t("Close")}</Button></div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAiReviewDialogOpen(false); setAiReviewResult(""); }}>{t("Close")}</Button></div>
         </DialogContent>
       </Dialog>
 
       {/* Add Attachment Dialog */}
       <Dialog open={attachmentDialogOpen} onOpenChange={setAttachmentDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Attachment")}</DialogTitle><DialogDescription className="text-slate-600">{t("Upload attachment for")}: {evidenceForAttachment?.title}</DialogDescription></DialogHeader></div>
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Attach File")}</Label>
-              <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${attachmentFileError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => attachmentFileInputRef.current?.click()}>
-                <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
+              <div className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${attachmentFileError ? "border-red-500" : isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"}`} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleFileDrop} onClick={() => attachmentFileInputRef.current?.click()}>
+                <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                  <Upload className="h-6 w-6 text-primary-500" />
+                </div>
+                <p className="text-sm font-medium text-slate-700">{t("Drag and drop files here, or click to browse")}</p>
+                <p className="text-xs text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
                 <input ref={attachmentFileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
               </div>
               {attachmentFileError && <p className="text-sm text-red-500 mt-1">{attachmentFileError}</p>}
-              {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary-500" /><span className="text-sm text-slate-700">{file.name}</span><span className="text-xs text-slate-400">({formatFileSize(file.size)})</span></div><Button variant="ghost" size="sm" onClick={() => removeFile(file.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"><X className="h-4 w-4" /></Button></div>))}</div>)}
+              {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeFile(file.id)}><X className="h-4 w-4" /></Button></div>))}</div>)}
             </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => { setAttachmentDialogOpen(false); setEvidenceForAttachment(null); setUploadedFiles([]); setAttachmentFileError(""); }}>{t("Cancel")}</Button><Button size="sm" onClick={handleUploadAttachment} disabled={uploadingAttachment || isReadOnly}>{uploadingAttachment ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Uploading...")}</>) : t("Upload")}</Button></div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAttachmentDialogOpen(false); setEvidenceForAttachment(null); setUploadedFiles([]); setAttachmentFileError(""); }}>{t("Cancel")}</Button><Button onClick={handleUploadAttachment} disabled={uploadingAttachment || isReadOnly}>{uploadingAttachment ? t("Uploading...") : t("Upload")}</Button></div>
         </DialogContent>
       </Dialog>
 
       {/* Finding Detail Modal */}
       <Dialog open={findingDetailDialogOpen} onOpenChange={(open) => { if (!open) { setFindingDetailDialogOpen(false); setSelectedFindingId(null); setSelectedFindingData(null); } }}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">
-              {findingDetailMode === "edit" ? t("Edit Finding") : t("View Finding")} {selectedFindingData ? `- ${selectedFindingData.findingId}` : ""}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {findingDetailMode === "edit" ? t("Edit Finding") : t("View Finding")} {selectedFindingData ? `- ${selectedFindingData.findingId}` : ""}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
 
           {loadingFindingDetail ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
             </div>
           ) : selectedFindingData ? (
-            <div className="space-y-6">
-              {/* Finding Details */}
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Finding Title")}</Label>
-                  <p className="mt-1 text-sm text-slate-900">{selectedFindingData.title || "-"}</p>
-                </div>
+            <>
+              <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+                {/* Finding Details */}
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Finding Title")}</Label>
+                    <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md border">{selectedFindingData.title || "-"}</p>
+                  </div>
 
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Severity")}</Label>
-                  <div className="mt-1">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      selectedFindingData.severity === "Critical" ? "bg-red-100 text-red-800" :
-                      selectedFindingData.severity === "High" ? "bg-orange-100 text-orange-800" :
-                      selectedFindingData.severity === "Medium" ? "bg-yellow-100 text-yellow-800" :
-                      "bg-emerald-100 text-emerald-800"
-                    }`}>
-                      {selectedFindingData.severity}
-                    </span>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Severity")}</Label>
+                    <div className="p-3 bg-slate-50 rounded-md border">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        selectedFindingData.severity === "Critical" ? "bg-red-100 text-red-800" :
+                        selectedFindingData.severity === "High" ? "bg-orange-100 text-orange-800" :
+                        selectedFindingData.severity === "Medium" ? "bg-yellow-100 text-yellow-800" :
+                        "bg-emerald-100 text-emerald-800"
+                      }`}>
+                        {selectedFindingData.severity}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Criteria (What should be)")}</Label>
+                    <p className="text-sm text-slate-900 whitespace-pre-wrap p-3 bg-slate-50 rounded-md border min-h-[40px]">{selectedFindingData.criteria || "-"}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Condition (What is)")}</Label>
+                    <p className="text-sm text-slate-900 whitespace-pre-wrap p-3 bg-slate-50 rounded-md border min-h-[40px]">{selectedFindingData.condition || "-"}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Cause (Why it happened)")}</Label>
+                    <p className="text-sm text-slate-900 whitespace-pre-wrap p-3 bg-slate-50 rounded-md border min-h-[40px]">{selectedFindingData.cause || "-"}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Effect (The consequence)")}</Label>
+                    <p className="text-sm text-slate-900 whitespace-pre-wrap p-3 bg-slate-50 rounded-md border min-h-[40px]">{selectedFindingData.effect || "-"}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Recommendation")}</Label>
+                    <p className="text-sm text-slate-900 whitespace-pre-wrap p-3 bg-slate-50 rounded-md border min-h-[40px]">{selectedFindingData.recommendation || "-"}</p>
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Criteria (What should be)")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingData.criteria || "-"}</p>
-                </div>
+                {/* CAPA Details */}
+                <div className="space-y-4 pt-4 border-t border-slate-200">
+                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Corrective & Preventive Actions (CAPA)")}</h3>
 
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Condition (What is)")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingData.condition || "-"}</p>
-                </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Responsible Person")}</Label>
+                    <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md border">{selectedFindingData.responsiblePerson || "-"}</p>
+                  </div>
 
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Cause (Why it happened)")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingData.cause || "-"}</p>
-                </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                    <div className="p-3 bg-slate-50 rounded-md border">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        selectedFindingData.status === "Closed" ? "bg-emerald-100 text-emerald-800" :
+                        selectedFindingData.status === "Under Review" ? "bg-blue-100 text-blue-800" :
+                        "bg-slate-100 text-slate-800"
+                      }`}>
+                        {selectedFindingData.status}
+                      </span>
+                    </div>
+                  </div>
 
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Effect (The consequence)")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingData.effect || "-"}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Recommendation")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingData.recommendation || "-"}</p>
-                </div>
-              </div>
-
-              {/* CAPA Details */}
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-base font-semibold text-slate-900">{t("Corrective & Preventive Actions (CAPA)")}</h3>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Responsible Person")}</Label>
-                  <p className="mt-1 text-sm text-slate-900">{selectedFindingData.responsiblePerson || "-"}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
-                  <div className="mt-1">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      selectedFindingData.status === "Closed" ? "bg-emerald-100 text-emerald-800" :
-                      selectedFindingData.status === "Under Review" ? "bg-blue-100 text-blue-800" :
-                      "bg-slate-100 text-slate-800"
-                    }`}>
-                      {selectedFindingData.status}
-                    </span>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium text-slate-700">{t("Target Closure Date")}</Label>
+                    <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md border">{formatDate(selectedFindingData.targetDate)}</p>
                   </div>
                 </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Target Closure Date")}</Label>
-                  <p className="mt-1 text-sm text-slate-900">{formatDate(selectedFindingData.targetDate)}</p>
-                </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                 <Button variant="outline" onClick={() => { setFindingDetailDialogOpen(false); setSelectedFindingId(null); setSelectedFindingData(null); }}>
                   {t("Close")}
                 </Button>
               </div>
-            </div>
+            </>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Task Dialog */}
+      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold text-slate-800">
+                {editingTask ? (isReadOnly ? t("View Task") : t("Edit Task")) : t("Add Task")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Task Description")} *</Label>
+              <Textarea
+                value={taskForm.task}
+                onChange={(e) => setTaskForm({ ...taskForm, task: e.target.value })}
+                placeholder={t("Enter task description")}
+                className="mt-1.5 min-h-[80px]"
+                readOnly={isReadOnly}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="task-executed"
+                checked={taskForm.executed}
+                onCheckedChange={(checked) => setTaskForm({ ...taskForm, executed: checked === true })}
+                disabled={isReadOnly}
+              />
+              <Label htmlFor="task-executed" className="text-sm font-medium text-slate-700 cursor-pointer">
+                {t("Mark as Executed")}
+              </Label>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Comments")}</Label>
+              <Textarea
+                value={taskForm.comments}
+                onChange={(e) => setTaskForm({ ...taskForm, comments: e.target.value })}
+                placeholder={t("Enter comments")}
+                className="mt-1.5 min-h-[60px]"
+                readOnly={isReadOnly}
+              />
+            </div>
+
+            {editingTask && editingTask.document && (
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Attached Document")}</Label>
+                <div className="mt-1.5 flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                  <Paperclip className="h-4 w-4 text-slate-400 shrink-0" />
+                  <a href={`/api${editingTask.document}`} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 hover:underline truncate">
+                    {editingTask.documentName || t("View Document")}
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>
+              {isReadOnly ? t("Close") : t("Cancel")}
+            </Button>
+            {!isReadOnly && (
+              <Button onClick={handleSaveTaskDialog} disabled={savingTaskDialog || !taskForm.task.trim()}>
+                {savingTaskDialog ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : null}
+                {editingTask ? t("Save Changes") : t("Add Task")}
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
