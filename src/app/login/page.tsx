@@ -142,10 +142,6 @@ export default function LoginPage() {
               {isLoading ? t("Logging in...") : t("Login")}
             </Button>
           </form>
-
-          <div className="mt-6 text-center text-xs text-muted-foreground">
-            <p>{t("Demo credentials: username:")} <strong>bts</strong>, {t("password:")} <strong>1</strong></p>
-          </div>
         </CardContent>
       </Card>
     </div>

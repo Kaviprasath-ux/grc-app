@@ -1003,12 +1003,24 @@ export default function ProcessPage() {
     setSaving(false);
   };
 
-  // Generate KPI chart data
+  // Generate KPI chart data - only show data if KPI config exists
   const generateKPIChartData = () => {
+    // Check if KPI config has any meaningful data
+    const hasKpiConfigData = kpiConfig.objective.trim() !== "" ||
+                              kpiConfig.dataSource.trim() !== "" ||
+                              kpiConfig.expectedValue > 0 ||
+                              kpiConfig.description.trim() !== "" ||
+                              kpiConfig.formula.trim() !== "";
+
+    // Return empty array if no KPI config
+    if (!hasKpiConfigData) {
+      return [];
+    }
+
     return kpiMonths.map((month) => ({
       month,
       achievedValue: null,
-      expectedValue: 80,
+      expectedValue: kpiConfig.expectedValue,
     }));
   };
 
@@ -1050,12 +1062,32 @@ export default function ProcessPage() {
       .catch(() => {});
   };
 
-  // Open KPI Modal
-  const openKPIModal = (process: Process) => {
+  // Open KPI Modal and fetch existing KPI data
+  const openKPIModal = async (process: Process) => {
     setSelectedKPIProcess(process);
     setKpiConfig({ objective: "", description: "", dataSource: "", formula: "", expectedValue: 0, targetedAchievedValue: 0 });
     setKpiErrors({});
     setIsKPIModalOpen(true);
+
+    // Fetch existing KPI config for this process
+    try {
+      const res = await fetch(`/api/process-kpi/${process.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) {
+          setKpiConfig({
+            objective: data.config.objective || "",
+            description: data.config.description || "",
+            dataSource: data.config.dataSource || "",
+            formula: data.config.formula || "",
+            expectedValue: data.config.expectedValue || 0,
+            targetedAchievedValue: data.config.targetedAchievedValue || 0,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching KPI config:", error);
+    }
   };
 
   // Save KPI Config
@@ -3264,44 +3296,52 @@ export default function ProcessPage() {
                   <div>
                     {/* Line Chart */}
                     <div className="h-[250px] mb-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={generateKPIChartData()}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis domain={[0, 100]} />
-                          <RechartsTooltip />
-                          <Legend />
-                          <Line
-                            type="monotone"
-                            dataKey="achievedValue"
-                            stroke="#3b82f6"
-                            strokeWidth={2}
-                            dot={{ fill: "#3b82f6", r: 4 }}
-                            name={t("Achieved Value")}
-                            connectNulls={false}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="expectedValue"
-                            stroke="#f59e0b"
-                            strokeWidth={2}
-                            name={t("Expected Value")}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      {generateKPIChartData().length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          {t("No KPI data available. Configure KPI details below to see the performance chart.")}
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={generateKPIChartData()}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis domain={[0, 100]} />
+                            <RechartsTooltip />
+                            <Legend />
+                            <Line
+                              type="monotone"
+                              dataKey="achievedValue"
+                              stroke="#3b82f6"
+                              strokeWidth={2}
+                              dot={{ fill: "#3b82f6", r: 4 }}
+                              name={t("Achieved Value")}
+                              connectNulls={false}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="expectedValue"
+                              stroke="#f59e0b"
+                              strokeWidth={2}
+                              name={t("Expected Value")}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
                     </div>
 
-                    {/* Legend */}
-                    <div className="flex justify-end gap-6">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-1 bg-blue-500" />
-                        <span className="text-sm text-slate-600">{t("Achieved Value")}</span>
+                    {/* Legend - only show if chart has data */}
+                    {generateKPIChartData().length > 0 && (
+                      <div className="flex justify-end gap-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-1 bg-blue-500" />
+                          <span className="text-sm text-slate-600">{t("Achieved Value")}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-1 bg-amber-500" />
+                          <span className="text-sm text-slate-600">{t("Expected Value")}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-1 bg-amber-500" />
-                        <span className="text-sm text-slate-600">{t("Expected Value")}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

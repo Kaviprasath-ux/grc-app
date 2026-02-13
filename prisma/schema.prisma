@@ -778,6 +778,13 @@ model Process {
   externalParty          String?         // Name of external party when externalDependency is true
   location               String?         // JSON array of locations
   kpiMeasurementRequired Boolean         @default(false)
+  // KPI Configuration fields
+  kpiObjective           String?
+  kpiDataSource          String?
+  kpiExpectedValue       Float?
+  kpiDescription         String?
+  kpiFormula             String?
+  kpiTargetedValue       Float?
   piiCapture             Boolean         @default(false)
   recurrence             String?         // Daily, Weekly, Monthly, Quarterly, Annually
   reviewDate             DateTime?       // Review date for KPI or PII
@@ -864,14 +871,14 @@ model BIARating {
 
 // BIA Scoring Configuration (High of All, Addition of All, Product of All)
 model BIAScoringConfig {
-  id                String          @id @default(cuid())
-  // Multi-tenant: Link to customer account
-  customerAccountId String
-  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
-  calculationType   String          @default("High of all") // High of all, Addition of all, Product of all
-  isActive          Boolean         @default(true)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account (optional for backward compatibility)
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  calculationType   String           @default("High of all") // High of all, Addition of all, Product of all
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@index([customerAccountId])
 }
