@@ -76,6 +76,8 @@ const translations: [string, string, string][] = [
   ['Success', 'نجاح', 'Veiksmīgi'],
   ['Warning', 'تحذير', 'Brīdinājums'],
   ['Info', 'معلومات', 'Informācija'],
+  ['Information', 'معلومات', 'Informācija'],
+  ['Please Add the CIA Values', 'يرجى إضافة قيم السرية والنزاهة والتوافر', 'Lūdzu, pievienojiet CIA vērtības'],
   ['Loading', 'تحميل', 'Ielāde'],
   ['Please wait...', 'يرجى الانتظار...', 'Lūdzu, uzgaidiet...'],
   ['No items found', 'لم يتم العثور على عناصر', 'Nav atrasts neviens vienums'],
