@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useHasRole } from "@/hooks/usePermissions";
 
 interface Customer {
   id: string;
@@ -66,6 +67,7 @@ export default function CustomersPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { t } = useLanguage();
+  const isGRCAdmin = useHasRole("GRCAdministrator");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -360,7 +362,7 @@ export default function CustomersPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("UserName")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Compliance Percentage")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
+              {!isGRCAdmin && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -392,37 +394,39 @@ export default function CustomersPage() {
                       <span className="text-sm text-slate-600">{customer.compliancePercentage.toFixed(2)}%</span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-3 pr-5">
-                    <div className="flex items-center gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditDialog(customer)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openLogoDialog(customer)}
-                        title={t("View Logo")}
-                      >
-                        <Image className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(customer)}
-                        title={t("Delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {!isGRCAdmin && (
+                    <TableCell className="py-3 pr-5">
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => openEditDialog(customer)}
+                          title={t("Edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => openLogoDialog(customer)}
+                          title={t("View Logo")}
+                        >
+                          <Image className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          onClick={() => openDeleteDialog(customer)}
+                          title={t("Delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

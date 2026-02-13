@@ -81,3 +81,50 @@ export const POST = withAuth(
   },
   { resource: "risk.settings", action: "create" }
 );
+
+// DELETE a risk vulnerability - with tenant filtering
+export const DELETE = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const { searchParams } = new URL(req.url);
+      const id = searchParams.get("id");
+
+      if (!id) {
+        return NextResponse.json(
+          { error: "Vulnerability ID is required" },
+          { status: 400 }
+        );
+      }
+
+      const tenantFilter = getTenantFilter(session, { globalAccess: true });
+
+      // Check if vulnerability exists and belongs to tenant
+      const existing = await prisma.riskVulnerability.findFirst({
+        where: {
+          id,
+          ...tenantFilter,
+        },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Vulnerability not found" },
+          { status: 404 }
+        );
+      }
+
+      await prisma.riskVulnerability.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting risk vulnerability:", error);
+      return NextResponse.json(
+        { error: "Failed to delete risk vulnerability" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "risk.settings", action: "delete" }
+);

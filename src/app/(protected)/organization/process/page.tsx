@@ -393,6 +393,12 @@ export default function ProcessPage() {
     informed: "",
   });
 
+  // Process Form errors
+  const [processFormErrors, setProcessFormErrors] = useState<Record<string, string>>({});
+
+  // Validation helper - allows letters, numbers, and spaces
+  const isAlphanumericWithSpaces = (str: string) => /^[a-zA-Z0-9\s]+$/.test(str);
+
   const resetProcessForm = () => {
     setProcessForm({
       name: "",
@@ -416,6 +422,7 @@ export default function ProcessPage() {
       consulted: "",
       informed: "",
     });
+    setProcessFormErrors({});
     setPendingOnboardingFiles([]);
   };
 
@@ -874,6 +881,19 @@ export default function ProcessPage() {
 
   // Handle Add Process
   const handleAddProcess = async () => {
+    // Validate form
+    const errors: Record<string, string> = {};
+    if (!processForm.name.trim()) {
+      errors.name = t("Please enter the Process Name");
+    } else if (!isAlphanumericWithSpaces(processForm.name.trim())) {
+      errors.name = t("Process Name should only contain letters, numbers and spaces");
+    }
+    if (Object.keys(errors).length > 0) {
+      setProcessFormErrors(errors);
+      return;
+    }
+    setProcessFormErrors({});
+
     setSaving(true);
     try {
       const { responsible, accountable, consulted, informed, frequency, location, kpiRecurrence, kpiReviewDate, assetId, ...rest } = processForm;
@@ -2481,14 +2501,18 @@ export default function ProcessPage() {
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Basic Information")}</h4>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">{t("Process Name")}</Label>
+                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-red-500">*</span></Label>
                   <Input
                     id="name"
                     value={processForm.name}
-                    onChange={(e) => setProcessForm({ ...processForm, name: e.target.value })}
+                    onChange={(e) => {
+                      setProcessForm({ ...processForm, name: e.target.value });
+                      if (processFormErrors.name) setProcessFormErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("Enter process name")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${processFormErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {processFormErrors.name && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{processFormErrors.name}</p></div>)}
                 </div>
                 <div>
                   <Label htmlFor="description" className="text-sm font-medium text-slate-700">{t("Description")}</Label>

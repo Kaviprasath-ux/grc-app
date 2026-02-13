@@ -251,13 +251,33 @@ export default function UsersPage() {
     setIsAddUserOpen(true);
   };
 
+  // Validation helpers
+  const isAlphaWithSpaces = (str: string) => /^[a-zA-Z\s]+$/.test(str);
+  const isAlphanumeric = (str: string) => /^[a-zA-Z0-9_]+$/.test(str);
+
   // User CRUD
   const handleAddUser = async () => {
     const errors: Record<string, string> = {};
-    if (!userForm.firstName.trim()) errors.firstName = t("Please Enter the First Name");
-    if (!userForm.lastName.trim()) errors.lastName = t("Please Enter the Last Name");
-    if (!userForm.fullName.trim()) errors.fullName = t("Please Enter the Name");
-    if (!userForm.userName.trim()) errors.userName = t("Please Enter the UserName");
+    if (!userForm.firstName.trim()) {
+      errors.firstName = t("Please Enter the First Name");
+    } else if (!isAlphaWithSpaces(userForm.firstName.trim())) {
+      errors.firstName = t("First Name should only contain letters");
+    }
+    if (!userForm.lastName.trim()) {
+      errors.lastName = t("Please Enter the Last Name");
+    } else if (!isAlphaWithSpaces(userForm.lastName.trim())) {
+      errors.lastName = t("Last Name should only contain letters");
+    }
+    if (!userForm.fullName.trim()) {
+      errors.fullName = t("Please Enter the Name");
+    } else if (!isAlphaWithSpaces(userForm.fullName.trim())) {
+      errors.fullName = t("Full Name should only contain letters");
+    }
+    if (!userForm.userName.trim()) {
+      errors.userName = t("Please Enter the UserName");
+    } else if (!isAlphanumeric(userForm.userName.trim())) {
+      errors.userName = t("Username should only contain letters, numbers and underscores");
+    }
     if (!userForm.email.trim()) errors.email = t("Please Enter the Email");
     if (!userForm.function) errors.function = t("Please Select the Function");
     if (!userForm.role) errors.role = t("Please Select the Role");
@@ -819,7 +839,7 @@ export default function UsersPage() {
               </Button>
               <Button size="sm" onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
-                {t("New Account")}
+                {t("New User")}
               </Button>
             </div>
 
@@ -970,7 +990,7 @@ export default function UsersPage() {
               </Button>
               <Button size="sm" onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
-                {t("New Account")}
+                {t("New User")}
               </Button>
             </div>
             {/* Table Card with Integrated Filters */}
@@ -1053,7 +1073,7 @@ export default function UsersPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Account")}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New User")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}

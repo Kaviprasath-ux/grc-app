@@ -81,3 +81,111 @@ export const POST = withAuth(
   },
   { resource: "risk.settings", action: "create" }
 );
+
+// PUT update a risk threat - with tenant filtering
+export const PUT = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const tenantFilter = getTenantFilter(session, { globalAccess: true });
+      const body = await req.json();
+      const { id, name, description, categoryId } = body;
+
+      if (!id) {
+        return NextResponse.json(
+          { error: "Threat ID is required" },
+          { status: 400 }
+        );
+      }
+
+      if (!name?.trim()) {
+        return NextResponse.json(
+          { error: "Threat name is required" },
+          { status: 400 }
+        );
+      }
+
+      // Check if threat exists and belongs to tenant
+      const existing = await prisma.riskThreat.findFirst({
+        where: {
+          id,
+          ...tenantFilter,
+        },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Threat not found" },
+          { status: 404 }
+        );
+      }
+
+      const threat = await prisma.riskThreat.update({
+        where: { id },
+        data: {
+          name: name.trim(),
+          description: description?.trim() || null,
+          categoryId: categoryId || null,
+        },
+        include: {
+          category: true,
+        },
+      });
+
+      return NextResponse.json(threat);
+    } catch (error) {
+      console.error("Error updating risk threat:", error);
+      return NextResponse.json(
+        { error: "Failed to update risk threat" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "risk.settings", action: "edit" }
+);
+
+// DELETE a risk threat - with tenant filtering
+export const DELETE = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const { searchParams } = new URL(req.url);
+      const id = searchParams.get("id");
+
+      if (!id) {
+        return NextResponse.json(
+          { error: "Threat ID is required" },
+          { status: 400 }
+        );
+      }
+
+      const tenantFilter = getTenantFilter(session, { globalAccess: true });
+
+      // Check if threat exists and belongs to tenant
+      const existing = await prisma.riskThreat.findFirst({
+        where: {
+          id,
+          ...tenantFilter,
+        },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Threat not found" },
+          { status: 404 }
+        );
+      }
+
+      await prisma.riskThreat.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting risk threat:", error);
+      return NextResponse.json(
+        { error: "Failed to delete risk threat" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "risk.settings", action: "delete" }
+);

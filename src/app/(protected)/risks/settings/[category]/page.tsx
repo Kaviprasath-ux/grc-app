@@ -46,6 +46,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
 
 // Type definitions
 interface VulnerabilityCategory {
@@ -1162,53 +1163,109 @@ export default function RiskSettingsCategoryPage() {
 
     setVulnImportLoading(true);
     try {
-      // Parse CSV file
-      const text = await vulnSelectedFile.text();
-      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      const fileName = vulnSelectedFile.name.toLowerCase();
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
 
-      if (lines.length < 2) {
+      let headers: string[] = [];
+      const data: Record<string, string>[] = [];
+
+      if (isExcel) {
+        // Parse Excel file
+        const arrayBuffer = await vulnSelectedFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        // header: 1 returns array of arrays
+        const jsonData = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1 });
+
+        if (jsonData.length < 2) {
+          toast({
+            title: t("Error"),
+            description: t("File is empty or has no data rows"),
+            variant: "destructive",
+          });
+          setVulnImportLoading(false);
+          return;
+        }
+
+        // First row is headers
+        const headerRow = jsonData[0];
+        if (Array.isArray(headerRow)) {
+          headers = headerRow.map(h => String(h || "").trim());
+        }
+
+        // Rest are data rows
+        for (let i = 1; i < jsonData.length; i++) {
+          const rowArray = jsonData[i];
+          if (!Array.isArray(rowArray) || rowArray.length === 0) continue;
+
+          const row: Record<string, string> = {};
+          headers.forEach((header, index) => {
+            row[header] = String(rowArray[index] || "").trim();
+          });
+
+          // Skip completely empty rows
+          if (Object.values(row).every(v => !v)) continue;
+          data.push(row);
+        }
+      } else {
+        // Parse CSV file
+        const text = await vulnSelectedFile.text();
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+
+        if (lines.length < 2) {
+          toast({
+            title: t("Error"),
+            description: t("File is empty or has no data rows"),
+            variant: "destructive",
+          });
+          setVulnImportLoading(false);
+          return;
+        }
+
+        // Parse headers
+        headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+        // Parse data rows
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line.trim()) continue;
+
+          // Simple CSV parsing (handles basic quoted values)
+          const values: string[] = [];
+          let current = "";
+          let inQuotes = false;
+
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              values.push(current.trim().replace(/^"|"$/g, ""));
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim().replace(/^"|"$/g, ""));
+
+          // Create row object
+          const row: Record<string, string> = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || "";
+          });
+          data.push(row);
+        }
+      }
+
+      if (data.length === 0) {
         toast({
           title: t("Error"),
-          description: t("File is empty or has no data rows"),
+          description: t("No valid data rows found in the file"),
           variant: "destructive",
         });
         setVulnImportLoading(false);
         return;
-      }
-
-      // Parse headers
-      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
-
-      // Parse data rows
-      const data = [];
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line.trim()) continue;
-
-        // Simple CSV parsing (handles basic quoted values)
-        const values: string[] = [];
-        let current = "";
-        let inQuotes = false;
-
-        for (let j = 0; j < line.length; j++) {
-          const char = line[j];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === "," && !inQuotes) {
-            values.push(current.trim().replace(/^"|"$/g, ""));
-            current = "";
-          } else {
-            current += char;
-          }
-        }
-        values.push(current.trim().replace(/^"|"$/g, ""));
-
-        // Create row object
-        const row: Record<string, string> = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || "";
-        });
-        data.push(row);
       }
 
       // Send to API
@@ -2947,7 +3004,7 @@ export default function RiskSettingsCategoryPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <p className="text-sm text-slate-500">
-                {t("Upload a CSV file to import vulnerabilities. Download the template first to see the required format.")}
+                {t("Upload a CSV or Excel file to import vulnerabilities. Download the template first to see the required format.")}
               </p>
               <div className="bg-slate-50 p-3 rounded-md text-sm">
                 <p className="font-medium mb-1 text-slate-700">{t("Required columns:")}</p>
@@ -2998,12 +3055,12 @@ export default function RiskSettingsCategoryPage() {
                   <p className="text-sm font-medium text-primary-600">{vulnSelectedFile.name}</p>
                 ) : (
                   <p className="text-sm text-slate-500">
-                    {t("Click to select a CSV file")}
+                    {t("Click to select a CSV or Excel file")}
                   </p>
                 )}
                 <input
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   className="hidden"
                   id="vuln-file-upload"
                   onChange={(e) => {
