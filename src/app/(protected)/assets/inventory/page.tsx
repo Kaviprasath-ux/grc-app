@@ -898,10 +898,7 @@ export default function AssetInventoryPage() {
     total: assets.length,
     active: assets.filter((a) => a.status === "Active").length,
     critical: assets.filter((a) => a.classification?.name === "Critical").length,
-    needsReview: assets.filter((a) => {
-      if (!a.nextReviewDate) return false;
-      return new Date(a.nextReviewDate) <= new Date();
-    }).length,
+    needsReview: assets.filter((a) => !a.classificationId).length,
   };
 
   // Show loading state while permissions or data is being fetched

@@ -636,10 +636,7 @@ export default function MyAssetInventoryPage() {
     total: filteredAssets.length,
     active: filteredAssets.filter((a) => a.status === "Active").length,
     critical: filteredAssets.filter((a) => a.classification?.name === "Critical").length,
-    needsReview: filteredAssets.filter((a) => {
-      if (!a.nextReviewDate) return false;
-      return new Date(a.nextReviewDate) <= new Date();
-    }).length,
+    needsReview: filteredAssets.filter((a) => !a.classificationId).length,
   };
 
   // Columns matching UAT: Asset ID, Asset Name, Asset Owner, Asset Category, Asset Sub Category, Group, Action
