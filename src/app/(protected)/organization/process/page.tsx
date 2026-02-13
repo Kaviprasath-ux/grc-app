@@ -295,17 +295,20 @@ export default function ProcessPage() {
           });
         }
       } else {
+        // Use user-friendly error message if available
+        const errorTitle = result.userError?.title || t("AI Generation Failed");
+        const errorDescription = result.userMessage || result.error || t("Please try again later.");
         toast({
-          title: t("AI Generation Failed"),
-          description: result.error || t("Please try again later."),
+          title: t(errorTitle),
+          description: errorDescription,
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("[Process] AI evaluation error:", error);
       toast({
-        title: t("Error"),
-        description: t("Communication with AI service failed."),
+        title: t("Connection Error"),
+        description: t("Unable to reach the AI service. Please check your connection and try again."),
         variant: "destructive",
       });
     } finally {

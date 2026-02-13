@@ -55,7 +55,7 @@ export const POST = withAuth(
       const newComment = await prisma.engagementComment.create({
         data: {
           engagementId: id,
-          userId: session.user.id,
+          userId: session.id,
           comment: comment.trim(),
         },
         include: {

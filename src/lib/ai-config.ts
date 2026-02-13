@@ -96,6 +96,165 @@ export const AI_ERRORS = {
 } as const;
 
 // ============================================================================
+// USER-FRIENDLY ERROR MESSAGES
+// ============================================================================
+
+export interface AIUserError {
+  title: string;
+  description: string;
+  suggestion?: string;
+  retryable: boolean;
+}
+
+/**
+ * Get user-friendly error message based on HTTP status code or error type.
+ * These messages are designed to be shown in toast notifications.
+ */
+export function getAIUserFriendlyError(
+  statusCode: number,
+  rawMessage?: string
+): AIUserError {
+  // Check for specific error patterns in the raw message
+  const lowerMessage = rawMessage?.toLowerCase() || '';
+
+  // Cloudflare 524 timeout (origin server timeout)
+  if (statusCode === 524) {
+    return {
+      title: 'AI Service Starting Up',
+      description: 'The AI server is waking up or processing a heavy load.',
+      suggestion: 'Please wait 1-2 minutes and try again. The server needs time to initialize.',
+      retryable: true,
+    };
+  }
+
+  // Gateway timeout
+  if (statusCode === 504) {
+    return {
+      title: 'Request Timeout',
+      description: 'The AI service took too long to respond.',
+      suggestion: 'The server may be processing other requests. Please try again in a moment.',
+      retryable: true,
+    };
+  }
+
+  // Bad gateway - server not responding
+  if (statusCode === 502) {
+    return {
+      title: 'AI Service Unavailable',
+      description: 'Unable to connect to the AI service.',
+      suggestion: 'The AI server may be restarting. Please wait a few minutes and try again.',
+      retryable: true,
+    };
+  }
+
+  // Service unavailable
+  if (statusCode === 503) {
+    return {
+      title: 'Service Temporarily Unavailable',
+      description: 'The AI service is temporarily overloaded or under maintenance.',
+      suggestion: 'Please try again in a few minutes.',
+      retryable: true,
+    };
+  }
+
+  // Rate limiting
+  if (statusCode === 429) {
+    return {
+      title: 'Too Many Requests',
+      description: 'You have sent too many requests in a short time.',
+      suggestion: 'Please wait a moment before trying again.',
+      retryable: true,
+    };
+  }
+
+  // Authentication errors
+  if (statusCode === 401 || statusCode === 403) {
+    return {
+      title: 'Authentication Error',
+      description: 'Unable to authenticate with the AI service.',
+      suggestion: 'Please contact your administrator to verify the AI service configuration.',
+      retryable: false,
+    };
+  }
+
+  // Not found
+  if (statusCode === 404) {
+    return {
+      title: 'Resource Not Found',
+      description: 'The requested AI resource was not found.',
+      suggestion: 'The AI model or endpoint may have been updated. Please contact support.',
+      retryable: false,
+    };
+  }
+
+  // Validation errors
+  if (statusCode === 400 || statusCode === 422) {
+    return {
+      title: 'Invalid Request',
+      description: rawMessage || 'The request data was invalid.',
+      suggestion: 'Please check your input and try again.',
+      retryable: false,
+    };
+  }
+
+  // Internal server error
+  if (statusCode === 500) {
+    // Check for specific patterns
+    if (lowerMessage.includes('timeout') || lowerMessage.includes('timed out')) {
+      return {
+        title: 'AI Processing Timeout',
+        description: 'The AI model took too long to generate a response.',
+        suggestion: 'The request may be complex. Try again or simplify your input.',
+        retryable: true,
+      };
+    }
+    if (lowerMessage.includes('memory') || lowerMessage.includes('oom')) {
+      return {
+        title: 'AI Service Overloaded',
+        description: 'The AI server ran out of resources.',
+        suggestion: 'The server is processing heavy workloads. Please try again later.',
+        retryable: true,
+      };
+    }
+    return {
+      title: 'AI Service Error',
+      description: 'An unexpected error occurred in the AI service.',
+      suggestion: 'Please try again. If the issue persists, contact support.',
+      retryable: true,
+    };
+  }
+
+  // Network/connection errors (status 0 or undefined)
+  if (!statusCode || statusCode === 0) {
+    return {
+      title: 'Connection Error',
+      description: 'Unable to reach the AI service.',
+      suggestion: 'Check your internet connection and try again.',
+      retryable: true,
+    };
+  }
+
+  // Default fallback
+  return {
+    title: 'AI Request Failed',
+    description: rawMessage || 'An error occurred while communicating with the AI service.',
+    suggestion: 'Please try again. If the issue persists, contact support.',
+    retryable: true,
+  };
+}
+
+/**
+ * Format the user-friendly error for display in a toast.
+ * Returns a description string that includes the suggestion if available.
+ */
+export function formatAIErrorForToast(error: AIUserError): string {
+  if (error.suggestion) {
+    return `${error.description} ${error.suggestion}`;
+  }
+  return error.description;
+}
+
+// ============================================================================
 // LEGACY CONFIG (for backward compatibility)
 // ============================================================================
 

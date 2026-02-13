@@ -423,14 +423,8 @@ export default function AssetSettingsPage() {
     if (!subCategoryForm.name.trim()) {
       errors.subCategoryName = t("Please enter sub category name");
     }
-    if (!subCategoryForm.description.trim()) {
-      errors.subCategoryDescription = t("Please enter description");
-    }
     if (!subCategoryForm.categoryId) {
       errors.subCategoryCategoryId = t("Please select category");
-    }
-    if (!subCategoryForm.status) {
-      errors.subCategoryStatus = t("Please select status");
     }
 
     // If there are validation errors, set them and stop
@@ -469,9 +463,6 @@ export default function AssetSettingsPage() {
 
     if (!subCategoryForm.name.trim()) {
       errors.subCategoryName = t("Please enter sub category name");
-    }
-    if (!subCategoryForm.description.trim()) {
-      errors.subCategoryDescription = t("Please enter description");
     }
     if (!subCategoryForm.categoryId) {
       errors.subCategoryCategoryId = t("Please select category");
@@ -531,9 +522,6 @@ export default function AssetSettingsPage() {
     if (!groupForm.name.trim()) {
       errors.groupName = t("Please enter group name");
     }
-    if (!groupForm.description.trim()) {
-      errors.groupDescription = t("Please enter description");
-    }
     if (!groupForm.status) {
       errors.groupStatus = t("Please select status");
     }
@@ -572,9 +560,6 @@ export default function AssetSettingsPage() {
 
     if (!groupForm.name.trim()) {
       errors.groupName = t("Please enter group name");
-    }
-    if (!groupForm.description.trim()) {
-      errors.groupDescription = t("Please enter description");
     }
     if (!groupForm.status) {
       errors.groupStatus = t("Please select status");
