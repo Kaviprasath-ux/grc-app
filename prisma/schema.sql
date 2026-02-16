@@ -158,7 +158,7 @@ CREATE TABLE "User" (
     "userId" TEXT NOT NULL,
     "userName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
+    "password" TEXT,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "fullName" TEXT NOT NULL,
@@ -181,6 +181,19 @@ CREATE TABLE "User" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OAuthAccount" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OAuthAccount_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -486,6 +499,12 @@ CREATE TABLE "Process" (
     "externalParty" TEXT,
     "location" TEXT,
     "kpiMeasurementRequired" BOOLEAN NOT NULL DEFAULT false,
+    "kpiObjective" TEXT,
+    "kpiDataSource" TEXT,
+    "kpiExpectedValue" DOUBLE PRECISION,
+    "kpiDescription" TEXT,
+    "kpiFormula" TEXT,
+    "kpiTargetedValue" DOUBLE PRECISION,
     "piiCapture" BOOLEAN NOT NULL DEFAULT false,
     "recurrence" TEXT,
     "reviewDate" TIMESTAMP(3),
@@ -550,7 +569,7 @@ CREATE TABLE "BIARating" (
 -- CreateTable
 CREATE TABLE "BIAScoringConfig" (
     "id" TEXT NOT NULL,
-    "customerAccountId" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "calculationType" TEXT NOT NULL DEFAULT 'High of all',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2333,6 +2352,12 @@ CREATE UNIQUE INDEX "User_userName_key" ON "User"("userName");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "OAuthAccount_userId_idx" ON "OAuthAccount"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OAuthAccount_provider_providerAccountId_key" ON "OAuthAccount"("provider", "providerAccountId");
+
+-- CreateIndex
 CREATE INDEX "Stakeholder_customerAccountId_idx" ON "Stakeholder"("customerAccountId");
 
 -- CreateIndex
@@ -3015,6 +3040,9 @@ ALTER TABLE "User" ADD CONSTRAINT "User_reportingManagerId_fkey" FOREIGN KEY ("r
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OAuthAccount" ADD CONSTRAINT "OAuthAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Stakeholder" ADD CONSTRAINT "Stakeholder_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

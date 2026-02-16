@@ -1,8 +1,71 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { expandRolePermissions } from "@/lib/permissions";
+import { expandRolePermissions, type UserPermission } from "@/lib/permissions";
+
+// Shared query for loading user with all relations needed for session
+const userInclude = {
+  department: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  customerAccount: {
+    select: {
+      id: true,
+      code: true,
+      name: true,
+    },
+  },
+  auditHead: { select: { id: true, fullName: true } },
+  userRoles: {
+    include: {
+      role: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
+};
+
+// Helper to build the user object returned to NextAuth from a DB user
+function buildAuthUser(dbUser: {
+  id: string;
+  fullName: string;
+  email: string;
+  departmentId: string | null;
+  department: { id: string; name: string } | null;
+  customerAccountId: string | null;
+  customerAccount: { id: string; code: string; name: string } | null;
+  auditHeadId: string | null;
+  userRoles: { role: { id: string; name: string } }[];
+}) {
+  const roleNames = dbUser.userRoles.map(ur => ur.role.name);
+  const effectiveRoles = roleNames.length > 0 ? roleNames : ['Contributor'];
+  const primaryRole = effectiveRoles[0] || 'Contributor';
+
+  return {
+    id: dbUser.id,
+    name: dbUser.fullName,
+    email: dbUser.email,
+    role: primaryRole,
+    department: dbUser.department?.name || '',
+    departmentId: dbUser.departmentId,
+    departmentName: dbUser.department?.name || null,
+    customerAccountId: dbUser.customerAccountId,
+    customerAccountCode: dbUser.customerAccount?.code || null,
+    customerAccountName: dbUser.customerAccount?.name || null,
+    auditHeadId: dbUser.auditHeadId,
+    roles: effectiveRoles,
+    permissions: [] as UserPermission[],
+  };
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -66,32 +129,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             isActive: true,
             isBlocked: false,
           },
-          include: {
-            department: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            customerAccount: {
-              select: {
-                id: true,
-                code: true,
-                name: true,
-              },
-            },
-            auditHead: { select: { id: true, fullName: true } },
-            userRoles: {
-              include: {
-                role: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
+          include: userInclude,
         });
 
         if (!user) {
@@ -100,6 +138,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         console.log('[AUTH] User found:', user.userName, 'isActive:', user.isActive, 'isBlocked:', user.isBlocked);
+
+        // SSO-only user cannot login via credentials
+        if (!user.password) {
+          console.log('[AUTH] SSO-only user attempted credentials login');
+          return null;
+        }
 
         // Compare password using bcrypt
         const inputPassword = String(credentials.password);
@@ -111,60 +155,130 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         console.log('[AUTH] Login successful for:', user.userName);
 
-        // Extract role names from userRoles
-        const roleNames = user.userRoles.map(ur => ur.role.name);
-
-        // If user has no roles assigned, give them a default Contributor role
-        const effectiveRoles = roleNames.length > 0 ? roleNames : ['Contributor'];
-
-        // Get primary role for backwards compatibility
-        const primaryRole = effectiveRoles[0] || 'Contributor';
-
-        // Note: We only return role names, not expanded permissions
-        // Permissions are expanded in the session callback to avoid JWT size issues
-        return {
-          id: user.id,
-          name: user.fullName,
-          email: user.email,
-          role: primaryRole, // Legacy field
-          department: user.department?.name || '', // Legacy field
-          departmentId: user.departmentId,
-          departmentName: user.department?.name || null,
-          // Multi-tenant: Include customer account information
-          customerAccountId: user.customerAccountId,
-          customerAccountCode: user.customerAccount?.code || null,
-          customerAccountName: user.customerAccount?.name || null,
-          // Audit Head isolation: Include auditHeadId for audit team members
-          auditHeadId: user.auditHeadId,
-          roles: effectiveRoles,
-          permissions: [], // Placeholder - expanded in session callback
-        };
+        return buildAuthUser(user);
         } catch (error) {
           console.error('[AUTH] Error during authentication:', error);
           return null;
         }
       },
     }),
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+    MicrosoftEntraID({
+      clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
+      clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
+    }),
   ],
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      // Credentials flow: authorize() already validated the user
+      if (account?.provider === "credentials") {
+        return true;
+      }
+
+      // OAuth flow: verify user is pre-registered
+      const email = user.email;
+      if (!email) {
+        console.log('[AUTH-SSO] No email provided by OAuth provider');
+        return "/login?error=NoEmail";
+      }
+
+      try {
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            email: { equals: email, mode: "insensitive" },
+            isActive: true,
+            isBlocked: false,
+          },
+        });
+
+        if (!dbUser) {
+          console.log('[AUTH-SSO] User not registered:', email);
+          return "/login?error=UserNotRegistered";
+        }
+
+        // Upsert OAuth account record for audit trail
+        await prisma.oAuthAccount.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider: account!.provider,
+              providerAccountId: account!.providerAccountId!,
+            },
+          },
+          create: {
+            userId: dbUser.id,
+            provider: account!.provider,
+            providerAccountId: account!.providerAccountId!,
+            email: email,
+          },
+          update: {
+            email: email,
+            updatedAt: new Date(),
+          },
+        });
+
+        // Update last login
+        await prisma.user.update({
+          where: { id: dbUser.id },
+          data: { lastLogin: new Date() },
+        });
+
+        console.log('[AUTH-SSO] Login successful for:', email, 'via', account?.provider);
+        return true;
+      } catch (error) {
+        console.error('[AUTH-SSO] Error during SSO sign-in:', error);
+        return "/login?error=SSOError";
+      }
+    },
+    async jwt({ token, user, account }) {
       if (user) {
-        token.id = user.id; // Store the database user ID
-        token.role = user.role;
-        token.department = user.department;
-        token.departmentId = user.departmentId;
-        token.departmentName = user.departmentName;
-        // Multi-tenant: Store customer account info in JWT
-        token.customerAccountId = user.customerAccountId;
-        token.customerAccountCode = user.customerAccountCode;
-        token.customerAccountName = user.customerAccountName;
-        // Audit Head isolation: Store auditHeadId in JWT
-        token.auditHeadId = user.auditHeadId;
-        token.roles = user.roles;
-        // Don't store permissions in JWT - they'll be expanded in session callback
+        if (account?.provider === "credentials") {
+          // Credentials flow: user object from authorize() has all DB fields
+          token.id = user.id;
+          token.role = user.role;
+          token.department = user.department;
+          token.departmentId = user.departmentId;
+          token.departmentName = user.departmentName;
+          token.customerAccountId = user.customerAccountId;
+          token.customerAccountCode = user.customerAccountCode;
+          token.customerAccountName = user.customerAccountName;
+          token.auditHeadId = user.auditHeadId;
+          token.roles = user.roles;
+        } else {
+          // OAuth flow: user object only has OAuth profile data
+          // Must query DB to load roles, department, customerAccount, etc.
+          const email = user.email;
+          if (email) {
+            const dbUser = await prisma.user.findFirst({
+              where: {
+                email: { equals: email, mode: "insensitive" },
+                isActive: true,
+                isBlocked: false,
+              },
+              include: userInclude,
+            });
+
+            if (dbUser) {
+              const authUser = buildAuthUser(dbUser);
+              token.id = authUser.id; // Critical: override OAuth provider ID with DB user ID
+              token.role = authUser.role;
+              token.department = authUser.department;
+              token.departmentId = authUser.departmentId;
+              token.departmentName = authUser.departmentName;
+              token.customerAccountId = authUser.customerAccountId;
+              token.customerAccountCode = authUser.customerAccountCode;
+              token.customerAccountName = authUser.customerAccountName;
+              token.auditHeadId = authUser.auditHeadId;
+              token.roles = authUser.roles;
+            }
+          }
+        }
       }
       return token;
     },
