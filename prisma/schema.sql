@@ -2101,6 +2101,7 @@ CREATE TABLE "GovernanceTemplate" (
     "fileType" TEXT,
     "fileSize" INTEGER,
     "filePath" TEXT NOT NULL,
+    "fileData" BYTEA,
     "uploadedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

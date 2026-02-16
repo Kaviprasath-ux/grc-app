@@ -84,9 +84,19 @@ export async function POST(req: NextRequest) {
             return badRequestResponse("Policy must have at least one linked control to generate document");
         }
 
-        // Fetch the selected GovernanceTemplate
+        // Fetch the selected GovernanceTemplate (include fileData for cloud)
         const governanceTemplate = await prisma.governanceTemplate.findUnique({
-            where: { id: templateId }
+            where: { id: templateId },
+            select: {
+                id: true,
+                name: true,
+                governanceType: true,
+                fileName: true,
+                fileType: true,
+                fileSize: true,
+                filePath: true,
+                fileData: true,
+            },
         });
 
         if (!governanceTemplate) {
@@ -138,15 +148,21 @@ export async function POST(req: NextRequest) {
             ? Array.from(frameworkNamesSet)
             : ["General"];
 
-        // Load template file
-        const absolutePath = path.join(process.cwd(), "public", governanceTemplate.filePath);
+        // Load template file - try disk first, then fallback to DB
         let templateBuffer: Buffer;
         try {
+            const absolutePath = path.join(process.cwd(), "public", governanceTemplate.filePath);
             templateBuffer = await readFile(absolutePath);
-            console.log(`[Governance Generate] Loaded template: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
-        } catch (e) {
-            console.error(`[Governance Generate] Could not read template at ${absolutePath}`);
-            return errorResponse(`Template file not found: ${governanceTemplate.fileName}`, 404);
+            console.log(`[Governance Generate] Loaded template from disk: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
+        } catch {
+            // File not on disk (e.g., Vercel) - read from database
+            if (governanceTemplate.fileData) {
+                templateBuffer = Buffer.from(governanceTemplate.fileData);
+                console.log(`[Governance Generate] Loaded template from DB: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
+            } else {
+                console.error(`[Governance Generate] Template file not found on disk or in DB`);
+                return errorResponse(`Template file not found: ${governanceTemplate.fileName}`, 404);
+            }
         }
 
         // Build FormData for RunPod API
@@ -210,7 +226,9 @@ export async function POST(req: NextRequest) {
 
         // Decode and save the generated file
         const buffer = Buffer.from(base64_doc, "base64");
-        const uploadsDir = path.join(process.cwd(), "public", "uploads", "policies");
+        const { getUploadBaseDir } = await import("@/lib/file-upload");
+        const baseDir = getUploadBaseDir();
+        const uploadsDir = path.join(baseDir, "policies");
         await mkdir(uploadsDir, { recursive: true });
 
         const timestamp = Date.now();

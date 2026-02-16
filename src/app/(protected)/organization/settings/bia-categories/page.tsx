@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
 
 interface BIACategory {

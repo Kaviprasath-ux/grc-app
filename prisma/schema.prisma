@@ -2925,6 +2925,7 @@ model GovernanceTemplate {
   fileType          String?          // docx only for AI generation
   fileSize          Int?
   filePath          String
+  fileData          Bytes?            // Store file content for cloud deployment
   uploadedById      String?
   uploadedBy        User?            @relation("TemplateUploader", fields: [uploadedById], references: [id])
   createdAt         DateTime         @default(now())

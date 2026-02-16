@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { saveUploadedFile } from "@/lib/file-upload";
 
 /**
  * GET /api/governance-templates
@@ -95,30 +94,24 @@ export async function POST(req: NextRequest) {
     // Use provided name or original filename
     const templateName = name || originalFileName.replace(/\.[^/.]+$/, "");
 
-    // Save file to disk
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "governance-templates");
-    await mkdir(uploadsDir, { recursive: true });
+    // Save file to disk (uses /tmp on Vercel, local uploads/ dir otherwise)
+    const { urlPath, fileName, buffer } = await saveUploadedFile(file, "governance-templates");
 
-    const timestamp = Date.now();
-    const sanitizedName = templateName.replace(/[^a-zA-Z0-9-_]/g, "-");
-    const finalFileName = `${sanitizedName}-${timestamp}.${fileExtension}`;
-    const filePath = path.join(uploadsDir, finalFileName);
-    const publicPath = `/uploads/governance-templates/${finalFileName}`;
+    // Store file path - on Vercel use the download API, locally use the file path
+    const filePath = process.env.VERCEL
+      ? `/api/governance-templates/download` // Will be updated with ID after creation
+      : urlPath;
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
-
-    // Create database record
+    // Create database record with file data stored in DB for cloud persistence
     const template = await prisma.governanceTemplate.create({
       data: {
         name: templateName,
         governanceType,
-        fileName: finalFileName,
+        fileName,
         fileType: fileExtension,
         fileSize: buffer.length,
-        filePath: publicPath,
+        filePath,
+        fileData: buffer, // Store file content in DB for Vercel
         uploadedById: session.user.id,
         customerAccountId: session.user.customerAccountId || null,
       },
@@ -131,6 +124,15 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    // Update filePath to include the template ID for download endpoint
+    if (process.env.VERCEL) {
+      await prisma.governanceTemplate.update({
+        where: { id: template.id },
+        data: { filePath: `/api/governance-templates/${template.id}/download` },
+      });
+      template.filePath = `/api/governance-templates/${template.id}/download`;
+    }
 
     return NextResponse.json(template, { status: 201 });
   } catch (error) {
