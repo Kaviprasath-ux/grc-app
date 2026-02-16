@@ -721,9 +721,9 @@ export default function GovernanceDetailPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -739,12 +739,12 @@ export default function GovernanceDetailPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Approve Button */}
           {canShowApproveButton && (
-            <Button variant="outline" onClick={handleApprove}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={handleApprove}>
               <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Approve")}
             </Button>
@@ -752,7 +752,7 @@ export default function GovernanceDetailPage() {
 
           {/* Publish Button */}
           {canShowPublishButton && (
-            <Button onClick={openSignatureDialog}>
+            <Button className="w-full sm:w-auto" onClick={openSignatureDialog}>
               <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Publish")}
             </Button>
@@ -761,7 +761,7 @@ export default function GovernanceDetailPage() {
           {/* Start AI Review Button */}
           <PermissionGate resource="compliance.governance" action="edit">
             {policy.aiReviewStatus !== "In Progress" && (
-              <Button variant="outline" onClick={handleTriggerAIReview}>
+              <Button variant="outline" className="w-full sm:w-auto" onClick={handleTriggerAIReview}>
                 <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {policy.aiReviewStatus === "Completed" ? t("Re-run AI Review") : t("Start AI Review")}
               </Button>
@@ -772,16 +772,16 @@ export default function GovernanceDetailPage() {
           <PermissionGate resource="compliance.governance" action="edit">
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full sm:w-auto">
                   <Edit className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Edit")}
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t("Edit")} {typeLabels[policy.type]}</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4">
                 <div className="col-span-2">
                   <Label>{t("Name")}</Label>
                   <Input
@@ -963,8 +963,8 @@ export default function GovernanceDetailPage() {
 
       {/* Policy Name and Status */}
       <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{policy.name}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold">{policy.name}</h1>
           <Badge className={statusColors[policy.status] || "bg-slate-100"}>
             {policy.status}
           </Badge>
@@ -1020,7 +1020,7 @@ export default function GovernanceDetailPage() {
           <CardTitle>{t("Policy Details")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Department - Inline Dropdown (editable only with permission) */}
             <div>
               <Label className="text-muted-foreground text-sm">{t("Department")}</Label>
@@ -1208,7 +1208,7 @@ export default function GovernanceDetailPage() {
               <p>{t("AI Review in progress...")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div>
                 <Label className="text-muted-foreground text-sm">{t("Status")}</Label>
                 <div className="mt-1">
@@ -1247,7 +1247,7 @@ export default function GovernanceDetailPage() {
       {/* Published Section - Only show when status is Published */}
       {policy.status === "Published" && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <CardTitle className="flex items-center gap-2">
               <Check className="h-5 w-5 text-green-600" />
               {t("Published")}
@@ -1258,6 +1258,7 @@ export default function GovernanceDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="w-full sm:w-auto"
                   onClick={() => window.open(attachments[0].filePath, "_blank")}
                 >
                   <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1270,7 +1271,7 @@ export default function GovernanceDetailPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setUnpublishDialogOpen(true)}
-                  className="text-orange-600 hover:text-orange-700"
+                  className="w-full sm:w-auto text-orange-600 hover:text-orange-700"
                 >
                   {t("Unpublish")}
                 </Button>
@@ -1278,7 +1279,7 @@ export default function GovernanceDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Left Column - Published Info */}
               <div className="space-y-4">
                 {/* Published On */}
@@ -1386,7 +1387,7 @@ export default function GovernanceDetailPage() {
 
       {/* Attachments Section */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <CardTitle>{t("Attachments")}</CardTitle>
           <PermissionGate resource="compliance.governance" action="edit">
             {isGRCAdmin ? (
@@ -1467,7 +1468,8 @@ export default function GovernanceDetailPage() {
               <p>{t("No attachments uploaded")}</p>
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("File Name")}</TableHead>
@@ -1523,6 +1525,7 @@ export default function GovernanceDetailPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -1532,7 +1535,7 @@ export default function GovernanceDetailPage() {
         setSignatureDialogOpen(open);
         if (!open) clearSignature();
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{typeLabels[policy.type] || t("Policy")} {t("signature Publish")}</DialogTitle>
           </DialogHeader>
@@ -1581,7 +1584,7 @@ export default function GovernanceDetailPage() {
       </Dialog>
 
       {/* Tabs */}
-      <div className="border-b">
+      <div className="border-b overflow-x-auto">
         <div className="flex gap-4">
           {tabs.map((tab) => (
             <button
@@ -1608,7 +1611,7 @@ export default function GovernanceDetailPage() {
       {/* Tab Content */}
       {activeTab === "controls" && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <CardTitle>{t("Linked Control")}</CardTitle>
             <PermissionGate resource="compliance.governance" action="edit">
               <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
@@ -1656,7 +1659,8 @@ export default function GovernanceDetailPage() {
                 <p>{t("No controls linked to this")} {(policy.type || "policy").toLowerCase()}</p>
               </div>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("Control ID")}</TableHead>
@@ -1693,6 +1697,7 @@ export default function GovernanceDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -1710,7 +1715,8 @@ export default function GovernanceDetailPage() {
                 <p>{t("No exceptions linked to this")} {(policy.type || "policy").toLowerCase()}</p>
               </div>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("Exception Code")}</TableHead>
@@ -1734,6 +1740,7 @@ export default function GovernanceDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -1741,7 +1748,7 @@ export default function GovernanceDetailPage() {
 
       {activeTab === "documents" && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <CardTitle>{t("Linked Documents")}</CardTitle>
             <PermissionGate resource="compliance.governance" action="edit">
               <Button size="sm">
@@ -1757,7 +1764,8 @@ export default function GovernanceDetailPage() {
                 <p>{t("No documents linked to this")} {(policy.type || "policy").toLowerCase()}</p>
               </div>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("Code")}</TableHead>
@@ -1783,6 +1791,7 @@ export default function GovernanceDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>

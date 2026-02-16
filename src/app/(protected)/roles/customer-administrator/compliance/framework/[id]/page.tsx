@@ -1331,9 +1331,9 @@ export default function CustomerAdminFrameworkDetailPage({
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
           <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -1346,7 +1346,7 @@ export default function CustomerAdminFrameworkDetailPage({
           <span className="text-primary-700 font-medium">{t("Framework Details")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">{t("Framework Details")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Framework Details")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -1540,9 +1540,9 @@ export default function CustomerAdminFrameworkDetailPage({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -1552,17 +1552,17 @@ export default function CustomerAdminFrameworkDetailPage({
           {t("Integrated Frameworks")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{framework.name}</span>
+        <span className="text-primary-700 font-medium truncate">{framework.name}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{framework.name}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{framework.name}</h1>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="overflow-x-auto">
           <TabsTrigger value="requirements">{t("All Requirements")}</TabsTrigger>
           <TabsTrigger value="soa">{t("SOA")}</TabsTrigger>
           <TabsTrigger value="audit-logs">{t("Audit Logs")}</TabsTrigger>
@@ -1572,7 +1572,7 @@ export default function CustomerAdminFrameworkDetailPage({
         <TabsContent value="requirements" className="mt-6">
           {/* Action bar + Filters */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className="relative max-w-xs">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
@@ -1583,7 +1583,7 @@ export default function CustomerAdminFrameworkDetailPage({
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-white border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-white border-slate-200">
                 <SelectValue placeholder={t("Status")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -1594,7 +1594,7 @@ export default function CustomerAdminFrameworkDetailPage({
               </SelectContent>
             </Select>
             <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-              <SelectTrigger className="w-[180px] h-9 text-sm bg-white border-slate-200">
+              <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-white border-slate-200">
                 <SelectValue placeholder={t("Category")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -1606,12 +1606,12 @@ export default function CustomerAdminFrameworkDetailPage({
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-2 ltr:ml-auto rtl:mr-auto">
-              <Button variant="outline" size="sm" onClick={handleExportRequirements}>
+            <div className="flex items-center gap-2 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportRequirements}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
-              <Button size="sm" onClick={() => setIsAddRequirementOpen(true)}>
+              <Button size="sm" className="w-full sm:w-auto" onClick={() => setIsAddRequirementOpen(true)}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New Requirement")}
               </Button>
@@ -1639,7 +1639,7 @@ export default function CustomerAdminFrameworkDetailPage({
                     {/* Category Header */}
                     <button
                       onClick={() => toggleCategory(cat.id)}
-                      className={`w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-slate-50/80 ${isOpen ? "border-b border-slate-100" : ""}`}
+                      className={`w-full flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-3.5 text-left transition-colors hover:bg-slate-50/80 ${isOpen ? "border-b border-slate-100" : ""}`}
                     >
                       <ChevronRight className={`h-4 w-4 text-slate-400 shrink-0 transition-transform ${isOpen ? "rotate-90" : "ltr:rotate-0 rtl:rotate-180"}`} />
                       <span className="text-sm font-semibold text-slate-800 flex-1">
@@ -1690,7 +1690,7 @@ export default function CustomerAdminFrameworkDetailPage({
                             <div key={req.id} className={isExpanded ? "bg-primary-50/15" : ""}>
                               {/* Requirement Row */}
                               <div
-                                className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-slate-50/60 transition-colors"
+                                className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 cursor-pointer hover:bg-slate-50/60 transition-colors"
                                 onClick={() => setExpandedReqId(isExpanded ? null : req.id)}
                               >
                                 {/* Status dot */}
@@ -1728,18 +1728,18 @@ export default function CustomerAdminFrameworkDetailPage({
 
                               {/* Expanded Detail */}
                               {isExpanded && (
-                                <div className="px-5 pb-4 ltr:pl-[52px] rtl:pr-[52px]">
+                                <div className="px-3 sm:px-5 pb-4 ltr:sm:pl-[52px] rtl:sm:pr-[52px]">
                                   <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
                                     {/* Description */}
                                     {req.description && (
-                                      <div className="px-4 py-3 border-b border-slate-100">
+                                      <div className="px-3 sm:px-4 py-3 border-b border-slate-100">
                                         <p className="text-sm text-slate-600 leading-relaxed">{req.description}</p>
                                       </div>
                                     )}
 
                                     {/* Metadata + Actions */}
-                                    <div className="px-4 py-3 border-b border-slate-100">
-                                      <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                                    <div className="px-3 sm:px-4 py-3 border-b border-slate-100">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
                                         <div className="flex items-center justify-between">
                                           <span className="text-xs text-slate-500">{t("Applicability")}</span>
                                           <span className="text-xs font-medium text-slate-700">{t(req.applicability || "-")}</span>
@@ -1768,12 +1768,12 @@ export default function CustomerAdminFrameworkDetailPage({
                                           </span>
                                         </div>
                                       </div>
-                                      <div className="flex justify-end gap-2 mt-3">
-                                        <Button variant="outline" size="sm" className="h-7 text-xs text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700" onClick={(e) => { e.stopPropagation(); setSelectedRequirement(req); setIsAddExceptionOpen(true); }}>
+                                      <div className="flex flex-wrap justify-end gap-2 mt-3">
+                                        <Button variant="outline" size="sm" className="h-7 text-xs text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 w-full sm:w-auto" onClick={(e) => { e.stopPropagation(); setSelectedRequirement(req); setIsAddExceptionOpen(true); }}>
                                           <AlertTriangle className="h-3 w-3 me-1.5" />
                                           {t("Add Exception")}
                                         </Button>
-                                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleOpenUpdateRequirement(req); }}>
+                                        <Button variant="outline" size="sm" className="h-7 text-xs w-full sm:w-auto" onClick={(e) => { e.stopPropagation(); handleOpenUpdateRequirement(req); }}>
                                           <Edit2 className="h-3 w-3 me-1.5" />
                                           {t("Edit")}
                                         </Button>
@@ -1781,7 +1781,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                     </div>
 
                                     {/* Linked Controls */}
-                                    <div className="px-4 py-3">
+                                    <div className="px-3 sm:px-4 py-3">
                                       <div className="flex items-center justify-between mb-2">
                                         <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                                           {t("Linked Controls")}
@@ -1882,18 +1882,18 @@ export default function CustomerAdminFrameworkDetailPage({
           {/* Top bar: count, search, filter, actions */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <span className="text-sm text-slate-500">{soaTotalRequirements} {t("requirements")}</span>
-            <div className="relative ltr:ml-auto rtl:mr-auto">
+            <div className="relative w-full sm:w-56 ltr:sm:ml-auto rtl:sm:mr-auto">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder={t("Search requirements...")}
                 value={soaSearch}
                 onChange={(e) => setSoaSearch(e.target.value)}
-                className="w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
             <Select value={soaStatusFilter} onValueChange={(v) => setSoaStatusFilter(v)}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-white border-slate-200">
                 <SelectValue placeholder={t("All Statuses")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -1903,11 +1903,11 @@ export default function CustomerAdminFrameworkDetailPage({
                 <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={handleExportSOA}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportSOA}>
               <Download className="h-4 w-4 me-2" />
               {t("Download Report")}
             </Button>
-            <Button size="sm">{t("Save")}</Button>
+            <Button size="sm" className="w-full sm:w-auto">{t("Save")}</Button>
           </div>
 
           {/* Accordion Cards - one per category */}
@@ -1931,9 +1931,9 @@ export default function CustomerAdminFrameworkDetailPage({
 
                   {/* Expanded content */}
                   {isExpanded && (
-                    <>
+                    <div className="overflow-x-auto">
                       {/* Column Headers */}
-                      <div className="grid grid-cols-[70px_1fr_100px_1fr_120px_120px] gap-4 px-5 py-2.5 bg-slate-50 border-t border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <div className="grid grid-cols-[70px_1fr_100px_1fr_120px_120px] gap-4 px-3 sm:px-5 py-2.5 bg-slate-50 border-t border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]">
                         <span>{t("Code")}</span>
                         <span>{t("Requirement")}</span>
                         <span>{t("Applicable")}</span>
@@ -1945,7 +1945,7 @@ export default function CustomerAdminFrameworkDetailPage({
                       {/* Requirement rows */}
                       <div className="divide-y divide-slate-100">
                         {requirements.map((req) => (
-                          <div key={req.id} className="grid grid-cols-[70px_1fr_100px_1fr_120px_120px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors">
+                          <div key={req.id} className="grid grid-cols-[70px_1fr_100px_1fr_120px_120px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]">
                             <span className="text-sm font-medium text-slate-800">{req.code}</span>
                             <span className="text-sm text-slate-700 leading-snug">{req.name}</span>
                             <Select
@@ -1997,7 +1997,7 @@ export default function CustomerAdminFrameworkDetailPage({
                           </div>
                         ))}
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               );
@@ -2016,19 +2016,19 @@ export default function CustomerAdminFrameworkDetailPage({
         <TabsContent value="audit-logs" className="mt-6">
           {/* Top bar: search, filter, export */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className="relative">
+            <div className="relative w-full sm:w-56">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder={t("Search logs...")}
                 value={auditLogSearch}
                 onChange={(e) => { setAuditLogSearch(e.target.value); setAuditLogPage(1); }}
-                className="w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
-            <div className="ltr:ml-auto rtl:mr-auto"></div>
+            <div className="hidden sm:block ltr:ml-auto rtl:mr-auto"></div>
             <Select value={auditLogActionFilter} onValueChange={(v) => { setAuditLogActionFilter(v); setAuditLogPage(1); }}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-white border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-white border-slate-200">
                 <SelectValue placeholder={t("All Actions")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -2041,7 +2041,7 @@ export default function CustomerAdminFrameworkDetailPage({
                 <SelectItem value="Approved">{t("Approved")}</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={handleExportAuditLogs}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportAuditLogs}>
               <Download className="h-4 w-4 me-2" />
               {t("Export")}
             </Button>
@@ -2049,8 +2049,9 @@ export default function CustomerAdminFrameworkDetailPage({
 
           {/* Audit Log Table */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
             {/* Column Headers */}
-            <div className="grid grid-cols-[180px_100px_1fr_1fr_170px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+            <div className="grid grid-cols-[180px_100px_1fr_1fr_170px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[800px]">
               <span>{t("User")}</span>
               <span>{t("Action")}</span>
               <span>{t("Target")}</span>
@@ -2061,7 +2062,7 @@ export default function CustomerAdminFrameworkDetailPage({
             {/* Log rows */}
             <div className="divide-y divide-slate-100">
               {paginatedAuditLogs.map((log) => (
-                <div key={log.id} className="grid grid-cols-[180px_100px_1fr_1fr_170px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors">
+                <div key={log.id} className="grid grid-cols-[180px_100px_1fr_1fr_170px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[800px]">
                   {/* User */}
                   <div className="flex items-center gap-2.5">
                     <div className="h-7 w-7 rounded-full bg-primary-50 flex items-center justify-center shrink-0">
@@ -2100,10 +2101,11 @@ export default function CustomerAdminFrameworkDetailPage({
                 </div>
               )}
             </div>
+            </div>
 
             {/* Pagination */}
             {filteredAuditLogs.length > 0 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+              <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
                 <span className="text-xs text-slate-500">
                   {t("Showing")} {((auditLogPage - 1) * AUDIT_LOG_PAGE_SIZE) + 1} {t("to")} {Math.min(auditLogPage * AUDIT_LOG_PAGE_SIZE, filteredAuditLogs.length)} {t("of")} {filteredAuditLogs.length}
                 </span>
@@ -2131,16 +2133,16 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Add Requirement Dialog */}
       <Dialog open={isAddRequirementOpen} onOpenChange={(open) => { if (!open) { setReqErrors({}); } setIsAddRequirementOpen(open); }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Requirement")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="px-6 py-6 space-y-5 overflow-y-auto flex-1">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
             <p className="text-sm text-slate-500">
               {t("To add a requirement to this framework, please accurately fill in the fields below.")}
             </p>
@@ -2223,7 +2225,7 @@ export default function CustomerAdminFrameworkDetailPage({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Requirement Type")}</Label>
                 <Select
@@ -2264,7 +2266,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => { setReqErrors({}); setIsAddRequirementOpen(false); }}
@@ -2282,18 +2284,18 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Link Controls Dialog */}
       <Dialog open={isLinkControlsOpen} onOpenChange={setIsLinkControlsOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Control Select")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="px-6 py-6 space-y-4 overflow-y-auto flex-1">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4 overflow-y-auto flex-1">
             {/* Filters */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <Select
                 value={controlFilters.domainId || "all"}
                 onValueChange={(value) =>
@@ -2385,7 +2387,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -2407,19 +2409,19 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Add Exception Dialog */}
       <Dialog open={isAddExceptionOpen} onOpenChange={(open) => { if (!open) { setExcErrors({}); } setIsAddExceptionOpen(open); }}>
-        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Exception")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="px-6 py-6 space-y-5 overflow-y-auto flex-1">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
             {/* Context Info - Read-only summary */}
-            <div className="rounded-lg bg-slate-50 border border-slate-100 p-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 sm:p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">{t("Exception Code")}</span>
                   <p className="text-sm font-medium text-slate-500 italic mt-0.5">{t("Auto-generated")}</p>
@@ -2481,7 +2483,7 @@ export default function CustomerAdminFrameworkDetailPage({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
                 <Select
@@ -2527,7 +2529,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -2545,17 +2547,17 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Update Requirement Dialog */}
       <Dialog open={isUpdateRequirementOpen} onOpenChange={setIsUpdateRequirementOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Requirement")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="px-6 py-6 space-y-5 overflow-y-auto flex-1">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
                 <Input
@@ -2593,7 +2595,7 @@ export default function CustomerAdminFrameworkDetailPage({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Requirement Type")}</Label>
                 <Select
@@ -2631,7 +2633,7 @@ export default function CustomerAdminFrameworkDetailPage({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Applicability")}</Label>
                 <Select
@@ -2690,7 +2692,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setIsUpdateRequirementOpen(false)}

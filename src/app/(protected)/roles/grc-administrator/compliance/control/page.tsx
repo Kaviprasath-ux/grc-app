@@ -407,8 +407,8 @@ export default function GRCAdminControlListPage() {
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
-      <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+      <div className="space-y-4 sm:space-y-6">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -418,7 +418,7 @@ export default function GRCAdminControlListPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-primary-700 font-medium">{t("Controls")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Controls")}</h1>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
             <p className="text-sm text-slate-500">{t("Loading...")}</p>
@@ -434,9 +434,9 @@ export default function GRCAdminControlListPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -448,30 +448,30 @@ export default function GRCAdminControlListPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Controls")}</h1>
           {total > 0 && (
             <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
               {total}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <PermissionGate resource="compliance.controls" action="create">
-            <Button size="sm" onClick={handleImport} variant="outline">
+            <Button size="sm" onClick={handleImport} variant="outline" className="w-full sm:w-auto">
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Import")}
             </Button>
           </PermissionGate>
           {isGRCAdmin ? (
-            <Button size="sm" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
+            <Button size="sm" className="w-full sm:w-auto" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Control")}
             </Button>
           ) : (
             <PermissionGate resource="compliance.controls" action="create">
-              <Button size="sm" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
+              <Button size="sm" className="w-full sm:w-auto" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("New Control")}
               </Button>
@@ -483,8 +483,8 @@ export default function GRCAdminControlListPage() {
       {/* Data Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative w-[300px]">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative w-full sm:w-[300px]">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder={t("Search by control code or name...")}
@@ -495,7 +495,7 @@ export default function GRCAdminControlListPage() {
             />
           </div>
           <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
-            <SelectTrigger className="w-[200px] h-9 bg-slate-50 border-slate-200">
+            <SelectTrigger className="w-full sm:w-[200px] h-9 bg-slate-50 border-slate-200">
               <SelectValue placeholder={t("Integrated Framework")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -506,7 +506,8 @@ export default function GRCAdminControlListPage() {
             </SelectContent>
           </Select>
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               {visibleColumns.controlName && (
@@ -682,6 +683,7 @@ export default function GRCAdminControlListPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
         <PaginationUI
@@ -695,15 +697,15 @@ export default function GRCAdminControlListPage() {
 
       {/* Create Control Dialog - 3 Step Wizard */}
       <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateDialogOpen(false); setCreateStep(1); setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); } else { setIsCreateDialogOpen(true); } }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Control")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5">
             {/* Step Indicator */}
             <div className="flex items-center justify-center gap-2 pb-4">
               {[1, 2, 3].map((step) => (
@@ -728,7 +730,7 @@ export default function GRCAdminControlListPage() {
               {/* Step 1: Control Information */}
               {createStep === 1 && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Control Domain")} <span className="text-error">*</span></Label>
                       <Select value={newControl.domainId} onValueChange={(v) => { setNewControl({ ...newControl, domainId: v }); if (controlErrors.domainId) setControlErrors((prev) => { const { domainId, ...rest } = prev; return rest; }); }}>
@@ -809,7 +811,7 @@ export default function GRCAdminControlListPage() {
               {/* Step 2: Assignments & Details */}
               {createStep === 2 && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Department")} <span className="text-error">*</span></Label>
                       <Select value={newControl.departmentId} onValueChange={(v) => { setNewControl({ ...newControl, departmentId: v, assigneeId: "" }); if (controlErrors.departmentId) setControlErrors((prev) => { const { departmentId, ...rest } = prev; return rest; }); }}>
@@ -867,7 +869,7 @@ export default function GRCAdminControlListPage() {
               {createStep === 3 && (
                 <div className="space-y-4">
                   <h4 className="font-semibold">{t("Review informations")}</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                     <div>
                       <span className="text-slate-400">{t("Domain")}:</span>
                       <p className="font-medium">{domains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
@@ -907,7 +909,7 @@ export default function GRCAdminControlListPage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -956,16 +958,16 @@ export default function GRCAdminControlListPage() {
           }
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Controls")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5 space-y-4">
             <p className="text-sm text-slate-500">
               {t("Upload a CSV file to import controls. You can download a template to see the required format.")}
             </p>
@@ -1001,7 +1003,7 @@ export default function GRCAdminControlListPage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}

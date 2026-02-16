@@ -595,9 +595,9 @@ export default function EvidencesMasterDataPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -614,39 +614,40 @@ export default function EvidencesMasterDataPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
       </div>
 
       {/* Search and Actions - same row */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder={t("Search evidences...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[300px] bg-white border-slate-200"
+            className="pl-10 w-full sm:w-[300px] bg-white border-slate-200"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
+            className="w-full sm:w-auto"
             onClick={() => setDeleteAllDialogOpen(true)}
             disabled={evidences.length === 0}
           >
             <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Delete All")}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Import")}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExport}>
             <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Button size="sm" onClick={() => { resetNewForm(); setIsNewDialogOpen(true); }}>
+          <Button size="sm" className="w-full sm:w-auto" onClick={() => { resetNewForm(); setIsNewDialogOpen(true); }}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("New Evidence")}
           </Button>
@@ -655,7 +656,8 @@ export default function EvidencesMasterDataPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200">
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
               <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Evidence Code")}</TableHead>
@@ -712,6 +714,7 @@ export default function EvidencesMasterDataPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
@@ -769,15 +772,15 @@ export default function EvidencesMasterDataPage() {
         setIsNewDialogOpen(open);
         if (!open) resetNewForm();
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
               {newStep === 1 ? t("Evidence Details") : newStep === 2 ? t("Controls") : t("Review Information")}
             </DialogTitle>
           </div>
 
           {/* Stepper */}
-          <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+          <div className="flex-shrink-0 flex items-center justify-center px-4 sm:px-6 py-4 bg-slate-50/50 border-b border-slate-100">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${
@@ -799,7 +802,7 @@ export default function EvidencesMasterDataPage() {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             {/* Step 1: Evidence Details */}
             {newStep === 1 && (
               <div className="space-y-4">
@@ -824,7 +827,7 @@ export default function EvidencesMasterDataPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
                       {t("Recurrence")} <span className="text-red-500">*</span>
@@ -936,7 +939,7 @@ export default function EvidencesMasterDataPage() {
             {newStep === 2 && (
               <div className="space-y-4">
                 {/* Filters Row */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <Select value={domainFilter || "_all"} onValueChange={(v) => setDomainFilter(v === "_all" ? "" : v)}>
                     <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder={t("Domain")} />
@@ -1048,7 +1051,7 @@ export default function EvidencesMasterDataPage() {
             {/* Step 3: Review */}
             {newStep === 3 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Evidence Name")}</Label>
                     <p className="mt-1 text-slate-800">{newFormData.name}</p>
@@ -1058,7 +1061,7 @@ export default function EvidencesMasterDataPage() {
                     <p className="mt-1 text-slate-800">{selectedDomains.join(", ") || "-"}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Recurrence")}</Label>
                     <p className="mt-1 text-slate-800">{newFormData.recurrence}</p>
@@ -1088,7 +1091,7 @@ export default function EvidencesMasterDataPage() {
             )}
           </div>
 
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             {newStep > 1 && (
               <Button variant="outline" size="sm" onClick={handleNewBack}>
                 {t("Previous")}
@@ -1114,14 +1117,14 @@ export default function EvidencesMasterDataPage() {
           setEditControlId("");
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Evidence")}</DialogTitle>
           </div>
 
           {editingEvidence && (
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Evidence code")}</Label>
                   <Input value={editingEvidence.evidenceCode} disabled className="mt-1.5 bg-slate-50" />
@@ -1217,7 +1220,7 @@ export default function EvidencesMasterDataPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Is control linked")}</Label>
                   <RadioGroup
@@ -1445,7 +1448,7 @@ export default function EvidencesMasterDataPage() {
             </div>
           )}
 
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1456,12 +1459,12 @@ export default function EvidencesMasterDataPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
-          <div className="px-6 py-5">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0">
+          <div className="px-4 sm:px-6 py-5">
             <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">{t("Are you sure you want to delete this?")}</DialogDescription>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1474,14 +1477,14 @@ export default function EvidencesMasterDataPage() {
 
       {/* Delete All Confirmation Dialog */}
       <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
-          <div className="px-6 py-5">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0">
+          <div className="px-4 sm:px-6 py-5">
             <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete all")} {evidences.length} {t("evidences?")}
             </DialogDescription>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1500,11 +1503,11 @@ export default function EvidencesMasterDataPage() {
           setImportFile(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Evidences")}</DialogTitle>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Name")}</Label>
               <Input
@@ -1524,7 +1527,7 @@ export default function EvidencesMasterDataPage() {
               />
             </div>
           </div>
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}

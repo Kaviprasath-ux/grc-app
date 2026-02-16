@@ -329,10 +329,10 @@ export default function GovernanceTemplatesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb and Header */}
       <div className="flex flex-col gap-1">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -346,39 +346,39 @@ export default function GovernanceTemplatesPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-primary-700 font-medium">{t("Governance Templates")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
       </div>
 
       {/* Search and Actions - same row */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder={t("Search templates...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[300px] bg-white border-slate-200"
+            className="pl-10 w-full sm:w-[300px] bg-white border-slate-200"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport} className="w-full sm:w-auto">
             <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
           <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); resetForm(); setTemplateErrors({}); setFileError(""); } else { setCreateDialogOpen(true); } }}>
             <DialogTrigger asChild>
-              <Button size="sm" onClick={() => setTemplateErrors({})}>
+              <Button size="sm" onClick={() => setTemplateErrors({})} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("New Template")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-              <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+              <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
                 <DialogTitle className="text-lg font-semibold text-slate-800">
                   {t("Add Governance Template")}
                 </DialogTitle>
               </div>
-              <div className="flex-1 overflow-y-auto px-6 py-6">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
@@ -477,7 +477,7 @@ export default function GovernanceTemplatesPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+              <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -501,7 +501,8 @@ export default function GovernanceTemplatesPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200">
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
               <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Template Name")}</TableHead>
@@ -585,6 +586,7 @@ export default function GovernanceTemplatesPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
@@ -638,13 +640,13 @@ export default function GovernanceTemplatesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
               {t("Edit Governance Template")}
             </DialogTitle>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
@@ -739,7 +741,7 @@ export default function GovernanceTemplatesPage() {
               )}
             </div>
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -762,8 +764,8 @@ export default function GovernanceTemplatesPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0">
+          <AlertDialogHeader className="px-4 sm:px-6 py-5">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">
               {t("Delete Template")}
             </AlertDialogTitle>
@@ -771,7 +773,7 @@ export default function GovernanceTemplatesPage() {
               {t("Are you sure you want to delete")} &quot;{selectedTemplate?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}

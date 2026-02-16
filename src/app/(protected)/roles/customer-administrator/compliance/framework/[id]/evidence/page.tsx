@@ -239,9 +239,9 @@ export default function EvidenceByFrameworkPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -255,13 +255,13 @@ export default function EvidenceByFrameworkPage() {
       </nav>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
 
       {/* Data Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative max-w-xs">
+        <div className="flex flex-wrap items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative w-full sm:w-[300px]">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -284,7 +284,8 @@ export default function EvidenceByFrameworkPage() {
           </div>
         ) : (
           <>
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Evidence Code")}</TableHead>
@@ -316,6 +317,7 @@ export default function EvidenceByFrameworkPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             {paginatedEvidences.length === 0 && (
               <div className="py-16 text-center">
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
@@ -337,7 +339,7 @@ export default function EvidenceByFrameworkPage() {
         )}
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
             {total > 0
               ? t("Showing {start} to {end} of {total}").replace("{start}", String(startItem)).replace("{end}", String(endItem)).replace("{total}", String(total))

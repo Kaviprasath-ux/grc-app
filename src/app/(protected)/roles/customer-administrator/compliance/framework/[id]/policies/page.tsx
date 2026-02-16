@@ -274,9 +274,9 @@ export default function PoliciesByFrameworkPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -290,11 +290,11 @@ export default function PoliciesByFrameworkPage() {
       </nav>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance")}</h1>
 
       {/* Tabs */}
       <Tabs value={activeDocType} onValueChange={handleTabChange}>
-        <TabsList>
+        <TabsList className="overflow-x-auto">
           <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
           <TabsTrigger value="Standard">{t("Standards")}</TabsTrigger>
           <TabsTrigger value="Procedure">{t("Procedures")}</TabsTrigger>
@@ -305,8 +305,8 @@ export default function PoliciesByFrameworkPage() {
           <TabsContent key={docType} value={docType} className="mt-6">
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Toolbar */}
-              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                <div className="relative">
+              <div className="flex flex-wrap items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="relative w-full sm:w-56">
                   <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
@@ -317,13 +317,14 @@ export default function PoliciesByFrameworkPage() {
                       setCurrentPage(1);
                     }}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    className="w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>
 
               {/* Table Header */}
-              <div className="grid grid-cols-[100px_1fr_130px_140px_140px_140px] gap-0 bg-slate-50 border-b border-slate-100 px-5 py-2.5">
+              <div className="overflow-x-auto">
+              <div className="grid grid-cols-[100px_1fr_130px_140px_140px_140px] gap-0 bg-slate-50 border-b border-slate-100 px-3 sm:px-5 py-2.5 min-w-[800px]">
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Code")}</span>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Name")}</span>
                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</span>
@@ -358,7 +359,7 @@ export default function PoliciesByFrameworkPage() {
                   {paginatedPolicies.map((policy) => (
                     <div
                       key={policy.id}
-                      className="grid grid-cols-[100px_1fr_130px_140px_140px_140px] gap-0 items-center px-5 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer group"
+                      className="grid grid-cols-[100px_1fr_130px_140px_140px_140px] gap-0 items-center px-3 sm:px-5 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer group min-w-[800px]"
                       onDoubleClick={() => router.push(`/compliance/governance/${policy.id}?from=framework&frameworkId=${frameworkId}&frameworkName=${encodeURIComponent(framework?.name || '')}`)}
                     >
                       {/* Code */}
@@ -417,9 +418,10 @@ export default function PoliciesByFrameworkPage() {
                   ))}
                 </div>
               )}
+              </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+              <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
                 <span className="text-xs text-slate-500">
                   {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No items")}
                 </span>

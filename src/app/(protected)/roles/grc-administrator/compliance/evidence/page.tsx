@@ -453,8 +453,8 @@ export default function GRCAdminEvidencePage() {
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
-      <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+      <div className="space-y-4 sm:space-y-6">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -464,7 +464,7 @@ export default function GRCAdminEvidencePage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Evidence")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
             <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
@@ -480,9 +480,9 @@ export default function GRCAdminEvidencePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -494,9 +494,9 @@ export default function GRCAdminEvidencePage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
           {/* count badge */}
           {/* {total > 0 && (
             <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -504,21 +504,21 @@ export default function GRCAdminEvidencePage() {
             </span>
           )} */}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <PermissionGate resource="compliance.evidence" action="delete">
-            <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
               <Trash2 className="h-4 w-4 me-2" />
               {t("Delete All")}
             </Button>
           </PermissionGate>
           <PermissionGate resource="compliance.evidence" action="create">
-            <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setIsImportDialogOpen(true)}>
               <Download className="h-4 w-4 me-2" />
               {t("Import")}
             </Button>
           </PermissionGate>
           <PermissionGate resource="compliance.evidence" action="create">
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <Button size="sm" className="w-full sm:w-auto" onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 me-2" />
               {t("New Evidence")}
             </Button>
@@ -529,8 +529,8 @@ export default function GRCAdminEvidencePage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative max-w-xs">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative w-full sm:w-[300px]">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder={t("Search by name, domain or assignee...")}
@@ -540,9 +540,9 @@ export default function GRCAdminEvidencePage() {
               className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <div className="ms-auto flex items-center gap-3">
+          <div className="ms-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <Select value={customerFilter} onValueChange={setCustomerFilter}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Customers")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -553,7 +553,7 @@ export default function GRCAdminEvidencePage() {
               </SelectContent>
             </Select>
             <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Framework")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -566,7 +566,8 @@ export default function GRCAdminEvidencePage() {
           </div>
         </div>
 
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Evidence Code")}</TableHead>
@@ -628,6 +629,7 @@ export default function GRCAdminEvidencePage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
         <PaginationUI
@@ -644,16 +646,16 @@ export default function GRCAdminEvidencePage() {
         if (!open) resetCreateForm();
         setCreateDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Evidence")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5">
             {/* Step Indicator */}
             <div className="flex items-center justify-center gap-2 pb-5">
               {[1, 2, 3].map((step) => (
@@ -822,7 +824,7 @@ export default function GRCAdminEvidencePage() {
                 </div>
 
                 {/* Control Filters */}
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <div className="flex-1">
                     <Input
                       placeholder={t("Search controls...")}
@@ -832,7 +834,7 @@ export default function GRCAdminEvidencePage() {
                     />
                   </div>
                   <Select value={controlFilters.domainId || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, domainId: v === "all" ? "" : v })}>
-                    <SelectTrigger className="w-[180px] bg-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -843,7 +845,7 @@ export default function GRCAdminEvidencePage() {
                     </SelectContent>
                   </Select>
                   <Select value={controlFilters.functionalGrouping || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, functionalGrouping: v === "all" ? "" : v })}>
-                    <SelectTrigger className="w-[180px] bg-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Functional Grouping")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -898,10 +900,10 @@ export default function GRCAdminEvidencePage() {
 
             {/* Step 3: Review */}
             {createStep === 3 && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div className="text-lg font-medium text-slate-800">{t("Review Information")}</div>
 
-                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
                     <Label className="text-slate-500 text-sm">{t("Customer Account")}</Label>
                     <p className="font-medium text-slate-900">
@@ -958,7 +960,7 @@ export default function GRCAdminEvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1013,9 +1015,9 @@ export default function GRCAdminEvidencePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
@@ -1025,7 +1027,7 @@ export default function GRCAdminEvidencePage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6 space-y-4">
+          <div className="px-4 sm:px-6 py-6 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Customer Account")} *</Label>
               <Select value={createForm.customerAccountId} onValueChange={(v) => setCreateForm({ ...createForm, customerAccountId: v })}>
@@ -1087,7 +1089,7 @@ export default function GRCAdminEvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);

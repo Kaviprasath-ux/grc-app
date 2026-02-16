@@ -850,9 +850,9 @@ export default function CustomerAdminFrameworkPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
           <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -862,7 +862,7 @@ export default function CustomerAdminFrameworkPage() {
         </nav>
 
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
@@ -874,9 +874,9 @@ export default function CustomerAdminFrameworkPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -886,15 +886,15 @@ export default function CustomerAdminFrameworkPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
         {isCustomerAdmin && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={openAICreateDialog}
               variant="outline"
               size="sm"
-              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200 w-full sm:w-auto"
             >
               <Sparkles className="h-4 w-4 me-2" />
               {t("New Framework (AI)")}
@@ -902,6 +902,7 @@ export default function CustomerAdminFrameworkPage() {
             <Button
               onClick={openCreateDialog}
               size="sm"
+              className="w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 me-2" />
               {t("New Framework")}
@@ -913,8 +914,8 @@ export default function CustomerAdminFrameworkPage() {
       {/* Card Container */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar: Search + Filters */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative max-w-xs">
+        <div className="flex flex-wrap items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -924,7 +925,7 @@ export default function CustomerAdminFrameworkPage() {
               className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <div className="flex items-center gap-3 ms-auto">
+          <div className="flex items-center gap-3 w-full sm:w-auto sm:ms-auto">
             {isCustomerAdmin && (
               <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
                 <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
@@ -952,7 +953,7 @@ export default function CustomerAdminFrameworkPage() {
         </div>
 
         {/* Framework Cards Grid */}
-        <div className="p-5">
+        <div className="p-3 sm:p-5">
           {currentFrameworks.length === 0 ? (
             <div className="py-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
@@ -962,7 +963,7 @@ export default function CustomerAdminFrameworkPage() {
               <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search or filters")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {currentFrameworks.map((framework) => {
                 const isLocked = framework.status !== "Subscribed";
                 const typeBadge = framework.type === "Regulation" ? "bg-purple-50 text-purple-700 border-purple-200" : framework.type === "Standard" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-blue-50 text-blue-700 border-blue-200";
@@ -1099,7 +1100,7 @@ export default function CustomerAdminFrameworkPage() {
 
         {/* Pagination */}
         {filteredFrameworks.length > 0 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <div className="text-xs text-slate-500">
               {t("Showing")} {startIndex + 1} {t("to")} {endIndex} {t("of")} {filteredFrameworks.length} {t("frameworks")}
             </div>
@@ -1129,15 +1130,15 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* AI Create Framework Dialog */}
       <Dialog open={isAICreateDialogOpen} onOpenChange={setIsAICreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create Integrated Framework (AI)")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
             <div className="flex items-start gap-2.5 p-3 bg-primary-50/50 border border-primary-100 rounded-lg">
               <Info className="h-4 w-4 text-primary-500 mt-0.5 shrink-0" />
               <p className="text-sm text-primary-700">
@@ -1145,7 +1146,7 @@ export default function CustomerAdminFrameworkPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
                   {t("Integrated Framework Name")} <span className="text-red-500">*</span>
@@ -1194,7 +1195,7 @@ export default function CustomerAdminFrameworkPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
                   {t("Country")} <span className="text-red-500">*</span>
@@ -1274,7 +1275,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -1307,15 +1308,15 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* Step 1: Create Framework Dialog (Manual with Excel Import) */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create Integrated Framework")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
             <div className="flex items-start gap-2.5 p-3 bg-primary-50/50 border border-primary-100 rounded-lg">
               <Info className="h-4 w-4 text-primary-500 mt-0.5 shrink-0" />
               <p className="text-sm text-primary-700">
@@ -1323,7 +1324,7 @@ export default function CustomerAdminFrameworkPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">{t("Code")}</Label>
                 <Input
@@ -1382,7 +1383,7 @@ export default function CustomerAdminFrameworkPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
                   {t("Country")} <span className="text-red-500">*</span>
@@ -1414,7 +1415,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1430,9 +1431,9 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* Step 2: Import Requirements Dialog (same as GRC Admin) */}
       <Dialog open={isImportDialogOpen} onOpenChange={handleCloseImportDialog}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {t("Import Framework Requirements")}
@@ -1440,14 +1441,14 @@ export default function CustomerAdminFrameworkPage() {
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
             <p className="text-sm text-slate-600">
               {t("Upload an Excel file (.xlsx) containing your framework requirements.")}
               {" "}{t("You can download the sample template to see the required format.")}
             </p>
 
             {/* Download Template Button */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
               <Button
                 variant="outline"
                 size="sm"
@@ -1578,7 +1579,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button variant="outline" size="sm" onClick={handleCloseImportDialog}>
               {importSuccess ? t("Close") : t("Skip")}
             </Button>
@@ -1605,7 +1606,7 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* Subscription Error Dialog */}
       <Dialog open={showSubscriptionErrorDialog} onOpenChange={setShowSubscriptionErrorDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-red-600">{t("Error")}</DialogTitle>

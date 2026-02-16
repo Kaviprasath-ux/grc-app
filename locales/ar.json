@@ -570,8 +570,6 @@
   "Search By Control Code , Name": "البحث برمز الضابطة أو الاسم",
   "This field is required": "هذا الحقل مطلوب",
   "Invalid email format": "تنسيق البريد الإلكتروني غير صالح",
-  "Email must not contain spaces": "يجب ألا يحتوي البريد الإلكتروني على مسافات",
-  "Email already exists": "البريد الإلكتروني موجود بالفعل",
   "Password must be at least 8 characters": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
   "Passwords do not match": "كلمات المرور غير متطابقة",
   "Please enter a valid value": "يرجى إدخال قيمة صالحة",

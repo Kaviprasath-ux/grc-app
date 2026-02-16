@@ -570,8 +570,6 @@
   "Search By Control Code , Name": "Meklēt pēc kontroles koda, nosaukuma",
   "This field is required": "Šis lauks ir obligāts",
   "Invalid email format": "Nederīgs e-pasta formāts",
-  "Email must not contain spaces": "E-pastam nedrīkst saturēt atstarpes",
-  "Email already exists": "E-pasts jau pastāv",
   "Password must be at least 8 characters": "Parolei jābūt vismaz 8 rakstzīmēm",
   "Passwords do not match": "Paroles nesakrīt",
   "Please enter a valid value": "Lūdzu, ievadiet derīgu vērtību",

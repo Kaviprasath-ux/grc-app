@@ -440,8 +440,8 @@ export default function GRCAdminGovernancePage() {
   // Show loading while checking permissions
   if (permissionsLoading) {
     return (
-      <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+      <div className="space-y-4 sm:space-y-6">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -451,7 +451,7 @@ export default function GRCAdminGovernancePage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-primary-700 font-medium">{t("Governance")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance")}</h1>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
             <p className="text-sm text-slate-500">{t("Loading...")}</p>
@@ -467,9 +467,9 @@ export default function GRCAdminGovernancePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -481,8 +481,8 @@ export default function GRCAdminGovernancePage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance")}</h1>
       </div>
 
       {/* Tabs */}
@@ -495,9 +495,9 @@ export default function GRCAdminGovernancePage() {
 
         {/* Tab Content - Same structure for all tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
-          <TabsContent key={docType} value={docType} className="mt-6">
+          <TabsContent key={docType} value={docType} className="mt-4 sm:mt-6">
             {/* Tab Sub-Header */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
               <div className="flex items-center gap-3">
                 <h3 className="text-base font-semibold text-slate-800">{t(docType === "Policy" ? "Policies" : docType === "Standard" ? "Standards" : "Procedures")}</h3>
                 {total > 0 && (
@@ -506,15 +506,15 @@ export default function GRCAdminGovernancePage() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <PermissionGate resource="compliance.governance" action="create">
-                  <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setIsImportDialogOpen(true)}>
                     <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Import")}
                   </Button>
                 </PermissionGate>
                 {isGRCAdmin ? (
-                  <Button size="sm" onClick={() => {
+                  <Button size="sm" className="w-full sm:w-auto" onClick={() => {
                     setNewPolicy({ ...newPolicy, documentType: activeDocType });
                     setIsCreateDialogOpen(true);
                   }}>
@@ -523,7 +523,7 @@ export default function GRCAdminGovernancePage() {
                   </Button>
                 ) : (
                   <PermissionGate resource="compliance.governance" action="create">
-                    <Button size="sm" onClick={() => {
+                    <Button size="sm" className="w-full sm:w-auto" onClick={() => {
                       setNewPolicy({ ...newPolicy, documentType: activeDocType });
                       setIsCreateDialogOpen(true);
                     }}>
@@ -537,8 +537,8 @@ export default function GRCAdminGovernancePage() {
 
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search & Filters */}
-              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                <div className="relative w-[300px]">
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="relative w-full sm:w-[300px]">
                   <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     placeholder={t("Search by name or code...")}
@@ -548,9 +548,9 @@ export default function GRCAdminGovernancePage() {
                     className="w-full h-9 ltr:pl-9 rtl:pr-9 bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
-                <div className="ms-auto flex items-center gap-3">
+                <div className="ms-auto flex items-center gap-3 w-full sm:w-auto">
                   <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                    <SelectTrigger className="w-[200px] h-9 bg-slate-50 border-slate-200">
+                    <SelectTrigger className="w-full sm:w-[200px] h-9 bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Integrated Framework")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -563,7 +563,8 @@ export default function GRCAdminGovernancePage() {
                 </div>
               </div>
 
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Code")}</TableHead>
@@ -651,6 +652,7 @@ export default function GRCAdminGovernancePage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
 
               {/* Pagination */}
               <PaginationUI
@@ -670,16 +672,16 @@ export default function GRCAdminGovernancePage() {
         if (!open) resetCreateDialog();
         setIsCreateDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Governance")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5">
             {/* Step Indicator */}
             <div className="flex items-center justify-center gap-2 pb-5">
               {[1, 2, 3].map((step) => (
@@ -824,13 +826,13 @@ export default function GRCAdminGovernancePage() {
             {/* Step 2: Link Controls */}
             {createStep === 2 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <Label className="text-base font-semibold text-slate-800">{t("Select Controls to Link")}</Label>
                   <Badge variant="secondary">{selectedControlIds.length} {t("selected")}</Badge>
                 </div>
 
                 {/* Control Filters */}
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <div className="flex-1">
                     <Input
                       placeholder={t("Search controls...")}
@@ -840,7 +842,7 @@ export default function GRCAdminGovernancePage() {
                     />
                   </div>
                   <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
-                    <SelectTrigger className="w-[180px] bg-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -851,7 +853,7 @@ export default function GRCAdminGovernancePage() {
                     </SelectContent>
                   </Select>
                   <Select value={controlStatusFilter} onValueChange={setControlStatusFilter}>
-                    <SelectTrigger className="w-[180px] bg-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Status")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -864,8 +866,8 @@ export default function GRCAdminGovernancePage() {
                 </div>
 
                 {/* Controls Table */}
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden max-h-[300px] overflow-y-auto">
-                  <Table>
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden max-h-[300px] overflow-y-auto overflow-x-auto">
+                  <Table className="min-w-[600px]">
                     <TableHeader>
                       <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                         <TableHead className="w-[50px] py-3 pl-5"></TableHead>
@@ -915,10 +917,10 @@ export default function GRCAdminGovernancePage() {
 
             {/* Step 3: Review */}
             {createStep === 3 && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div className="text-lg font-medium text-slate-800">{t("Review Information")}</div>
 
-                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
                     <Label className="text-slate-500 text-sm">{t("Governance Name")}</Label>
                     <p className="font-medium text-slate-900">{newPolicy.name}</p>
@@ -969,7 +971,7 @@ export default function GRCAdminGovernancePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1040,9 +1042,9 @@ export default function GRCAdminGovernancePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
@@ -1052,7 +1054,7 @@ export default function GRCAdminGovernancePage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-6">
             <p className="text-sm text-slate-500 mb-4">
               {t("Upload a CSV or Excel file to import items.")}
             </p>
@@ -1105,7 +1107,7 @@ export default function GRCAdminGovernancePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
@@ -1126,16 +1128,16 @@ export default function GRCAdminGovernancePage() {
         }
         setIsEditDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit")} {t(editingPolicy?.documentType || "Governance")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5">
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Governance Name")} *</Label>
@@ -1224,7 +1226,7 @@ export default function GRCAdminGovernancePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               setIsEditDialogOpen(false);
               setEditingPolicy(null);

@@ -262,9 +262,9 @@ export default function ControlsByFrameworkPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -278,14 +278,14 @@ export default function ControlsByFrameworkPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Controls")}</h1>
 
       {/* Controls Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-wrap items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           {/* Search */}
-          <div className="relative">
+          <div className="relative w-full sm:w-56">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -295,15 +295,15 @@ export default function ControlsByFrameworkPage() {
                 setSearch(e.target.value);
                 setCurrentPage(0);
               }}
-              className="w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
 
-          <div className="ltr:ml-auto rtl:mr-auto"></div>
+          <div className="hidden sm:block ltr:ml-auto rtl:mr-auto"></div>
 
           {/* Filters */}
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(0); }}>
-            <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+            <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
               <SelectValue placeholder={t("Status")} />
             </SelectTrigger>
             <SelectContent>
@@ -315,7 +315,7 @@ export default function ControlsByFrameworkPage() {
           </Select>
 
           <Select value={groupingFilter} onValueChange={(v) => { setGroupingFilter(v); setCurrentPage(0); }}>
-            <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+            <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
               <SelectValue placeholder={t("Grouping")} />
             </SelectTrigger>
             <SelectContent>
@@ -328,7 +328,7 @@ export default function ControlsByFrameworkPage() {
 
           {uniqueDomains.length > 0 && (
             <Select value={domainFilter} onValueChange={(v) => { setDomainFilter(v); setCurrentPage(0); }}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Domain")} />
               </SelectTrigger>
               <SelectContent>
@@ -342,7 +342,8 @@ export default function ControlsByFrameworkPage() {
         </div>
 
         {/* Table Header */}
-        <div className="grid grid-cols-[1fr_120px_140px_130px_140px_140px_50px] gap-0 bg-slate-50 border-b border-slate-100 px-5 py-3">
+        <div className="overflow-x-auto">
+        <div className="grid grid-cols-[1fr_120px_140px_130px_140px_140px_50px] gap-0 bg-slate-50 border-b border-slate-100 px-3 sm:px-5 py-3 min-w-[800px]">
           <span
             className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-slate-700 transition-colors"
             onClick={() => handleSort("name")}
@@ -405,7 +406,7 @@ export default function ControlsByFrameworkPage() {
             {paginatedControls.map((control) => (
               <div
                 key={control.id}
-                className="grid grid-cols-[1fr_120px_140px_130px_140px_140px_50px] gap-0 items-center px-5 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer group"
+                className="grid grid-cols-[1fr_120px_140px_130px_140px_140px_50px] gap-0 items-center px-3 sm:px-5 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer group min-w-[800px]"
                 onClick={() => router.push(`/compliance/control/${control.id}?from=framework&frameworkId=${frameworkId}&frameworkName=${encodeURIComponent(framework?.name || '')}`)}
               >
                 {/* Control Name */}
@@ -471,9 +472,10 @@ export default function ControlsByFrameworkPage() {
             ))}
           </div>
         )}
+        </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
             {total > 0
               ? t("Showing {start} to {end} of {total}").replace("{start}", String(startIndex + 1)).replace("{end}", String(endIndex)).replace("{total}", String(total))

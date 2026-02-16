@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,13 +18,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowUpDown,
   Eye,
   Search,
-  UserCheck,
-  Server,
-  CheckCircle,
+  Layers,
+  AlertTriangle,
+  CheckCircle2,
   XCircle,
   Home,
   ChevronRight,
@@ -82,9 +82,11 @@ const DONUT_COLORS = [
 export default function CustomerControlsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { t } = useLanguage();
   const customerId = params.customerId as string;
+  const frameworkIdParam = searchParams.get("frameworkId");
 
   const [controls, setControls] = useState<Control[]>([]);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
@@ -92,7 +94,7 @@ export default function CustomerControlsPage() {
   const [loading, setLoading] = useState(true);
 
   const [activeView, setActiveView] = useState<"dashboard" | "all">("all");
-  const [selectedFrameworkId, setSelectedFrameworkId] = useState<string>("all");
+  const [selectedFrameworkId, setSelectedFrameworkId] = useState<string>(frameworkIdParam || "all");
   const [searchQuery, setSearchQuery] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [fgFilter, setFgFilter] = useState<string>("all");
@@ -428,76 +430,62 @@ export default function CustomerControlsPage() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex items-center gap-2">
-        {(["dashboard", "all"] as const).map((view) => (
-          <button
-            key={view}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeView === view
-                ? "bg-primary-50 text-primary-700"
-                : "text-slate-600 hover:bg-slate-50"
-            }`}
-            onClick={() => setActiveView(view)}
-          >
-            {view === "dashboard" ? t("Dashboard") : t("All Controls")}
-          </button>
-        ))}
-      </div>
+      <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "dashboard" | "all")}>
+        <TabsList>
+          <TabsTrigger value="dashboard">{t("Dashboard")}</TabsTrigger>
+          <TabsTrigger value="all">{t("All Controls")}</TabsTrigger>
+        </TabsList>
 
-      {/* Dashboard View */}
-      {activeView === "dashboard" && (
-        <div className="bg-white rounded-xl border border-slate-200 p-8">
-          <h2 className="text-lg font-semibold text-slate-800 mb-6">
-            {t("Functional Grouping")}
-          </h2>
-          <div className="flex justify-center py-8">
-            {renderDonutChart()}
+        {/* Dashboard View */}
+        <TabsContent value="dashboard" className="mt-6 space-y-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="text-sm font-medium text-slate-500 mb-4">
+              {t("Functional Grouping")}
+            </h2>
+            <div className="flex justify-center py-8">
+              {renderDonutChart()}
+            </div>
           </div>
-        </div>
-      )}
+        </TabsContent>
 
-      {/* All Controls View */}
-      {activeView === "all" && (
-        <div className="space-y-6">
+        {/* All Controls View */}
+        <TabsContent value="all" className="mt-6 space-y-6">
+          <div className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {[
               {
                 label: t("Total Controls"),
                 value: stats.total,
-                icon: <UserCheck className="h-5 w-5 text-primary-500" />,
-                color: "text-primary-700",
+                icon: <Layers className="h-5 w-5" />,
               },
               {
                 label: t("Non Compliant"),
                 value: stats.nonCompliant,
-                icon: <Server className="h-5 w-5 text-red-500" />,
-                color: "text-red-700",
+                icon: <AlertTriangle className="h-5 w-5" />,
               },
               {
                 label: t("Compliant"),
                 value: stats.compliant,
-                icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-                color: "text-green-700",
+                icon: <CheckCircle2 className="h-5 w-5" />,
               },
               {
                 label: t("Not Applicable"),
                 value: stats.notApplicable,
-                icon: <XCircle className="h-5 w-5 text-slate-500" />,
-                color: "text-slate-700",
+                icon: <XCircle className="h-5 w-5" />,
               },
             ].map((card) => (
               <div
                 key={card.label}
-                className="rounded-xl border border-slate-200 bg-white p-5"
+                className="bg-white rounded-xl p-3 sm:p-5 border border-slate-200"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
                     {card.icon}
                   </div>
                 </div>
-                <div className={`text-2xl font-bold ${card.color} mb-1`}>{card.value}</div>
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">{card.label}</div>
+                <div className="text-3xl font-bold tracking-tight text-slate-800">{card.value}</div>
+                <div className="mt-1 text-sm font-medium text-slate-500">{card.label}</div>
               </div>
             ))}
           </div>
@@ -505,23 +493,23 @@ export default function CustomerControlsPage() {
           {/* Controls Table Card */}
           <div className="bg-white rounded-xl border border-slate-200">
             {/* Search and Filters Toolbar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-4 sm:px-5 py-3 border-b border-slate-100">
-              <div className="flex-1 relative">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+              <div className="relative">
                 <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
+                <input
                   placeholder={t("Search By Control Code, Name")}
-                  className="ltr:pl-9 rtl:pr-9 bg-slate-50 border-slate-200 rounded-lg h-9 text-sm"
+                  className="w-full sm:w-64 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="ltr:ml-auto rtl:mr-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                 <Select value={domainFilter} onValueChange={setDomainFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200 rounded-lg">
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Domain")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     <SelectItem value="all">{t("All Domains")}</SelectItem>
                     {domains.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
@@ -532,10 +520,10 @@ export default function CustomerControlsPage() {
                 </Select>
 
                 <Select value={fgFilter} onValueChange={setFgFilter}>
-                  <SelectTrigger className="w-full sm:w-[200px] h-9 text-sm bg-slate-50 border-slate-200 rounded-lg">
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Functional Grouping")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     <SelectItem value="all">{t("All Groupings")}</SelectItem>
                     {FUNCTIONAL_GROUPINGS.map((fg) => (
                       <SelectItem key={fg} value={fg}>
@@ -551,8 +539,8 @@ export default function CustomerControlsPage() {
             <div className="overflow-x-auto">
             <Table className="min-w-[800px]">
               <TableHeader>
-                <TableRow className="h-11 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="pl-5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="ps-5 text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">
                     <button
                       className="flex items-center gap-1 hover:text-slate-800"
                       onClick={() => handleSort("name")}
@@ -561,7 +549,7 @@ export default function CustomerControlsPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">
                     <button
                       className="flex items-center gap-1 hover:text-slate-800"
                       onClick={() => handleSort("controlCode")}
@@ -570,7 +558,7 @@ export default function CustomerControlsPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">
                     <button
                       className="flex items-center gap-1 hover:text-slate-800"
                       onClick={() => handleSort("functionalGrouping")}
@@ -579,7 +567,7 @@ export default function CustomerControlsPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">
                     <button
                       className="flex items-center gap-1 hover:text-slate-800"
                       onClick={() => handleSort("status")}
@@ -588,10 +576,10 @@ export default function CustomerControlsPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">
                     {t("Assignee")}
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">
                     <button
                       className="flex items-center gap-1 hover:text-slate-800"
                       onClick={() => handleSort("domain")}
@@ -600,7 +588,7 @@ export default function CustomerControlsPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead className="text-center w-12">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 pe-5 text-center w-12">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -620,10 +608,10 @@ export default function CustomerControlsPage() {
                         <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
                           <Shield className="h-6 w-6 text-primary-500" />
                         </div>
-                        <h3 className="text-base font-semibold text-slate-800 mb-1">
+                        <h3 className="text-sm font-medium text-slate-600 mb-1">
                           {t("No Controls Found")}
                         </h3>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-xs text-slate-400">
                           {searchQuery || domainFilter !== "all" || fgFilter !== "all"
                             ? t("No controls match the current filters.")
                             : t("No controls available for this customer.")}
@@ -633,38 +621,38 @@ export default function CustomerControlsPage() {
                   </TableRow>
                 ) : (
                   filteredControls.map((control) => (
-                    <TableRow key={control.id} className="hover:bg-slate-50">
-                      <TableCell className="py-4 pl-5 text-sm font-medium text-slate-800" title={control.name}>
+                    <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                      <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800" title={control.name}>
                         {control.name.length > 25
                           ? control.name.substring(0, 25) + "..."
                           : control.name}
                       </TableCell>
-                      <TableCell className="py-4 text-sm text-slate-700">
+                      <TableCell className="py-3.5 text-sm text-slate-600">
                         {control.controlCode}
                       </TableCell>
-                      <TableCell className="py-4 text-sm text-slate-700">
+                      <TableCell className="py-3.5 text-sm text-slate-600">
                         {control.functionalGrouping || "-"}
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="py-3.5">
                         <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
                             control.status === "Compliant"
-                              ? "bg-green-50 text-green-700"
+                              ? "bg-green-50 text-green-700 border-green-200"
                               : control.status === "Non Compliant"
-                              ? "bg-red-50 text-red-700"
+                              ? "bg-red-50 text-red-700 border-red-200"
                               : control.status === "Partial Compliant"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-slate-100 text-slate-700"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-slate-50 text-slate-700 border-slate-200"
                           }`}
                         >
                           {control.status}
                         </span>
                       </TableCell>
-                      <TableCell className="py-4 text-sm text-slate-700">
+                      <TableCell className="py-3.5 text-sm text-slate-600">
                         {control.assignee?.name || "-"}
                       </TableCell>
                       <TableCell
-                        className="py-4 text-sm text-slate-700"
+                        className="py-3.5 text-sm text-slate-600"
                         title={control.domain?.name || ""}
                       >
                         {control.domain?.name
@@ -673,7 +661,7 @@ export default function CustomerControlsPage() {
                             : control.domain.name
                           : "-"}
                       </TableCell>
-                      <TableCell className="py-4 text-center">
+                      <TableCell className="py-3.5 pe-5 text-center">
                         {showColumns && (
                           <span className="text-xs text-slate-500">
                             {control.entities}
@@ -688,7 +676,8 @@ export default function CustomerControlsPage() {
             </div>
           </div>
         </div>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

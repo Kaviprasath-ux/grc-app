@@ -352,9 +352,9 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -370,15 +370,15 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-800">{control.name}</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{control.name}</h1>
             <Badge className={getStatusBadgeColor(control.status)}>{control.status}</Badge>
           </div>
           <p className="text-sm text-slate-500">{control.controlCode}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setIsEditDialogOpen(true)}>
           <Edit className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Edit Control")}
         </Button>
@@ -390,7 +390,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
           <CardTitle>{t("Control Details")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <Label className="text-muted-foreground">{t("Domain")}</Label>
               <p className="font-medium">{control.domain?.name || "-"}</p>
@@ -503,7 +503,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
       {/* Tabs for related entities */}
       <Card>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0">
+          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 overflow-x-auto flex-nowrap">
             <TabsTrigger value="requirements" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Linked Requirement")} ({control.requirements?.length || 0})
@@ -526,8 +526,9 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="requirements" className="p-4">
-            <Table>
+          <TabsContent value="requirements" className="p-3 sm:p-4">
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("Code")}</TableHead>
@@ -552,10 +553,12 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
 
-          <TabsContent value="governance" className="p-4">
-            <Table>
+          <TabsContent value="governance" className="p-3 sm:p-4">
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("Code")}</TableHead>
@@ -584,10 +587,12 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
 
-          <TabsContent value="evidence" className="p-4">
-            <Table>
+          <TabsContent value="evidence" className="p-3 sm:p-4">
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("Evidence Code")}</TableHead>
@@ -618,10 +623,12 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
 
-          <TabsContent value="exceptions" className="p-4">
-            <Table>
+          <TabsContent value="exceptions" className="p-3 sm:p-4">
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("Exception Code")}</TableHead>
@@ -652,10 +659,12 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
 
-          <TabsContent value="risks" className="p-4">
-            <Table>
+          <TabsContent value="risks" className="p-3 sm:p-4">
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("Risk ID")}</TableHead>
@@ -690,18 +699,19 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
         </Tabs>
       </Card>
 
       {/* Edit Dialog with All Fields */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("Edit Control")}</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4">
             {/* Control Name */}
             <div>
               <Label>{t("Control Name")} *</Label>
@@ -746,7 +756,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
               <RadioGroup
                 value={editData.functionalGrouping || ""}
                 onValueChange={(v) => setEditData({ ...editData, functionalGrouping: v })}
-                className="grid grid-cols-6 gap-2 mt-2"
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-2"
               >
                 {FUNCTIONAL_GROUPINGS.map((g) => (
                   <div key={g} className="flex items-center space-x-2">
@@ -949,7 +959,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
 
       {/* Risk Selection Dialog */}
       <Dialog open={isRiskDialogOpen} onOpenChange={setIsRiskDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("Select Risks")}</DialogTitle>
           </DialogHeader>

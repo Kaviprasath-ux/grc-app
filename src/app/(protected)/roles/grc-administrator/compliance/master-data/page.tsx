@@ -70,9 +70,9 @@ export default function GRCAdminMasterDataPage() {
   const { t } = useLanguage();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -85,15 +85,15 @@ export default function GRCAdminMasterDataPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Master Data")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Master Data")}</h1>
       </div>
 
       {/* Category Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {masterDataCategories.map((category) => (
           <div
             key={category.name}
-            className="bg-white rounded-xl border border-slate-200 p-6 cursor-pointer hover:bg-slate-50 transition-colors"
+            className="bg-white rounded-xl border border-slate-200 p-3 sm:p-6 cursor-pointer hover:bg-slate-50 transition-colors"
             onClick={() => router.push(category.href)}
           >
             <div className="flex flex-col items-center text-center space-y-4">

@@ -195,7 +195,7 @@ export default function MasterDataFrameworkPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm flex-wrap">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -205,7 +205,13 @@ export default function MasterDataFrameworkPage() {
             {t("Customers")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-          <span className="text-slate-500">{customerName || t("Customer")}</span>
+          <Link href={`/grc/customers/${customerId}/frameworks`} className="text-slate-500 hover:text-primary-600 transition-colors">
+            {customerName || t("Customer")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href={`/grc/customers/${customerId}/frameworks?tab=masterdata`} className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Master Data")}
+          </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Framework")}</span>
         </nav>
@@ -219,7 +225,7 @@ export default function MasterDataFrameworkPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm flex-wrap">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -233,7 +239,9 @@ export default function MasterDataFrameworkPage() {
           {customerName || t("Customer")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-slate-500">{t("Master Data")}</span>
+        <Link href={`/grc/customers/${customerId}/frameworks`} className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Master Data")}
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Framework")}</span>
       </nav>
@@ -257,8 +265,8 @@ export default function MasterDataFrameworkPage() {
       <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
         <Table className="min-w-[500px]">
           <TableHeader>
-            <TableRow className="h-11 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="pl-5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+            <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">
                 <button
                   className="flex items-center gap-1 hover:text-slate-800"
                   onClick={() => setSortAsc(!sortAsc)}
@@ -267,14 +275,14 @@ export default function MasterDataFrameworkPage() {
                   <ArrowUpDown className="h-3 w-3" />
                 </button>
               </TableHead>
-              <TableHead className="text-center text-xs font-semibold text-slate-600 uppercase tracking-wider w-40">
-                {t("Action")}
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 w-[120px]">
+                {t("Actions")}
               </TableHead>
-              <TableHead className="text-center w-16">
+              <TableHead className="h-auto py-3 pe-5 w-[60px]">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                  className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                   onClick={() => setShowDetails(!showDetails)}
                 >
                   <Eye className="h-4 w-4" />
@@ -287,13 +295,13 @@ export default function MasterDataFrameworkPage() {
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={3}>
                   <div className="py-16 text-center">
-                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                       <Shield className="h-6 w-6 text-primary-500" />
                     </div>
-                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                    <h3 className="text-sm font-medium text-slate-600 mb-1">
                       {t("No Frameworks Found")}
                     </h3>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-xs text-slate-400">
                       {t("No frameworks available for this customer.")}
                     </p>
                   </div>
@@ -301,16 +309,16 @@ export default function MasterDataFrameworkPage() {
               </TableRow>
             ) : (
               sortedFrameworks.map((framework) => (
-                <TableRow key={framework.id} className="hover:bg-slate-50">
-                  <TableCell className="py-4 pl-5 text-sm font-medium text-slate-800">
+                <TableRow key={framework.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <TableCell className="py-3.5 ps-5 text-sm text-slate-800">
                     {framework.name}
                   </TableCell>
-                  <TableCell className="py-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
+                  <TableCell className="py-3.5">
+                    <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                         onClick={() => handleEditFramework(framework)}
                         title={t("Edit")}
                       >
@@ -319,7 +327,7 @@ export default function MasterDataFrameworkPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
                         onClick={() => handleDeleteFramework(framework)}
                         title={t("Delete")}
                       >
@@ -327,9 +335,9 @@ export default function MasterDataFrameworkPage() {
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4 text-center">
+                  <TableCell className="py-3.5 pe-5">
                     {showDetails && (
-                      <span className="px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-700 border-slate-200">
                         {framework.type}
                       </span>
                     )}
@@ -343,7 +351,7 @@ export default function MasterDataFrameworkPage() {
 
       {/* Edit Framework Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Framework")}</DialogTitle>
@@ -357,7 +365,7 @@ export default function MasterDataFrameworkPage() {
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder={t("Enter framework name")}
-                className="bg-slate-50 border-slate-200 rounded-lg"
+                className="bg-white border-slate-200 rounded-lg"
               />
             </div>
           </div>
@@ -374,7 +382,7 @@ export default function MasterDataFrameworkPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
