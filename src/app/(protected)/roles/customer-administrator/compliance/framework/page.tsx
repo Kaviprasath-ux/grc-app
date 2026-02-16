@@ -40,6 +40,7 @@ import { useHasRole } from "@/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 
 interface Framework {
   id: string;
@@ -198,6 +199,8 @@ export default function CustomerAdminFrameworkPage() {
     const errors: Record<string, string> = {};
     if (!formData.name?.trim()) {
       errors.name = t("Please enter name");
+    } else if (!isValidName(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!formData.type) {
       errors.type = t("Please Select Framework Type");

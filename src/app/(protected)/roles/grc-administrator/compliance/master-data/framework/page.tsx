@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home, FileText } from "lucide-react";
 import Link from "next/link";
+import { isValidName } from "@/lib/validations";
 
 interface Framework {
   id: string;
@@ -88,6 +89,7 @@ export default function FrameworkMasterDataPage() {
     industry: "",
     isCustom: true,
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const fetchFrameworks = useCallback(async () => {
     try {
@@ -109,6 +111,7 @@ export default function FrameworkMasterDataPage() {
 
   const handleEdit = async () => {
     if (!selectedFramework) return;
+    if (!validateFrameworkForm()) return;
     try {
       const response = await fetch(`/api/frameworks/${selectedFramework.id}`, {
         method: "PUT",
@@ -155,6 +158,7 @@ export default function FrameworkMasterDataPage() {
       industry: framework.industry || "",
       isCustom: framework.isCustom,
     });
+    setFormErrors({});
     setEditDialogOpen(true);
   };
 
@@ -173,12 +177,43 @@ export default function FrameworkMasterDataPage() {
       industry: "",
       isCustom: true,
     });
+    setFormErrors({});
     setWizardStep(1);
     setSelectedFile(null);
     setUseAIControls(false);
   };
 
+  const validateFrameworkForm = () => {
+    const errors: Record<string, string> = {};
+    if (!formData.name?.trim()) {
+      errors.name = t("Please enter name");
+    } else if (!isValidName(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (!formData.type) {
+      errors.type = t("Please Select Framework Type");
+    }
+    if (!formData.country?.trim()) {
+      errors.country = t("Please enter Country");
+    }
+    if (!formData.industry?.trim()) {
+      errors.industry = t("Please enter Industry");
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFrameworkFieldChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (formErrors[field]) {
+      setFormErrors({ ...formErrors, [field]: "" });
+    }
+  };
+
   const handleNextStep = () => {
+    if (!validateFrameworkForm()) {
+      return;
+    }
     setWizardStep(2);
   };
 
@@ -437,15 +472,16 @@ export default function FrameworkMasterDataPage() {
                     {t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
                   </p>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework Name")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework Name")} <span className="text-red-500">*</span></Label>
                     <Input
                       value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
+                      onChange={(e) => handleFrameworkFieldChange("name", e.target.value)}
                       placeholder={t("Enter framework name")}
-                      className="bg-white"
+                      className={`bg-white ${formErrors.name ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                     />
+                    {formErrors.name && (
+                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.name}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -459,14 +495,12 @@ export default function FrameworkMasterDataPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">{t("Framework Type")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Framework Type")} <span className="text-red-500">*</span></Label>
                     <Select
                       value={formData.type}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, type: value })
-                      }
+                      onValueChange={(value) => handleFrameworkFieldChange("type", value)}
                     >
-                      <SelectTrigger className="w-full bg-white">
+                      <SelectTrigger className={`w-full bg-white ${formErrors.type ? "border-red-400 bg-red-50" : ""}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
@@ -475,29 +509,34 @@ export default function FrameworkMasterDataPage() {
                         <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {formErrors.type && (
+                      <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.type}</p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">{t("Country")} *</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Country")} <span className="text-red-500">*</span></Label>
                       <Input
                         value={formData.country}
-                        onChange={(e) =>
-                          setFormData({ ...formData, country: e.target.value })
-                        }
+                        onChange={(e) => handleFrameworkFieldChange("country", e.target.value)}
                         placeholder={t("Enter country")}
-                        className="bg-white"
+                        className={`bg-white ${formErrors.country ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                       />
+                      {formErrors.country && (
+                        <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.country}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">{t("Industry")} *</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Industry")} <span className="text-red-500">*</span></Label>
                       <Input
                         value={formData.industry}
-                        onChange={(e) =>
-                          setFormData({ ...formData, industry: e.target.value })
-                        }
+                        onChange={(e) => handleFrameworkFieldChange("industry", e.target.value)}
                         placeholder={t("Enter industry")}
-                        className="bg-white"
+                        className={`bg-white ${formErrors.industry ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                       />
+                      {formErrors.industry && (
+                        <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.industry}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -723,14 +762,15 @@ export default function FrameworkMasterDataPage() {
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework Name")} *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework Name")} <span className="text-red-500">*</span></Label>
               <Input
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full bg-white"
+                onChange={(e) => handleFrameworkFieldChange("name", e.target.value)}
+                className={`w-full bg-white ${formErrors.name ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
               />
+              {formErrors.name && (
+                <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -743,14 +783,12 @@ export default function FrameworkMasterDataPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">{t("Framework Type")} *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Framework Type")} <span className="text-red-500">*</span></Label>
               <Select
                 value={formData.type}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, type: value })
-                }
+                onValueChange={(value) => handleFrameworkFieldChange("type", value)}
               >
-                <SelectTrigger className="w-full bg-white">
+                <SelectTrigger className={`w-full bg-white ${formErrors.type ? "border-red-400 bg-red-50" : ""}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
@@ -759,27 +797,32 @@ export default function FrameworkMasterDataPage() {
                   <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                 </SelectContent>
               </Select>
+              {formErrors.type && (
+                <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.type}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">{t("Country")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Country")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.country}
-                  onChange={(e) =>
-                    setFormData({ ...formData, country: e.target.value })
-                  }
-                  className="bg-white"
+                  onChange={(e) => handleFrameworkFieldChange("country", e.target.value)}
+                  className={`bg-white ${formErrors.country ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                 />
+                {formErrors.country && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.country}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">{t("Industry")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Industry")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.industry}
-                  onChange={(e) =>
-                    setFormData({ ...formData, industry: e.target.value })
-                  }
-                  className="bg-white"
+                  onChange={(e) => handleFrameworkFieldChange("industry", e.target.value)}
+                  className={`bg-white ${formErrors.industry ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : ""}`}
                 />
+                {formErrors.industry && (
+                  <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.industry}</p>
+                )}
               </div>
             </div>
           </div>
@@ -795,7 +838,7 @@ export default function FrameworkMasterDataPage() {
             >
               {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleEdit} disabled={!formData.name || !formData.country || !formData.industry}>
+            <Button size="sm" onClick={handleEdit}>
               {t("Save")}
             </Button>
           </div>
