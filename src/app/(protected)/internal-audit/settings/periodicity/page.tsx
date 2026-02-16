@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { isValidName, isValidNumber } from "@/lib/validations";
 
 interface Periodicity {
   id: string;
@@ -111,9 +112,15 @@ export default function PeriodicityPage() {
     if (!formData.interval.trim()) {
       newErrors.interval = t("Interval is required");
       hasError = true;
+    } else if (!isValidName(formData.interval)) {
+      newErrors.interval = t("Only letters, numbers, spaces, and hyphens are allowed");
+      hasError = true;
     }
     if (!formData.months || Number(formData.months) < 1) {
       newErrors.months = t("Months must be at least 1");
+      hasError = true;
+    } else if (!isValidNumber(String(formData.months))) {
+      newErrors.months = t("Please enter a valid number");
       hasError = true;
     }
 

@@ -16,7 +16,7 @@ export async function POST() {
       const updateData: { password?: string; isActive?: boolean; isBlocked?: boolean } = {};
 
       // Check if password is properly hashed (bcrypt hashes start with $2)
-      if (!existingUser.password.startsWith("$2")) {
+      if (!existingUser.password || !existingUser.password.startsWith("$2")) {
         updateData.password = await bcrypt.hash("Baarez@2025", 10);
         needsUpdate = true;
       }

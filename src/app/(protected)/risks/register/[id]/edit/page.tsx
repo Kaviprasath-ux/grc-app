@@ -30,6 +30,7 @@ import { Unauthorized } from "@/components/ui/unauthorized";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 
 interface Category {
   id: string;
@@ -143,6 +144,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   const [newCauseName, setNewCauseName] = useState("");
   const [newCauseDescription, setNewCauseDescription] = useState("");
   const [creatingCause, setCreatingCause] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   // Form state
   const [formData, setFormData] = useState({
@@ -373,9 +375,18 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   };
 
   const validateStep = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
     switch (currentStep) {
       case 1:
-        return formData.name.trim() !== "";
+        if (!formData.name.trim()) {
+          errors.name = t("Please enter the Risk Name") || "Please enter the Risk Name";
+        } else if (!isValidName(formData.name.trim())) {
+          errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
       case 2:
         return true;
       default:
@@ -455,6 +466,9 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   const handleCreateCause = async () => {
     if (!newCauseName.trim()) {
       toast.error(t("causeNameRequired") || "Cause name is required");
+      return;
+    } else if (!isValidName(newCauseName.trim())) {
+      toast.error(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
 
@@ -604,7 +618,11 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
                       placeholder={t("enterRiskName")}
+                      className={validationErrors.name ? "border-red-500" : ""}
                     />
+                    {validationErrors.name && (
+                      <p className="text-sm text-red-600 mt-1">{validationErrors.name}</p>
+                    )}
                   </div>
                 </div>
 

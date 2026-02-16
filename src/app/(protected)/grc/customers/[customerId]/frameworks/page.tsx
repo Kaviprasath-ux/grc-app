@@ -57,6 +57,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isValidName } from "@/lib/validations";
 import Link from "next/link";
 
 interface Framework {
@@ -244,6 +245,8 @@ export default function CustomerFrameworkOverviewPage() {
     country: "",
     industry: "",
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [editItemError, setEditItemError] = useState("");
 
   useEffect(() => {
     fetchCustomer();
@@ -401,6 +404,7 @@ export default function CustomerFrameworkOverviewPage() {
       country: "",
       industry: "",
     });
+    setFormErrors({});
   };
 
   const resetImportState = () => {
@@ -416,6 +420,22 @@ export default function CustomerFrameworkOverviewPage() {
   };
 
   const handleCreate = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      newErrors.name = t("Framework name is required");
+    } else if (!isValidName(formData.name.trim())) {
+      newErrors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (!formData.code.trim()) {
+      // code is optional, no error
+    } else if (!isValidName(formData.code.trim())) {
+      newErrors.code = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      return;
+    }
+    setFormErrors({});
     try {
       const response = await fetch("/api/frameworks", {
         method: "POST",
@@ -479,11 +499,20 @@ export default function CustomerFrameworkOverviewPage() {
   const handleEditItem = (id: string, name: string, type: string) => {
     setEditItem({ id, name, type });
     setEditItemName(name);
+    setEditItemError("");
     setIsEditItemDialogOpen(true);
   };
 
   const handleSaveEditItem = async () => {
     if (!editItem) return;
+    if (!editItemName.trim()) {
+      setEditItemError(t("Name is required"));
+      return;
+    } else if (!isValidName(editItemName.trim())) {
+      setEditItemError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    setEditItemError("");
     try {
       const response = await fetch(`/api/${getApiPath(editItem.type)}/${editItem.id}`, {
         method: "PUT",
@@ -1932,9 +1961,10 @@ export default function CustomerFrameworkOverviewPage() {
               <Input
                 id="edit-item-name"
                 value={editItemName}
-                onChange={(e) => setEditItemName(e.target.value)}
+                onChange={(e) => { setEditItemName(e.target.value); setEditItemError(""); }}
                 placeholder={t("Enter name")}
               />
+              {editItemError && <p className="text-sm text-red-500">{editItemError}</p>}
             </div>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
@@ -2084,10 +2114,11 @@ export default function CustomerFrameworkOverviewPage() {
               <Input
                 id="code"
                 value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, code: e.target.value }); setFormErrors((prev) => ({ ...prev, code: "" })); }}
                 placeholder={t("Enter code")}
                 className="bg-slate-50 border-slate-200 rounded-lg"
               />
+              {formErrors.code && <p className="text-sm text-red-500">{formErrors.code}</p>}
             </div>
 
             <div className="space-y-2">
@@ -2097,10 +2128,11 @@ export default function CustomerFrameworkOverviewPage() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors((prev) => ({ ...prev, name: "" })); }}
                 placeholder={t("Enter framework name")}
                 className="bg-slate-50 border-slate-200 rounded-lg"
               />
+              {formErrors.name && <p className="text-sm text-red-500">{formErrors.name}</p>}
             </div>
 
             <div className="space-y-2">

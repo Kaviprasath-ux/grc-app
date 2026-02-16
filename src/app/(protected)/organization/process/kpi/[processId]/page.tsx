@@ -26,6 +26,7 @@ import { DataGrid } from "@/components/shared";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName, isValidNumber } from "@/lib/validations";
 import {
   LineChart,
   Line,
@@ -96,6 +97,7 @@ export default function KPIDetailsPage() {
   // Dialog states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<KPIRecord | null>(null);
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -159,10 +161,14 @@ export default function KPIDetailsPage() {
   const handleSave = async () => {
     const errors: Record<string, string> = {};
     if (!kpiConfig.objective.trim()) errors.objective = t("Please Enter Objective.");
+    else if (!isValidName(kpiConfig.objective.trim())) errors.objective = t("Only letters, numbers, spaces, and hyphens are allowed");
     if (!kpiConfig.dataSource.trim()) errors.dataSource = t("Please Enter Data Source.");
+    else if (!isValidName(kpiConfig.dataSource.trim())) errors.dataSource = t("Only letters, numbers, spaces, and hyphens are allowed");
     if (!kpiConfig.expectedValue) errors.expectedValue = t("Please Enter the Expected Score.");
+    else if (!isValidNumber(kpiConfig.expectedValue)) errors.expectedValue = t("Please enter a valid number");
     if (!kpiConfig.description.trim()) errors.description = t("Please Enter Description.");
     if (!kpiConfig.formula.trim()) errors.formula = t("Please Enter the Calculated Formula.");
+    if (kpiConfig.targetedAchievedValue && !isValidNumber(kpiConfig.targetedAchievedValue)) errors.targetedAchievedValue = t("Please enter a valid number");
     if (Object.keys(errors).length > 0) {
       setKpiErrors(errors);
       return;
@@ -277,6 +283,7 @@ export default function KPIDetailsPage() {
             className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingRecord(row.original);
+              setEditErrors({});
               setIsEditDialogOpen(true);
             }}
           >
@@ -528,13 +535,20 @@ export default function KPIDetailsPage() {
                 <Input
                   type="number"
                   value={kpiConfig.targetedAchievedValue}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setKpiConfig({
                       ...kpiConfig,
                       targetedAchievedValue: parseInt(e.target.value) || 0,
-                    })
-                  }
+                    });
+                    if (kpiErrors.targetedAchievedValue) setKpiErrors((prev) => { const { targetedAchievedValue, ...rest } = prev; return rest; });
+                  }}
+                  className={kpiErrors.targetedAchievedValue ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {kpiErrors.targetedAchievedValue && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{kpiErrors.targetedAchievedValue}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -576,14 +590,21 @@ export default function KPIDetailsPage() {
               <Input
                 type="number"
                 value={editingRecord?.achievedValue || 0}
-                onChange={(e) =>
+                onChange={(e) => {
                   setEditingRecord(
                     editingRecord
                       ? { ...editingRecord, achievedValue: parseInt(e.target.value) || 0 }
                       : null
-                  )
-                }
+                  );
+                  if (editErrors.achievedValue) setEditErrors((prev) => { const { achievedValue, ...rest } = prev; return rest; });
+                }}
+                className={editErrors.achievedValue ? "border-red-500 focus-visible:ring-red-500" : ""}
               />
+              {editErrors.achievedValue && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{editErrors.achievedValue}</p>
+                </div>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium">{t("Status")}</label>
@@ -613,6 +634,18 @@ export default function KPIDetailsPage() {
             </Button>
             <Button
               onClick={() => {
+                // Validate edited record
+                const newErrors: Record<string, string> = {};
+                if (editingRecord) {
+                  if (!isValidNumber(editingRecord.achievedValue)) {
+                    newErrors.achievedValue = t("Please enter a valid number");
+                  }
+                }
+                if (Object.keys(newErrors).length > 0) {
+                  setEditErrors(newErrors);
+                  return;
+                }
+                setEditErrors({});
                 // Save edited record
                 if (editingRecord) {
                   setKpiRecords(

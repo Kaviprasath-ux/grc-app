@@ -38,6 +38,7 @@ import { EditProfileWizard } from "@/components/profile/edit-profile-wizard";
 import { OrgChart } from "@/components/organization/org-chart";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
+import { isValidName } from "@/lib/validations";
 
 interface Branch {
   id?: string;
@@ -147,6 +148,7 @@ function ProfilePageContent() {
   const [isEditProfileWizardOpen, setIsEditProfileWizardOpen] = useState(false);
   const [isEditDepartmentOpen, setIsEditDepartmentOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [editDepartmentNameError, setEditDepartmentNameError] = useState("");
 
   // Delete confirmation dialogs
   const [deleteDepartmentId, setDeleteDepartmentId] = useState<string | null>(null);
@@ -181,6 +183,7 @@ function ProfilePageContent() {
     serviceItem: "",
   });
   const [serviceErrors, setServiceErrors] = useState<Record<string, string>>({});
+  const [editServiceErrors, setEditServiceErrors] = useState<Record<string, string>>({});
   const [newRegulation, setNewRegulation] = useState({
     name: "",
     version: "",
@@ -194,6 +197,7 @@ function ProfilePageContent() {
   const [documentFiles, setDocumentFiles] = useState<File[]>([]);
   const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
   const [regulationErrors, setRegulationErrors] = useState<Record<string, string>>({});
+  const [editRegulationErrors, setEditRegulationErrors] = useState<Record<string, string>>({});
   const [isEditRegulationOpen, setIsEditRegulationOpen] = useState(false);
   const [editingRegulation, setEditingRegulation] = useState<Regulation | null>(null);
 
@@ -235,6 +239,7 @@ function ProfilePageContent() {
   // Department CRUD
   const handleAddDepartment = async () => {
     if (!newDepartmentName.trim()) { setDepartmentNameError(t("Please enter department name")); return; }
+    if (!isValidName(newDepartmentName.trim())) { setDepartmentNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setDepartmentNameError("");
     try {
       const res = await fetch("/api/departments", {
@@ -272,7 +277,9 @@ function ProfilePageContent() {
   };
 
   const handleEditDepartment = async () => {
-    if (!editingDepartment || !editingDepartment.name.trim()) return;
+    if (!editingDepartment || !editingDepartment.name.trim()) { setEditDepartmentNameError(t("Please enter department name")); return; }
+    if (!isValidName(editingDepartment.name.trim())) { setEditDepartmentNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    setEditDepartmentNameError("");
     try {
       const res = await fetch(`/api/departments/${editingDepartment.id}`, {
         method: "PUT",
@@ -294,6 +301,7 @@ function ProfilePageContent() {
   const handleAddService = async () => {
     const errors: Record<string, string> = {};
     if (!newService.title.trim()) errors.title = t("Please enter the title");
+    else if (!isValidName(newService.title.trim())) errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
     if (!newService.serviceUser) errors.serviceUser = t("Please select service user");
     if (!newService.serviceCategory) errors.serviceCategory = t("Please select the category");
     if (!newService.serviceItem) errors.serviceItem = t("Please select the service title");
@@ -327,6 +335,11 @@ function ProfilePageContent() {
 
   const handleEditService = async () => {
     if (!editingService) return;
+    const errors: Record<string, string> = {};
+    if (!editingService.title.trim()) errors.title = t("Please enter the title");
+    else if (!isValidName(editingService.title.trim())) errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
+    if (Object.keys(errors).length > 0) { setEditServiceErrors(errors); return; }
+    setEditServiceErrors({});
     try {
       const res = await fetch(`/api/services/${editingService.id}`, {
         method: "PUT",
@@ -405,6 +418,7 @@ function ProfilePageContent() {
   const handleAddRegulation = async () => {
     const errors: Record<string, string> = {};
     if (!newRegulation.name.trim()) errors.name = t("Please enter the name");
+    else if (!isValidName(newRegulation.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
     if (!newRegulation.version.trim()) errors.version = t("Please enter the version");
     if (Object.keys(errors).length > 0) { setRegulationErrors(errors); return; }
     setRegulationErrors({});
@@ -454,6 +468,12 @@ function ProfilePageContent() {
 
   const handleEditRegulation = async () => {
     if (!editingRegulation) return;
+    const errors: Record<string, string> = {};
+    if (!editingRegulation.name.trim()) errors.name = t("Please enter the name");
+    else if (!isValidName(editingRegulation.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    if (!editingRegulation.version.trim()) errors.version = t("Please enter the version");
+    if (Object.keys(errors).length > 0) { setEditRegulationErrors(errors); return; }
+    setEditRegulationErrors({});
     try {
       const res = await fetch(`/api/regulations/${editingRegulation.id}`, {
         method: "PUT",
@@ -522,6 +542,7 @@ function ProfilePageContent() {
   // Add new service category
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) { setCategoryNameError(t("Please enter category name")); return; }
+    if (!isValidName(newCategoryName.trim())) { setCategoryNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setCategoryNameError("");
     if (!serviceCategories.includes(newCategoryName)) {
       setServiceCategories([...serviceCategories, newCategoryName]);
@@ -534,6 +555,7 @@ function ProfilePageContent() {
   // Add new service item
   const handleAddItem = () => {
     if (!newItemName.trim()) { setItemNameError(t("Please enter item name")); return; }
+    if (!isValidName(newItemName.trim())) { setItemNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setItemNameError("");
     if (!serviceItems.includes(newItemName)) {
       setServiceItems([...serviceItems, newItemName]);
@@ -1332,7 +1354,7 @@ function ProfilePageContent() {
       </Dialog>
 
       {/* Edit Department Dialog */}
-      <Dialog open={isEditDepartmentOpen} onOpenChange={setIsEditDepartmentOpen}>
+      <Dialog open={isEditDepartmentOpen} onOpenChange={(open) => { if (!open) { setIsEditDepartmentOpen(false); setEditDepartmentNameError(""); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
@@ -1347,16 +1369,21 @@ function ProfilePageContent() {
               <Label className="text-sm font-medium text-slate-700">{t("Department Name")}</Label>
               <Input
                 value={editingDepartment.name}
-                onChange={(e) => setEditingDepartment({ ...editingDepartment, name: e.target.value })}
+                onChange={(e) => { setEditingDepartment({ ...editingDepartment, name: e.target.value }); if (editDepartmentNameError) setEditDepartmentNameError(""); }}
                 placeholder={t("Enter department name")}
-                className="mt-1.5"
+                className={`mt-1.5 ${editDepartmentNameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
+              {editDepartmentNameError && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{editDepartmentNameError}</p>
+                </div>
+              )}
             </div>
           )}
 
           {/* Fixed Footer */}
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsEditDepartmentOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsEditDepartmentOpen(false); setEditDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleEditDepartment}>{t("Save")}</Button>
@@ -1512,7 +1539,7 @@ function ProfilePageContent() {
       </Dialog>
 
       {/* Edit Service Dialog */}
-      <Dialog open={isEditServiceOpen} onOpenChange={setIsEditServiceOpen}>
+      <Dialog open={isEditServiceOpen} onOpenChange={(open) => { if (!open) { setIsEditServiceOpen(false); setEditServiceErrors({}); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
@@ -1529,10 +1556,15 @@ function ProfilePageContent() {
                 <Label className="text-sm font-medium text-slate-700">{t("Service Title")}</Label>
                 <Input
                   value={editingService.title}
-                  onChange={(e) => setEditingService({ ...editingService, title: e.target.value })}
+                  onChange={(e) => { setEditingService({ ...editingService, title: e.target.value }); if (editServiceErrors.title) setEditServiceErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                   placeholder={t("Enter service title")}
-                  className="mt-1.5"
+                  className={`mt-1.5 ${editServiceErrors.title ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
+                {editServiceErrors.title && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{editServiceErrors.title}</p>
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -1632,7 +1664,7 @@ function ProfilePageContent() {
 
           {/* Fixed Footer */}
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsEditServiceOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsEditServiceOpen(false); setEditServiceErrors({}); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleEditService}>{t("Save")}</Button>
@@ -1820,7 +1852,7 @@ function ProfilePageContent() {
       </Dialog>
 
       {/* Edit Regulation Dialog */}
-      <Dialog open={isEditRegulationOpen} onOpenChange={setIsEditRegulationOpen}>
+      <Dialog open={isEditRegulationOpen} onOpenChange={(open) => { if (!open) { setIsEditRegulationOpen(false); setEditRegulationErrors({}); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
@@ -1839,17 +1871,27 @@ function ProfilePageContent() {
                     <Label className="text-sm font-medium text-slate-700">{t("Regulation Name")} <span className="text-error">*</span></Label>
                     <Input
                       value={editingRegulation.name}
-                      onChange={(e) => setEditingRegulation({ ...editingRegulation, name: e.target.value })}
-                      className="mt-1.5"
+                      onChange={(e) => { setEditingRegulation({ ...editingRegulation, name: e.target.value }); if (editRegulationErrors.name) setEditRegulationErrors((prev) => { const { name, ...rest } = prev; return rest; }); }}
+                      className={`mt-1.5 ${editRegulationErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
+                    {editRegulationErrors.name && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{editRegulationErrors.name}</p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Version")} <span className="text-error">*</span></Label>
                     <Input
                       value={editingRegulation.version}
-                      onChange={(e) => setEditingRegulation({ ...editingRegulation, version: e.target.value })}
-                      className="mt-1.5"
+                      onChange={(e) => { setEditingRegulation({ ...editingRegulation, version: e.target.value }); if (editRegulationErrors.version) setEditRegulationErrors((prev) => { const { version, ...rest } = prev; return rest; }); }}
+                      className={`mt-1.5 ${editRegulationErrors.version ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
+                    {editRegulationErrors.version && (
+                      <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                        <p className="text-sm text-red-600">{editRegulationErrors.version}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2000,7 +2042,7 @@ function ProfilePageContent() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsEditRegulationOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsEditRegulationOpen(false); setEditRegulationErrors({}); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleEditRegulation}>{t("Save")}</Button>

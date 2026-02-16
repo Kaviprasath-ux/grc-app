@@ -30,6 +30,7 @@ import { Unauthorized } from "@/components/ui/unauthorized";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 
 interface Category {
   id: string;
@@ -353,6 +354,8 @@ export default function NewRiskPage() {
         // Validate required fields
         if (!formData.name.trim()) {
           errors.name = t("Please enter the Risk Name") || "Please enter the Risk Name";
+        } else if (!isValidName(formData.name.trim())) {
+          errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
         }
         if (!formData.departmentId) {
           errors.departmentId = t("Please select the Department") || "Please select the Department";
@@ -460,6 +463,9 @@ export default function NewRiskPage() {
   const handleCreateCause = async () => {
     if (!newCauseName.trim()) {
       toast.error(t("causeNameRequired") || "Cause name is required");
+      return;
+    } else if (!isValidName(newCauseName.trim())) {
+      toast.error(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
 

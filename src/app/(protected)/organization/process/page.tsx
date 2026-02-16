@@ -37,6 +37,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { useRiskSemanticMatch } from "@/hooks/useRiskSemanticMatch";
 import { DatePicker } from "@/components/ui/date-picker";
+import { isValidName } from "@/lib/validations";
 
 interface Department {
   id: string;
@@ -395,9 +396,6 @@ export default function ProcessPage() {
 
   // Process Form errors
   const [processFormErrors, setProcessFormErrors] = useState<Record<string, string>>({});
-
-  // Validation helper - allows letters, numbers, and spaces
-  const isAlphanumericWithSpaces = (str: string) => /^[a-zA-Z0-9\s]+$/.test(str);
 
   const resetProcessForm = () => {
     setProcessForm({
@@ -885,8 +883,8 @@ export default function ProcessPage() {
     const errors: Record<string, string> = {};
     if (!processForm.name.trim()) {
       errors.name = t("Please enter the Process Name");
-    } else if (!isAlphanumericWithSpaces(processForm.name.trim())) {
-      errors.name = t("Process Name should only contain letters, numbers and spaces");
+    } else if (!isValidName(processForm.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) {
       setProcessFormErrors(errors);
@@ -961,6 +959,19 @@ export default function ProcessPage() {
   // Handle Edit Process
   const handleEditProcess = async () => {
     if (!editingProcess) return;
+
+    // Validate form
+    const errors: Record<string, string> = {};
+    if (!editingProcess.name.trim()) {
+      errors.name = t("Please enter the Process Name");
+    } else if (!isValidName(editingProcess.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (Object.keys(errors).length > 0) {
+      setProcessFormErrors(errors);
+      return;
+    }
+    setProcessFormErrors({});
 
     setSaving(true);
     try {

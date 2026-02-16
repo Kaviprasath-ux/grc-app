@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { isValidName } from "@/lib/validations";
 
 interface AuditCategory {
   id: string;
@@ -102,6 +103,10 @@ export default function AuditCategoriesPage() {
   const handleSave = async () => {
     if (!formData.name.trim()) {
       setFormError(t("Category name is required"));
+      return;
+    }
+    if (!isValidName(formData.name)) {
+      setFormError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
 

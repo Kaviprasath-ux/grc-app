@@ -48,6 +48,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { isValidName } from "@/lib/validations";
 
 interface Department {
   id: string;
@@ -689,6 +690,8 @@ export default function RiskRegisterPage() {
     // Validation: Risk Name
     if (!formData.riskName.trim()) {
       errors.riskName = t("Risk name is required");
+    } else if (!isValidName(formData.riskName.trim())) {
+      errors.riskName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
 
     // Validation: Risk Description
@@ -786,6 +789,8 @@ export default function RiskRegisterPage() {
     // Validation: Risk Name
     if (!formData.riskName.trim()) {
       errors.riskName = t("Risk name is required");
+    } else if (!isValidName(formData.riskName.trim())) {
+      errors.riskName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
 
     // Validation: Risk Description

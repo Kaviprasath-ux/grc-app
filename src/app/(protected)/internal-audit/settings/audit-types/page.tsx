@@ -35,6 +35,7 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
+import { isValidName } from "@/lib/validations";
 
 interface AuditType {
   id: string;
@@ -102,6 +103,10 @@ export default function AuditTypesPage() {
   const handleSave = async () => {
     if (!formData.name.trim()) {
       setFormError(t("Type Name is required"));
+      return;
+    }
+    if (!isValidName(formData.name)) {
+      setFormError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
 

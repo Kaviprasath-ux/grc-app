@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { isValidName, isValidNumber } from "@/lib/validations";
 
 interface RiskFactor {
   id: string;
@@ -222,12 +223,18 @@ export default function RiskAssessmentConfigPage() {
     if (!formData.label?.trim()) {
       newErrors.label = t("Label is required");
       hasError = true;
+    } else if (!isValidName(formData.label)) {
+      newErrors.label = t("Only letters, numbers, spaces, and hyphens are allowed");
+      hasError = true;
     }
 
     // Validate value fields for probability and impact
     if (dialogType === "probability" || dialogType === "impact") {
       if (formData.value === undefined || formData.value === null || formData.value === "") {
         newErrors.value = t("Value is required");
+        hasError = true;
+      } else if (!isValidNumber(formData.value)) {
+        newErrors.value = t("Please enter a valid number");
         hasError = true;
       }
     }
@@ -236,6 +243,14 @@ export default function RiskAssessmentConfigPage() {
     if (dialogType === "scoringRange") {
       const lowValue = Number(formData.lowValue) || 0;
       const highValue = Number(formData.highValue) || 0;
+      if (!isValidNumber(formData.lowValue)) {
+        newErrors.lowValue = t("Please enter a valid number");
+        hasError = true;
+      }
+      if (!isValidNumber(formData.highValue)) {
+        newErrors.highValue = t("Please enter a valid number");
+        hasError = true;
+      }
       if (highValue <= lowValue) {
         setValidationError(t("Highest value must be greater than lowest value"));
         hasError = true;
@@ -788,11 +803,13 @@ export default function RiskAssessmentConfigPage() {
                       value={formData.lowValue || 0}
                       onChange={(e) => {
                         setFormData({ ...formData, lowValue: e.target.value });
+                        setFormErrors({ ...formErrors, lowValue: "" });
                         setValidationError(null);
                       }}
                       placeholder={t("Enter lowest value")}
-                      className="mt-1.5 w-full bg-white"
+                      className={`mt-1.5 w-full bg-white ${formErrors.lowValue ? "border-red-500" : ""}`}
                     />
+                    {formErrors.lowValue && <p className="text-sm text-red-500 mt-1">{formErrors.lowValue}</p>}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Highest Value")} <span className="text-red-500">*</span></Label>
@@ -801,11 +818,13 @@ export default function RiskAssessmentConfigPage() {
                       value={formData.highValue || 0}
                       onChange={(e) => {
                         setFormData({ ...formData, highValue: e.target.value });
+                        setFormErrors({ ...formErrors, highValue: "" });
                         setValidationError(null);
                       }}
                       placeholder={t("Enter highest value")}
-                      className="mt-1.5 w-full bg-white"
+                      className={`mt-1.5 w-full bg-white ${formErrors.highValue ? "border-red-500" : ""}`}
                     />
+                    {formErrors.highValue && <p className="text-sm text-red-500 mt-1">{formErrors.highValue}</p>}
                   </div>
                 </div>
                 {validationError && (

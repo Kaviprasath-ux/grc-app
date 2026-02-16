@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { isValidEmailFormat } from "@/lib/validations/email";
 
 /**
  * GET /api/grc/customer-accounts/[id]
@@ -75,6 +76,10 @@ export async function PUT(
     // Validate required fields
     if (!customerName || !email || !userName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (!isValidEmailFormat(email)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
     // Check if user exists

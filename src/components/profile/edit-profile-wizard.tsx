@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName, isNumericOnly } from "@/lib/validations";
 
 interface Branch {
   id?: string;
@@ -88,8 +90,10 @@ export function EditProfileWizard({
   organization,
   onSave,
 }: EditProfileWizardProps) {
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<OrganizationData>({
     id: "",
     name: "",
@@ -165,6 +169,22 @@ export function EditProfileWizard({
   };
 
   const handleNext = () => {
+    if (currentStep === 1) {
+      const errors: Record<string, string> = {};
+      if (!formData.name.trim()) {
+        errors.name = t("Organization Name is required");
+      } else if (!isValidName(formData.name.trim())) {
+        errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      }
+      if (formData.phone.trim() && !isNumericOnly(formData.phone.trim().replace(/[\s\-\+\(\)]/g, ""))) {
+        errors.phone = t("Only numbers are allowed");
+      }
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        return;
+      }
+      setFormErrors({});
+    }
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
@@ -177,6 +197,21 @@ export function EditProfileWizard({
   };
 
   const handleSave = async () => {
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      errors.name = t("Organization Name is required");
+    } else if (!isValidName(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (formData.phone.trim() && !isNumericOnly(formData.phone.trim().replace(/[\s\-\+\(\)]/g, ""))) {
+      errors.phone = t("Only numbers are allowed");
+    }
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setCurrentStep(1);
+      return;
+    }
+    setFormErrors({});
     setSaving(true);
     try {
       await onSave(formData);
@@ -359,13 +394,17 @@ export function EditProfileWizard({
 
               {/* Organization Name */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Organization Name</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Organization Name")}</Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="mt-1.5"
-                  placeholder="Enter organization name"
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: "" }));
+                  }}
+                  className={`mt-1.5 ${formErrors.name ? "border-red-500" : ""}`}
+                  placeholder={t("Enter organization name")}
                 />
+                {formErrors.name && <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>}
               </div>
 
               {/* Email & Phone */}
@@ -381,13 +420,17 @@ export function EditProfileWizard({
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Phone</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Phone")}</Label>
                   <Input
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value });
+                      if (formErrors.phone) setFormErrors((prev) => ({ ...prev, phone: "" }));
+                    }}
+                    className={`mt-1.5 ${formErrors.phone ? "border-red-500" : ""}`}
                     placeholder="+1 234 567 8900"
                   />
+                  {formErrors.phone && <p className="text-sm text-red-500 mt-1">{formErrors.phone}</p>}
                 </div>
               </div>
 

@@ -57,6 +57,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
+import { isValidName } from "@/lib/validations";
 
 interface ControlDomain {
   id: string;
@@ -272,6 +273,17 @@ export default function ControlsMasterDataPage() {
 
   const handleEdit = async () => {
     if (!selectedControl) return;
+    const editErrors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      editErrors.name = t("Please enter name");
+    } else if (!isValidName(formData.name.trim())) {
+      editErrors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (Object.keys(editErrors).length > 0) {
+      setControlErrors(editErrors);
+      return;
+    }
+    setControlErrors({});
     try {
       const response = await fetch(`/api/controls/${selectedControl.id}`, {
         method: "PUT",
@@ -984,7 +996,11 @@ export default function ControlsMasterDataPage() {
                     if (wizardStep === 1) {
                       const errors: Record<string, string> = {};
                       if (!formData.domainId) errors.domainId = t("Please select the Control Domain");
-                      if (!formData.name.trim()) errors.name = t("Please enter name");
+                      if (!formData.name.trim()) {
+                        errors.name = t("Please enter name");
+                      } else if (!isValidName(formData.name.trim())) {
+                        errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                      }
                       if (!formData.controlQuestion?.trim()) errors.controlQuestion = t("Please enter the question");
                       if (!formData.functionalGrouping) errors.functionalGrouping = t("Please select the Functional Grouping");
                       if (Object.keys(errors).length > 0) { setControlErrors(errors); return; }
@@ -1135,7 +1151,7 @@ export default function ControlsMasterDataPage() {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) { setControlErrors({}); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
@@ -1194,11 +1210,17 @@ export default function ControlsMasterDataPage() {
               </Label>
               <Input
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="mt-1.5 w-full bg-white"
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (controlErrors.name) setControlErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                }}
+                className={`mt-1.5 w-full bg-white ${controlErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {controlErrors.name && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{controlErrors.name}</p>
+                </div>
+              )}
             </div>
 
             <div>

@@ -45,6 +45,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { isAlphaWithSpaces } from "@/lib/validations";
+import { validateEmail } from "@/lib/validations/email";
 
 interface User {
   id: string;
@@ -124,6 +126,8 @@ export default function UserManagementPage() {
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState({
     firstName: "",
+    lastName: "",
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -211,6 +215,8 @@ export default function UserManagementPage() {
     });
     setFormErrors({
       firstName: "",
+      lastName: "",
+      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -237,6 +243,8 @@ export default function UserManagementPage() {
     });
     setFormErrors({
       firstName: "",
+      lastName: "",
+      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -293,6 +301,8 @@ export default function UserManagementPage() {
     // Clear all errors first
     setFormErrors({
       firstName: "",
+      lastName: "",
+      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -303,6 +313,8 @@ export default function UserManagementPage() {
     let hasError = false;
     const newErrors = {
       firstName: "",
+      lastName: "",
+      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -312,9 +324,21 @@ export default function UserManagementPage() {
     if (!formData.firstName.trim()) {
       newErrors.firstName = t("First Name is required");
       hasError = true;
+    } else if (!isAlphaWithSpaces(formData.firstName)) {
+      newErrors.firstName = t("Only letters and spaces are allowed");
+      hasError = true;
     }
-    if (!formData.email.trim()) {
-      newErrors.email = t("Email is required");
+    if (formData.lastName.trim() && !isAlphaWithSpaces(formData.lastName)) {
+      newErrors.lastName = t("Only letters and spaces are allowed");
+      hasError = true;
+    }
+    if (formData.fullName.trim() && !isAlphaWithSpaces(formData.fullName)) {
+      newErrors.fullName = t("Only letters and spaces are allowed");
+      hasError = true;
+    }
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      newErrors.email = t(emailError);
       hasError = true;
     }
     if (!editItem && !formData.password.trim()) {
@@ -622,10 +646,14 @@ export default function UserManagementPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Last Name")}</Label>
                   <Input
                     value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, lastName: e.target.value });
+                      setFormErrors({ ...formErrors, lastName: "" });
+                    }}
                     placeholder={t("Enter last name")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${formErrors.lastName ? "border-red-500" : ""}`}
                   />
+                  {formErrors.lastName && <p className="text-sm text-red-500 mt-1">{formErrors.lastName}</p>}
                 </div>
               </div>
 
@@ -635,10 +663,14 @@ export default function UserManagementPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Full Name")}</Label>
                   <Input
                     value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, fullName: e.target.value });
+                      setFormErrors({ ...formErrors, fullName: "" });
+                    }}
                     placeholder={t("Enter full name")}
-                    className="mt-1.5 w-full bg-white"
+                    className={`mt-1.5 w-full bg-white ${formErrors.fullName ? "border-red-500" : ""}`}
                   />
+                  {formErrors.fullName && <p className="text-sm text-red-500 mt-1">{formErrors.fullName}</p>}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Email")} <span className="text-red-500">*</span></Label>

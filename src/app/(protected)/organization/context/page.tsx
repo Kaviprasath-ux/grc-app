@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRoles } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 
 interface Department {
   id: string;
@@ -350,6 +351,7 @@ export default function ContextPage() {
   // Handlers for adding new options
   const handleAddDomain = () => {
     if (!newDomain.trim()) { setDomainError(t("Please enter domain name")); return; }
+    if (!isValidName(newDomain.trim())) { setDomainError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setDomainError("");
     if (!domains.includes(newDomain.trim())) {
       setDomains([...domains, newDomain.trim()]);
@@ -361,6 +363,7 @@ export default function ContextPage() {
 
   const handleAddCategory = () => {
     if (!newCategory.trim()) { setCategoryError(t("Please enter category name")); return; }
+    if (!isValidName(newCategory.trim())) { setCategoryError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setCategoryError("");
     if (!categories.includes(newCategory.trim())) {
       setCategories([...categories, newCategory.trim()]);
@@ -372,6 +375,7 @@ export default function ContextPage() {
 
   const handleAddType = () => {
     if (!newType.trim()) { setTypeError(t("Please enter issue type name")); return; }
+    if (!isValidName(newType.trim())) { setTypeError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setTypeError("");
     if (!issueTypes.includes(newType.trim())) {
       setIssueTypes([...issueTypes, newType.trim()]);
@@ -667,7 +671,11 @@ export default function ContextPage() {
   // Stakeholder CRUD
   const handleAddStakeholder = async () => {
     const errors: Record<string, string> = {};
-    if (!newStakeholder.name.trim()) errors.name = t("Please Enter Stakeholder Name");
+    if (!newStakeholder.name.trim()) {
+      errors.name = t("Please Enter Stakeholder Name");
+    } else if (!isValidName(newStakeholder.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
     if (!newStakeholder.type) errors.type = t("Please Select Stakeholder Type");
     if (!newStakeholder.status) errors.status = t("Please Select Status");
     if (Object.keys(errors).length > 0) {
@@ -724,7 +732,16 @@ export default function ContextPage() {
   };
 
   const handleUpdateStakeholder = async () => {
-    if (!editingStakeholder || !editingStakeholder.name.trim()) return;
+    if (!editingStakeholder) return;
+    if (!editingStakeholder.name.trim()) {
+      setStakeholderErrors({ name: t("Please Enter Stakeholder Name") });
+      return;
+    }
+    if (!isValidName(editingStakeholder.name.trim())) {
+      setStakeholderErrors({ name: t("Only letters, numbers, spaces, and hyphens are allowed") });
+      return;
+    }
+    setStakeholderErrors({});
     try {
       const res = await fetch(`/api/stakeholders/${editingStakeholder.id}`, {
         method: "PUT",
@@ -762,6 +779,14 @@ export default function ContextPage() {
       toast({
         title: t("Error"),
         description: t("Title is required"),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!isValidName(newIssue.title.trim())) {
+      toast({
+        title: t("Error"),
+        description: t("Only letters, numbers, spaces, and hyphens are allowed"),
         variant: "destructive",
       });
       return;
@@ -898,7 +923,23 @@ export default function ContextPage() {
   };
 
   const handleUpdateIssue = async () => {
-    if (!editingIssue || !editIssueForm.title.trim()) return;
+    if (!editingIssue) return;
+    if (!editIssueForm.title.trim()) {
+      toast({
+        title: t("Error"),
+        description: t("Title is required"),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!isValidName(editIssueForm.title.trim())) {
+      toast({
+        title: t("Error"),
+        description: t("Only letters, numbers, spaces, and hyphens are allowed"),
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Debug logging
     console.log("Updating issue with data:", {

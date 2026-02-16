@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName, isValidNumber } from "@/lib/validations";
 
 const RISKS_REGISTER_PATH = "/risks/register";
 
@@ -421,6 +422,10 @@ export default function AssetClassificationPage() {
   // Handle adding new sensitivity
   const handleAddSensitivity = async () => {
     if (!newSensitivityName.trim()) return;
+    if (!isValidName(newSensitivityName)) {
+      toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
+      return;
+    }
     try {
       const res = await fetch("/api/asset-sensitivities", {
         method: "POST",
@@ -442,6 +447,14 @@ export default function AssetClassificationPage() {
   // Handle adding new CIA rating
   const handleAddCIARating = async () => {
     if (!newCIARatingLabel.trim()) return;
+    if (!isValidName(newCIARatingLabel)) {
+      toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
+      return;
+    }
+    if (!isValidNumber(newCIARatingValue)) {
+      toast({ title: t("Error"), description: t("Please enter a valid number"), variant: "destructive" });
+      return;
+    }
     try {
       const res = await fetch("/api/cia-ratings", {
         method: "POST",

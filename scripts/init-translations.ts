@@ -251,7 +251,6 @@ const translations: [string, string, string][] = [
   ['Edit Department', 'تعديل القسم', 'Rediģēt nodaļu'],
   ['Delete User', 'حذف المستخدم', 'Dzēst lietotāju'],
   ['Are you sure you want to delete', 'هل أنت متأكد أنك تريد حذف', 'Vai tiešām vēlaties dzēst'],
-  ['This action cannot be undone.', 'لا يمكن التراجع عن هذا الإجراء.', 'Šo darbību nevar atsaukt.'],
   ['Delete Department', 'حذف القسم', 'Dzēst nodaļu'],
   ['Are you sure you want to delete this department?', 'هل أنت متأكد أنك تريد حذف هذا القسم؟', 'Vai tiešām vēlaties dzēst šo nodaļu?'],
   ['Edit Service', 'تعديل الخدمة', 'Rediģēt pakalpojumu'],
@@ -685,6 +684,8 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['This field is required', 'هذا الحقل مطلوب', 'Šis lauks ir obligāts'],
   ['Invalid email format', 'تنسيق البريد الإلكتروني غير صالح', 'Nederīgs e-pasta formāts'],
+  ['Email must not contain spaces', 'يجب ألا يحتوي البريد الإلكتروني على مسافات', 'E-pastam nedrīkst saturēt atstarpes'],
+  ['Email already exists', 'البريد الإلكتروني موجود بالفعل', 'E-pasts jau pastāv'],
   ['Password must be at least 8 characters', 'يجب أن تكون كلمة المرور 8 أحرف على الأقل', 'Parolei jābūt vismaz 8 rakstzīmēm'],
   ['Passwords do not match', 'كلمات المرور غير متطابقة', 'Paroles nesakrīt'],
   ['Please enter a valid value', 'يرجى إدخال قيمة صالحة', 'Lūdzu, ievadiet derīgu vērtību'],
@@ -981,6 +982,29 @@ const translations: [string, string, string][] = [
   ['Kindly contact VerifAI support to upgrade your plan.', 'يرجى التواصل مع دعم VerifAI لترقية خطتك.', 'Lūdzu, sazinieties ar VerifAI atbalstu, lai uzlabotu savu plānu.'],
   ['Maximum frameworks limit reached. Your plan allows', 'تم الوصول إلى الحد الأقصى للأطر. خطتك تسمح بـ', 'Sasniegts maksimālais ietvaru limits. Jūsu plāns atļauj'],
   ['frameworks', 'أطر', 'ietvarus'],
+
+  // Shared input validation messages
+  ['Only letters, numbers, spaces, and hyphens are allowed', 'يُسمح فقط بالأحرف والأرقام والمسافات والشرطات', 'Atļauti tikai burti, cipari, atstarpes un defises'],
+  ['Only numbers are allowed', 'يُسمح فقط بالأرقام', 'Atļauti tikai cipari'],
+  ['Only letters and spaces are allowed', 'يُسمح فقط بالأحرف والمسافات', 'Atļauti tikai burti un atstarpes'],
+  ['Only letters, numbers, and underscores are allowed', 'يُسمح فقط بالأحرف والأرقام والشرطات السفلية', 'Atļauti tikai burti, cipari un apakšsvītras'],
+  ['Please enter a valid number', 'يرجى إدخال رقم صحيح', 'Lūdzu, ievadiet derīgu skaitli'],
+  ['Organization Name is required', 'اسم المنظمة مطلوب', 'Organizācijas nosaukums ir obligāts'],
+  ['Enter organization name', 'أدخل اسم المنظمة', 'Ievadiet organizācijas nosaukumu'],
+
+  // ==========================================
+  // SSO / SINGLE SIGN-ON
+  // ==========================================
+  ['Sign in with Google', 'تسجيل الدخول عبر Google', 'Pierakstīties ar Google'],
+  ['Sign in with Microsoft', 'تسجيل الدخول عبر Microsoft', 'Pierakstīties ar Microsoft'],
+  ['Or continue with', 'أو تابع باستخدام', 'Vai turpiniet ar'],
+  ['Redirecting...', 'جاري التحويل...', 'Pāradresē...'],
+  ['Your account is not registered. Please contact your administrator.', 'حسابك غير مسجل. يرجى الاتصال بالمسؤول.', 'Jūsu konts nav reģistrēts. Lūdzu, sazinieties ar administratoru.'],
+  ['Your email address is not verified with the provider.', 'لم يتم التحقق من عنوان بريدك الإلكتروني لدى المزود.', 'Jūsu e-pasta adrese nav verificēta pie pakalpojuma sniedzēja.'],
+  ['No email address was provided by the sign-in provider.', 'لم يتم توفير عنوان بريد إلكتروني من قبل مزود تسجيل الدخول.', 'Pierakstīšanās pakalpojuma sniedzējs nesniedza e-pasta adresi.'],
+  ['An error occurred during sign-in. Please try again.', 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.', 'Pierakstīšanās laikā radās kļūda. Lūdzu, mēģiniet vēlreiz.'],
+  ['This email is already associated with another sign-in method.', 'هذا البريد الإلكتروني مرتبط بالفعل بطريقة تسجيل دخول أخرى.', 'Šis e-pasts jau ir saistīts ar citu pierakstīšanās metodi.'],
+  ['SSO provider is not configured. Please contact your administrator.', 'مزود SSO غير مُهيأ. يرجى الاتصال بالمسؤول.', 'SSO pakalpojuma sniedzējs nav konfigurēts. Lūdzu, sazinieties ar administratoru.'],
 ];
 
 function createExcelFile(): void {

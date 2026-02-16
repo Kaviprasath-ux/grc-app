@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/tooltip";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
+import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
+import { validateEmail } from "@/lib/validations/email";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -164,6 +166,7 @@ export default function UsersPage() {
 
   // Validation error states
   const [userFormErrors, setUserFormErrors] = useState<Record<string, string>>({});
+  const [editUserFormErrors, setEditUserFormErrors] = useState<Record<string, string>>({});
   const [changePasswordErrors, setChangePasswordErrors] = useState<Record<string, string>>({});
 
   // Form state
@@ -251,34 +254,31 @@ export default function UsersPage() {
     setIsAddUserOpen(true);
   };
 
-  // Validation helpers
-  const isAlphaWithSpaces = (str: string) => /^[a-zA-Z\s]+$/.test(str);
-  const isAlphanumeric = (str: string) => /^[a-zA-Z0-9_]+$/.test(str);
-
   // User CRUD
   const handleAddUser = async () => {
     const errors: Record<string, string> = {};
     if (!userForm.firstName.trim()) {
       errors.firstName = t("Please Enter the First Name");
     } else if (!isAlphaWithSpaces(userForm.firstName.trim())) {
-      errors.firstName = t("First Name should only contain letters");
+      errors.firstName = t("Only letters and spaces are allowed");
     }
     if (!userForm.lastName.trim()) {
       errors.lastName = t("Please Enter the Last Name");
     } else if (!isAlphaWithSpaces(userForm.lastName.trim())) {
-      errors.lastName = t("Last Name should only contain letters");
+      errors.lastName = t("Only letters and spaces are allowed");
     }
     if (!userForm.fullName.trim()) {
       errors.fullName = t("Please Enter the Name");
     } else if (!isAlphaWithSpaces(userForm.fullName.trim())) {
-      errors.fullName = t("Full Name should only contain letters");
+      errors.fullName = t("Only letters and spaces are allowed");
     }
     if (!userForm.userName.trim()) {
       errors.userName = t("Please Enter the UserName");
     } else if (!isAlphanumeric(userForm.userName.trim())) {
-      errors.userName = t("Username should only contain letters, numbers and underscores");
+      errors.userName = t("Only letters, numbers, and underscores are allowed");
     }
-    if (!userForm.email.trim()) errors.email = t("Please Enter the Email");
+    const emailError = validateEmail(userForm.email);
+    if (emailError) errors.email = t(emailError);
     if (!userForm.function) errors.function = t("Please Select the Function");
     if (!userForm.role) errors.role = t("Please Select the Role");
     if (!userForm.departmentId) errors.departmentId = t("Please Select the Department");
@@ -336,6 +336,36 @@ export default function UsersPage() {
 
   const handleEditUser = async () => {
     if (!editingUser) return;
+    const errors: Record<string, string> = {};
+    if (!editingUser.firstName.trim()) {
+      errors.firstName = t("Please Enter the First Name");
+    } else if (!isAlphaWithSpaces(editingUser.firstName.trim())) {
+      errors.firstName = t("Only letters and spaces are allowed");
+    }
+    if (!editingUser.lastName.trim()) {
+      errors.lastName = t("Please Enter the Last Name");
+    } else if (!isAlphaWithSpaces(editingUser.lastName.trim())) {
+      errors.lastName = t("Only letters and spaces are allowed");
+    }
+    if (!editingUser.fullName.trim()) {
+      errors.fullName = t("Please Enter the Name");
+    } else if (!isAlphaWithSpaces(editingUser.fullName.trim())) {
+      errors.fullName = t("Only letters and spaces are allowed");
+    }
+    if (!editingUser.userName.trim()) {
+      errors.userName = t("Please Enter the UserName");
+    } else if (!isAlphanumeric(editingUser.userName.trim())) {
+      errors.userName = t("Only letters, numbers, and underscores are allowed");
+    }
+    const editEmailError = validateEmail(editingUser.email);
+    if (editEmailError) {
+      errors.email = t(editEmailError);
+    }
+    if (Object.keys(errors).length > 0) {
+      setEditUserFormErrors(errors);
+      return;
+    }
+    setEditUserFormErrors({});
     try {
       const res = await fetch(`/api/users/${editingUser.id}`, {
         method: "PUT",
@@ -674,6 +704,7 @@ export default function UsersPage() {
             className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingUser(row.original);
+              setEditUserFormErrors({});
               if (row.original.function) {
                 fetchReportingManagers(row.original.function);
               }
@@ -917,6 +948,7 @@ export default function UsersPage() {
                                       className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                                       onClick={() => {
                                         setEditingUser(user);
+                                        setEditUserFormErrors({});
                                         if (user.function) {
                                           fetchReportingManagers(user.function);
                                         }
@@ -1519,17 +1551,21 @@ export default function UsersPage() {
               </div>
 
               {/* Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
-                <Label htmlFor="editEmail" className="sm:text-end">{t("Email")}</Label>
-                <Input
-                  id="editEmail"
-                  type="email"
-                  value={editingUser.email}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, email: e.target.value })
-                  }
-                  className="bg-white"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-start gap-1 sm:gap-4">
+                <Label htmlFor="editEmail" className="sm:text-end mt-2">{t("Email")}</Label>
+                <div>
+                  <Input
+                    id="editEmail"
+                    type="email"
+                    value={editingUser.email}
+                    onChange={(e) => {
+                      setEditingUser({ ...editingUser, email: e.target.value });
+                      setEditUserFormErrors((prev) => ({ ...prev, email: "" }));
+                    }}
+                    className={`bg-white ${editUserFormErrors.email ? "border-red-500" : ""}`}
+                  />
+                  {editUserFormErrors.email && <p className="text-sm text-red-500 mt-1">{editUserFormErrors.email}</p>}
+                </div>
               </div>
 
               {/* Is Local User */}
@@ -1983,6 +2019,7 @@ export default function UsersPage() {
             <Button onClick={() => {
               setIsViewUserOpen(false);
               setEditingUser(viewingUser);
+              setEditUserFormErrors({});
               if (viewingUser?.function) {
                 fetchReportingManagers(viewingUser.function);
               }

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
+import { isValidName } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,8 +89,16 @@ export default function DomainMasterDataPage() {
 
   const handleCreate = async () => {
     const errors: Record<string, string> = {};
-    if (!formData.code.trim()) errors.code = t("Please enter Domain Code");
-    if (!formData.name.trim()) errors.name = t("Please enter Domain name");
+    if (!formData.code.trim()) {
+      errors.code = t("Please enter Domain Code");
+    } else if (!isValidName(formData.code.trim())) {
+      errors.code = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (!formData.name.trim()) {
+      errors.name = t("Please enter Domain name");
+    } else if (!isValidName(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
     if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
     setDomainErrors({});
 
@@ -113,8 +122,16 @@ export default function DomainMasterDataPage() {
   const handleEdit = async () => {
     if (!selectedDomain) return;
     const errors: Record<string, string> = {};
-    if (!formData.code.trim()) errors.code = t("Please enter Domain Code");
-    if (!formData.name.trim()) errors.name = t("Please enter Domain name");
+    if (!formData.code.trim()) {
+      errors.code = t("Please enter Domain Code");
+    } else if (!isValidName(formData.code.trim())) {
+      errors.code = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (!formData.name.trim()) {
+      errors.name = t("Please enter Domain name");
+    } else if (!isValidName(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
     if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
     setDomainErrors({});
 

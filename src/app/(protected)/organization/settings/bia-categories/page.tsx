@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 
 interface BIACategory {
   id: string;
@@ -35,6 +37,7 @@ export default function BIACategoriesPage() {
   const [categories, setCategories] = useState<BIACategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Dialog states
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -70,7 +73,17 @@ export default function BIACategoriesPage() {
   };
 
   const handleAdd = async () => {
-    if (!formData.name.trim()) return;
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      errors.name = t("Please enter the name");
+    } else if (!isValidName(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     try {
       const res = await fetch("/api/bia/categories", {
         method: "POST",
@@ -91,7 +104,18 @@ export default function BIACategoriesPage() {
   };
 
   const handleEdit = async () => {
-    if (!editingItem || !formData.name.trim()) return;
+    if (!editingItem) return;
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      errors.name = t("Please enter the name");
+    } else if (!isValidName(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     try {
       const res = await fetch(`/api/bia/categories/${editingItem.id}`, {
         method: "PUT",
@@ -135,6 +159,7 @@ export default function BIACategoriesPage() {
       sortOrder: 0,
       isActive: true,
     });
+    setFormErrors({});
   };
 
   const openEditDialog = (item: BIACategory) => {
@@ -145,6 +170,7 @@ export default function BIACategoriesPage() {
       sortOrder: item.sortOrder,
       isActive: item.isActive,
     });
+    setFormErrors({});
     setIsEditOpen(true);
   };
 
@@ -289,9 +315,16 @@ export default function BIACategoriesPage() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (formErrors.name) setFormErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                }}
                 placeholder="e.g., Financial, Reputational"
+                className={formErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
               />
+              {formErrors.name && (
+                <p className="text-sm text-red-600">{formErrors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
@@ -341,8 +374,15 @@ export default function BIACategoriesPage() {
               <Input
                 id="editName"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (formErrors.name) setFormErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                }}
+                className={formErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
               />
+              {formErrors.name && (
+                <p className="text-sm text-red-600">{formErrors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="editDescription">Description</Label>

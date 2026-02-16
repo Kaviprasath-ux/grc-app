@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { isValidEmailFormat } from "@/lib/validations/email";
 
 // Audit-related roles that can be assigned
 const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditor", "Auditee"];
@@ -122,6 +123,19 @@ export const PUT = withAuth(
 
       if (!existingUser) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      // Validate email format if provided
+      if (email && !isValidEmailFormat(email)) {
+        return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+      }
+
+      // Check email uniqueness if email is being changed
+      if (email && email !== existingUser.email) {
+        const emailExists = await prisma.user.findUnique({ where: { email } });
+        if (emailExists) {
+          return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+        }
       }
 
       // Parse roles (comma-separated string)

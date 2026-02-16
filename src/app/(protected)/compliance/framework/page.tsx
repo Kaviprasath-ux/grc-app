@@ -49,6 +49,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 
 interface Framework {
@@ -142,6 +143,7 @@ export default function FrameworkOverviewPage() {
     country: "",
     industry: "",
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchFrameworks();
@@ -203,6 +205,7 @@ export default function FrameworkOverviewPage() {
       country: "",
       industry: "",
     });
+    setFormErrors({});
     setUploadedFile(null);
     setIsEditMode(false);
     setEditingFramework(null);
@@ -249,6 +252,20 @@ export default function FrameworkOverviewPage() {
   };
 
   const handleCreateOrUpdate = async () => {
+    // Validate name field
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      newErrors.name = t("Framework name is required");
+    } else if (!isValidName(formData.name.trim())) {
+      newErrors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      return;
+    }
+    setFormErrors({});
+
     try {
       if (isEditMode && editingFramework) {
         // Update existing framework
@@ -842,10 +859,16 @@ export default function FrameworkOverviewPage() {
                 </Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: "" }));
+                  }}
                   placeholder={t("Enter framework name")}
-                  className="mt-1.5 bg-white"
+                  className={`mt-1.5 bg-white ${formErrors.name ? "border-red-500" : ""}`}
                 />
+                {formErrors.name && (
+                  <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>
+                )}
               </div>
 
               <div>

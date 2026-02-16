@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -188,6 +189,7 @@ export default function GovernancePage() {
   });
 
   const [policyErrors, setPolicyErrors] = useState<Record<string, string>>({});
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
   // Step 2 - Control linking
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
@@ -683,11 +685,17 @@ export default function GovernancePage() {
       departmentId: policy.department?.id || "",
       assigneeId: policy.assignee?.id || "",
     });
+    setEditErrors({});
     setIsEditDialogOpen(true);
   };
 
   const handleUpdatePolicy = async () => {
     if (!editingPolicy) return;
+    const errors: Record<string, string> = {};
+    if (!editData.name) errors.name = t("Please enter the policy name");
+    else if (!isValidName(editData.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    if (Object.keys(errors).length > 0) { setEditErrors(errors); return; }
+    setEditErrors({});
     try {
       const response = await fetch(`/api/policies/${editingPolicy.id}`, {
         method: "PATCH",
@@ -1731,6 +1739,7 @@ export default function GovernancePage() {
                 if (createStep === 1) {
                   const errors: Record<string, string> = {};
                   if (!newPolicy.name) errors.name = t("Please enter the policy name");
+                  else if (!isValidName(newPolicy.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
                   if (!newPolicy.departmentId) errors.departmentId = t("Please select the Department");
                   if (!newPolicy.documentType) errors.documentType = t("Please select the document type");
                   if (!newPolicy.recurrence) errors.recurrence = t("Please select the recurrence");
@@ -1884,10 +1893,18 @@ export default function GovernancePage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Governance Name")} *</Label>
                 <Input
                   value={editData.name}
-                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                  onChange={(e) => {
+                    setEditData({ ...editData, name: e.target.value });
+                    if (editErrors.name) setEditErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                  }}
                   placeholder={t("Enter governance name")}
-                  className="mt-1.5 w-full"
+                  className={`mt-1.5 w-full ${editErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                 />
+                {editErrors.name && (
+                  <div className="mt-1">
+                    <p className="text-sm text-red-600">{editErrors.name}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Department")} *</Label>

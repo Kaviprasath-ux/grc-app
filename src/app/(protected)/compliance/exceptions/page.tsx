@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { isValidName } from "@/lib/validations";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface Department {
@@ -331,6 +332,7 @@ export default function ExceptionsPage() {
   const handleCreate = async () => {
     const errors: Record<string, string> = {};
     if (!createForm.name.trim()) errors.name = t("Please enter the exception name");
+    else if (!isValidName(createForm.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
     if (!createForm.category) errors.category = t("Please select a category");
     if (!createForm.description.trim()) errors.description = t("Please enter the reason for exception");
     if (!createForm.endDate) errors.endDate = t("Please select the enddate");
@@ -443,6 +445,14 @@ export default function ExceptionsPage() {
 
   const handleEdit = async () => {
     if (!selectedException) return;
+    const errors: Record<string, string> = {};
+    if (!editForm.name.trim()) errors.name = t("Please enter the exception name");
+    else if (!isValidName(editForm.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    if (Object.keys(errors).length > 0) {
+      setExceptionErrors(errors);
+      return;
+    }
+    setExceptionErrors({});
     setSaving(true);
     try {
       const response = await fetch(`/api/exceptions/${selectedException.id}`, {
@@ -1389,7 +1399,7 @@ export default function ExceptionsPage() {
       )}
 
       {/* Edit Exception Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { if (!open) { setExceptionErrors({}); } setEditDialogOpen(open); }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
@@ -1419,13 +1429,21 @@ export default function ExceptionsPage() {
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Name")} *</Label>
                   <Input
                     value={editForm.name}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, name: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setEditForm({ ...editForm, name: e.target.value });
+                      if (exceptionErrors.name) {
+                        setExceptionErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                      }
+                    }}
                     placeholder={t("Enter exception name")}
                     disabled={selectedException?.status === "Approved"}
-                    className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}
+                    className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"} ${exceptionErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                   />
+                  {exceptionErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{exceptionErrors.name}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1729,6 +1747,7 @@ export default function ExceptionsPage() {
               variant="outline"
               className="w-full sm:w-auto"
               onClick={() => {
+                setExceptionErrors({});
                 setEditDialogOpen(false);
                 setSelectedException(null);
               }}

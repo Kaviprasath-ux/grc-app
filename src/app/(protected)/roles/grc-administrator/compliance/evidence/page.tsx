@@ -57,6 +57,7 @@ import {
   Download,
 } from "lucide-react";
 import Link from "next/link";
+import { isValidName } from "@/lib/validations";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 
 interface Evidence {
@@ -973,6 +974,7 @@ export default function GRCAdminEvidencePage() {
                   const errors: Record<string, string> = {};
                   if (!createForm.customerAccountId) errors.customerAccountId = t("Please select the customer account");
                   if (!createForm.name) errors.name = t("Please enter the evidence name");
+                  else if (!isValidName(createForm.name)) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
                   if (!createForm.recurrence) errors.recurrence = t("Please select the recurrence");
                   if (!createForm.departmentId) errors.departmentId = t("Please select the Department");
                   if (!createForm.assigneeId) errors.assigneeId = t("Please select the assignee");

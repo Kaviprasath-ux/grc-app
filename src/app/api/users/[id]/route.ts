@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { isValidEmailFormat } from "@/lib/validations/email";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -31,7 +32,7 @@ export const PUT = withAuth(
       // Verify the user belongs to the same customer account
       const existingUser = await prisma.user.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, email: true },
       });
 
       if (!existingUser) {
@@ -40,6 +41,19 @@ export const PUT = withAuth(
 
       if (!validateTenantAccess(session, existingUser.customerAccountId)) {
         return forbidden("Access denied to this user");
+      }
+
+      // Validate email format if provided
+      if (email && !isValidEmailFormat(email)) {
+        return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+      }
+
+      // Check email uniqueness if email is being changed
+      if (email && email !== existingUser.email) {
+        const emailExists = await prisma.user.findUnique({ where: { email } });
+        if (emailExists) {
+          return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+        }
       }
 
       // If role is being updated, also update the UserRole junction table

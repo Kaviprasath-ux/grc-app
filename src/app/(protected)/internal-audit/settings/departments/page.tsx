@@ -43,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { isValidName } from "@/lib/validations";
 
 interface Department {
   id: string;
@@ -135,6 +136,10 @@ export default function DepartmentsPage() {
   const handleSave = async () => {
     if (!formData.name.trim()) {
       setFormError(t("Department Name is required"));
+      return;
+    }
+    if (!isValidName(formData.name)) {
+      setFormError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
 
