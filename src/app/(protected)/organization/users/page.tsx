@@ -41,6 +41,7 @@ import {
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
+import { validateEmail } from "@/lib/validations/email";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -165,6 +166,7 @@ export default function UsersPage() {
 
   // Validation error states
   const [userFormErrors, setUserFormErrors] = useState<Record<string, string>>({});
+  const [editUserFormErrors, setEditUserFormErrors] = useState<Record<string, string>>({});
   const [changePasswordErrors, setChangePasswordErrors] = useState<Record<string, string>>({});
 
   // Form state
@@ -275,7 +277,8 @@ export default function UsersPage() {
     } else if (!isAlphanumeric(userForm.userName.trim())) {
       errors.userName = t("Only letters, numbers, and underscores are allowed");
     }
-    if (!userForm.email.trim()) errors.email = t("Please Enter the Email");
+    const emailError = validateEmail(userForm.email);
+    if (emailError) errors.email = t(emailError);
     if (!userForm.function) errors.function = t("Please Select the Function");
     if (!userForm.role) errors.role = t("Please Select the Role");
     if (!userForm.departmentId) errors.departmentId = t("Please Select the Department");
@@ -354,11 +357,15 @@ export default function UsersPage() {
     } else if (!isAlphanumeric(editingUser.userName.trim())) {
       errors.userName = t("Only letters, numbers, and underscores are allowed");
     }
+    const editEmailError = validateEmail(editingUser.email);
+    if (editEmailError) {
+      errors.email = t(editEmailError);
+    }
     if (Object.keys(errors).length > 0) {
-      setUserFormErrors(errors);
+      setEditUserFormErrors(errors);
       return;
     }
-    setUserFormErrors({});
+    setEditUserFormErrors({});
     try {
       const res = await fetch(`/api/users/${editingUser.id}`, {
         method: "PUT",
@@ -697,6 +704,7 @@ export default function UsersPage() {
             className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
             onClick={() => {
               setEditingUser(row.original);
+              setEditUserFormErrors({});
               if (row.original.function) {
                 fetchReportingManagers(row.original.function);
               }
@@ -940,6 +948,7 @@ export default function UsersPage() {
                                       className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
                                       onClick={() => {
                                         setEditingUser(user);
+                                        setEditUserFormErrors({});
                                         if (user.function) {
                                           fetchReportingManagers(user.function);
                                         }
@@ -1542,17 +1551,21 @@ export default function UsersPage() {
               </div>
 
               {/* Email */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editEmail" className="text-end">{t("Email")}</Label>
-                <Input
-                  id="editEmail"
-                  type="email"
-                  value={editingUser.email}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, email: e.target.value })
-                  }
-                  className="bg-white"
-                />
+              <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+                <Label htmlFor="editEmail" className="text-end mt-2">{t("Email")}</Label>
+                <div>
+                  <Input
+                    id="editEmail"
+                    type="email"
+                    value={editingUser.email}
+                    onChange={(e) => {
+                      setEditingUser({ ...editingUser, email: e.target.value });
+                      setEditUserFormErrors((prev) => ({ ...prev, email: "" }));
+                    }}
+                    className={`bg-white ${editUserFormErrors.email ? "border-red-500" : ""}`}
+                  />
+                  {editUserFormErrors.email && <p className="text-sm text-red-500 mt-1">{editUserFormErrors.email}</p>}
+                </div>
               </div>
 
               {/* Is Local User */}
@@ -2004,6 +2017,7 @@ export default function UsersPage() {
             <Button onClick={() => {
               setIsViewUserOpen(false);
               setEditingUser(viewingUser);
+              setEditUserFormErrors({});
               if (viewingUser?.function) {
                 fetchReportingManagers(viewingUser.function);
               }

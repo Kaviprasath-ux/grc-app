@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { isValidEmailFormat } from '@/lib/validations/email';
 
 // GET all users (with optional role and department filters)
 // Note: User model doesn't have auditHeadId or reportingManagerId fields - those filters removed
@@ -84,6 +85,13 @@ export async function POST(request: NextRequest) {
     if (!userId || !userName || !email || !password || !firstName || !lastName || !fullName) {
       return NextResponse.json(
         { error: "userId, userName, email, password, firstName, lastName, and fullName are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidEmailFormat(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
         { status: 400 }
       );
     }

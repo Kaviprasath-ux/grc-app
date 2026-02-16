@@ -563,6 +563,8 @@
   "Search By Control Code , Name": "Search By Control Code , Name",
   "This field is required": "This field is required",
   "Invalid email format": "Invalid email format",
+  "Email must not contain spaces": "Email must not contain spaces",
+  "Email already exists": "Email already exists",
   "Password must be at least 8 characters": "Password must be at least 8 characters",
   "Passwords do not match": "Passwords do not match",
   "Please enter a valid value": "Please enter a valid value",

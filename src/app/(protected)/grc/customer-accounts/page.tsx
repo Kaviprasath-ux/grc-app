@@ -36,6 +36,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName, isAlphanumeric } from "@/lib/validations";
+import { validateEmail } from "@/lib/validations/email";
 
 interface CustomerAccount {
   id: string;
@@ -369,8 +370,9 @@ export default function CustomerAccountsPage() {
     if (!formData.userName.trim()) {
       errors.userName = t("Please Enter the Username");
     }
-    if (!formData.email.trim()) {
-      errors.email = t("Please Enter the Email");
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      errors.email = t(emailError);
     }
     if (!formData.newPassword) {
       errors.newPassword = t("Password can not be empty");
@@ -469,8 +471,9 @@ export default function CustomerAccountsPage() {
     if (!formData.userName.trim()) {
       errors.userName = t("Please Enter the Username");
     }
-    if (!formData.email.trim()) {
-      errors.email = t("Please Enter the Email");
+    const editEmailError = validateEmail(formData.email);
+    if (editEmailError) {
+      errors.email = t(editEmailError);
     }
 
     if (formData.customerName.trim() && !isValidName(formData.customerName.trim())) {

@@ -31,6 +31,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
+import { validateEmail } from "@/lib/validations/email";
 
 interface Customer {
   id: string;
@@ -183,10 +184,19 @@ export default function CustomersPage() {
   const handleEditCustomer = async () => {
     if (!selectedCustomer) return;
 
-    if (!formData.customerName || !formData.email || !formData.userName) {
+    if (!formData.customerName || !formData.userName) {
       toast({
         title: t("Validation Error"),
         description: t("Please fill in all required fields"),
+        variant: "destructive",
+      });
+      return;
+    }
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      toast({
+        title: t("Validation Error"),
+        description: t(emailError),
         variant: "destructive",
       });
       return;

@@ -685,6 +685,8 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['This field is required', 'هذا الحقل مطلوب', 'Šis lauks ir obligāts'],
   ['Invalid email format', 'تنسيق البريد الإلكتروني غير صالح', 'Nederīgs e-pasta formāts'],
+  ['Email must not contain spaces', 'يجب ألا يحتوي البريد الإلكتروني على مسافات', 'E-pastam nedrīkst saturēt atstarpes'],
+  ['Email already exists', 'البريد الإلكتروني موجود بالفعل', 'E-pasts jau pastāv'],
   ['Password must be at least 8 characters', 'يجب أن تكون كلمة المرور 8 أحرف على الأقل', 'Parolei jābūt vismaz 8 rakstzīmēm'],
   ['Passwords do not match', 'كلمات المرور غير متطابقة', 'Paroles nesakrīt'],
   ['Please enter a valid value', 'يرجى إدخال قيمة صالحة', 'Lūdzu, ievadiet derīgu vērtību'],

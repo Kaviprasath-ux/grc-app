@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { isAlphaWithSpaces } from "@/lib/validations";
+import { validateEmail } from "@/lib/validations/email";
 
 interface User {
   id: string;
@@ -335,8 +336,9 @@ export default function UserManagementPage() {
       newErrors.fullName = t("Only letters and spaces are allowed");
       hasError = true;
     }
-    if (!formData.email.trim()) {
-      newErrors.email = t("Email is required");
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      newErrors.email = t(emailError);
       hasError = true;
     }
     if (!editItem && !formData.password.trim()) {

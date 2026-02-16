@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
+import { isValidEmailFormat } from "@/lib/validations/email";
 
 // Audit-related roles that can be assigned in Internal Audit user management
 const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditee"];
@@ -163,6 +164,13 @@ export const POST = withAuth(
       if (!userId || !userName || !email || !password || !firstName || !lastName || !fullName) {
         return NextResponse.json(
           { error: "userId, userName, email, password, firstName, lastName, and fullName are required" },
+          { status: 400 }
+        );
+      }
+
+      if (!isValidEmailFormat(email)) {
+        return NextResponse.json(
+          { error: "Invalid email format" },
           { status: 400 }
         );
       }

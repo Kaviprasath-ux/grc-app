@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { isValidEmailFormat } from '@/lib/validations/email';
 
 interface SubscriptionPlanInput {
   startDate: string;
@@ -39,6 +40,10 @@ export async function POST(req: NextRequest) {
     // Validate required fields
     if (!customerName || !email || !userName || !password) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (!isValidEmailFormat(email)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
     // Generate next customer code - find an available code
