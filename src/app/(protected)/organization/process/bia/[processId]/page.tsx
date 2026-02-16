@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, MessageSquare, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, MessageSquare, Send } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -606,14 +607,42 @@ export default function BIAPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">{t("Loading...")}</p>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-6">
+          <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Organization")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/organization/process" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Process")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("BIA")}</span>
+        </nav>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">{t("Loading...")}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm mb-6">
+        <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Organization")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/organization/process" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Process")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("BIA")}</span>
+      </nav>
+
       {/* Page Header with Back Button */}
       <div className="flex items-center gap-3">
         <Button
@@ -624,12 +653,12 @@ export default function BIAPage() {
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Business Impact Analysis")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Business Impact Analysis")}</h1>
       </div>
 
       {/* Top controls row */}
-      <div className="flex items-center justify-end gap-4">
-        <span className={`font-medium ${
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4">
+        <span className={`font-medium text-center sm:text-left ${
           status === "Open" ? "text-info" :
           status === "Pending Approval" ? "text-warning" :
           status === "Approved" ? "text-success" :
@@ -639,7 +668,7 @@ export default function BIAPage() {
           {t(status)}
         </span>
         <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled={isReviewer ? !(status === "Open" || status === "Sent Back") : !isEditable}>
-          <SelectTrigger className="w-[200px] bg-white">
+          <SelectTrigger className="w-full sm:w-[200px] bg-white">
             <SelectValue placeholder={t("Department")} />
           </SelectTrigger>
           <SelectContent>
@@ -659,7 +688,7 @@ export default function BIAPage() {
             !selectedDepartment // For all roles: disabled if no department selected
           }
         >
-          <SelectTrigger className="w-[200px] bg-white">
+          <SelectTrigger className="w-full sm:w-[200px] bg-white">
             <SelectValue placeholder={!selectedDepartment ? t("Select Department First") : t("Approver")} />
           </SelectTrigger>
           <SelectContent>
@@ -723,12 +752,13 @@ export default function BIAPage() {
       </div>
 
       {/* Main content card */}
-      <div className="bg-white rounded-lg border shadow-sm p-6 space-y-6">
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Process name */}
         <h2 className="text-lg font-semibold">{process?.name}</h2>
 
         {/* Category table */}
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-x-auto">
+          <div className="min-w-[500px]">
           {/* Table header */}
           <div className="grid grid-cols-3 bg-slate-800 text-white">
             <div className="px-4 py-3 font-medium">{t("Category")}</div>
@@ -769,6 +799,7 @@ export default function BIAPage() {
               </div>
             );
           })}
+          </div>
         </div>
 
         {/* Impact Rating box */}
@@ -778,7 +809,7 @@ export default function BIAPage() {
         </div>
 
         {/* Recovery metrics row */}
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-primary-600">{t("RTO")}</label>
             <Input
@@ -856,7 +887,7 @@ export default function BIAPage() {
 
       {/* Send Back Dialog */}
       <Dialog open={isSendBackDialogOpen} onOpenChange={setIsSendBackDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Send Back for Revision")}</DialogTitle>
           </DialogHeader>
@@ -885,7 +916,7 @@ export default function BIAPage() {
 
       {/* Comments Dialog */}
       <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("BIA Comments")}</DialogTitle>
           </DialogHeader>

@@ -307,13 +307,13 @@ export default function AddProcessPage() {
           {t("Back")}
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">{t("New Process")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t("New Process")}</h1>
           <p className="text-muted-foreground text-sm">{t("Complete the form to create a new process")}</p>
         </div>
       </div>
 
       {/* Timeline Steps */}
-      <div className="bg-white rounded-lg border shadow-sm p-6">
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6">
         <div className="flex items-center justify-between mb-8">
           {steps.map((item, index) => (
             <div key={item.step} className="flex items-center flex-1">
@@ -367,7 +367,7 @@ export default function AddProcessPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Department")}</Label>
                 <Select
@@ -408,7 +408,7 @@ export default function AddProcessPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Process Frequency")}</Label>
                 <Select
@@ -453,7 +453,7 @@ export default function AddProcessPage() {
         {/* Step 2: Process Flow */}
         {currentStep === 2 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Location")}</Label>
                 <MultiSelect
@@ -680,7 +680,7 @@ export default function AddProcessPage() {
             <p className="text-sm text-muted-foreground mb-4">
               {t("Define the RACI matrix for this process - who is Responsible, Accountable, Consulted, and Informed.")}
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Responsible")}</Label>
                 <Select
@@ -720,7 +720,7 @@ export default function AddProcessPage() {
                 <p className="text-xs text-muted-foreground">{t("Person ultimately answerable")}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Consulted")}</Label>
                 <Select

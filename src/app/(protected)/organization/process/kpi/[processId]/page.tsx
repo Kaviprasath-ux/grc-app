@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, Pencil, Trash2, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, Pencil, Trash2, Upload } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -296,14 +297,42 @@ export default function KPIDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">{t("Loading...")}</p>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-6">
+          <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Organization")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/organization/process" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Process")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("KPI")}</span>
+        </nav>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">{t("Loading...")}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm mb-6">
+        <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Organization")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/organization/process" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Process")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("KPI")}</span>
+      </nav>
+
       {/* Page Header with Back Button */}
       <div className="flex items-center gap-3">
         <Button
@@ -314,14 +343,14 @@ export default function KPIDetailsPage() {
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">{t("KPI Details")} - {process?.name}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("KPI Details")} - {process?.name}</h1>
       </div>
 
       {/* Main Content Card */}
       <Card className="bg-slate-50">
-        <CardContent className="pt-6">
+        <CardContent className="p-3 sm:p-6 pt-4 sm:pt-6">
           {/* KPI Header with Year Selector */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
             <h3 className="text-lg font-semibold text-slate-800">{t("KPI")}</h3>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">{t("Year")}</span>
@@ -385,7 +414,7 @@ export default function KPIDetailsPage() {
           {/* Legend */}
           <div className="flex justify-end gap-6 mb-6">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-blue-500" />
+              <div className="w-4 h-1 bg-primary-500" />
               <span className="text-sm">{t("Achieved Value")}</span>
             </div>
             <div className="flex items-center gap-2">

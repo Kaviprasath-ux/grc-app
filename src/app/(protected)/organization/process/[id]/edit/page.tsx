@@ -388,13 +388,13 @@ export default function EditProcessPage() {
           {t("Back")}
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">{t("Edit Process")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t("Edit Process")}</h1>
           <p className="text-muted-foreground text-sm">{formData.processCode} - {formData.name}</p>
         </div>
       </div>
 
       {/* Timeline Steps */}
-      <div className="bg-white rounded-lg border shadow-sm p-6">
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6">
         <div className="flex items-center justify-between mb-8">
           {steps.map((item, index) => (
             <div key={item.step} className="flex items-center flex-1">
@@ -427,7 +427,7 @@ export default function EditProcessPage() {
         {/* Step 1: Info */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="processCode">{t("Process ID")}</Label>
                 <Input
@@ -459,7 +459,7 @@ export default function EditProcessPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Department")}</Label>
                 <Select
@@ -499,7 +499,7 @@ export default function EditProcessPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Process Frequency")}</Label>
                 <Select
@@ -544,7 +544,7 @@ export default function EditProcessPage() {
         {/* Step 2: Process Flow */}
         {currentStep === 2 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Location")}</Label>
                 <MultiSelect
@@ -625,7 +625,7 @@ export default function EditProcessPage() {
               {/* File Dropper */}
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                  isDragging ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
                 }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -633,18 +633,18 @@ export default function EditProcessPage() {
               >
                 {uploadingFile ? (
                   <div className="space-y-2">
-                    <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+                    <div className="animate-spin h-8 w-8 border-2 border-primary-500 border-t-transparent rounded-full mx-auto" />
                     <p className="text-sm text-muted-foreground">{t("Uploading...")}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Upload className="h-10 w-10 mx-auto text-gray-400" />
-                    <p className="text-sm text-gray-600">
+                    <Upload className="h-10 w-10 mx-auto text-slate-400" />
+                    <p className="text-sm text-slate-600">
                       {t("Drag and drop a file here, or")}{" "}
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="text-blue-600 hover:underline font-medium"
+                        className="text-primary-600 hover:underline font-medium"
                       >
                         {t("browse")}
                       </button>
@@ -669,9 +669,9 @@ export default function EditProcessPage() {
                   <Label className="text-sm font-medium">{t("Uploaded Files")}</Label>
                   <div className="border rounded-lg divide-y">
                     {attachments.filter((a) => a.category !== "employee_onboarding").map((attachment) => (
-                      <div key={attachment.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                      <div key={attachment.id} className="flex items-center justify-between p-3 hover:bg-slate-50">
                         <div className="flex items-center gap-3">
-                          <FileText className="h-5 w-5 text-blue-600" />
+                          <FileText className="h-5 w-5 text-primary-600" />
                           <div>
                             <p className="text-sm font-medium">{attachment.fileName}</p>
                             <p className="text-xs text-muted-foreground">
@@ -687,15 +687,15 @@ export default function EditProcessPage() {
                             title={t("View")}
                             onClick={() => window.open(attachment.filePath, "_blank")}
                           >
-                            <Eye className="h-4 w-4 text-gray-600" />
+                            <Eye className="h-4 w-4 text-slate-600" />
                           </Button>
                           <a
                             href={attachment.filePath}
                             download={attachment.fileName}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100"
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100"
                             title={t("Download")}
                           >
-                            <Download className="h-4 w-4 text-gray-600" />
+                            <Download className="h-4 w-4 text-slate-600" />
                           </a>
                           <Button
                             variant="ghost"
@@ -728,7 +728,7 @@ export default function EditProcessPage() {
 
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                  isOnboardingDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                  isOnboardingDragging ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
                 }`}
                 onDragOver={handleOnboardingDragOver}
                 onDragLeave={handleOnboardingDragLeave}
@@ -736,18 +736,18 @@ export default function EditProcessPage() {
               >
                 {uploadingOnboardingFile ? (
                   <div className="space-y-2">
-                    <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+                    <div className="animate-spin h-8 w-8 border-2 border-primary-500 border-t-transparent rounded-full mx-auto" />
                     <p className="text-sm text-muted-foreground">{t("Uploading...")}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Upload className="h-10 w-10 mx-auto text-gray-400" />
-                    <p className="text-sm text-gray-600">
+                    <Upload className="h-10 w-10 mx-auto text-slate-400" />
+                    <p className="text-sm text-slate-600">
                       {t("Drag and drop files here, or")}{" "}
                       <button
                         type="button"
                         onClick={() => onboardingFileInputRef.current?.click()}
-                        className="text-blue-600 hover:underline font-medium"
+                        className="text-primary-600 hover:underline font-medium"
                       >
                         {t("browse")}
                       </button>
@@ -772,7 +772,7 @@ export default function EditProcessPage() {
                   <Label className="text-sm font-medium">{t("Onboarding Files")}</Label>
                   <div className="border rounded-lg divide-y">
                     {attachments.filter((a) => a.category === "employee_onboarding").map((attachment) => (
-                      <div key={attachment.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                      <div key={attachment.id} className="flex items-center justify-between p-3 hover:bg-slate-50">
                         <div className="flex items-center gap-3">
                           <FileText className="h-5 w-5 text-green-600" />
                           <div>
@@ -790,15 +790,15 @@ export default function EditProcessPage() {
                             title={t("View")}
                             onClick={() => window.open(attachment.filePath, "_blank")}
                           >
-                            <Eye className="h-4 w-4 text-gray-600" />
+                            <Eye className="h-4 w-4 text-slate-600" />
                           </Button>
                           <a
                             href={attachment.filePath}
                             download={attachment.fileName}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100"
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-slate-100"
                             title={t("Download")}
                           >
-                            <Download className="h-4 w-4 text-gray-600" />
+                            <Download className="h-4 w-4 text-slate-600" />
                           </a>
                           <Button
                             variant="ghost"
@@ -830,7 +830,7 @@ export default function EditProcessPage() {
             <p className="text-sm text-muted-foreground mb-4">
               {t("Define the RACI matrix for this process - who is Responsible, Accountable, Consulted, and Informed.")}
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Responsible")}</Label>
                 <Select
@@ -870,7 +870,7 @@ export default function EditProcessPage() {
                 <p className="text-xs text-muted-foreground">{t("Person ultimately answerable")}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("Consulted")}</Label>
                 <Select

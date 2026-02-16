@@ -246,9 +246,9 @@ function ManagementReportContent() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Management Report")}</h1>
-        <Button size="sm" onClick={handleDownloadReport}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Management Report")}</h1>
+        <Button size="sm" onClick={handleDownloadReport} className="self-start sm:self-auto">
           <Download className="h-4 w-4 me-2" />
           {t("Download Report")}
         </Button>
@@ -257,19 +257,19 @@ function ManagementReportContent() {
       {/* Report Content */}
       <div ref={reportRef} className="space-y-6">
         {/* Report Title Card */}
-        <div className="bg-white rounded-xl border border-slate-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-800">{t("Process Management Report")}</h2>
-          <p className="text-sm text-slate-500 mt-1">{t("Generated on")} {new Date().toLocaleDateString()}</p>
+        <div className="bg-white rounded-xl border border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-800">{t("Process Management Report")}</h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">{t("Generated on")} {new Date().toLocaleDateString()}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Process by Department - Pie Chart */}
           {selectedOptions.includes("process-by-department") && (
             <div className="bg-white rounded-xl border border-slate-200">
-              <div className="px-6 py-4 border-b border-slate-100">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("Process by Department")}</h3>
               </div>
-              <div className="p-6">
+              <div className="p-3 sm:p-6">
                 {processByDepartmentData.length > 0 ? (
                   <>
                     <ResponsiveContainer width="100%" height={200}>
@@ -304,10 +304,10 @@ function ManagementReportContent() {
           {/* Process by Criticality - Pie Chart */}
           {selectedOptions.includes("process-by-criticality") && (
             <div className="bg-white rounded-xl border border-slate-200">
-              <div className="px-6 py-4 border-b border-slate-100">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("Process by Criticality")}</h3>
               </div>
-              <div className="p-6">
+              <div className="p-3 sm:p-6">
                 {processByCriticalityData.length > 0 ? (
                   <>
                     <ResponsiveContainer width="100%" height={200}>
@@ -342,10 +342,10 @@ function ManagementReportContent() {
           {/* KPI Measurement by Department - Pie Chart */}
           {selectedOptions.includes("kpi-by-measurement") && (
             <div className="bg-white rounded-xl border border-slate-200">
-              <div className="px-6 py-4 border-b border-slate-100">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("KPI Measurement by Department")}</h3>
               </div>
-              <div className="p-6">
+              <div className="p-3 sm:p-6">
                 {kpiByMeasurementData.length > 0 ? (
                   <>
                     <ResponsiveContainer width="100%" height={200}>
@@ -380,10 +380,10 @@ function ManagementReportContent() {
           {/* Process by Risk - Pie Chart */}
           {selectedOptions.includes("process-by-risk") && (
             <div className="bg-white rounded-xl border border-slate-200">
-              <div className="px-6 py-4 border-b border-slate-100">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("Process by Risk")}</h3>
               </div>
-              <div className="p-6">
+              <div className="p-3 sm:p-6">
                 {processByRiskData.length > 0 ? (
                   <>
                     <ResponsiveContainer width="100%" height={200}>
@@ -419,10 +419,11 @@ function ManagementReportContent() {
         {/* Top 5 Process Risk - List */}
         {selectedOptions.includes("top-5-process-risk") && (
           <div className="bg-white rounded-xl border border-slate-200">
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100">
               <h3 className="text-base font-semibold text-slate-800">{t("Top 5 Process Risk")}</h3>
             </div>
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[400px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50">
                   <th className="text-left py-4 pl-4 text-xs font-semibold text-slate-600">#</th>
@@ -447,16 +448,17 @@ function ManagementReportContent() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 
         {/* KPI Performance by Department - Bar Chart (Full Width at Bottom) */}
         {selectedOptions.includes("kpi-by-performance") && (
           <div className="bg-white rounded-xl border border-slate-200">
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100">
               <h3 className="text-base font-semibold text-slate-800">{t("KPI Performance by Department")}</h3>
             </div>
-            <div className="p-6">
+            <div className="p-3 sm:p-6">
               {kpiByPerformanceData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
@@ -479,7 +481,7 @@ function ManagementReportContent() {
                 <p className="text-sm text-slate-500 text-center py-8">{t("No KPI performance data available")}</p>
               )}
               {/* Legend */}
-              <div className="flex gap-4 mt-4 text-xs justify-center">
+              <div className="flex flex-wrap gap-3 sm:gap-4 mt-4 text-xs justify-center">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-orange-500 rounded"></div>
                   <span className="text-slate-600">{t("Overdue")}</span>

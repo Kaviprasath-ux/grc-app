@@ -267,8 +267,8 @@ function ManagementReportContent() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+      <div className="space-y-4 sm:space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm flex-wrap">
           <div className="flex items-center gap-1.5 text-slate-400">
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>

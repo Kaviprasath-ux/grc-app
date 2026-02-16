@@ -1473,9 +1473,9 @@ export default function RiskSettingsCategoryPage() {
   // Show loading state while permissions or data is loading
   if (permissionsLoading || loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm flex-wrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
@@ -1492,7 +1492,7 @@ export default function RiskSettingsCategoryPage() {
           <span className="text-primary-700 font-medium">{title}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -1529,8 +1529,8 @@ export default function RiskSettingsCategoryPage() {
 
   // Search bar renderer
   const renderSearchBar = (placeholder?: string) => (
-    <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-      <div className="relative flex-1 min-w-[280px] max-w-md">
+    <div className="flex flex-wrap items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+      <div className="relative flex-1 min-w-0 sm:min-w-[280px] max-w-md">
         <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <input
           type="text"
@@ -1560,9 +1560,9 @@ export default function RiskSettingsCategoryPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm flex-wrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
@@ -1586,7 +1586,7 @@ export default function RiskSettingsCategoryPage() {
         <>
           {/* Page Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
           </div>
 
           <div className="space-y-8">
@@ -1697,7 +1697,7 @@ export default function RiskSettingsCategoryPage() {
       {category === "control-strength" && (
         <>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
             {canCreate && (
               <Button size="sm" onClick={() => { setControlStrengthForm({ name: "", score: 0 }); setIsAddOpen(true); }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Control Strength")}
@@ -1750,7 +1750,7 @@ export default function RiskSettingsCategoryPage() {
       {category === "likelihood" && (
         <>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
             {canCreate && (
               <Button size="sm" onClick={() => { setLikelihoodForm({ title: "", score: 0, timeFrame: "", probability: "" }); setIsAddOpen(true); }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Likelihood")}
@@ -1759,7 +1759,8 @@ export default function RiskSettingsCategoryPage() {
           </div>
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {renderSearchBar(t("Search likelihoods..."))}
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[550px]">
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Title")}</TableHead>
@@ -1792,6 +1793,7 @@ export default function RiskSettingsCategoryPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
             <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredLikelihoods.length)} totalItems={filteredLikelihoods.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
           </div>
         </>
@@ -1802,9 +1804,9 @@ export default function RiskSettingsCategoryPage() {
       {/* ============================================================ */}
       {category === "threat" && (
         <>
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => setIsThreatImportOpen(true)}>
                 <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Import")}
@@ -1822,7 +1824,8 @@ export default function RiskSettingsCategoryPage() {
           </div>
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {renderSearchBar(t("Search threats..."))}
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Threat ID")}</TableHead>
@@ -1855,6 +1858,7 @@ export default function RiskSettingsCategoryPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
             <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredThreats.length)} totalItems={filteredThreats.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
           </div>
         </>
@@ -1865,9 +1869,9 @@ export default function RiskSettingsCategoryPage() {
       {/* ============================================================ */}
       {category === "vulnerability" && (
         <>
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => setIsVulnImportOpen(true)}>
                 <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Import")}
@@ -1885,7 +1889,8 @@ export default function RiskSettingsCategoryPage() {
           </div>
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {renderSearchBar(t("Search vulnerabilities..."))}
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Vulnerability ID")}</TableHead>
@@ -1918,6 +1923,7 @@ export default function RiskSettingsCategoryPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
             <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredVulnerabilities.length)} totalItems={filteredVulnerabilities.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
           </div>
         </>
@@ -1929,17 +1935,17 @@ export default function RiskSettingsCategoryPage() {
       {category === "risk-methodology" && (
         <>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Score Configuration */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100">
+              <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
                 <h3 className="text-sm font-semibold text-slate-800">{t("Risk Score Configuration")}</h3>
               </div>
-              <div className="p-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="p-3 sm:p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
                   <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
                     <span className="text-sm text-slate-700">{t("Use Likelihood")}</span>
                     <Switch
@@ -1992,7 +1998,8 @@ export default function RiskSettingsCategoryPage() {
                 )}
               </div>
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <Table>
+                <div className="overflow-x-auto">
+                <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Title")}</TableHead>
@@ -2036,6 +2043,7 @@ export default function RiskSettingsCategoryPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             </div>
           </div>
@@ -2048,7 +2056,7 @@ export default function RiskSettingsCategoryPage() {
       {category === "risk-category" && (
         <>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
             {canCreate && (
               <Button size="sm" onClick={() => { setRiskCategoryForm({ name: "", status: "Active" }); setIsAddOpen(true); }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Risk Category")}
@@ -2108,7 +2116,7 @@ export default function RiskSettingsCategoryPage() {
       {category === "impact" && (
         <>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
             {canCreate && (
               <Button size="sm" onClick={() => {
                 if (activeTab === "tab1") { setImpactCatForm({ name: "" }); }
@@ -2186,7 +2194,8 @@ export default function RiskSettingsCategoryPage() {
           {activeTab === "tab2" && (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {renderSearchBar(t("Search impact ratings..."))}
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[450px]">
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Name")}</TableHead>
@@ -2221,6 +2230,7 @@ export default function RiskSettingsCategoryPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
               <Pagination currentPage={currentPage} totalPages={getTotalPages(filteredImpactRatings.length)} totalItems={filteredImpactRatings.length} itemsPerPage={pageSize} onPageChange={setCurrentPage} />
             </div>
           )}
@@ -2233,7 +2243,7 @@ export default function RiskSettingsCategoryPage() {
       {category === "vulnerability-rating" && (
         <>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
             {canCreate && (
               <Button size="sm" onClick={() => { setVulnRatingForm({ label: "", score: 0 }); setIsAddOpen(true); }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Vulnerability Rating")}
@@ -2286,7 +2296,7 @@ export default function RiskSettingsCategoryPage() {
       {category === "risk-sub-category" && (
         <>
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
             {canCreate && (
               <Button size="sm" onClick={() => { setRiskSubCatForm({ type: "" }); setIsAddOpen(true); }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Add Risk Sub Category")}
@@ -2349,8 +2359,8 @@ export default function RiskSettingsCategoryPage() {
           setRiskRangeError("");
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {category === "category" && activeTab === "tab1" && t("Add Vulnerability Category")}
@@ -2368,7 +2378,7 @@ export default function RiskSettingsCategoryPage() {
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
@@ -2700,7 +2710,7 @@ export default function RiskSettingsCategoryPage() {
               </div>
             )}
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={() => {
               if (category === "category" && activeTab === "tab1") handleAddVulnCat();
@@ -2738,8 +2748,8 @@ export default function RiskSettingsCategoryPage() {
           setRiskRangeError("");
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {category === "category" && activeTab === "tab1" && t("Edit Vulnerability Category")}
@@ -2757,7 +2767,7 @@ export default function RiskSettingsCategoryPage() {
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
@@ -3093,7 +3103,7 @@ export default function RiskSettingsCategoryPage() {
               </div>
             )}
           </div>
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={() => {
               if (category === "category" && activeTab === "tab1") handleEditVulnCat();
@@ -3117,14 +3127,14 @@ export default function RiskSettingsCategoryPage() {
       {/* Delete Confirmation Dialog                                   */}
       {/* ============================================================ */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <AlertDialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete this item? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => {
               if (category === "category" && activeTab === "tab1") handleDeleteVulnCat();
@@ -3153,13 +3163,13 @@ export default function RiskSettingsCategoryPage() {
           setVulnSelectedFile(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Vulnerabilities")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="space-y-4">
               <p className="text-sm text-slate-500">
                 {t("Upload a CSV or Excel file to import vulnerabilities. Download the template first to see the required format.")}
@@ -3239,7 +3249,7 @@ export default function RiskSettingsCategoryPage() {
             </div>
           </div>
           {vulnSelectedFile && (
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => setVulnSelectedFile(null)}
@@ -3280,13 +3290,13 @@ export default function RiskSettingsCategoryPage() {
           setThreatSelectedFile(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Threats")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="space-y-4">
               <p className="text-sm text-slate-500">
                 {t("Upload a CSV or Excel file to import threats. Download the template first to see the required format.")}
@@ -3366,7 +3376,7 @@ export default function RiskSettingsCategoryPage() {
             </div>
           </div>
           {threatSelectedFile && (
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => setThreatSelectedFile(null)}

@@ -138,7 +138,7 @@ export default function EscalationConfigPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -161,7 +161,7 @@ export default function EscalationConfigPage() {
           <span className="text-primary-700 font-medium">{t("Escalation")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">{t("Escalation Configuration")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Escalation Configuration")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -176,7 +176,7 @@ export default function EscalationConfigPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -201,19 +201,19 @@ export default function EscalationConfigPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Escalation Configuration")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Escalation Configuration")}</h1>
       </div>
 
       {/* Content Card */}
       <div className="bg-white rounded-xl border border-slate-200">
         {/* Card Header */}
-        <div className="px-6 py-4 border-b border-slate-100">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
           <h2 className="text-base font-semibold text-slate-800">{t("Escalation Timeline Settings")}</h2>
           <p className="text-sm text-slate-500 mt-1">{t("Configure the number of days before escalation for each activity type")}</p>
         </div>
 
         {/* Card Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Response Submission")} <span className="text-red-500">*</span></Label>
@@ -290,7 +290,7 @@ export default function EscalationConfigPage() {
         </div>
 
         {/* Card Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end gap-3">
+        <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end gap-3">
           <Button variant="outline" onClick={() => router.push("/internal-audit/settings")}>
             {t("Cancel")}
           </Button>

@@ -8,12 +8,18 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  ChevronLeft,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Plus,
   Pencil,
   Trash2,
@@ -21,6 +27,8 @@ import {
   Eye,
   Home,
   ChevronRight,
+  Shield,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +57,7 @@ export default function MasterDataFrameworkPage() {
   const customerId = params.customerId as string;
 
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
+  const [customerName, setCustomerName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [sortAsc, setSortAsc] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
@@ -64,7 +73,21 @@ export default function MasterDataFrameworkPage() {
 
   useEffect(() => {
     fetchFrameworks();
+    fetchCustomerName();
   }, [customerId]);
+
+  const fetchCustomerName = async () => {
+    try {
+      const response = await fetch("/api/grc/customers");
+      if (response.ok) {
+        const data = await response.json();
+        const found = data.find((c: { id: string; customerName: string }) => c.id === customerId);
+        if (found) setCustomerName(found.customerName);
+      }
+    } catch (error) {
+      console.error("Error fetching customer:", error);
+    }
+  };
 
   const fetchFrameworks = async () => {
     try {
@@ -89,7 +112,6 @@ export default function MasterDataFrameworkPage() {
   };
 
   const handleNewFramework = () => {
-    // Navigate back to the frameworks page where the create dialog exists
     router.push(`/grc/customers/${customerId}/frameworks`);
   };
 
@@ -172,8 +194,24 @@ export default function MasterDataFrameworkPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("GRC")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/grc/customers" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Customers")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-slate-500">{customerName || t("Customer")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Framework")}</span>
+        </nav>
+        <div className="bg-white rounded-xl border border-slate-200 p-16 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -186,173 +224,174 @@ export default function MasterDataFrameworkPage() {
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/grc/customers" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Customers")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href={`/grc/customers/${customerId}/frameworks`} className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Frameworks")}
+          {customerName || t("Customer")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-slate-500">{t("Master Data")}</span>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Framework")}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Framework")}</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={handleNewFramework}
-            size="sm"
-          >
-            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Framework")}</h1>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Button onClick={handleNewFramework} size="sm" className="flex-1 sm:flex-none">
+            <Plus className="h-4 w-4 me-2" />
             {t("New Framework")}
           </Button>
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={handleExport} variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Download className="h-4 w-4 me-2" />
             {t("Export")}
           </Button>
         </div>
       </div>
 
       {/* Framework Table */}
-      <div className="overflow-x-auto border rounded-lg">
-        <table className="w-full text-sm">
-          <thead>
-            <tr
-              style={{
-                background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-              }}
-            >
-              <th className="text-left p-4 text-white font-semibold">
-                <div className="flex items-center gap-2">
-                  {t("Framework Name")}
-                  <button
-                    onClick={() => setSortAsc(!sortAsc)}
-                    className="text-white/80 hover:text-white"
-                  >
-                    <ArrowUpDown className="h-4 w-4" />
-                  </button>
-                </div>
-              </th>
-              <th className="text-center p-4 text-white font-semibold w-40">{t("Action")}</th>
-              <th className="text-center p-4 text-white font-semibold w-16">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+        <Table className="min-w-[500px]">
+          <TableHeader>
+            <TableRow className="h-11 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="pl-5 text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 <button
+                  className="flex items-center gap-1 hover:text-slate-800"
+                  onClick={() => setSortAsc(!sortAsc)}
+                >
+                  {t("Framework Name")}
+                  <ArrowUpDown className="h-3 w-3" />
+                </button>
+              </TableHead>
+              <TableHead className="text-center text-xs font-semibold text-slate-600 uppercase tracking-wider w-40">
+                {t("Action")}
+              </TableHead>
+              <TableHead className="text-center w-16">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
                   onClick={() => setShowDetails(!showDetails)}
-                  className="text-white/80 hover:text-white border border-white/40 rounded p-1"
                 >
                   <Eye className="h-4 w-4" />
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+                </Button>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {sortedFrameworks.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="text-center py-12 text-gray-500">
-                  {t("No frameworks found.")}
-                </td>
-              </tr>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={3}>
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                      <Shield className="h-6 w-6 text-primary-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                      {t("No Frameworks Found")}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      {t("No frameworks available for this customer.")}
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : (
-              sortedFrameworks.map((framework, index) => (
-                <tr
-                  key={framework.id}
-                  className={`border-b hover:bg-blue-50/50 ${
-                    index % 2 === 0 ? "bg-white" : "bg-blue-50/30"
-                  }`}
-                >
-                  <td className="p-4 text-gray-800 font-medium">{framework.name}</td>
-                  <td className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-4">
-                      <button
+              sortedFrameworks.map((framework) => (
+                <TableRow key={framework.id} className="hover:bg-slate-50">
+                  <TableCell className="py-4 pl-5 text-sm font-medium text-slate-800">
+                    {framework.name}
+                  </TableCell>
+                  <TableCell className="py-4 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => handleEditFramework(framework)}
-                        className="text-blue-600 hover:text-blue-800"
                         title={t("Edit")}
                       >
-                        <Pencil className="h-5 w-5" />
-                      </button>
-                      <button
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => handleDeleteFramework(framework)}
-                        className="text-red-500 hover:text-red-700"
                         title={t("Delete")}
                       >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </td>
-                  <td className="p-4 text-center">
+                  </TableCell>
+                  <TableCell className="py-4 text-center">
                     {showDetails && (
-                      <span className="text-xs text-gray-500">{framework.type}</span>
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                        {framework.type}
+                      </span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Edit Framework Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-blue-700">{t("Edit Framework")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Framework")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">{t("Framework Name")}</Label>
+              <Label htmlFor="edit-name" className="text-sm font-medium text-slate-700">{t("Framework Name")}</Label>
               <Input
                 id="edit-name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder={t("Enter framework name")}
+                className="bg-slate-50 border-slate-200 rounded-lg"
               />
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                {t("Cancel")}
-              </Button>
-              <Button
-                onClick={handleSaveEdit}
-                disabled={!editName.trim()}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {t("Save")}
-              </Button>
-            </DialogFooter>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button size="sm" onClick={handleSaveEdit} disabled={!editName.trim()}>
+              {t("Save")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-red-600">{t("Delete Framework")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-gray-600">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5">
+            <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete")} <strong>{deletingFramework?.name}</strong>? {t("This action cannot be undone.")}
             </p>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                {t("Cancel")}
-              </Button>
-              <Button
-                onClick={handleConfirmDelete}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                {t("Delete")}
-              </Button>
-            </DialogFooter>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setIsDeleteDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleConfirmDelete}>
+              {t("Delete")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

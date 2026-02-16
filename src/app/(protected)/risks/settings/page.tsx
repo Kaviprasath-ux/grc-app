@@ -109,7 +109,7 @@ export default function RiskSettingsPage() {
 
   if (permissionsLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
@@ -118,7 +118,7 @@ export default function RiskSettingsPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-primary-700 font-medium">{t("Settings")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Settings")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Settings")}</h1>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="relative h-8 w-8">
             <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
@@ -134,7 +134,7 @@ export default function RiskSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -151,17 +151,17 @@ export default function RiskSettingsPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Settings")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Settings")}</h1>
       </div>
 
       {/* Settings Card Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {settingCards.map((card) => {
           const Icon = card.icon;
           return (
             <button
               key={card.id}
-              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left cursor-pointer"
+              className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex items-center gap-3 sm:gap-4 text-left cursor-pointer"
               onClick={() => router.push(card.href)}
             >
               <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0">

@@ -25,7 +25,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Check, ArrowLeft, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
+import { Check, ArrowLeft, ChevronLeft, ChevronRight, Link2, Home } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -635,18 +635,18 @@ export default function RiskAssessmentWizardPage() {
   if (!risk) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Link href="/risks/assessment">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t("Back")}
-            </Button>
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/risks/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Risk Management")}</span>
           </Link>
-          <div>
-            <p className="text-sm text-muted-foreground">{t("Risk Management")}</p>
-            <h1 className="text-2xl font-bold">{t("Risk Assessment")}</h1>
-          </div>
-        </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/risks/assessment" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Assessment")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Risk Assessment")}</span>
+        </nav>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">{t("Risk not found")}</p>
         </div>
@@ -655,29 +655,32 @@ export default function RiskAssessmentWizardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/risks/assessment">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t("Back")}
-          </Button>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/risks/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
         </Link>
-        <div>
-          <p className="text-sm text-muted-foreground">{t("Risk Management")}</p>
-          <h1 className="text-2xl font-bold">{t("Risk Assessment")}</h1>
-        </div>
-      </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/risks/assessment" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Assessment")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Risk Assessment")}</span>
+      </nav>
+
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
 
       {/* Stepper */}
-      <nav className="mb-6">
-        <ol className="flex items-center justify-between">
+      <nav className="mb-4 sm:mb-6 overflow-x-auto">
+        <ol className="flex items-center justify-between min-w-[400px]">
           {assessmentSteps.map((step, index) => (
             <li key={step.id} className="flex-1 flex flex-col items-center relative">
               <div className="flex items-center">
                 <div
                   className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium",
+                    "flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border-2 text-xs sm:text-sm font-medium",
                     currentStep > step.id
                       ? "border-green-500 bg-green-500 text-white"
                       : currentStep === step.id
@@ -688,7 +691,7 @@ export default function RiskAssessmentWizardPage() {
                   {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
                 </div>
               </div>
-              <span className="mt-1 text-xs text-center text-muted-foreground">
+              <span className="mt-1 text-[10px] sm:text-xs text-center text-muted-foreground hidden sm:block">
                 {step.name}
               </span>
               {index < assessmentSteps.length - 1 && (
@@ -719,7 +722,7 @@ export default function RiskAssessmentWizardPage() {
         {/* Step 1: Risk Context */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">{t("Risk Category")}</p>
                 <p className="font-medium">{risk.category?.name || "-"}</p>
@@ -742,7 +745,7 @@ export default function RiskAssessmentWizardPage() {
             {riskThreats.map((threat) => (
               <div key={threat.id} className="space-y-2">
                 <h4 className="font-semibold">{threat.name}</h4>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {likelihoodOptions.map((option) => (
                     <Button
                       key={option.id}
@@ -770,12 +773,12 @@ export default function RiskAssessmentWizardPage() {
             {riskThreats.map((threat) => (
               <div key={threat.id} className="space-y-3">
                 <h4 className="font-semibold">{threat.name}</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm font-medium">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm font-medium">
                   <span>{t("Category")}</span>
-                  <span>{t("Impact Rating")}</span>
+                  <span className="hidden sm:block">{t("Impact Rating")}</span>
                 </div>
                 {impactCategories.map((category) => (
-                  <div key={category.id} className="grid grid-cols-2 gap-2 items-center">
+                  <div key={category.id} className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-center">
                     <span className="text-sm">{category.name}</span>
                     <Select
                       value={threatImpacts[threat.id]?.[category.id]?.toString() || ""}
@@ -812,7 +815,7 @@ export default function RiskAssessmentWizardPage() {
             {riskVulnerabilities.map((vuln) => (
               <div key={vuln.id} className="space-y-2">
                 <h4 className="font-semibold">{vuln.name}</h4>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {vulnerabilityRatings.map((option) => (
                     <Button
                       key={option.id}
@@ -835,7 +838,7 @@ export default function RiskAssessmentWizardPage() {
           <div className="space-y-6">
             <div className="space-y-4">
               <h4 className="font-semibold">{t("Inherent Risk")}</h4>
-              <div className="flex items-center gap-4 text-center">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-center">
                 <div className="p-3 bg-muted rounded">
                   <p className="text-xs text-muted-foreground">{t("Likelihood")}</p>
                   <p className="font-bold">{calcLikelihood}</p>
@@ -873,7 +876,7 @@ export default function RiskAssessmentWizardPage() {
               <p className="text-sm text-muted-foreground">{t("Risk Tolerance")} = 10</p>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {riskRanges.map((range) => (
                 <div
                   key={range.id}
@@ -891,8 +894,8 @@ export default function RiskAssessmentWizardPage() {
         {/* Step 6: Risk Summary */}
         {currentStep === 6 && (
           <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 bg-muted rounded text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="p-3 sm:p-4 bg-muted rounded text-center">
                 <p className="text-sm text-muted-foreground">{t("Inherent Risk Rating")}</p>
                 <span className={cn(
                   "inline-block mt-2 px-3 py-1 rounded font-medium",
@@ -905,11 +908,11 @@ export default function RiskAssessmentWizardPage() {
                 </span>
                 <p className="text-sm text-muted-foreground mt-1">({riskScore.toFixed(2)})</p>
               </div>
-              <div className="p-4 bg-muted rounded text-center">
+              <div className="p-3 sm:p-4 bg-muted rounded text-center">
                 <p className="text-sm text-muted-foreground">{t("Overall Control Rating")}</p>
                 <p className="font-medium mt-2">-</p>
               </div>
-              <div className="p-4 bg-muted rounded text-center">
+              <div className="p-3 sm:p-4 bg-muted rounded text-center">
                 <p className="text-sm text-muted-foreground">{t("Residual Risk Rating")}</p>
                 <span className={cn(
                   "inline-block mt-2 px-3 py-1 rounded font-medium",
@@ -939,8 +942,8 @@ export default function RiskAssessmentWizardPage() {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex items-center gap-3 pt-4 border-t">
-        <span className="text-xs font-medium text-slate-400 me-auto">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 border-t">
+        <span className="text-xs font-medium text-slate-400 sm:me-auto text-center sm:text-left">
           {t("Step")} {currentStep} {t("of")} {assessmentSteps.length}
         </span>
         <Button
@@ -972,7 +975,7 @@ export default function RiskAssessmentWizardPage() {
 
       {/* Risk Response Strategy Dialog */}
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{t("Risk Response Strategy")}</DialogTitle>
             <DialogDescription>

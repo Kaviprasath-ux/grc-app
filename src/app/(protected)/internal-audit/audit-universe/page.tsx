@@ -124,7 +124,7 @@ export default function AuditUniversePage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -145,7 +145,7 @@ export default function AuditUniversePage() {
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Audit Universe")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Audit Universe")}</h1>
         </div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
@@ -161,7 +161,7 @@ export default function AuditUniversePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -186,8 +186,8 @@ export default function AuditUniversePage() {
       </div>
 
       {/* Summary Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 px-3 sm:px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
               <Building2 className="h-5 w-5 text-primary-600" />
@@ -198,7 +198,7 @@ export default function AuditUniversePage() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+        <div className="bg-white rounded-xl border border-slate-200 px-3 sm:px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
               <BarChart3 className="h-5 w-5 text-primary-600" />
@@ -209,7 +209,7 @@ export default function AuditUniversePage() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+        <div className="bg-white rounded-xl border border-slate-200 px-3 sm:px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
               <Timer className="h-5 w-5 text-primary-600" />
@@ -220,7 +220,7 @@ export default function AuditUniversePage() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4">
+        <div className="bg-white rounded-xl border border-slate-200 px-3 sm:px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
               <TrendingUp className="h-5 w-5 text-primary-600" />
@@ -237,10 +237,10 @@ export default function AuditUniversePage() {
 
       {/* Organization Map Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <h3 className="text-base font-semibold text-slate-800">{t("Organization Map")}</h3>
           {/* Inline Legend */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center flex-wrap gap-3">
             <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 bg-slate-400 rounded-full"></div>
               <span className="text-xs text-slate-500">{t("Planned")}</span>
@@ -263,7 +263,7 @@ export default function AuditUniversePage() {
             </div>
           </div>
         </div>
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="relative">
             {/* Root Node */}
             <div className="flex justify-center mb-8">
@@ -410,9 +410,10 @@ export default function AuditUniversePage() {
       {/* Hours Summary */}
       {data?.departments && data.departments.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Hours Summary by Department")}</h3>
           </div>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -484,6 +485,7 @@ export default function AuditUniversePage() {
               </TableRow>
             </TableBody>
           </Table>
+          </div>
         </div>
       )}
 

@@ -379,7 +379,7 @@ export default function RiskResponsePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -396,13 +396,13 @@ export default function RiskResponsePage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Response Strategy")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Response Strategy")}</h1>
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
         {/* Strategy Card */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-800">{t("Risk Response Strategy")}</h3>
             <Select value={strategyFilter} onValueChange={setStrategyFilter}>
@@ -469,7 +469,7 @@ export default function RiskResponsePage() {
         </div>
 
         {/* Progress Card */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-800">{t("Risk Response Progress")}</h3>
             <Select value={progressFilter} onValueChange={setProgressFilter}>
@@ -540,8 +540,8 @@ export default function RiskResponsePage() {
       {/* Risk List */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search Bar */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative flex-1 min-w-[280px] max-w-md">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative flex-1 min-w-0 sm:min-w-[280px] max-w-md">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -554,7 +554,8 @@ export default function RiskResponsePage() {
         </div>
 
         {/* Column Headers */}
-        <div className="grid grid-cols-[100px_1.5fr_120px_110px_110px_120px_110px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+        <div className="overflow-x-auto">
+        <div className="grid grid-cols-[100px_1.5fr_120px_110px_110px_120px_110px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[780px]">
           <span>{t("Risk ID")}</span>
           <span>{t("Risk Name")}</span>
           <span>{t("Risk Rating")}</span>
@@ -578,7 +579,7 @@ export default function RiskResponsePage() {
             paginatedRisks.map((risk) => (
               <div
                 key={risk.id}
-                className="grid grid-cols-[100px_1.5fr_120px_110px_110px_120px_110px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
+                className="grid grid-cols-[100px_1.5fr_120px_110px_110px_120px_110px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[780px]"
               >
                 <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                 <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
@@ -609,6 +610,7 @@ export default function RiskResponsePage() {
               </div>
             ))
           )}
+        </div>
         </div>
 
         {/* Pagination */}

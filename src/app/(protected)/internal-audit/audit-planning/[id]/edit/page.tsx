@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,9 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
+  Home,
   Plus,
   Trash2,
   FileText,
@@ -400,38 +403,63 @@ export default function EditEngagementPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="p-3 sm:p-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+          <Link href="/internal-audit/audit-planning" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/audit-planning" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Audit Planning")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Edit")}</span>
+        </nav>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             {t("Back")}
           </Button>
           <div className="text-sm text-muted-foreground">{t("Audit Plan")}</div>
-          <h1 className="text-xl font-semibold text-blue-900">{t("Edit Audit Plan")}</h1>
+          <h1 className="text-xl font-semibold text-slate-900">{t("Edit Audit Plan")}</h1>
         </div>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <Link href="/internal-audit/audit-planning" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/internal-audit/audit-planning" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Audit Planning")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Edit")}</span>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-1" />
           {t("Back")}
         </Button>
         <div className="text-sm text-muted-foreground">{t("Audit Plan")}</div>
-        <h1 className="text-xl font-semibold text-blue-900">{t("Edit Audit Plan")}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">{t("Edit Audit Plan")}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Engagement Title */}
         <div className="space-y-2">
-          <Label className="text-blue-800">
+          <Label className="text-slate-800">
             {t("Engagement Title")} <span className="text-red-500">*</span>
           </Label>
           <Input
@@ -443,7 +471,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Engagement Objective */}
         <div className="space-y-2">
-          <Label className="text-blue-800">
+          <Label className="text-slate-800">
             {t("Engagement Objective")} <span className="text-red-500">*</span>
           </Label>
           <Textarea
@@ -456,7 +484,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Engagement Scope */}
         <div className="space-y-2">
-          <Label className="text-blue-800">
+          <Label className="text-slate-800">
             {t("Engagement Scope")} <span className="text-red-500">*</span>
           </Label>
           <Textarea
@@ -469,7 +497,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Department */}
         <div className="space-y-2">
-          <Label className="text-blue-800">
+          <Label className="text-slate-800">
             {t("Department")} <span className="text-red-500">*</span>
           </Label>
           <Select
@@ -491,7 +519,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Link Open Risks */}
         <div className="space-y-2">
-          <Label className="text-blue-800">
+          <Label className="text-slate-800">
             {t("Link Open Risks in this Department")} <span className="text-red-500">*</span>
           </Label>
           <Select
@@ -519,8 +547,8 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Historical Risks */}
         <div className="space-y-2">
-          <Label className="text-blue-800">{t("Historical Risks (For reference, last year)")}</Label>
-          <div className="border rounded-lg p-4 min-h-[60px] bg-gray-50">
+          <Label className="text-slate-800">{t("Historical Risks (For reference, last year)")}</Label>
+          <div className="border rounded-lg p-4 min-h-[60px] bg-slate-50">
             {historicalRisks.length > 0 ? (
               <ul className="space-y-1">
                 {historicalRisks.map((risk) => (
@@ -530,14 +558,14 @@ export default function EditEngagementPage({ params }: PageProps) {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500 text-center">{t("No items found")}</p>
+              <p className="text-slate-500 text-center">{t("No items found")}</p>
             )}
           </div>
         </div>
 
         {/* Process */}
         <div className="space-y-2">
-          <Label className="text-blue-800">{t("Process")}</Label>
+          <Label className="text-slate-800">{t("Process")}</Label>
           <Select
             value={formData.processId}
             onValueChange={(value) => setFormData({ ...formData, processId: value })}
@@ -563,7 +591,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Audit Rating */}
         <div className="space-y-2">
-          <Label className="text-blue-800">{t("Audit Rating")}</Label>
+          <Label className="text-slate-800">{t("Audit Rating")}</Label>
           <Select
             value={formData.auditRating}
             onValueChange={(value) => setFormData({ ...formData, auditRating: value })}
@@ -589,7 +617,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Audit Type */}
         <div className="space-y-2">
-          <Label className="text-blue-800">{t("Audit Type")}</Label>
+          <Label className="text-slate-800">{t("Audit Type")}</Label>
           <Select
             value={formData.auditType}
             onValueChange={(value) => setFormData({ ...formData, auditType: value })}
@@ -615,7 +643,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Auditor (Audit Manager) */}
         <div className="space-y-2">
-          <Label className="text-blue-800">
+          <Label className="text-slate-800">
             {t("Auditor")} <span className="text-red-500">*</span>
           </Label>
           <Select
@@ -643,7 +671,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Auditee */}
         <div className="space-y-2">
-          <Label className="text-blue-800">{t("Auditee")}</Label>
+          <Label className="text-slate-800">{t("Auditee")}</Label>
           <Select
             value={formData.auditeeId}
             onValueChange={(value) => setFormData({ ...formData, auditeeId: value })}
@@ -668,9 +696,9 @@ export default function EditEngagementPage({ params }: PageProps) {
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <div className="space-y-2">
-            <Label className="text-blue-800">
+            <Label className="text-slate-800">
               {t("Start Date")} <span className="text-red-500">*</span>
             </Label>
             <DatePicker
@@ -680,7 +708,7 @@ export default function EditEngagementPage({ params }: PageProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-blue-800">
+            <Label className="text-slate-800">
               {t("Target Date")} <span className="text-red-500">*</span>
             </Label>
             <DatePicker
@@ -693,17 +721,17 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Attach File */}
         <div className="space-y-2">
-          <Label className="text-blue-800">{t("Attach File")}</Label>
+          <Label className="text-slate-800">{t("Attach File")}</Label>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragOverAttach ? "border-blue-500 bg-blue-50" : "border-gray-300"
+            className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors ${
+              isDragOverAttach ? "border-primary-500 bg-slate-50" : "border-slate-300"
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragOverAttach(true); }}
             onDragLeave={() => setIsDragOverAttach(false)}
             onDrop={(e) => handleFileDrop(e, "attach")}
             onClick={() => attachFileRef.current?.click()}
           >
-            <p className="text-gray-600">{t("Drag and drop or select file.")}</p>
+            <p className="text-slate-600">{t("Drag and drop or select file.")}</p>
             <input
               ref={attachFileRef}
               type="file"
@@ -715,11 +743,11 @@ export default function EditEngagementPage({ params }: PageProps) {
           {attachedFiles.length > 0 && (
             <div className="space-y-2 mt-2">
               {attachedFiles.map((file) => (
-                <div key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                <div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-gray-500" />
+                    <FileText className="h-4 w-4 text-slate-500" />
                     <span className="text-sm">{file.name}</span>
-                    <span className="text-xs text-gray-400">({formatFileSize(file.size)})</span>
+                    <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
                   </div>
                   <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(file.id, "attach")}>
                     <X className="h-4 w-4" />
@@ -732,17 +760,17 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Upload Workpaper */}
         <div className="space-y-2">
-          <Label className="text-blue-800">{t("Upload Workpaper")}</Label>
+          <Label className="text-slate-800">{t("Upload Workpaper")}</Label>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragOverWorkpaper ? "border-blue-500 bg-blue-50" : "border-gray-300"
+            className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors ${
+              isDragOverWorkpaper ? "border-primary-500 bg-slate-50" : "border-slate-300"
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragOverWorkpaper(true); }}
             onDragLeave={() => setIsDragOverWorkpaper(false)}
             onDrop={(e) => handleFileDrop(e, "workpaper")}
             onClick={() => workpaperRef.current?.click()}
           >
-            <p className="text-gray-600">{t("Drag and drop or select file.")}</p>
+            <p className="text-slate-600">{t("Drag and drop or select file.")}</p>
             <input
               ref={workpaperRef}
               type="file"
@@ -754,11 +782,11 @@ export default function EditEngagementPage({ params }: PageProps) {
           {workpaperFiles.length > 0 && (
             <div className="space-y-2 mt-2">
               {workpaperFiles.map((file) => (
-                <div key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                <div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-gray-500" />
+                    <FileText className="h-4 w-4 text-slate-500" />
                     <span className="text-sm">{file.name}</span>
-                    <span className="text-xs text-gray-400">({formatFileSize(file.size)})</span>
+                    <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
                   </div>
                   <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(file.id, "workpaper")}>
                     <X className="h-4 w-4" />
@@ -771,13 +799,13 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Initial Audit Observation */}
         <Collapsible open={observationOpen} onOpenChange={setObservationOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-blue-50 rounded-lg hover:bg-blue-100">
-            <span className="text-blue-800 font-medium">{t("Initial Audit Observation")}</span>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-slate-50 rounded-lg hover:bg-slate-100">
+            <span className="text-slate-800 font-medium">{t("Initial Audit Observation")}</span>
             {observationOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
             <div className="space-y-2">
-              <Label className="text-blue-800">{t("Auditor's Initial Observation")}</Label>
+              <Label className="text-slate-800">{t("Auditor's Initial Observation")}</Label>
               <Textarea
                 value={formData.initialObservation}
                 onChange={(e) => setFormData({ ...formData, initialObservation: e.target.value })}
@@ -789,21 +817,21 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Audit Testing Procedure */}
         <Collapsible open={procedureOpen} onOpenChange={setProcedureOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-blue-50 rounded-lg hover:bg-blue-100">
-            <span className="text-blue-800 font-medium">{t("Audit Testing Procedure")}</span>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-slate-50 rounded-lg hover:bg-slate-100">
+            <span className="text-slate-800 font-medium">{t("Audit Testing Procedure")}</span>
             {procedureOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
             <div className="flex justify-end mb-4">
-              <Button type="button" onClick={addTaskRow} className="bg-blue-600 hover:bg-blue-700">
+              <Button type="button" onClick={addTaskRow}>
                 <Plus className="h-4 w-4 mr-2" />
                 {t("Add Task Row")}
               </Button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse min-w-[600px]">
                 <thead>
-                  <tr className="text-left text-blue-800">
+                  <tr className="text-left text-slate-800">
                     <th className="p-2 border-b">{t("Task")}</th>
                     <th className="p-2 border-b w-16">{t("Done")}</th>
                     <th className="p-2 border-b w-24">{t("Planned Hours")}</th>
@@ -820,7 +848,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                         <Input
                           value={task.task}
                           onChange={(e) => updateTask(task.id, "task", e.target.value)}
-                          className="border-gray-200"
+                          className="border-slate-200"
                         />
                       </td>
                       <td className="p-2 border-b text-center">
@@ -834,7 +862,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                           type="number"
                           value={task.plannedHours}
                           onChange={(e) => updateTask(task.id, "plannedHours", e.target.value)}
-                          className="border-gray-200"
+                          className="border-slate-200"
                         />
                       </td>
                       <td className="p-2 border-b">
@@ -842,7 +870,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                           type="number"
                           value={task.actualHours}
                           onChange={(e) => updateTask(task.id, "actualHours", e.target.value)}
-                          className="border-gray-200"
+                          className="border-slate-200"
                         />
                       </td>
                       <td className="p-2 border-b">
@@ -850,7 +878,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                           value={task.auditorId}
                           onValueChange={(value) => updateTask(task.id, "auditorId", value)}
                         >
-                          <SelectTrigger className="border-gray-200">
+                          <SelectTrigger className="border-slate-200">
                             <SelectValue placeholder={t("Select Auditor")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -872,7 +900,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                         <Input
                           value={task.comments}
                           onChange={(e) => updateTask(task.id, "comments", e.target.value)}
-                          className="border-gray-200"
+                          className="border-slate-200"
                         />
                       </td>
                       <td className="p-2 border-b">
@@ -891,8 +919,8 @@ export default function EditEngagementPage({ params }: PageProps) {
                   <tr className="font-medium">
                     <td className="p-2"></td>
                     <td className="p-2"></td>
-                    <td className="p-2 text-blue-800">{t("Total")}: {calculateTotalHours("plannedHours")}</td>
-                    <td className="p-2 text-blue-800">{t("Total")}: {calculateTotalHours("actualHours")}</td>
+                    <td className="p-2 text-slate-800">{t("Total")}: {calculateTotalHours("plannedHours")}</td>
+                    <td className="p-2 text-slate-800">{t("Total")}: {calculateTotalHours("actualHours")}</td>
                     <td className="p-2"></td>
                     <td className="p-2"></td>
                     <td className="p-2"></td>
@@ -905,13 +933,13 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Related Policies & Procedures */}
         <Collapsible open={policiesOpen} onOpenChange={setPoliciesOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-blue-50 rounded-lg hover:bg-blue-100">
-            <span className="text-blue-800 font-medium">{t("Related Policies & Procedures")}</span>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-slate-50 rounded-lg hover:bg-slate-100">
+            <span className="text-slate-800 font-medium">{t("Related Policies & Procedures")}</span>
             {policiesOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
             <div className="space-y-2">
-              <Label className="text-blue-800">{t("Related Policies / Procedures")}</Label>
+              <Label className="text-slate-800">{t("Related Policies / Procedures")}</Label>
               <Textarea
                 value={formData.relatedPolicies}
                 onChange={(e) => setFormData({ ...formData, relatedPolicies: e.target.value })}
@@ -922,7 +950,7 @@ export default function EditEngagementPage({ params }: PageProps) {
         </Collapsible>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4">
           <Button
             type="button"
             variant="outline"
@@ -930,7 +958,7 @@ export default function EditEngagementPage({ params }: PageProps) {
           >
             {t("Cancel")}
           </Button>
-          <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+          <Button type="submit" disabled={saving}>
             {saving ? t("Saving...") : t("Update")}
           </Button>
         </div>

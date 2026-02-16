@@ -243,7 +243,7 @@ export default function RiskControlMatrixPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -259,9 +259,9 @@ export default function RiskControlMatrixPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Control Matrix")}</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Control Matrix")}</h1>
+        <div className="flex flex-wrap items-center gap-2">
           {isCustomerAdmin && canDelete && entries.length > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -313,8 +313,8 @@ export default function RiskControlMatrixPage() {
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search Bar */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative flex-1 min-w-[280px] max-w-md">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative flex-1 min-w-0 sm:min-w-[280px] max-w-md">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -327,7 +327,8 @@ export default function RiskControlMatrixPage() {
         </div>
 
         {/* Column Headers */}
-        <div className={`grid ${gridCols} gap-4 px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider`}>
+        <div className="overflow-x-auto">
+        <div className={`grid ${gridCols} gap-4 px-3 sm:px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider min-w-[750px]`}>
           <span>{t("Risk Code")}</span>
           <span>{t("Risk Name")}</span>
           <span>{t("Inherent")}</span>
@@ -374,7 +375,7 @@ export default function RiskControlMatrixPage() {
               <div
                 key={entry.id}
                 onClick={() => entry.riskId && router.push(`/risks/risk-control-matrix/${entry.riskId}`)}
-                className={`grid ${gridCols} gap-4 px-5 py-3 items-center transition-colors ${entry.riskId ? "cursor-pointer hover:bg-slate-50/60" : ""}`}
+                className={`grid ${gridCols} gap-4 px-3 sm:px-5 py-3 items-center transition-colors min-w-[750px] ${entry.riskId ? "cursor-pointer hover:bg-slate-50/60" : ""}`}
               >
                 {/* Risk Code */}
                 <span className="text-sm font-medium text-slate-800">{entry.riskCode}</span>
@@ -467,6 +468,7 @@ export default function RiskControlMatrixPage() {
               </div>
             ))
           )}
+        </div>
         </div>
 
         {/* Pagination */}

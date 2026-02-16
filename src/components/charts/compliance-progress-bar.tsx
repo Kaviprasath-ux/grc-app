@@ -61,7 +61,7 @@ export function ComplianceProgressBar({ title, data, className, maxItems = 5, on
 
   return (
     <div className={cn(
-      "bg-white rounded-xl border border-slate-200 p-5",
+      "bg-white rounded-xl border border-slate-200 p-3 sm:p-5",
       className
     )}>
       {/* Header */}

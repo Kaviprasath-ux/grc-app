@@ -140,11 +140,11 @@ export default function DashboardPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Dashboard Overview")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Dashboard Overview")}</h1>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <StatsCard
           label={t("Departments")}
           value={dashboardStats.departments}
@@ -184,7 +184,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Compliance & Risk Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <ComplianceProgressBar
           title={t("Overall Compliance Status")}
           data={complianceData}
@@ -212,7 +212,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Issues & Exceptions Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <DonutChart
           title={t("Issue By Category")}
           data={issueByCategoryData}
@@ -244,7 +244,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <StackedBarChart
           title={t("Evidence KPI")}
           data={evidenceKPIData}
@@ -272,7 +272,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Governance & Status Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <StackedBarChart
           title={t("Governance Status")}
           data={governanceStatusData}

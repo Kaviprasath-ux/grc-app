@@ -1059,9 +1059,9 @@ export default function RiskRegisterPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
         </div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
@@ -1077,7 +1077,7 @@ export default function RiskRegisterPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -1097,9 +1097,9 @@ export default function RiskRegisterPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -1131,8 +1131,8 @@ export default function RiskRegisterPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative w-[320px]">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative w-full sm:w-[320px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -1143,9 +1143,9 @@ export default function RiskRegisterPage() {
               disabled={isReadOnlyRole}
             />
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 w-full sm:w-auto sm:ml-auto">
             <Select value={yearFilter} onValueChange={setYearFilter} disabled={isReadOnlyRole}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200" disabled={isReadOnlyRole}>
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200" disabled={isReadOnlyRole}>
                 <SelectValue placeholder={t("Year")} />
               </SelectTrigger>
               <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1158,7 +1158,7 @@ export default function RiskRegisterPage() {
               </SelectContent>
             </Select>
             <Select value={departmentFilter} onValueChange={setDepartmentFilter} disabled={isReadOnlyRole}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200" disabled={isReadOnlyRole}>
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200" disabled={isReadOnlyRole}>
                 <SelectValue placeholder={t("Department")} />
               </SelectTrigger>
               <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1173,7 +1173,7 @@ export default function RiskRegisterPage() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pl-5 min-w-[100px]">{t("Risk ID")}</TableHead>
@@ -1249,7 +1249,7 @@ export default function RiskRegisterPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
@@ -1265,7 +1265,7 @@ export default function RiskRegisterPage() {
 
       {/* Import Dialog */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1340,7 +1340,7 @@ export default function RiskRegisterPage() {
 
       {/* AI Recommended Audits Dialog */}
       <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
-        <DialogContent className="sm:max-w-[900px] max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[900px] max-h-[85vh] flex flex-col p-0 gap-0">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1481,7 +1481,7 @@ export default function RiskRegisterPage() {
 
       {/* AI Audit Selection Dialog - Frontend filtered risks grouped by department */}
       <Dialog open={aiAuditSelectionOpen} onOpenChange={setAiAuditSelectionOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[800px] max-h-[85vh] flex flex-col p-0 gap-0">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1612,7 +1612,7 @@ export default function RiskRegisterPage() {
 
       {/* Fieldwork Audit Plan Result Dialog */}
       <Dialog open={fieldworkPlanDialogOpen} onOpenChange={setFieldworkPlanDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[85vh] flex flex-col p-0 gap-0">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1704,7 +1704,7 @@ export default function RiskRegisterPage() {
 
       {/* Add Risk Modal */}
       <Dialog open={isAddRiskOpen} onOpenChange={setIsAddRiskOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2123,7 +2123,7 @@ export default function RiskRegisterPage() {
 
       {/* Edit Risk Modal */}
       <Dialog open={isEditRiskOpen} onOpenChange={setIsEditRiskOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2555,7 +2555,7 @@ export default function RiskRegisterPage() {
 
       {/* View Risk Modal */}
       <Dialog open={isViewRiskOpen} onOpenChange={setIsViewRiskOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>

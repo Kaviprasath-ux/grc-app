@@ -45,7 +45,7 @@ export function HorizontalBarChart({
   return (
     <div
       className={cn(
-        "bg-white rounded-xl border border-slate-200 p-4",
+        "bg-white rounded-xl border border-slate-200 p-3 sm:p-4",
         onClick && "cursor-pointer hover:bg-slate-50 transition-colors",
         className
       )}
@@ -100,8 +100,8 @@ export function HorizontalBarChart({
               <YAxis
                 dataKey={yAxisDataKey}
                 type="category"
-                width={80}
-                tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }}
+                width={60}
+                tick={{ fontSize: 10, fill: "#475569", fontWeight: 500 }}
                 axisLine={false}
                 tickLine={false}
               />

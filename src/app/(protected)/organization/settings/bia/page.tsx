@@ -560,9 +560,9 @@ export default function BIASettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm flex-wrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -581,18 +581,18 @@ export default function BIASettingsPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("BIA Settings")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("BIA Settings")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="w-full sm:w-auto flex-wrap">
           <TabsTrigger value="category">{t("Category")}</TabsTrigger>
           <TabsTrigger value="methodology">{t("BIA Methodology")}</TabsTrigger>
           <TabsTrigger value="bcp">{t("BCP Labels")}</TabsTrigger>
         </TabsList>
 
         {/* Category Tab */}
-        <TabsContent value="category" className="mt-6 space-y-4">
+        <TabsContent value="category" className="mt-4 sm:mt-6 space-y-4">
           <div className="flex items-center justify-end">
             <Button
               size="sm"
@@ -611,10 +611,10 @@ export default function BIASettingsPage() {
         </TabsContent>
 
         {/* BIA Methodology Tab */}
-        <TabsContent value="methodology" className="mt-6 space-y-8">
+        <TabsContent value="methodology" className="mt-4 sm:mt-6 space-y-6 sm:space-y-8">
           {/* BIA Rating Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <h3 className="text-base font-semibold text-slate-800">{t("BIA Rating")}</h3>
               </div>
@@ -635,12 +635,12 @@ export default function BIASettingsPage() {
           </div>
 
           {/* BIA Calculation Section */}
-          <div className="border-t border-slate-200 pt-8 space-y-4">
+          <div className="border-t border-slate-200 pt-6 sm:pt-8 space-y-4">
             <h3 className="text-base font-semibold text-slate-800">{t("BIA Calculation")}</h3>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
               <Label className="text-sm font-medium text-slate-700">{t("Calculation Type")}</Label>
               <Select value={calculationType} onValueChange={handleCalculationTypeChange}>
-                <SelectTrigger className="w-[200px] bg-white">
+                <SelectTrigger className="w-full sm:w-[200px] bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -654,7 +654,7 @@ export default function BIASettingsPage() {
             {/* Scoring Calculation Grid - Only show for Addition/Product */}
             {calculationType !== "High of all" && (
               <div className="space-y-4 pt-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <h4 className="text-sm font-semibold text-slate-800">{t("Scoring Calculation")}</h4>
                   </div>
@@ -682,7 +682,7 @@ export default function BIASettingsPage() {
         </TabsContent>
 
         {/* BCP Labels Tab */}
-        <TabsContent value="bcp" className="mt-6 space-y-4">
+        <TabsContent value="bcp" className="mt-4 sm:mt-6 space-y-4">
           <div className="flex items-center justify-end">
             <Button
               size="sm"
@@ -703,9 +703,9 @@ export default function BIASettingsPage() {
 
       {/* Category Dialog */}
       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {editingCategory ? t("Edit Category") : t("Add Category")}
@@ -714,7 +714,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
@@ -754,7 +754,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -765,9 +765,9 @@ export default function BIASettingsPage() {
 
       {/* Rating Dialog */}
       <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {editingRating ? t("Edit Rating") : t("Add Rating")}
@@ -776,7 +776,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
@@ -838,7 +838,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsRatingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -849,9 +849,9 @@ export default function BIASettingsPage() {
 
       {/* Scoring Range Dialog */}
       <Dialog open={isRangeDialogOpen} onOpenChange={setIsRangeDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {editingRange ? t("Edit Scoring Range") : t("Add Scoring Range")}
@@ -860,7 +860,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
@@ -883,63 +883,65 @@ export default function BIASettingsPage() {
                   </div>
                 )}
               </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("High Range")} <span className="text-error">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  value={(editingRange ? editingRange.highValue : newRange.highValue) ?? ""}
-                  onChange={(e) => {
-                    if (formErrors.rangeHigh) setFormErrors((prev) => { const { rangeHigh, ...rest } = prev; return rest; });
-                    const rawValue = e.target.value;
-                    const numValue = rawValue === "" ? null : Number(rawValue);
-                    if (editingRange) {
-                      setEditingRange({ ...editingRange, highValue: numValue });
-                    } else {
-                      setNewRange({ ...newRange, highValue: numValue });
-                    }
-                  }}
-                  placeholder={t("e.g., 500")}
-                  className={`mt-1.5 bg-white ${formErrors.rangeHigh ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                />
-                {formErrors.rangeHigh && (
-                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
-                    <p className="text-sm text-red-600">{formErrors.rangeHigh}</p>
-                  </div>
-                )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">
-                  {t("Low Range")} <span className="text-error">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  value={(editingRange ? editingRange.lowValue : newRange.lowValue) ?? ""}
-                  onChange={(e) => {
-                    if (formErrors.rangeLow) setFormErrors((prev) => { const { rangeLow, ...rest } = prev; return rest; });
-                    const rawValue = e.target.value;
-                    const numValue = rawValue === "" ? null : Number(rawValue);
-                    if (editingRange) {
-                      setEditingRange({ ...editingRange, lowValue: numValue as number });
-                    } else {
-                      setNewRange({ ...newRange, lowValue: numValue === null ? "" : numValue });
-                    }
-                  }}
-                  placeholder={t("e.g., 250")}
-                  className={`mt-1.5 bg-white ${formErrors.rangeLow ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                />
-                {formErrors.rangeLow && (
-                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
-                    <p className="text-sm text-red-600">{formErrors.rangeLow}</p>
-                  </div>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t("High Range")} <span className="text-error">*</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    value={(editingRange ? editingRange.highValue : newRange.highValue) ?? ""}
+                    onChange={(e) => {
+                      if (formErrors.rangeHigh) setFormErrors((prev) => { const { rangeHigh, ...rest } = prev; return rest; });
+                      const rawValue = e.target.value;
+                      const numValue = rawValue === "" ? null : Number(rawValue);
+                      if (editingRange) {
+                        setEditingRange({ ...editingRange, highValue: numValue });
+                      } else {
+                        setNewRange({ ...newRange, highValue: numValue });
+                      }
+                    }}
+                    placeholder={t("e.g., 500")}
+                    className={`mt-1.5 bg-white ${formErrors.rangeHigh ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  />
+                  {formErrors.rangeHigh && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{formErrors.rangeHigh}</p>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t("Low Range")} <span className="text-error">*</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    value={(editingRange ? editingRange.lowValue : newRange.lowValue) ?? ""}
+                    onChange={(e) => {
+                      if (formErrors.rangeLow) setFormErrors((prev) => { const { rangeLow, ...rest } = prev; return rest; });
+                      const rawValue = e.target.value;
+                      const numValue = rawValue === "" ? null : Number(rawValue);
+                      if (editingRange) {
+                        setEditingRange({ ...editingRange, lowValue: numValue as number });
+                      } else {
+                        setNewRange({ ...newRange, lowValue: numValue === null ? "" : numValue });
+                      }
+                    }}
+                    placeholder={t("e.g., 250")}
+                    className={`mt-1.5 bg-white ${formErrors.rangeLow ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  />
+                  {formErrors.rangeLow && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{formErrors.rangeLow}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsRangeDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -950,9 +952,9 @@ export default function BIASettingsPage() {
 
       {/* BCP Label Dialog */}
       <Dialog open={isBcpDialogOpen} onOpenChange={setIsBcpDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {editingBcp ? t("Edit BCP Label") : t("Add BCP Label")}
@@ -961,7 +963,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
@@ -1034,7 +1036,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsBcpDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1045,18 +1047,18 @@ export default function BIASettingsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent className="sm:max-w-[420px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Item")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete this item? This action cannot be undone.")}
             </p>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t("Cancel")}</Button>
             <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
           </div>
@@ -1065,18 +1067,18 @@ export default function BIASettingsPage() {
 
       {/* BIA Rating Warning Dialog */}
       <Dialog open={isRatingWarningOpen} onOpenChange={setIsRatingWarningOpen}>
-        <DialogContent className="sm:max-w-[420px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Warning")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <p className="text-sm text-slate-600">
               {t("Please add BIA rating before adding scoring ranges.")}
             </p>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button onClick={() => setIsRatingWarningOpen(false)}>{t("OK")}</Button>
           </div>
         </DialogContent>

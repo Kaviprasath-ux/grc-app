@@ -24,7 +24,7 @@ export default function ExcelImportPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Excel Import/Export")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Excel Import/Export")}</h1>
       </div>
 
       <Card>

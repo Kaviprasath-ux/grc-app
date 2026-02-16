@@ -1414,8 +1414,6 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                     <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)} className="h-8 w-8"><Paperclip className="h-5 w-5 text-slate-700" /></Button>
                                   </div>
                                 </div>
-                                </div>
-                            ))}
                                 {er.status === 'Pending' && (
                                   <div className="flex justify-end mt-4">
                                     <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setAuditeeClariEvidence(er); setRespondDialogOpen(true); }}>{t("Submit Response")}</Button>
@@ -2580,7 +2578,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg flex justify-end gap-3 flex-shrink-0">
                 <Button variant="outline" onClick={() => { setFindingDetailDialogOpen(false); setSelectedFindingId(null); setSelectedFindingData(null); }} className="px-5">{t("Cancel")}</Button>
                 <Button onClick={handleSaveEditFinding} disabled={savingEditFinding} className="bg-primary-600 hover:bg-primary-700 px-5">
-                  {savingEditFinding ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : (<><Save className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Save Finding")}</>)}
+                  {savingEditFinding ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : (<><Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Save Finding")}</>)}
                 </Button>
               </div>
             </>

@@ -581,7 +581,7 @@ export default function ExceptionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         {isGRCAdmin ? (
@@ -605,23 +605,23 @@ export default function ExceptionsPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Exceptions")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Exceptions")}</h1>
       </div>
 
       {/* Create Exception Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setExceptionErrors({}); } setCreateDialogOpen(open); }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("New Exception")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Code")}</Label>
                   <Input
@@ -651,7 +651,7 @@ export default function ExceptionsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requested By")}</Label>
                   <Input
@@ -840,7 +840,7 @@ export default function ExceptionsPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")} <span className="text-red-500">*</span></Label>
                   <Select
@@ -897,7 +897,7 @@ export default function ExceptionsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
                   <Input value={t("Pending")} disabled className="mt-1.5 w-full bg-slate-50" />
@@ -931,9 +931,10 @@ export default function ExceptionsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setExceptionErrors({});
                 setCreateDialogOpen(false);
@@ -943,6 +944,7 @@ export default function ExceptionsPage() {
               {t("Cancel")}
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={handleCreate}
               disabled={saving}
             >
@@ -954,13 +956,13 @@ export default function ExceptionsPage() {
 
       {/* Approver Selection Dialog */}
       <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Select Approver")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             <div className="border border-slate-200 rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
@@ -998,7 +1000,7 @@ export default function ExceptionsPage() {
       </Dialog>
 
       {/* Summary Charts Row with Pie Charts */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Status Pie Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Status")}</h3>
@@ -1174,7 +1176,7 @@ export default function ExceptionsPage() {
       </div>
 
       {/* Action Button */}
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
         <PermissionGate resource="compliance.exceptions" action="create">
           <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1191,25 +1193,25 @@ export default function ExceptionsPage() {
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           {/* Search & Filters Toolbar */}
-          <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder={t("Search by name, code or requester...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                className="w-full sm:w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
-            <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
               <Select
                 value={filters.status || "all"}
                 onValueChange={(value) =>
                   setFilters({ ...filters, status: value === "all" ? "" : value })
                 }
               >
-                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("All Statuses")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
@@ -1227,7 +1229,7 @@ export default function ExceptionsPage() {
                   setFilters({ ...filters, category: value === "all" ? "" : value })
                 }
               >
-                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("All Categories")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
@@ -1242,6 +1244,7 @@ export default function ExceptionsPage() {
             </div>
           </div>
 
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50 border-b border-slate-100">
@@ -1356,6 +1359,7 @@ export default function ExceptionsPage() {
               )}
             </TableBody>
           </Table>
+          </div>
 
           {/* Pagination */}
           <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
@@ -1386,9 +1390,9 @@ export default function ExceptionsPage() {
 
       {/* Edit Exception Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Exception")}</DialogTitle>
               {selectedException?.status === "Approved" && (
@@ -1400,9 +1404,9 @@ export default function ExceptionsPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Code")}</Label>
                   <Input
@@ -1425,7 +1429,7 @@ export default function ExceptionsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requested By")}</Label>
                   <Select
@@ -1618,7 +1622,7 @@ export default function ExceptionsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
                   <Select
@@ -1676,7 +1680,7 @@ export default function ExceptionsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
                   <Select
@@ -1720,9 +1724,10 @@ export default function ExceptionsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setEditDialogOpen(false);
                 setSelectedException(null);
@@ -1732,6 +1737,7 @@ export default function ExceptionsPage() {
             </Button>
             {selectedException?.status !== "Approved" && (
               <Button
+                className="w-full sm:w-auto"
                 onClick={handleEdit}
                 disabled={!editForm.name || !editForm.category || saving}
               >

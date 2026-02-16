@@ -81,7 +81,7 @@ export default function InternalAuditSettingsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -102,11 +102,11 @@ export default function InternalAuditSettingsPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Settings")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Settings")}</h1>
       </div>
 
       {/* Settings Card Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {settingsCategories.map((category) => {
           const Icon = category.icon;
           return (

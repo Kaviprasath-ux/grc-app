@@ -310,7 +310,7 @@ export default function FrameworkMasterDataPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
@@ -321,7 +321,7 @@ export default function FrameworkMasterDataPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Framework")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
             <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
@@ -332,7 +332,7 @@ export default function FrameworkMasterDataPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -348,10 +348,10 @@ export default function FrameworkMasterDataPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
 
       {/* Action Buttons - Above Card */}
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
@@ -363,11 +363,11 @@ export default function FrameworkMasterDataPage() {
               {t("New Framework (AI)")}
             </Button>
           </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-              <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+            <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+              <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("AI Framework Generator")}</DialogTitle>
               </div>
-              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                 <p className="text-sm text-slate-600">
                   {t("This feature will use AI to help generate framework requirements based on your inputs.")}
                 </p>
@@ -386,7 +386,7 @@ export default function FrameworkMasterDataPage() {
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                 <Button variant="outline" onClick={() => setAiDialogOpen(false)}>
                   {t("Cancel")}
                 </Button>
@@ -407,15 +407,15 @@ export default function FrameworkMasterDataPage() {
               {t("New Framework")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogTitle className="text-base font-semibold text-slate-800">
                   {wizardStep === 1 ? t("Create Integrated Framework") : t("Import Requirement")}
                 </DialogTitle>
               </div>
 
               {/* Stepper */}
-              <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+              <div className="flex-shrink-0 flex items-center justify-center px-4 sm:px-6 py-4 bg-slate-50/50 border-b border-slate-100">
                 {[1, 2].map((step) => (
                   <div key={step} className="flex items-center">
                     <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${
@@ -439,7 +439,7 @@ export default function FrameworkMasterDataPage() {
 
               {/* Step 1: Framework Details */}
               {wizardStep === 1 && (
-                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
                   <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
                     {t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
                   </p>
@@ -485,7 +485,7 @@ export default function FrameworkMasterDataPage() {
                       <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.type}</p>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-slate-700">{t("Country")} <span className="text-red-500">*</span></Label>
                       <Input
@@ -516,7 +516,7 @@ export default function FrameworkMasterDataPage() {
 
               {/* Step 2: Import Requirements */}
               {wizardStep === 2 && (
-                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
                     <div className="flex gap-2">
@@ -567,7 +567,7 @@ export default function FrameworkMasterDataPage() {
               )}
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                 {wizardStep === 2 && (
                   <Button variant="outline" onClick={handlePreviousStep}>
                     {t("Previous")}
@@ -600,7 +600,7 @@ export default function FrameworkMasterDataPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           <div className="relative">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
@@ -608,12 +608,12 @@ export default function FrameworkMasterDataPage() {
               placeholder={t("Search frameworks...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full sm:w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
           <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-2">
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Types")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -624,7 +624,7 @@ export default function FrameworkMasterDataPage() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Status")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -636,7 +636,8 @@ export default function FrameworkMasterDataPage() {
             </Select>
           </div>
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Framework Name")}</TableHead>
@@ -697,7 +698,8 @@ export default function FrameworkMasterDataPage() {
             )}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+        </div>
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <p className="text-xs text-slate-500">
             {filteredFrameworks.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
             {Math.min(startIndex + itemsPerPage, filteredFrameworks.length)} {t("of")}{" "}
@@ -728,11 +730,11 @@ export default function FrameworkMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Integrated Framework")}</DialogTitle>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework Name")} <span className="text-red-500">*</span></Label>
               <Input
@@ -773,7 +775,7 @@ export default function FrameworkMasterDataPage() {
                 <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.type}</p>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">{t("Country")} <span className="text-red-500">*</span></Label>
                 <Input
@@ -798,7 +800,7 @@ export default function FrameworkMasterDataPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {

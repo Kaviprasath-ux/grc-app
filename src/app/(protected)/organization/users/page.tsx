@@ -761,29 +761,29 @@ export default function UsersPage() {
   // Simplified view for DeptReviewer/DeptContributor
   if (isDeptRole) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
-          <div className="flex items-center gap-1.5 text-slate-500">
-            <Home className="h-4 w-4" />
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto">
+          <div className="flex items-center gap-1.5 text-slate-500 whitespace-nowrap">
+            <Home className="h-4 w-4 flex-shrink-0" />
             <span>{t("Organization")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-          <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180 flex-shrink-0" />
+          <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors whitespace-nowrap">
             {t("Dashboard")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-          <span className="text-primary-700 font-medium">{t("Users")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180 flex-shrink-0" />
+          <span className="text-primary-700 font-medium whitespace-nowrap">{t("Users")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Account Overview")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Account Overview")}</h1>
         </div>
 
         <div className="space-y-4">
           {currentDepartment && (
-            <div className="text-lg font-semibold text-foreground">
+            <div className="text-base sm:text-lg font-semibold text-foreground">
               {currentDepartment.name} - {departmentUsers.length} {t("users")}
             </div>
           )}
@@ -798,46 +798,46 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <Home className="h-4 w-4" />
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto">
+        <div className="flex items-center gap-1.5 text-slate-500 whitespace-nowrap">
+          <Home className="h-4 w-4 flex-shrink-0" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180 flex-shrink-0" />
+        <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors whitespace-nowrap">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{t("Users")}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180 flex-shrink-0" />
+        <span className="text-primary-700 font-medium whitespace-nowrap">{t("Users")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Users")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Users")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="account-overview">{t("Account Overview")}</TabsTrigger>
-          <TabsTrigger value="user-management">{t("User Management")}</TabsTrigger>
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="account-overview" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("Account Overview")}</TabsTrigger>
+          <TabsTrigger value="user-management" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("User Management")}</TabsTrigger>
         </TabsList>
 
         {/* Account Overview Tab */}
-        <TabsContent value="account-overview" className="mt-6">
-          <div className="space-y-5">
+        <TabsContent value="account-overview" className="mt-4 sm:mt-6">
+          <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExport}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowImportDialog(true)}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
-              <Button size="sm" onClick={handleNewAccountClick}>
+              <Button size="sm" className="w-full sm:w-auto" onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New User")}
               </Button>
@@ -846,8 +846,8 @@ export default function UsersPage() {
             {/* Card Container */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search Toolbar */}
-              <div className="flex items-center px-5 py-3 border-b border-slate-100">
-                <div className="relative max-w-xs">
+              <div className="flex items-center px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="relative w-full sm:max-w-xs">
                   <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
@@ -865,11 +865,11 @@ export default function UsersPage() {
                   <AccordionItem
                     key={dept.id}
                     value={dept.id}
-                    className="border-b border-slate-100 last:border-0 px-4"
+                    className="border-b border-slate-100 last:border-0 px-2 sm:px-4"
                   >
-                  <AccordionTrigger className="hover:no-underline py-4 focus-visible:ring-0 focus-visible:border-transparent">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-slate-800">{dept.name}</span>
+                  <AccordionTrigger className="hover:no-underline py-3 sm:py-4 focus-visible:ring-0 focus-visible:border-transparent">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className="text-xs sm:text-sm font-semibold text-slate-800">{dept.name}</span>
                       <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                         {dept.users.length}
                       </span>
@@ -877,8 +877,8 @@ export default function UsersPage() {
                   </AccordionTrigger>
                   <AccordionContent>
                     {dept.users.length > 0 ? (
-                      <div className="overflow-hidden rounded-lg border border-slate-200 mb-2">
-                        <table className="w-full text-sm">
+                      <div className="overflow-x-auto rounded-lg border border-slate-200 mb-2">
+                        <table className="w-full text-sm min-w-[700px]">
                           <thead>
                             <tr className="border-b border-slate-100 bg-slate-50">
                               <th className="text-start py-3 ps-5 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Full Name")}</th>
@@ -942,7 +942,7 @@ export default function UsersPage() {
                           </tbody>
                         </table>
                         {/* Pagination */}
-                        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                        <div className="flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3 border-t border-slate-100 bg-slate-50/50">
                           <span className="text-xs text-slate-500">
                             1 {t("to")} {dept.users.length} {t("of")} {dept.users.length}
                           </span>
@@ -976,19 +976,19 @@ export default function UsersPage() {
         </TabsContent>
 
         {/* User Management Tab */}
-        <TabsContent value="user-management" className="mt-6">
-          <div className="space-y-5">
+        <TabsContent value="user-management" className="mt-4 sm:mt-6">
+          <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExport}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowImportDialog(true)}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
-              <Button size="sm" onClick={handleNewAccountClick}>
+              <Button size="sm" className="w-full sm:w-auto" onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New User")}
               </Button>
@@ -996,8 +996,8 @@ export default function UsersPage() {
             {/* Table Card with Integrated Filters */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search & Filters */}
-              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                <div className="relative max-w-xs">
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="relative w-full sm:max-w-xs">
                   <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
@@ -1007,9 +1007,9 @@ export default function UsersPage() {
                     className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
-                <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Role")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1020,7 +1020,7 @@ export default function UsersPage() {
                   </SelectContent>
                 </Select>
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1069,21 +1069,21 @@ export default function UsersPage() {
           });
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New User")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("New User")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
             {/* Account Credentials Section */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Credentials")}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Username - full width */}
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Label htmlFor="userName" className="text-sm font-medium text-slate-700">{t("Username")} *</Label>
                   <Input
                     id="userName"
@@ -1095,7 +1095,7 @@ export default function UsersPage() {
                   {userFormErrors.userName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.userName}</p></div>)}
                 </div>
                 {/* Email - full width */}
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Label htmlFor="email" className="text-sm font-medium text-slate-700">{t("Email")} *</Label>
                   <Input
                     id="email"
@@ -1138,9 +1138,9 @@ export default function UsersPage() {
             </div>
 
             {/* Personal Information Section */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Personal Information")}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* First Name and Last Name - side by side */}
                 <div>
                   <Label htmlFor="firstName" className="text-sm font-medium text-slate-700">{t("First Name")} *</Label>
@@ -1175,7 +1175,7 @@ export default function UsersPage() {
                   {userFormErrors.lastName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.lastName}</p></div>)}
                 </div>
                 {/* Full Name - full width */}
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Label htmlFor="fullName" className="text-sm font-medium text-slate-700">{t("Full Name")} *</Label>
                   <Input
                     id="fullName"
@@ -1190,11 +1190,11 @@ export default function UsersPage() {
             </div>
 
             {/* Organization & Role Section */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Organization & Role")}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Function - full width */}
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Label htmlFor="function" className="text-sm font-medium text-slate-700">{t("Function")} *</Label>
                   <Select
                     value={userForm.function}
@@ -1216,7 +1216,7 @@ export default function UsersPage() {
                   {userFormErrors.function && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.function}</p></div>)}
                 </div>
                 {/* Role - full width */}
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Label htmlFor="role" className="text-sm font-medium text-slate-700">{t("Role")} *</Label>
                   <TooltipProvider>
                     <Tooltip>
@@ -1290,7 +1290,7 @@ export default function UsersPage() {
                   />
                 </div>
                 {/* Reporting Manager - full width */}
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Label htmlFor="reportingManager" className="text-sm font-medium text-slate-700">{t("Reporting Manager")}</Label>
                   <TooltipProvider>
                     <Tooltip>
@@ -1326,9 +1326,9 @@ export default function UsersPage() {
             </div>
 
             {/* Preferences Section */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Preferences")}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label htmlFor="language" className="text-sm font-medium text-slate-700">{t("Language")}</Label>
                   <Select
@@ -1396,9 +1396,9 @@ export default function UsersPage() {
             </div>
 
             {/* Account Status Section */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Status")}</h4>
-              <div className="flex gap-6">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="active"
@@ -1427,7 +1427,7 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsAddUserOpen(false);
               setUserFormErrors({});
@@ -1459,25 +1459,25 @@ export default function UsersPage() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Account")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Account")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
           {editingUser && (
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
               {/* User ID - Read Only */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end">{t("User ID")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end">{t("User ID")}</Label>
                 <span className="text-sm text-muted-foreground">{editingUser.id?.slice(0, 8) || "-"}</span>
               </div>
 
               {/* First Name */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editFirstName" className="text-end">{t("First Name")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editFirstName" className="sm:text-end">{t("First Name")}</Label>
                 <Input
                   id="editFirstName"
                   value={editingUser.firstName}
@@ -1491,8 +1491,8 @@ export default function UsersPage() {
               </div>
 
               {/* Last Name */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editLastName" className="text-end">{t("Last Name")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editLastName" className="sm:text-end">{t("Last Name")}</Label>
                 <Input
                   id="editLastName"
                   value={editingUser.lastName}
@@ -1506,8 +1506,8 @@ export default function UsersPage() {
               </div>
 
               {/* Full Name */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editFullName" className="text-end">{t("Full Name")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editFullName" className="sm:text-end">{t("Full Name")}</Label>
                 <Input
                   id="editFullName"
                   value={editingUser.fullName}
@@ -1519,8 +1519,8 @@ export default function UsersPage() {
               </div>
 
               {/* Email */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editEmail" className="text-end">{t("Email")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editEmail" className="sm:text-end">{t("Email")}</Label>
                 <Input
                   id="editEmail"
                   type="email"
@@ -1533,8 +1533,8 @@ export default function UsersPage() {
               </div>
 
               {/* Is Local User */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end">{t("Is local user")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end">{t("Is local user")}</Label>
                 <div className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <input
@@ -1562,8 +1562,8 @@ export default function UsersPage() {
               </div>
 
               {/* Name (Username) */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editUserName" className="text-end">{t("Name")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editUserName" className="sm:text-end">{t("Name")}</Label>
                 <Input
                   id="editUserName"
                   value={editingUser.userName}
@@ -1575,8 +1575,8 @@ export default function UsersPage() {
               </div>
 
               {/* Function */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editFunction" className="text-end">{t("Function")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editFunction" className="sm:text-end">{t("Function")}</Label>
                 <Select
                   value={editingUser.function || ""}
                   onValueChange={(value) => {
@@ -1596,8 +1596,8 @@ export default function UsersPage() {
               </div>
 
               {/* User Role */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editRole" className="text-end">{t("User Role")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editRole" className="sm:text-end">{t("User Role")}</Label>
                 <Select
                   value={editingUser.role}
                   onValueChange={(value) =>
@@ -1618,8 +1618,8 @@ export default function UsersPage() {
               </div>
 
               {/* Department */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editDepartment" className="text-end">{t("Department")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editDepartment" className="sm:text-end">{t("Department")}</Label>
                 <Select
                   value={editingUser.departmentId || ""}
                   onValueChange={(value) =>
@@ -1640,8 +1640,8 @@ export default function UsersPage() {
               </div>
 
               {/* Designation */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editDesignation" className="text-end">{t("Designation")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editDesignation" className="sm:text-end">{t("Designation")}</Label>
                 <Select
                   value={editingUser.designation || ""}
                   onValueChange={(value) =>
@@ -1667,8 +1667,8 @@ export default function UsersPage() {
               </div>
 
               {/* Reporting Manager */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editReportingManager" className="text-end">{t("Reporting Manager")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editReportingManager" className="sm:text-end">{t("Reporting Manager")}</Label>
                 <Select
                   value={editingUser.reportingManagerId || ""}
                   onValueChange={(value) =>
@@ -1689,8 +1689,8 @@ export default function UsersPage() {
               </div>
 
               {/* Language */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editLanguage" className="text-end">{t("Language")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label htmlFor="editLanguage" className="sm:text-end">{t("Language")}</Label>
                 <Select
                   value={editingUser.language || "English"}
                   onValueChange={(value) =>
@@ -1709,8 +1709,8 @@ export default function UsersPage() {
               </div>
 
               {/* Blocked */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end">{t("Blocked")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end">{t("Blocked")}</Label>
                 <div className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <input
@@ -1738,8 +1738,8 @@ export default function UsersPage() {
               </div>
 
               {/* Active */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end">{t("Active")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end">{t("Active")}</Label>
                 <div className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <input
@@ -1767,7 +1767,7 @@ export default function UsersPage() {
               </div>
 
               {/* Change Password Button */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <div></div>
                 <Button
                   variant="default"
@@ -1780,7 +1780,7 @@ export default function UsersPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1799,18 +1799,18 @@ export default function UsersPage() {
           }
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Users")}</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Import Users")}</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
                 {t("Import users from a CSV file. The file should have columns: Username, Email, Password, First Name, Last Name, Full Name, Designation, Function, Role, Department, Language, Timezone.")}
               </DialogDescription>
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <div className="flex gap-2 mt-1.5">
@@ -1830,14 +1830,15 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={handleDownloadTemplate}>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 me-2" />
               {t("Download Template")}
             </Button>
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                className="flex-1 sm:flex-none"
                 onClick={() => {
                   setShowImportDialog(false);
                   setImportFile(null);
@@ -1849,6 +1850,7 @@ export default function UsersPage() {
                 {t("Cancel")}
               </Button>
               <Button
+                className="flex-1 sm:flex-none"
                 onClick={handleImport}
                 disabled={!importFile || importing}
               >
@@ -1864,103 +1866,103 @@ export default function UsersPage() {
         setIsViewUserOpen(open);
         if (!open) setViewingUser(null);
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("User Details")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("User Details")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
           {viewingUser && (
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
               {/* User ID */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("User ID")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("User ID")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.id?.slice(0, 8) || "-"}</span>
               </div>
 
               {/* First Name */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("First Name")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("First Name")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.firstName || "-"}</span>
               </div>
 
               {/* Last Name */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Last Name")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Last Name")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.lastName || "-"}</span>
               </div>
 
               {/* Full Name */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Full Name")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Full Name")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.fullName || "-"}</span>
               </div>
 
               {/* Email */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Email")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Email")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.email || "-"}</span>
               </div>
 
               {/* Username */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Username")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Username")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.userName || "-"}</span>
               </div>
 
               {/* Function */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Function")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Function")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.function || "-"}</span>
               </div>
 
               {/* Role */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("User Role")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("User Role")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.role || "-"}</span>
               </div>
 
               {/* Department */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Department")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Department")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.department?.name || "-"}</span>
               </div>
 
               {/* Designation */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Designation")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Designation")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.designation || "-"}</span>
               </div>
 
               {/* Reporting Manager */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Reporting Manager")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Reporting Manager")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.reportingManager?.fullName || "-"}</span>
               </div>
 
               {/* Language */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Language")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Language")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.language || "-"}</span>
               </div>
 
               {/* Timezone */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Timezone")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Timezone")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.timezone || "-"}</span>
               </div>
 
               {/* Blocked */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Blocked")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Blocked")}</Label>
                 <span className="text-sm text-slate-800">{viewingUser.isBlocked ? t("Yes") : t("No")}</span>
               </div>
 
               {/* Active */}
-              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-end text-slate-500">{t("Active")}</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
+                <Label className="sm:text-end text-slate-500">{t("Active")}</Label>
                 <Badge
                   variant="outline"
                   className={viewingUser.isActive
@@ -1974,7 +1976,7 @@ export default function UsersPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsViewUserOpen(false)}>
               {t("Close")}
             </Button>
@@ -2004,18 +2006,18 @@ export default function UsersPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Change Password")}</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Change Password")}</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
                 {t("Enter a new password for")} {editingUser?.fullName || editingUser?.userName}
               </DialogDescription>
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">{t("New Password")} *</Label>
               <Input
@@ -2050,7 +2052,7 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2093,21 +2095,21 @@ export default function UsersPage() {
 
       {/* Subscription Error Dialog */}
       <Dialog open={showSubscriptionErrorDialog} onOpenChange={setShowSubscriptionErrorDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-red-600">{t("Error")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-red-600">{t("Error")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-5">
-            <p className="text-slate-600">{subscriptionErrorMessage}</p>
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
+            <p className="text-sm sm:text-base text-slate-600">{subscriptionErrorMessage}</p>
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
             <Button size="sm" onClick={() => setShowSubscriptionErrorDialog(false)}>
               {t("OK")}
             </Button>

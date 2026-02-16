@@ -183,10 +183,10 @@ export default function AIRecommendedRisksPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div>
           <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-2xl font-semibold">AI Recommended Risks</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold">AI Recommended Risks</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -196,11 +196,11 @@ export default function AIRecommendedRisksPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-2xl font-semibold">AI Recommended Risks</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold">AI Recommended Risks</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Generate audit plans per department from AI‑recommended risks.
           </p>
@@ -253,7 +253,7 @@ export default function AIRecommendedRisksPage() {
       )}
 
       <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Generated Audit Plan</DialogTitle>
             <DialogDescription>
@@ -265,7 +265,7 @@ export default function AIRecommendedRisksPage() {
               planResult.audit_plan.map((plan, idx) => (
                 <Card key={idx}>
                   <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                       <div className="flex-1">
                         <CardTitle className="text-base">
                           {plan.audit_code} – {plan.audit_title}

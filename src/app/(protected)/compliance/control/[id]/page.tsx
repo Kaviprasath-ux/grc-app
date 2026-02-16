@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -163,7 +163,13 @@ const ENTITIES_OPTIONS = ["Organization Wide"];
 export default function ControlDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLanguage();
+
+  // Context from framework navigation
+  const fromFramework = searchParams.get("from") === "framework";
+  const frameworkId = searchParams.get("frameworkId");
+  const frameworkName = searchParams.get("frameworkName") ? decodeURIComponent(searchParams.get("frameworkName")!) : null;
   const [control, setControl] = useState<Control | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("requirements");
@@ -367,31 +373,43 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+      <nav className="flex items-center gap-1.5 text-sm flex-wrap">
+        <Link href={fromFramework ? "/roles/customer-administrator/compliance" : "/dashboard"} className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <Link href="/compliance/control" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Controls")}
-        </Link>
+        {fromFramework && frameworkId ? (
+          <>
+            <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Integrated Frameworks")}
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+            <Link href={`/roles/customer-administrator/compliance/framework/${frameworkId}/controls`} className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Controls")}
+            </Link>
+          </>
+        ) : (
+          <Link href="/compliance/control" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Controls")}
+          </Link>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{control.controlCode}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">{control.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{control.name}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-sm text-slate-500">{control.controlCode}</span>
             <Badge className={getStatusBadgeColor(control.status)}>{t(control.status)}</Badge>
           </div>
         </div>
-        <Button onClick={() => setIsEditDialogOpen(true)}>
+        <Button onClick={() => setIsEditDialogOpen(true)} className="w-full sm:w-auto">
           <Edit className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Edit Control")}
         </Button>
@@ -399,8 +417,8 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Control Details */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-5 py-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="p-3 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             <div>
               <p className="text-xs text-slate-400 mb-0.5">{t("Domain")}</p>
               <p className="text-sm font-medium text-slate-800">{control.domain?.name || "-"}</p>
@@ -422,8 +440,8 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
         <div className="border-t border-slate-100" />
 
-        <div className="px-5 py-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="p-3 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             <div>
               <p className="text-xs text-slate-400 mb-1">{t("Department")}</p>
               <Select value={inlineDepartmentId} onValueChange={handleInlineDepartmentChange}>
@@ -463,7 +481,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
         <div className="border-t border-slate-100" />
 
-        <div className="px-5 py-4">
+        <div className="p-3 sm:p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs text-slate-400">{t("Risk")}</p>
             <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={() => setIsRiskDialogOpen(true)}>
@@ -505,8 +523,8 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
           <>
             <div className="border-t border-slate-100" />
 
-            <div className="px-5 py-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="p-3 sm:p-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-5">
                 {control.description && (
                   <div>
                     <p className="text-xs text-slate-400 mb-1">{t("Description")}</p>
@@ -528,31 +546,34 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
       {/* Tabs for related entities */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-0">
-          <TabsList className="px-5 pt-3">
-            <TabsTrigger value="requirements" className="flex items-center gap-2">
-              <Link2 className="h-4 w-4" />
-              {t("Linked Requirement")} ({control.requirements?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="governance" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              {t("Governance")} ({control.policyControls?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="evidence" className="flex items-center gap-2">
-              <ClipboardCheck className="h-4 w-4" />
-              {t("Evidence")} ({(control.evidences?.length || 0) + (control.evidenceControls?.length || 0)})
-            </TabsTrigger>
-            <TabsTrigger value="exceptions" className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              {t("Exception")} ({control.exceptions?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="risks" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              {t("Risk")} ({control.controlRisks?.length || 0})
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto px-3 sm:px-5 pt-3">
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="requirements" className="flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                {t("Linked Requirement")} ({control.requirements?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="governance" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                {t("Governance")} ({control.policyControls?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="evidence" className="flex items-center gap-2">
+                <ClipboardCheck className="h-4 w-4" />
+                {t("Evidence")} ({(control.evidences?.length || 0) + (control.evidenceControls?.length || 0)})
+              </TabsTrigger>
+              <TabsTrigger value="exceptions" className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                {t("Exception")} ({control.exceptions?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="risks" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                {t("Risk")} ({control.controlRisks?.length || 0})
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="requirements" className="p-0">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Code")}</TableHead>
@@ -582,10 +603,12 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
 
           <TabsContent value="governance" className="p-0">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Code")}</TableHead>
@@ -619,10 +642,12 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
 
           <TabsContent value="evidence" className="p-0">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Evidence Code")}</TableHead>
@@ -682,10 +707,12 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
 
           <TabsContent value="exceptions" className="p-0">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Exception Code")}</TableHead>
@@ -721,10 +748,12 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
 
           <TabsContent value="risks" className="p-0">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Risk ID")}</TableHead>
@@ -764,20 +793,21 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </TableBody>
             </Table>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
 
       {/* Edit Dialog with All Fields */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Control")}</DialogTitle>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5 space-y-5">
             {/* Basic Information */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-500">{t("Control Name")} *</Label>
                 <Input
@@ -819,7 +849,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             <div className="border-t border-slate-100" />
 
             {/* Classification */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5 min-w-0">
                 <Label className="text-xs font-medium text-slate-500">{t("Domain")}</Label>
                 <Select
@@ -883,7 +913,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5 min-w-0">
                 <Label className="text-xs font-medium text-slate-500">{t("Status")}</Label>
                 <Select value={editData.status || ""} onValueChange={(v) => setEditData({ ...editData, status: v })}>
@@ -1084,11 +1114,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
               {t("Cancel")}
             </Button>
-            <Button onClick={handleUpdateControl}>
+            <Button onClick={handleUpdateControl} className="w-full sm:w-auto">
               {t("Save Changes")}
             </Button>
           </div>
@@ -1097,11 +1127,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Risk Selection Dialog */}
       <Dialog open={isRiskDialogOpen} onOpenChange={setIsRiskDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle>{t("Select Risks")}</DialogTitle>
           </div>
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5">
             {allRisks.map((risk) => (
               <div key={risk.id} className="flex items-center space-x-2 py-2">
                 <Checkbox
@@ -1124,11 +1154,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-slate-400">{t("No risks available")}</p>
             )}
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
-            <Button variant="outline" onClick={() => setIsRiskDialogOpen(false)}>
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => setIsRiskDialogOpen(false)} className="w-full sm:w-auto">
               {t("Cancel")}
             </Button>
-            <Button onClick={handleAddRisks}>
+            <Button onClick={handleAddRisks} className="w-full sm:w-auto">
               {t("Add Selected")}
             </Button>
           </div>

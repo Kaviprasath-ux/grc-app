@@ -668,7 +668,7 @@ function ControlListPageContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500 ">
@@ -681,12 +681,12 @@ function ControlListPageContent() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Controls")}</h1>
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-5 border border-slate-200">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-xl p-3 sm:p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Layers className="h-5 w-5" />
@@ -695,7 +695,7 @@ function ControlListPageContent() {
           <div className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</div>
           <div className="mt-1 text-sm font-medium text-slate-500">{t("Total Controls")}</div>
         </div>
-        <div className="bg-white rounded-xl p-5 border border-slate-200">
+        <div className="bg-white rounded-xl p-3 sm:p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <AlertTriangle className="h-5 w-5" />
@@ -704,7 +704,7 @@ function ControlListPageContent() {
           <div className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.nonCompliant}</div>
           <div className="mt-1 text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
         </div>
-        <div className="bg-white rounded-xl p-5 border border-slate-200">
+        <div className="bg-white rounded-xl p-3 sm:p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <CheckCircle2 className="h-5 w-5" />
@@ -713,7 +713,7 @@ function ControlListPageContent() {
           <div className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.compliant}</div>
           <div className="mt-1 text-sm font-medium text-slate-500">{t("Compliant")}</div>
         </div>
-        <div className="bg-white rounded-xl p-5 border border-slate-200">
+        <div className="bg-white rounded-xl p-3 sm:p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <XCircle className="h-5 w-5" />
@@ -725,7 +725,7 @@ function ControlListPageContent() {
       </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Functional Grouping Donut Chart */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h3 className="text-sm font-medium text-slate-500 mb-4">{t("Functional Grouping")}</h3>
@@ -869,7 +869,7 @@ function ControlListPageContent() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Export")}
@@ -898,7 +898,7 @@ function ControlListPageContent() {
           {/* Data Table */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
               <div className="relative">
                 <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
@@ -907,12 +907,12 @@ function ControlListPageContent() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="w-64 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  className="w-full sm:w-64 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                 />
               </div>
-              <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-3">
+              <div className="ltr:ml-auto rtl:mr-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                 <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
-                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Integrated Framework")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -923,7 +923,7 @@ function ControlListPageContent() {
                   </SelectContent>
                 </Select>
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -934,7 +934,7 @@ function ControlListPageContent() {
                   </SelectContent>
                 </Select>
                 <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Assignee")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -946,6 +946,7 @@ function ControlListPageContent() {
                 </Select>
               </div>
             </div>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -1067,6 +1068,7 @@ function ControlListPageContent() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
@@ -1102,16 +1104,16 @@ function ControlListPageContent() {
 
       {/* Create Control Dialog - 3 Step Wizard */}
       <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateDialogOpen(false); setCreateStep(1); setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); } }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Control")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Step Progress */}
-          <div className="flex-shrink-0 flex items-start justify-center py-5 px-6 border-b border-slate-100">
+          <div className="flex-shrink-0 flex items-start justify-center py-4 sm:py-5 px-4 sm:px-6 border-b border-slate-100">
             {[
               { id: 1, name: t("Information") },
               { id: 2, name: t("Assignment") },
@@ -1150,13 +1152,13 @@ function ControlListPageContent() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             <div className="space-y-5">
               {/* Step 1: Control Information */}
               {createStep === 1 && (
                 <div className="space-y-5">
                   <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Control Information")}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Control Domain")} <span className="text-error">*</span></Label>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -1248,7 +1250,7 @@ function ControlListPageContent() {
               {createStep === 2 && (
                 <div className="space-y-5">
                   <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Assignment Details")}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Department")} <span className="text-error">*</span></Label>
                       <Select value={newControl.departmentId} onValueChange={(v) => { setNewControl({ ...newControl, departmentId: v, assigneeId: "" }); if (controlErrors.departmentId) setControlErrors((prev) => { const { departmentId, ...rest } = prev; return rest; }); }}>
@@ -1308,7 +1310,7 @@ function ControlListPageContent() {
                 <div className="space-y-5">
                   <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Review Information")}</h3>
                   <div className="rounded-lg border border-slate-200 overflow-hidden">
-                    <div className="grid grid-cols-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2">
                       <div className="px-4 py-3 border-b border-slate-100">
                         <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Domain")}</span>
                         <p className="text-sm font-medium text-slate-800 mt-0.5">{domains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
@@ -1345,7 +1347,7 @@ function ControlListPageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <span className="text-xs font-medium text-slate-400 me-auto">
               {t("Step")} {createStep} {t("of")} 3
             </span>
@@ -1398,16 +1400,16 @@ function ControlListPageContent() {
           }
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Controls")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5 space-y-4">
             <p className="text-sm text-slate-500">
               {t("Upload a CSV file to import controls. You can download a template to see the required format.")}
             </p>
@@ -1443,7 +1445,7 @@ function ControlListPageContent() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               {t("Download Template")}
@@ -1491,14 +1493,14 @@ function ControlListPageContent() {
 
       {/* Create Domain Dialog */}
       <Dialog open={isCreateDomainDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateDomainDialogOpen(false); setNewDomain({ code: "", name: "" }); setDomainErrors({}); } else { setIsCreateDomainDialogOpen(true); } }}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Create New Domain")}</DialogTitle>
             </DialogHeader>
           </div>
 
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4">
             <div>
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                 {t("Domain Code")} <span className="text-red-500">*</span>

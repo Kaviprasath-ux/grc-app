@@ -425,7 +425,7 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
@@ -442,7 +442,7 @@ export default function ReportsPage() {
           )}
           <span className="text-primary-700 font-medium">{t("Reports")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Reports")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -457,7 +457,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -477,14 +477,14 @@ export default function ReportsPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Reports")}</h1>
 
       {/* Engagements Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar: Tabs + Search */}
-        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 px-4 sm:px-5 py-3 border-b border-slate-100">
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto">
             {filterTabs.map((tab) => (
               <button
                 key={tab.id}
@@ -501,7 +501,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative w-56">
+          <div className="relative w-full sm:w-56">
             <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
@@ -583,9 +583,9 @@ export default function ReportsPage() {
       {/* Generate Report Dialog - Pass/Fail Selection */}
       {(isAuditHead || isAuditManager) && (
         <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
             {/* Fixed Header */}
-            <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Generate Audit Report")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -595,7 +595,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-6">
               <Label className="text-sm font-medium text-slate-700 mb-3 block">{t("Overall Audit Result")}</Label>
               <RadioGroup
                 value={overallResult}
@@ -618,7 +618,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => setGenerateDialogOpen(false)}
@@ -646,9 +646,9 @@ export default function ReportsPage() {
 
       {/* Report View/Edit Dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={(open) => { if (!open) closeReportModal(); }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {report ? report.title : t("Audit Report")}
@@ -660,7 +660,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Scrollable Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             {reportLoading ? (
               <div className="flex items-center justify-center h-48">
                 <div className="text-sm text-slate-500">{t("Loading report...")}</div>
@@ -674,38 +674,38 @@ export default function ReportsPage() {
 
                 {/* Report Metadata */}
                 <div className="space-y-2 text-sm">
-                  <div className="flex">
-                    <span className="font-semibold w-40 text-slate-700">{t("Audit Title")}:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Audit Title")}:</span>
                     <span className="text-primary-600">{report.title}</span>
                   </div>
-                  <div className="flex">
-                    <span className="font-semibold w-40 text-slate-700">{t("Report Number")}:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Report Number")}:</span>
                     <span className="text-primary-600">{report.reportCode}</span>
                   </div>
-                  <div className="flex">
-                    <span className="font-semibold w-40 text-slate-700">{t("Report Date")}:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Report Date")}:</span>
                     <span className="text-primary-600">{formatDate(report.updatedAt)}</span>
                   </div>
-                  <div className="flex">
-                    <span className="font-semibold w-40 text-slate-700">{t("Fieldwork Period")}:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Fieldwork Period")}:</span>
                     <span className="text-primary-600">
                       {formatDate(report.engagement.actualStartDate || report.engagement.plannedStartDate)} {t("to")} {formatDate(report.engagement.actualEndDate || report.engagement.plannedEndDate)}
                     </span>
                   </div>
-                  <div className="flex">
-                    <span className="font-semibold w-40 text-slate-700">{t("Assigned Auditor")}:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Assigned Auditor")}:</span>
                     <span className="text-slate-700">
                       {report.engagement.assignedAuditor
                         ? `${report.engagement.assignedAuditor.firstName} ${report.engagement.assignedAuditor.lastName}`
                         : ""}
                     </span>
                   </div>
-                  <div className="flex">
-                    <span className="font-semibold w-40 text-slate-700">{t("Distribution")}:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Distribution")}:</span>
                     <span className="text-primary-600">Audit Committee, CFO, Controller, IT Head</span>
                   </div>
-                  <div className="flex items-center">
-                    <span className="font-semibold w-40 text-slate-700">{t("Auditee")}:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Auditee")}:</span>
                     {isEditing ? (
                       <Select
                         value={editForm.auditeeId}
@@ -899,7 +899,7 @@ export default function ReportsPage() {
                   </p>
 
                   {/* Summary Table */}
-                  <div className="border border-slate-200 rounded-lg overflow-hidden mb-4">
+                  <div className="border border-slate-200 rounded-lg overflow-hidden overflow-x-auto mb-4">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-50">
                         <tr>
@@ -1011,7 +1011,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end items-center gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+          <div className="flex-shrink-0 flex justify-end items-center gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80">
             {report && (
               <Button
                 variant="outline"

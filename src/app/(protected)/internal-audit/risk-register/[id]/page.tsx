@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, ChevronRight, Home, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -100,14 +101,26 @@ export default function ViewRiskPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+          <Link href="/internal-audit/risk-register" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/risk-register" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Risk Register")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("View Risk")}</span>
+        </nav>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
-            <h1 className="text-2xl font-semibold">{t("Risk Details")}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold">{t("Risk Details")}</h1>
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
@@ -122,16 +135,29 @@ export default function ViewRiskPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <Link href="/internal-audit/risk-register" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/internal-audit/risk-register" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Risk Register")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("View Risk")}</span>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push("/internal-audit/risk-register")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
-            <h1 className="text-2xl font-semibold">{t("Risk Details")} - {risk.riskId}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold">{t("Risk Details")} - {risk.riskId}</h1>
           </div>
         </div>
         <Button onClick={() => router.push(`/internal-audit/risk-register/${risk.id}/edit`)}>
@@ -141,7 +167,7 @@ export default function ViewRiskPage() {
       </div>
 
       {/* Content */}
-      <div className="bg-card rounded-lg border p-6 space-y-6">
+      <div className="bg-card rounded-lg border p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium border-b pb-2">{t("Basic Information")}</h3>
@@ -226,7 +252,7 @@ export default function ViewRiskPage() {
         {/* Residual Risk Assessment */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium border-b pb-2">{t("Residual Risk Assessment")}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">{t("Likelihood")}</p>
               <p className="font-medium">{risk.residualLikelihood ?? "-"}</p>

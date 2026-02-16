@@ -582,7 +582,7 @@ export default function EvidencesMasterDataPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
@@ -593,7 +593,7 @@ export default function EvidencesMasterDataPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Evidences")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
             <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
@@ -604,7 +604,7 @@ export default function EvidencesMasterDataPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500 ">
@@ -620,10 +620,10 @@ export default function EvidencesMasterDataPage() {
       </nav>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -650,14 +650,15 @@ export default function EvidencesMasterDataPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search inside card */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           <div className="relative">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input type="text" placeholder={t("Search evidences...")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors" />
+            <input type="text" placeholder={t("Search evidences...")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full sm:w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors" />
           </div>
         </div>
 
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Evidence Code")}</TableHead>
@@ -704,9 +705,10 @@ export default function EvidencesMasterDataPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
             {filteredEvidences.length > 0
               ? `${startIndex + 1} ${t("to")} ${Math.min(startIndex + itemsPerPage, filteredEvidences.length)} ${t("of")} ${filteredEvidences.length}`
@@ -728,15 +730,15 @@ export default function EvidencesMasterDataPage() {
         setIsNewDialogOpen(open);
         if (!open) resetNewForm();
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">
               {newStep === 1 ? t("Evidence Details") : newStep === 2 ? t("Controls") : t("Review Information")}
             </DialogTitle>
           </div>
 
           {/* Stepper */}
-          <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+          <div className="flex-shrink-0 flex items-center justify-center px-4 sm:px-6 py-4 bg-slate-50/50 border-b border-slate-100">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${step === newStep
@@ -756,7 +758,7 @@ export default function EvidencesMasterDataPage() {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             {/* Step 1: Evidence Details */}
             {newStep === 1 && (
               <div className="space-y-4">
@@ -781,7 +783,7 @@ export default function EvidencesMasterDataPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
                       {t("Recurrence")} <span className="text-red-500">*</span>
@@ -893,7 +895,7 @@ export default function EvidencesMasterDataPage() {
             {newStep === 2 && (
               <div className="space-y-4">
                 {/* Filters Row */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <Select value={domainFilter || "_all"} onValueChange={(v) => setDomainFilter(v === "_all" ? "" : v)}>
                     <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder={t("Domain")} />
@@ -1004,7 +1006,7 @@ export default function EvidencesMasterDataPage() {
             {/* Step 3: Review */}
             {newStep === 3 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">Evidence Name</Label>
                     <p className="mt-1 text-slate-800">{newFormData.name}</p>
@@ -1014,7 +1016,7 @@ export default function EvidencesMasterDataPage() {
                     <p className="mt-1 text-slate-800">{selectedDomains.join(", ") || "-"}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">Recurrence</Label>
                     <p className="mt-1 text-slate-800">{newFormData.recurrence}</p>
@@ -1044,7 +1046,7 @@ export default function EvidencesMasterDataPage() {
             )}
           </div>
 
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             {newStep > 1 && (
               <Button variant="outline" size="sm" onClick={handleNewBack}>
                 {t("Previous")}
@@ -1070,14 +1072,14 @@ export default function EvidencesMasterDataPage() {
           setEditControlId("");
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Evidence")}</DialogTitle>
           </div>
 
           {editingEvidence && (
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">Evidence code</Label>
                   <Input value={editingEvidence.evidenceCode} disabled className="mt-1.5 bg-slate-50" />
@@ -1184,7 +1186,7 @@ export default function EvidencesMasterDataPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">Is control linked</Label>
                   <RadioGroup
@@ -1412,7 +1414,7 @@ export default function EvidencesMasterDataPage() {
             </div>
           )}
 
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1423,12 +1425,12 @@ export default function EvidencesMasterDataPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">{t("Are you sure you want to delete this?")}</DialogDescription>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1441,14 +1443,14 @@ export default function EvidencesMasterDataPage() {
 
       {/* Delete All Confirmation Dialog */}
       <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete all")} {evidences.length} {t("evidences?")}
             </DialogDescription>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1467,11 +1469,11 @@ export default function EvidencesMasterDataPage() {
           setImportFile(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Import Evidences")}</DialogTitle>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Name")}</Label>
               <Input
@@ -1491,7 +1493,7 @@ export default function EvidencesMasterDataPage() {
               />
             </div>
           </div>
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}

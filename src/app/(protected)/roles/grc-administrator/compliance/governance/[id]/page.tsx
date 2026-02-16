@@ -157,18 +157,18 @@ interface Control {
 }
 
 const statusColors: Record<string, string> = {
-  "Not Uploaded": "bg-gray-100 text-gray-800",
+  "Not Uploaded": "bg-slate-100 text-slate-800",
   Draft: "bg-yellow-100 text-yellow-800",
-  "Under Review": "bg-blue-100 text-blue-800",
+  "Under Review": "bg-primary-50 text-primary-700",
   Approved: "bg-green-100 text-green-800",
   Published: "bg-purple-100 text-purple-800",
   "Needs Review": "bg-orange-100 text-orange-800",
-  Archived: "bg-gray-100 text-gray-800",
+  Archived: "bg-slate-100 text-slate-800",
 };
 
 const aiStatusColors: Record<string, string> = {
-  Pending: "bg-gray-100 text-gray-800",
-  "In Progress": "bg-blue-100 text-blue-800",
+  Pending: "bg-slate-100 text-slate-800",
+  "In Progress": "bg-primary-50 text-primary-700",
   Completed: "bg-green-100 text-green-800",
   Failed: "bg-red-100 text-red-800",
 };
@@ -667,7 +667,7 @@ export default function GovernanceDetailPage() {
   if (!policy) {
     return (
       <div className="p-6">
-        <div className="text-center text-gray-500">
+        <div className="text-center text-slate-500">
           {t("Governance document not found")}
         </div>
       </div>
@@ -728,13 +728,13 @@ export default function GovernanceDetailPage() {
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-slate-500">{t("Compliance")}</span>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/roles/grc-administrator/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Governance")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{policy.code}</span>
       </nav>
 
@@ -949,12 +949,12 @@ export default function GovernanceDetailPage() {
       {(policyFrameworks.length > 0 || policy.framework) && (
         <div className="flex flex-wrap gap-2">
           {policyFrameworks.map((pf) => (
-            <Badge key={pf.framework.id} variant="outline" className="bg-blue-50">
+            <Badge key={pf.framework.id} variant="outline" className="bg-primary-50">
               {pf.framework.name}
             </Badge>
           ))}
           {policy.framework && policyFrameworks.length === 0 && (
-            <Badge variant="outline" className="bg-blue-50">
+            <Badge variant="outline" className="bg-primary-50">
               {policy.framework.name}
             </Badge>
           )}
@@ -965,7 +965,7 @@ export default function GovernanceDetailPage() {
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{policy.name}</h1>
-          <Badge className={statusColors[policy.status] || "bg-gray-100"}>
+          <Badge className={statusColors[policy.status] || "bg-slate-100"}>
             {policy.status}
           </Badge>
         </div>
@@ -1212,7 +1212,7 @@ export default function GovernanceDetailPage() {
               <div>
                 <Label className="text-muted-foreground text-sm">{t("Status")}</Label>
                 <div className="mt-1">
-                  <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-gray-100"}>
+                  <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-slate-100"}>
                     {policy.aiReviewStatus}
                   </Badge>
                 </div>
@@ -1307,7 +1307,7 @@ export default function GovernanceDetailPage() {
                   <Label className="text-muted-foreground text-sm">{t("Published Document")}</Label>
                   {attachments.length > 0 ? (
                     <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
-                      <FileText className="h-5 w-5 text-blue-600" />
+                      <FileText className="h-5 w-5 text-primary-600" />
                       <span className="font-medium">{attachments[0].fileName}</span>
                     </div>
                   ) : (
@@ -1545,7 +1545,7 @@ export default function GovernanceDetailPage() {
                 ref={canvasRef}
                 width={400}
                 height={150}
-                className="w-full border border-dashed border-gray-300 rounded cursor-crosshair"
+                className="w-full border border-dashed border-slate-300 rounded cursor-crosshair"
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
@@ -1590,7 +1590,7 @@ export default function GovernanceDetailPage() {
               className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? "border-primary text-primary"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
               <tab.icon className="h-4 w-4" />
@@ -1673,7 +1673,7 @@ export default function GovernanceDetailPage() {
                       <TableCell>{pc.control.name}</TableCell>
                       <TableCell>{pc.control.domain?.name || "-"}</TableCell>
                       <TableCell>
-                        <Badge className={statusColors[pc.control.status] || "bg-gray-100"}>
+                        <Badge className={statusColors[pc.control.status] || "bg-slate-100"}>
                           {pc.control.status}
                         </Badge>
                       </TableCell>
@@ -1726,7 +1726,7 @@ export default function GovernanceDetailPage() {
                       <TableCell>{pe.exception.name}</TableCell>
                       <TableCell>{pe.exception.category}</TableCell>
                       <TableCell>
-                        <Badge className={statusColors[pe.exception.status] || "bg-gray-100"}>
+                        <Badge className={statusColors[pe.exception.status] || "bg-slate-100"}>
                           {pe.exception.status}
                         </Badge>
                       </TableCell>

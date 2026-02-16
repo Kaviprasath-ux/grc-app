@@ -90,7 +90,7 @@ interface Control {
 }
 
 const statusColors: Record<string, string> = {
-  Open: "bg-blue-100 text-blue-800",
+  Open: "bg-primary-50 text-primary-700",
   "In-Progress": "bg-yellow-100 text-yellow-800",
   Completed: "bg-green-100 text-green-800",
 };
@@ -107,8 +107,8 @@ const riskRatingColors: Record<string, string> = {
 const controlStatusColors: Record<string, string> = {
   Implemented: "bg-green-100 text-green-800",
   "In Progress": "bg-yellow-100 text-yellow-800",
-  Planned: "bg-blue-100 text-blue-800",
-  "Not Implemented": "bg-gray-100 text-gray-800",
+  Planned: "bg-primary-50 text-primary-700",
+  "Not Implemented": "bg-slate-100 text-slate-800",
 };
 
 const categories = [
@@ -282,7 +282,7 @@ export default function RiskDetailPage() {
   if (!risk) {
     return (
       <div className="p-6">
-        <div className="text-center text-gray-500">{t("Risk not found")}</div>
+        <div className="text-center text-slate-500">{t("Risk not found")}</div>
       </div>
     );
   }
@@ -294,31 +294,31 @@ export default function RiskDetailPage() {
     : null;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm flex-wrap">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/compliance/risk-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Risk Control Matrix")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{risk.riskId}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{risk.riskId}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-xl sm:text-2xl font-bold">{risk.riskId}</h1>
           <Badge
             className={riskRatingColors[risk.riskRating || "Low"]}
           >
             {risk.riskRating || "Low"}
           </Badge>
-          <Badge className={statusColors[risk.status] || "bg-gray-100"}>
+          <Badge className={statusColors[risk.status] || "bg-slate-100"}>
             {risk.status}
           </Badge>
         </div>
@@ -330,11 +330,11 @@ export default function RiskDetailPage() {
               {t("Edit")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t("Edit Risk")}</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
               <div className="col-span-2">
                 <Label>{t("Name")}</Label>
                 <Input
@@ -398,7 +398,7 @@ export default function RiskDetailPage() {
               {/* Residual Risk Section */}
               <div className="col-span-2 border-t pt-4 mt-2">
                 <Label className="text-base font-semibold">{t("Residual Risk Assessment")}</Label>
-                <p className="text-sm text-gray-500 mb-3">{t("After applying controls/mitigations")}</p>
+                <p className="text-sm text-slate-500 mb-3">{t("After applying controls/mitigations")}</p>
               </div>
               <div>
                 <Label>{t("Residual Likelihood (1-5)")}</Label>
@@ -564,11 +564,11 @@ export default function RiskDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">{t("Likelihood")}</p>
-              <p className="text-3xl font-bold">{risk.likelihood}</p>
-              <p className="text-xs text-gray-400">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <div className="text-center p-3 sm:p-4 bg-slate-50 rounded-lg">
+              <p className="text-sm text-slate-500">{t("Likelihood")}</p>
+              <p className="text-2xl sm:text-3xl font-bold">{risk.likelihood}</p>
+              <p className="text-xs text-slate-400">
                 {risk.likelihood === 1
                   ? t("Rare")
                   : risk.likelihood === 2
@@ -580,10 +580,10 @@ export default function RiskDetailPage() {
                   : t("Almost Certain")}
               </p>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">{t("Impact")}</p>
-              <p className="text-3xl font-bold">{risk.impact}</p>
-              <p className="text-xs text-gray-400">
+            <div className="text-center p-3 sm:p-4 bg-slate-50 rounded-lg">
+              <p className="text-sm text-slate-500">{t("Impact")}</p>
+              <p className="text-2xl sm:text-3xl font-bold">{risk.impact}</p>
+              <p className="text-xs text-slate-400">
                 {risk.impact === 1
                   ? t("Insignificant")
                   : risk.impact === 2
@@ -595,13 +595,13 @@ export default function RiskDetailPage() {
                   : t("Catastrophic")}
               </p>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">{t("Risk Score")}</p>
-              <p className="text-3xl font-bold">{riskScore}</p>
-              <p className="text-xs text-gray-400">{t("L x I")}</p>
+            <div className="text-center p-3 sm:p-4 bg-slate-50 rounded-lg">
+              <p className="text-sm text-slate-500">{t("Risk Score")}</p>
+              <p className="text-2xl sm:text-3xl font-bold">{riskScore}</p>
+              <p className="text-xs text-slate-400">{t("L x I")}</p>
             </div>
             <div
-              className={`text-center p-4 rounded-lg ${
+              className={`text-center p-3 sm:p-4 rounded-lg ${
                 riskRatingColors[risk.riskRating || "Low"]
               } bg-opacity-20`}
             >
@@ -624,11 +624,11 @@ export default function RiskDetailPage() {
         </CardHeader>
         <CardContent>
           {risk.residualLikelihood && risk.residualImpact ? (
-            <div className="grid grid-cols-4 gap-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">{t("Likelihood")}</p>
-                <p className="text-3xl font-bold">{risk.residualLikelihood}</p>
-                <p className="text-xs text-gray-400">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+              <div className="text-center p-3 sm:p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">{t("Likelihood")}</p>
+                <p className="text-2xl sm:text-3xl font-bold">{risk.residualLikelihood}</p>
+                <p className="text-xs text-slate-400">
                   {risk.residualLikelihood === 1
                     ? t("Rare")
                     : risk.residualLikelihood === 2
@@ -640,10 +640,10 @@ export default function RiskDetailPage() {
                     : t("Almost Certain")}
                 </p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">{t("Impact")}</p>
-                <p className="text-3xl font-bold">{risk.residualImpact}</p>
-                <p className="text-xs text-gray-400">
+              <div className="text-center p-3 sm:p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">{t("Impact")}</p>
+                <p className="text-2xl sm:text-3xl font-bold">{risk.residualImpact}</p>
+                <p className="text-xs text-slate-400">
                   {risk.residualImpact === 1
                     ? t("Insignificant")
                     : risk.residualImpact === 2
@@ -655,13 +655,13 @@ export default function RiskDetailPage() {
                     : t("Catastrophic")}
                 </p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">{t("Risk Score")}</p>
-                <p className="text-3xl font-bold">{residualRiskScore}</p>
-                <p className="text-xs text-gray-400">{t("L x I")}</p>
+              <div className="text-center p-3 sm:p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">{t("Risk Score")}</p>
+                <p className="text-2xl sm:text-3xl font-bold">{residualRiskScore}</p>
+                <p className="text-xs text-slate-400">{t("L x I")}</p>
               </div>
               <div
-                className={`text-center p-4 rounded-lg ${
+                className={`text-center p-3 sm:p-4 rounded-lg ${
                   riskRatingColors[risk.residualRiskRating || "Low"]
                 } bg-opacity-20`}
               >
@@ -672,7 +672,7 @@ export default function RiskDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-slate-500">
               <p>{t("No residual risk assessment available")}</p>
               <p className="text-sm mt-1">{t("Edit the risk to add residual risk values")}</p>
             </div>
@@ -681,7 +681,7 @@ export default function RiskDetailPage() {
       </Card>
 
       {/* Details Grid */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Basic Info */}
         <Card>
           <CardHeader>
@@ -690,31 +690,31 @@ export default function RiskDetailPage() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <Label className="text-gray-500">{t("Category")}</Label>
+                <Label className="text-slate-500">{t("Category")}</Label>
                 <p className="font-medium">{risk.category ? t(risk.category) : "-"}</p>
               </div>
               <div>
-                <Label className="text-gray-500">{t("Mitigation Status")}</Label>
+                <Label className="text-slate-500">{t("Mitigation Status")}</Label>
                 <p className="font-medium">{risk.mitigationStatus ? t(risk.mitigationStatus) : "-"}</p>
               </div>
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-gray-400" />
+                <User className="h-4 w-4 text-slate-400" />
                 <div>
-                  <Label className="text-gray-500">{t("Owner")}</Label>
+                  <Label className="text-slate-500">{t("Owner")}</Label>
                   <p className="font-medium">{risk.owner || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-gray-400" />
+                <Building2 className="h-4 w-4 text-slate-400" />
                 <div>
-                  <Label className="text-gray-500">{t("Department")}</Label>
+                  <Label className="text-slate-500">{t("Department")}</Label>
                   <p className="font-medium">{risk.department?.name || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-400" />
+                <Calendar className="h-4 w-4 text-slate-400" />
                 <div>
-                  <Label className="text-gray-500">{t("Due Date")}</Label>
+                  <Label className="text-slate-500">{t("Due Date")}</Label>
                   <p className="font-medium">
                     {risk.dueDate
                       ? new Date(risk.dueDate).toLocaleDateString()
@@ -735,7 +735,7 @@ export default function RiskDetailPage() {
             {risk.description ? (
               <p className="whitespace-pre-wrap">{risk.description}</p>
             ) : (
-              <p className="text-gray-500 italic">{t("No description provided")}</p>
+              <p className="text-slate-500 italic">{t("No description provided")}</p>
             )}
           </CardContent>
         </Card>
@@ -758,7 +758,7 @@ export default function RiskDetailPage() {
                 {t("Link Control")}
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-[95vw] sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>{t("Link Control to Risk")}</DialogTitle>
               </DialogHeader>
@@ -799,7 +799,7 @@ export default function RiskDetailPage() {
         </CardHeader>
         <CardContent>
           {linkedControls.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-slate-500">
               <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>{t("No controls linked to this risk")}</p>
               <p className="text-sm mt-1">
@@ -807,7 +807,8 @@ export default function RiskDetailPage() {
               </p>
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("Control ID")}</TableHead>
@@ -829,7 +830,7 @@ export default function RiskDetailPage() {
                       <Badge
                         className={
                           controlStatusColors[cr.control.status] ||
-                          "bg-gray-100"
+                          "bg-slate-100"
                         }
                       >
                         {cr.control.status}
@@ -859,6 +860,7 @@ export default function RiskDetailPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -905,10 +907,10 @@ export default function RiskDetailPage() {
                   ))}
                 </tbody>
               </table>
-              <div className="absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 text-sm text-gray-500">
+              <div className="absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 text-sm text-slate-500">
                 {t("Likelihood")}
               </div>
-              <div className="absolute bottom-[-24px] left-1/2 -translate-x-1/2 text-sm text-gray-500">
+              <div className="absolute bottom-[-24px] left-1/2 -translate-x-1/2 text-sm text-slate-500">
                 {t("Impact")}
               </div>
             </div>

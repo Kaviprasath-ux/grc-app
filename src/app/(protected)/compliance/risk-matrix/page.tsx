@@ -169,7 +169,7 @@ export default function RiskComplianceMatrixPage() {
   }
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 p-3 sm:p-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
@@ -182,7 +182,7 @@ export default function RiskComplianceMatrixPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">{t("riskComplianceMatrix.title")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{t("riskComplianceMatrix.title")}</h1>
         <p className="text-gray-600">
           {t("riskComplianceMatrix.subtitle")}
         </p>
@@ -205,8 +205,8 @@ export default function RiskComplianceMatrixPage() {
                 onOpenChange={() => toggleRisk(risk.id)}
               >
                 <CollapsibleTrigger asChild>
-                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 border-b">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between p-3 sm:p-4 cursor-pointer hover:bg-gray-50 border-b">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       {expandedRisks.has(risk.id) ? (
                         <ChevronDown className="h-5 w-5 text-gray-500" />
                       ) : (
@@ -229,7 +229,7 @@ export default function RiskComplianceMatrixPage() {
                       </div>
 
                       {/* Risk Ratings and Status Row */}
-                      <div className="md:col-span-2 grid grid-cols-3 gap-4">
+                      <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                         {/* Inherent Risk Rating */}
                         <div>
                           <p className="text-sm font-medium text-gray-500 mb-1">{t("riskComplianceMatrix.inherentRiskRating")}</p>
@@ -293,7 +293,8 @@ export default function RiskComplianceMatrixPage() {
 
                         <CollapsibleContent className="mt-3">
                           {risk.controlRisks && risk.controlRisks.length > 0 ? (
-                            <Table>
+                            <div className="overflow-x-auto">
+                            <Table className="min-w-[500px]">
                               <TableHeader>
                                 <TableRow>
                                   <TableHead>{t("riskComplianceMatrix.controlCode")}</TableHead>
@@ -328,6 +329,7 @@ export default function RiskComplianceMatrixPage() {
                                 ))}
                               </TableBody>
                             </Table>
+                            </div>
                           ) : (
                             <p className="text-sm text-gray-500 py-2">{t("riskComplianceMatrix.noLinkedControls")}</p>
                           )}

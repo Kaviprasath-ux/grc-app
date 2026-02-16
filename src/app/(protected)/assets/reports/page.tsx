@@ -160,10 +160,10 @@ export default function AssetReportsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        < div className="flex items-center gap-1.5 text-slate-500 ">
+        <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
         </div>
@@ -172,14 +172,14 @@ export default function AssetReportsPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Asset Reports")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Asset Reports")}</h1>
 
       {/* Reports Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar: Search */}
-        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 px-3 sm:px-5 py-3 border-b border-slate-100">
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Asset Reports")}</span>
-          <div className="relative w-56">
+          <div className="relative w-full sm:w-56">
             <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
@@ -202,7 +202,7 @@ export default function AssetReportsPage() {
                 <button
                   key={config.id}
                   onClick={() => handleOpenReport(config.id)}
-                  className="group w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+                  className="group w-full flex items-center justify-between px-3 sm:px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium text-slate-800">{config.title}</h4>
@@ -225,12 +225,12 @@ export default function AssetReportsPage() {
 
       {/* Report Detail Dialog - Fixed width 700px */}
       <Dialog open={activeReport !== null} onOpenChange={handleCloseReport}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header - Export button with pr-8 to avoid overlap with X close button */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <div className="flex items-center justify-between pr-8">
-                <DialogTitle className="text-lg font-semibold text-slate-800">{activeConfig?.title}</DialogTitle>
+                <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{activeConfig?.title}</DialogTitle>
                 <Button variant="outline" size="sm" onClick={handleExport}>
                   <Upload className="h-4 w-4 mr-2" />
                   {t("Export")}
@@ -240,7 +240,7 @@ export default function AssetReportsPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-auto px-6 py-6">
+          <div className="flex-1 overflow-auto px-4 sm:px-6 py-4 sm:py-6">
             {/* Table with proper container */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {loading ? (
@@ -254,13 +254,14 @@ export default function AssetReportsPage() {
                   </div>
                 </div>
               ) : (
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[400px]">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50">
-                      <th className="text-left pl-4 py-4 text-xs font-semibold text-slate-600">
+                      <th className="text-left pl-3 sm:pl-4 py-4 text-xs font-semibold text-slate-600">
                         {activeConfig?.column1Header}
                       </th>
-                      <th className="text-left pr-4 py-4 text-xs font-semibold text-slate-600">
+                      <th className="text-left pr-3 sm:pr-4 py-4 text-xs font-semibold text-slate-600">
                         {t("Asset Name")}
                       </th>
                     </tr>
@@ -275,15 +276,16 @@ export default function AssetReportsPage() {
                     ) : (
                       paginatedData.map((asset) => (
                         <tr key={asset.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                          <td className="pl-4 py-4 text-sm text-slate-700">
+                          <td className="pl-3 sm:pl-4 py-4 text-sm text-slate-700">
                             {activeConfig?.getColumn1Value(asset) || "-"}
                           </td>
-                          <td className="pr-4 py-4 text-sm text-slate-700">{asset.name}</td>
+                          <td className="pr-3 sm:pr-4 py-4 text-sm text-slate-700">{asset.name}</td>
                         </tr>
                       ))
                     )}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>

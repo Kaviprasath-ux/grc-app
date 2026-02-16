@@ -218,7 +218,7 @@ export default function PeriodicityPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -241,7 +241,7 @@ export default function PeriodicityPage() {
           <span className="text-primary-700 font-medium">{t("Periodicity")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">{t("Periodicity")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Periodicity")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -256,7 +256,7 @@ export default function PeriodicityPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -281,7 +281,7 @@ export default function PeriodicityPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Periodicity")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Periodicity")}</h1>
         <Button size="sm" onClick={openAddDialog}>
           <Plus className="h-4 w-4 mr-2" />
           {t("New Periodicity")}
@@ -301,7 +301,7 @@ export default function PeriodicityPage() {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-10 w-[300px] h-9 bg-slate-50 border-slate-200"
+              className="pl-10 w-full sm:w-[300px] h-9 bg-slate-50 border-slate-200"
             />
           </div>
         </div>
@@ -365,9 +365,9 @@ export default function PeriodicityPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {editItem ? t("Edit Periodicity") : t("Add Periodicity")}
@@ -376,8 +376,8 @@ export default function PeriodicityPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="px-4 sm:px-6 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Interval")} <span className="text-red-500">*</span></Label>
                 <Input
@@ -411,7 +411,7 @@ export default function PeriodicityPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -424,14 +424,14 @@ export default function PeriodicityPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
+          <AlertDialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete")} &quot;{itemToDelete?.interval}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               {t("Delete")}

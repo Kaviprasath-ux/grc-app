@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Pencil, Trash2, Search, Clock, Database } from "lucide-react";
+import { ArrowLeft, ChevronRight, Home, Plus, Pencil, Trash2, Search, Clock, Database } from "lucide-react";
+import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +41,7 @@ interface BCPLabel {
 
 export default function BCPLabelsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("rto");
   const [labels, setLabels] = useState<BCPLabel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,20 +239,34 @@ export default function BCPLabelsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 flex-wrap">
+        <Link href="/organization/settings" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Organization")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/organization/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Settings")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("BCP Labels")}</span>
+      </nav>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t("Back")}
         </Button>
         <div>
-          <p className="text-sm text-muted-foreground">Organization Settings</p>
-          <h1 className="text-2xl font-semibold">BCP Labels</h1>
+          <p className="text-sm text-muted-foreground">{t("Organization Settings")}</p>
+          <h1 className="text-xl sm:text-2xl font-semibold">{t("BCP Labels")}</h1>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(""); }}>
-        <TabsList>
+        <TabsList className="w-full sm:w-auto flex-wrap">
           <TabsTrigger value="rto" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             RTO Labels
@@ -261,7 +278,7 @@ export default function BCPLabelsPage() {
         </TabsList>
 
         <TabsContent value="rto" className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4">
             <h3 className="font-medium text-blue-900">Recovery Time Objective (RTO)</h3>
             <p className="text-sm text-blue-700">
               RTO defines the maximum acceptable time to restore a process after a disruption.
@@ -269,14 +286,14 @@ export default function BCPLabelsPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search labels..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-[250px]"
+                className="pl-10 w-full sm:w-[250px]"
               />
             </div>
             <Button onClick={() => { resetForm(); setIsAddOpen(true); }}>
@@ -295,7 +312,7 @@ export default function BCPLabelsPage() {
         </TabsContent>
 
         <TabsContent value="rpo" className="space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 mb-4">
             <h3 className="font-medium text-green-900">Recovery Point Objective (RPO)</h3>
             <p className="text-sm text-green-700">
               RPO defines the maximum acceptable data loss measured in time.
@@ -303,14 +320,14 @@ export default function BCPLabelsPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search labels..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-[250px]"
+                className="pl-10 w-full sm:w-[250px]"
               />
             </div>
             <Button onClick={() => { resetForm(); setIsAddOpen(true); }}>
@@ -331,7 +348,7 @@ export default function BCPLabelsPage() {
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Add {activeTab.toUpperCase()} Label</DialogTitle>
             <DialogDescription>
@@ -389,7 +406,7 @@ export default function BCPLabelsPage() {
               <Label htmlFor="isActive">Active</Label>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsAddOpen(false); resetForm(); }}>
               Cancel
             </Button>
@@ -400,7 +417,7 @@ export default function BCPLabelsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit {formData.type} Label</DialogTitle>
           </DialogHeader>
@@ -445,7 +462,7 @@ export default function BCPLabelsPage() {
               <Label>Active</Label>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingItem(null); resetForm(); }}>
               Cancel
             </Button>
@@ -456,14 +473,14 @@ export default function BCPLabelsPage() {
 
       {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Confirm Delete</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this label? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
               Cancel
             </Button>

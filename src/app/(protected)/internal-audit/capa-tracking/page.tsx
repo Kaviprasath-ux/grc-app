@@ -474,7 +474,7 @@ export default function CAPATrackingPage() {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -495,7 +495,7 @@ export default function CAPATrackingPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
           {t("Corrective & Preventive Actions (CAPA)")}
         </h1>
       </div>
@@ -503,7 +503,7 @@ export default function CAPATrackingPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-4 sm:px-5 py-3 border-b border-slate-100">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
@@ -513,10 +513,10 @@ export default function CAPATrackingPage() {
                 setSearchQuery(e.target.value);
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
-              className="pl-10 w-[350px] h-9 bg-slate-50 border-slate-200"
+              className="pl-10 w-full sm:w-[350px] h-9 bg-slate-50 border-slate-200"
             />
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 sm:ml-auto">
             <Select
               value={engagementStatusFilter}
               onValueChange={(value) => {
@@ -524,7 +524,7 @@ export default function CAPATrackingPage() {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
             >
-              <SelectTrigger className="w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Engagement Status")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -541,7 +541,7 @@ export default function CAPATrackingPage() {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
             >
-              <SelectTrigger className="w-[200px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[200px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Departments")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -556,6 +556,7 @@ export default function CAPATrackingPage() {
             
           </div>
         </div>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -576,7 +577,7 @@ export default function CAPATrackingPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={showActions ? (isAuditHead ? 10 : 9) : 8} className="h-24 text-center">
+                <TableCell colSpan={isAuditHead ? 10 : 9} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <div className="relative h-6 w-6">
                       <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
@@ -692,13 +693,14 @@ export default function CAPATrackingPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={showActions ? (isAuditHead ? 10 : 9) : 8} className="h-24 text-center text-sm text-slate-500">
+                <TableCell colSpan={isAuditHead ? 10 : 9} className="h-24 text-center text-sm text-slate-500">
                   {t("No findings found")}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
         <PaginationUI
@@ -712,9 +714,9 @@ export default function CAPATrackingPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Finding")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -724,7 +726,7 @@ export default function CAPATrackingPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -754,30 +756,30 @@ export default function CAPATrackingPage() {
 
       {/* View Dialog (for Closed findings) */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("View CAPA")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
             {/* Audit Plan */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Audit plan")}</Label>
               <Input value={findingToView?.auditPlan || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Finding Title */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Finding title")}</Label>
               <Input value={findingToView?.finding || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Severity */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Severity")}</Label>
               <RadioGroup value={findingToView?.severity || ""} className="flex gap-6" disabled>
                 <div className="flex items-center space-x-2">
@@ -796,37 +798,37 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Criteria */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Criteria")}</Label>
               <Input value={findingToView?.criteria || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Condition */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Condition")}</Label>
               <Input value={findingToView?.condition || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Cause */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Cause")}</Label>
               <Input value={findingToView?.cause || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Effect */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Effect")}</Label>
               <Input value={findingToView?.effect || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Recommendation */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Recommendation")}</Label>
               <Input value={findingToView?.recommendation || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Status */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Status")}</Label>
               <RadioGroup value={findingToView?.status || ""} className="flex gap-6" disabled>
                 <div className="flex items-center space-x-2">
@@ -845,7 +847,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Target Date */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Target date")}</Label>
               <Input
                 value={findingToView?.targetDate ? formatDate(findingToView.targetDate) : ""}
@@ -855,7 +857,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Auditee Comment */}
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium pt-2">{t("Auditee Comment")}</Label>
               <Textarea
                 value={findingToView?.auditeeComment || ""}
@@ -872,7 +874,7 @@ export default function CAPATrackingPage() {
                   <Bot className="h-5 w-5 text-purple-600" />
                   <h3 className="font-semibold text-slate-800">{t("AI Review Result")}</h3>
                 </div>
-                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
                   <Label className="text-slate-800 font-medium">{t("Status")}</Label>
                   <div className="flex items-center gap-2">
                     {findingToView.aiReviewStatus === "Satisfactory" ? (
@@ -888,7 +890,7 @@ export default function CAPATrackingPage() {
                     )}
                   </div>
                 </div>
-                <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4 mt-3">
                   <Label className="text-slate-800 font-medium pt-2">{t("Description")}</Label>
                   <Textarea
                     value={findingToView.aiReviewDescription || ""}
@@ -902,7 +904,7 @@ export default function CAPATrackingPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -918,18 +920,18 @@ export default function CAPATrackingPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit CAPA")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
             {/* Audit Plan */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Audit plan")}</Label>
               <Select
                 value={editForm.engagementId}
@@ -952,7 +954,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Finding Title */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Finding title")}</Label>
               <Input
                 value={editForm.finding}
@@ -965,7 +967,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Severity */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Severity")}</Label>
               <RadioGroup
                 value={editForm.severity}
@@ -991,7 +993,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Criteria */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Criteria")}</Label>
               <Input
                 value={editForm.criteria}
@@ -1004,7 +1006,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Condition */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Condition")}</Label>
               <Input
                 value={editForm.condition}
@@ -1017,7 +1019,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Cause */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Cause")}</Label>
               <Input
                 value={editForm.cause}
@@ -1030,7 +1032,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Effect */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Effect")}</Label>
               <Input
                 value={editForm.effect}
@@ -1043,7 +1045,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Recommendation */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Recommendation")}</Label>
               <Input
                 value={editForm.recommendation}
@@ -1056,7 +1058,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Status */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Status")}</Label>
               <RadioGroup
                 value={editForm.status}
@@ -1082,7 +1084,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Target Date */}
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Target date")}</Label>
               <DatePicker
                 value={editForm.targetDate}
@@ -1095,7 +1097,7 @@ export default function CAPATrackingPage() {
             </div>
 
             {/* Auditee's comments - EDITABLE for auditee */}
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium pt-2">{t("Auditee")}<br/>{t("Comment")}</Label>
               <Textarea
                 value={editForm.auditeeComment}
@@ -1108,7 +1110,7 @@ export default function CAPATrackingPage() {
 
             {/* Existing Attachments */}
             {existingAttachments.length > 0 && (
-              <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
                 <Label className="text-slate-800 font-medium pt-2">{t("Attachments")}</Label>
                 <div className="space-y-2">
                   {existingAttachments.map((att) => (
@@ -1151,7 +1153,7 @@ export default function CAPATrackingPage() {
 
             {/* File Upload - Only for auditees */}
             {isAuditeeOnly && (
-            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium pt-2">{t("Upload Document")}</Label>
               <div
                 className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-colors"
@@ -1206,7 +1208,7 @@ export default function CAPATrackingPage() {
                   <Bot className="h-5 w-5 text-purple-600" />
                   <h3 className="font-semibold text-slate-800">{t("AI Review")}</h3>
                 </div>
-                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
                   <Label className="text-slate-800 font-medium">{t("Status")}</Label>
                   <div className="flex items-center gap-2">
                     {findingToEdit.aiReviewStatus === "Satisfactory" ? (
@@ -1222,7 +1224,7 @@ export default function CAPATrackingPage() {
                     )}
                   </div>
                 </div>
-                <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4 mt-3">
                   <Label className="text-slate-800 font-medium pt-2">{t("Description")}</Label>
                   <Textarea
                     value={findingToEdit.aiReviewDescription || ""}
@@ -1255,7 +1257,7 @@ export default function CAPATrackingPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {

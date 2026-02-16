@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { formatLocalDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Upload, X, FileText } from "lucide-react";
+import { ArrowLeft, ChevronRight, Home, Upload, X, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -329,7 +330,19 @@ export default function AddRiskPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+          <Link href="/internal-audit/risk-register" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/risk-register" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Risk Register")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Add Risk")}</span>
+        </nav>
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -339,7 +352,7 @@ export default function AddRiskPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-800">{t("Add Risk")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Add Risk")}</h1>
         </div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
@@ -355,7 +368,20 @@ export default function AddRiskPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <Link href="/internal-audit/risk-register" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/internal-audit/risk-register" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Risk Register")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Add Risk")}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button
@@ -366,12 +392,12 @@ export default function AddRiskPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Add Risk")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Add Risk")}</h1>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-6 space-y-4 sm:space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Basic Information")}</h3>
@@ -711,7 +737,7 @@ export default function AddRiskPage() {
             <div className="mt-4">
               <Label className="text-sm font-medium text-slate-700">{t("Attachments")}</Label>
               <div
-                className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                className={`mt-1.5 border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
                   isDragOver ? "border-primary bg-primary/5" : "border-slate-200 hover:border-slate-300"
                 }`}
                 onDragOver={handleDragOver}
@@ -779,7 +805,7 @@ export default function AddRiskPage() {
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"

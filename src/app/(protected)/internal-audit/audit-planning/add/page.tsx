@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { formatLocalDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
+  Home,
   Plus,
   Trash2,
   Upload,
@@ -378,7 +381,19 @@ export default function AddEngagementPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-6">
+          <Link href="/internal-audit/audit-planning" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/audit-planning" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Audit Planning")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Add Audit Plan")}</span>
+        </nav>
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -395,18 +410,31 @@ export default function AddEngagementPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <Link href="/internal-audit/audit-planning" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/internal-audit/audit-planning" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Audit Planning")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Add Audit Plan")}</span>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-1" />
           {t("Back")}
         </Button>
         <div className="text-sm text-muted-foreground">{t("Audit Plan")}</div>
-        <h1 className="text-xl font-semibold text-blue-900">{t("New Audit Plan")}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-blue-900">{t("New Audit Plan")}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Engagement Title */}
         <div className="space-y-2">
           <Label className="text-blue-800">
@@ -646,7 +674,7 @@ export default function AddEngagementPage() {
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <div className="space-y-2">
             <Label className="text-blue-800">
               {t("Start Date")} <span className="text-red-500">*</span>
@@ -673,7 +701,7 @@ export default function AddEngagementPage() {
         <div className="space-y-2">
           <Label className="text-blue-800">{t("Attach File")}</Label>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors ${
               isDragOverAttach ? "border-blue-500 bg-blue-50" : "border-gray-300"
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragOverAttach(true); }}
@@ -712,7 +740,7 @@ export default function AddEngagementPage() {
         <div className="space-y-2">
           <Label className="text-blue-800">{t("Upload Workpaper")}</Label>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors ${
               isDragOverWorkpaper ? "border-blue-500 bg-blue-50" : "border-gray-300"
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragOverWorkpaper(true); }}
@@ -779,7 +807,7 @@ export default function AddEngagementPage() {
               </Button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse min-w-[600px]">
                 <thead>
                   <tr className="text-left text-blue-800">
                     <th className="p-2 border-b">{t("Task")}</th>
@@ -900,7 +928,7 @@ export default function AddEngagementPage() {
         </Collapsible>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4">
           <Button
             type="button"
             variant="outline"

@@ -359,7 +359,7 @@ export default function PoliciesByFrameworkPage() {
                     <div
                       key={policy.id}
                       className="grid grid-cols-[100px_1fr_130px_140px_140px_140px] gap-0 items-center px-5 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer group"
-                      onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                      onDoubleClick={() => router.push(`/compliance/governance/${policy.id}?from=framework&frameworkId=${frameworkId}&frameworkName=${encodeURIComponent(framework?.name || '')}`)}
                     >
                       {/* Code */}
                       <span className="text-sm font-mono text-primary-600 font-medium">{policy.code}</span>

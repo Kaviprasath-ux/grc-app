@@ -598,7 +598,7 @@ export default function DocumentLibraryPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -619,27 +619,29 @@ export default function DocumentLibraryPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Document Library")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Document Library")}</h1>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+        <div className="overflow-x-auto">
         <TabsList className="">
-          <TabsTrigger value="smart-search">{t("Smart Search")}</TabsTrigger>
-          <TabsTrigger value="policies">{t("Company's Policies and Procedures")}</TabsTrigger>
-          <TabsTrigger value="regulations">{t("Standard Regulations")}</TabsTrigger>
-          <TabsTrigger value="reports">{t("Previous Audit Reports")}</TabsTrigger>
+          <TabsTrigger value="smart-search" className="whitespace-nowrap">{t("Smart Search")}</TabsTrigger>
+          <TabsTrigger value="policies" className="whitespace-nowrap">{t("Company's Policies and Procedures")}</TabsTrigger>
+          <TabsTrigger value="regulations" className="whitespace-nowrap">{t("Standard Regulations")}</TabsTrigger>
+          <TabsTrigger value="reports" className="whitespace-nowrap">{t("Previous Audit Reports")}</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Smart Search Tab */}
         <TabsContent value="smart-search" className="space-y-6">
           {/* Smart Document Query */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Smart Document Query")}
               </h3>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="relative">
                 <Textarea
                   placeholder={t("Enter your question here")}
@@ -666,7 +668,7 @@ export default function DocumentLibraryPage() {
 
           {/* Recent Searches */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Recent Searches")}
               </h3>
@@ -674,7 +676,7 @@ export default function DocumentLibraryPage() {
                 <span className="text-xs text-slate-400">{recentSearches.length} {t("result(s)")}</span>
               )}
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {recentSearches.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
@@ -727,7 +729,7 @@ export default function DocumentLibraryPage() {
         {/* Company Policies Tab */}
         <TabsContent value="policies">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Company's Policies and Procedures")}
               </h3>
@@ -735,7 +737,7 @@ export default function DocumentLibraryPage() {
                 <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{documents.policiesCount}</span>
               )}
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {renderUploadArea("Policy")}
               {renderDocumentList(documents.policies, policyPage, setPolicyPage, "Policy")}
             </div>
@@ -745,7 +747,7 @@ export default function DocumentLibraryPage() {
         {/* Standard Regulations Tab */}
         <TabsContent value="regulations">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Standard Regulations")}
               </h3>
@@ -753,7 +755,7 @@ export default function DocumentLibraryPage() {
                 <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{documents.regulationsCount}</span>
               )}
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {renderUploadArea("Regulation")}
               {renderDocumentList(
                 documents.regulations,
@@ -768,7 +770,7 @@ export default function DocumentLibraryPage() {
         {/* Previous Audit Reports Tab */}
         <TabsContent value="reports">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Previous Audit Reports")}
               </h3>
@@ -776,7 +778,7 @@ export default function DocumentLibraryPage() {
                 <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{documents.auditReportsCount}</span>
               )}
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {renderUploadArea("PreviousReport")}
               {renderDocumentList(
                 documents.auditReports,

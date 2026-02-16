@@ -41,14 +41,14 @@ export function DocumentStatusCard({ title, data, className }: DocumentStatusCar
 
   return (
     <div className={cn(
-      "bg-white rounded-xl border border-slate-200 p-4 transition-all duration-200 flex flex-col",
+      "bg-white rounded-xl border border-slate-200 p-3 sm:p-4 transition-all duration-200 flex flex-col",
       "hover:shadow-lg hover:shadow-slate-200/50 hover:border-slate-300",
       className
     )}>
       {/* Header with summary stats */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {Object.entries(statusConfig).map(([key, config]) => (
             <div key={key} className="flex items-center gap-1">
               <div

@@ -628,7 +628,7 @@ export default function KPIDetailPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
@@ -645,39 +645,39 @@ export default function KPIDetailPage({
 
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("KPI Detail")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("KPI Detail")}</h1>
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("KPI Code")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.evidence?.evidenceCode || kpi.code}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Status")}</p>
           <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
             {t(kpi.status)}
           </Badge>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Expected Score")}</p>
           <p className="text-sm font-semibold text-slate-800">{expectedScore ?? "-"}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Actual Score")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.actualScore ?? "-"}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Department")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.department?.name || kpi.evidence?.name || "-"}</p>
         </div>
       </div>
 
       {/* Chart and Review History Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Chart Section */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-slate-800">{t("Performance Trend")}</h3>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
@@ -753,7 +753,7 @@ export default function KPIDetailPage({
         </div>
 
         {/* Next Review & Quick Actions */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4">{t("Next Review")}</h3>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
@@ -787,9 +787,9 @@ export default function KPIDetailPage({
       </div>
 
       {/* KPI Details Form */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
         <h3 className="text-base font-semibold text-slate-800 mb-4">{t("KPI Details")}</h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
               {t("KPI Objective")} <span className="text-red-500">*</span>
@@ -900,13 +900,14 @@ export default function KPIDetailPage({
 
       {/* Review History Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">{t("Review History")}</h3>
           <span className="text-xs text-slate-500">
             {selectedYear && `${t("Filtered by")} ${selectedYear}`}
           </span>
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Review Date")}</TableHead>
@@ -995,7 +996,8 @@ export default function KPIDetailPage({
             )}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+        </div>
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
             {t("Showing")} {filteredReviews.length} {filteredReviews.length === 1 ? t("entry") : t("entries")}
           </span>
@@ -1004,11 +1006,11 @@ export default function KPIDetailPage({
 
       {/* Update Actual Score Dialog */}
       <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
-        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Update Actual Score")}</DialogTitle>
           </div>
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 sm:px-6 py-4 space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actual Score")}</Label>
               <Input
@@ -1030,7 +1032,7 @@ export default function KPIDetailPage({
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setUpdateDialogOpen(false)}
@@ -1045,14 +1047,14 @@ export default function KPIDetailPage({
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Confirmation")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete this?")}
             </AlertDialogDescription>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="border-slate-200">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteReview} className="bg-semantic-error hover:bg-red-600">{t("Delete")}</AlertDialogAction>
           </div>
@@ -1061,11 +1063,11 @@ export default function KPIDetailPage({
 
       {/* Add Action Plan Dialog */}
       <Dialog open={actionPlanDialogOpen} onOpenChange={setActionPlanDialogOpen}>
-        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Update Plan Action")}</DialogTitle>
           </div>
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 sm:px-6 py-4 space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                 {t("Planned Action")} <span className="text-error">*</span>
@@ -1151,7 +1153,7 @@ export default function KPIDetailPage({
               </Select>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setActionPlanDialogOpen(false)}
@@ -1176,11 +1178,11 @@ export default function KPIDetailPage({
 
       {/* Add Actual Score Dialog */}
       <Dialog open={addScoreDialogOpen} onOpenChange={setAddScoreDialogOpen}>
-        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Add KPI Actual Score")}</DialogTitle>
           </div>
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 sm:px-6 py-4 space-y-4">
             {/* Display Review Date Context */}
             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -1252,7 +1254,7 @@ export default function KPIDetailPage({
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {

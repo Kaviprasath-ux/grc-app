@@ -448,9 +448,9 @@ export default function ExceptionDetailPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm flex-wrap">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -464,14 +464,14 @@ export default function ExceptionDetailPage({
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-800">{exception.name}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{exception.name}</h1>
           <Badge className={statusColors[exception.status] || "bg-slate-100 text-slate-600"}>
             {exception.status}
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Approve and Send Back buttons - visible only to Approver when status is Pending */}
           {isApprover && exception.status === "Pending" && (
             <>
@@ -502,7 +502,6 @@ export default function ExceptionDetailPage({
             <Button
               variant="default"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
               onClick={() => setResubmitDialogOpen(true)}
             >
               <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -531,10 +530,10 @@ export default function ExceptionDetailPage({
       </div>
 
       {/* Main Content */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Exception Details Form */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h2 className="text-base font-semibold text-slate-800">{t("Exception Details")}</h2>
             {isApprovedStatus && (
               <p className="text-sm text-green-600 mt-1">
@@ -542,8 +541,8 @@ export default function ExceptionDetailPage({
               </p>
             )}
           </div>
-          <div className="px-5 py-5">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="px-3 sm:px-5 py-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Exception Code")}</Label>
                 <Input value={exception.exceptionCode} disabled className="bg-slate-50" />
@@ -700,8 +699,8 @@ export default function ExceptionDetailPage({
               <div className="px-5 py-4 border-b border-slate-100">
                 <h2 className="text-base font-semibold text-slate-800">{t("Policy Reference")}</h2>
               </div>
-              <div className="px-5 py-5">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="px-3 sm:px-5 py-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Policy Code")}
@@ -724,8 +723,8 @@ export default function ExceptionDetailPage({
               <div className="px-5 py-4 border-b border-slate-100">
                 <h2 className="text-base font-semibold text-slate-800">{t("Control Reference")}</h2>
               </div>
-              <div className="px-5 py-5">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="px-3 sm:px-5 py-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Control Code")}
@@ -748,8 +747,8 @@ export default function ExceptionDetailPage({
               <div className="px-5 py-4 border-b border-slate-100">
                 <h2 className="text-base font-semibold text-slate-800">{t("Risk Reference")}</h2>
               </div>
-              <div className="px-5 py-5">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="px-3 sm:px-5 py-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Risk Code")}
@@ -772,8 +771,8 @@ export default function ExceptionDetailPage({
             <div className="px-5 py-4 border-b border-slate-100">
               <h2 className="text-base font-semibold text-slate-800">{t("Approval Information")}</h2>
             </div>
-            <div className="px-5 py-5">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="px-3 sm:px-5 py-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approved by")}</Label>
                   <Input
@@ -807,7 +806,7 @@ export default function ExceptionDetailPage({
                 {t("Add Comment")}
               </Button>
             </div>
-            <div className="px-5 py-5">
+            <div className="px-3 sm:px-5 py-5">
               {exception.comments && exception.comments.length > 0 ? (
                 <div className="space-y-3">
                   {exception.comments.slice(0, 3).map((comment) => (
@@ -849,11 +848,11 @@ export default function ExceptionDetailPage({
 
       {/* Comments Dialog */}
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}  >
-        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden"  onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden"  onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Comments")}</DialogTitle>
           </div>
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 sm:px-6 py-4 space-y-4">
             {/* Comment List */}
             <div className="max-h-64 overflow-y-auto space-y-3">
               {exception.comments && exception.comments.length > 0 ? (
@@ -883,7 +882,7 @@ export default function ExceptionDetailPage({
           </div>
 
           {/* Add Comment Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Add a comment")}</Label>
             <div className="flex items-end gap-2 mt-2">
               <Textarea
@@ -924,13 +923,13 @@ export default function ExceptionDetailPage({
 
       {/* Send Back Dialog */}
       <Dialog open={sendBackDialogOpen} onOpenChange={setSendBackDialogOpen}>
-        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Send Back Exception")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 sm:px-6 py-5 space-y-4">
             <p className="text-sm text-slate-500">
               {t("Please provide a reason for sending back this exception request.")}
             </p>
@@ -947,10 +946,11 @@ export default function ExceptionDetailPage({
               />
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               type="button"
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setSendBackComment("");
                 setSendBackDialogOpen(false);
@@ -961,6 +961,7 @@ export default function ExceptionDetailPage({
             <Button
               type="button"
               variant="destructive"
+              className="w-full sm:w-auto"
               onClick={handleSendBack}
               disabled={!sendBackComment.trim() || approving}
             >
@@ -972,13 +973,13 @@ export default function ExceptionDetailPage({
 
       {/* Resubmit Dialog - for rejected exceptions */}
       <Dialog open={resubmitDialogOpen} onOpenChange={setResubmitDialogOpen}>
-        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Resubmit Exception")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 sm:px-6 py-5 space-y-4">
             <p className="text-sm text-slate-500">
               {t("Please provide a comment explaining the changes made before resubmitting for approval.")}
             </p>
@@ -995,10 +996,11 @@ export default function ExceptionDetailPage({
               />
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               type="button"
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setResubmitComment("");
                 setResubmitDialogOpen(false);
@@ -1008,7 +1010,7 @@ export default function ExceptionDetailPage({
             </Button>
             <Button
               type="button"
-              className="bg-blue-600 hover:bg-blue-700"
+              className="w-full sm:w-auto"
               onClick={handleResubmit}
               disabled={!resubmitComment.trim() || resubmitting}
             >

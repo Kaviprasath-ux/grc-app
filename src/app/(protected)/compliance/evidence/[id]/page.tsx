@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -201,7 +201,7 @@ interface ControlDomain {
 const statusColors: Record<string, string> = {
   "Not Uploaded": "bg-slate-100 text-slate-600",
   Pending: "bg-amber-50 text-amber-700",
-  Submitted: "bg-blue-50 text-blue-700",
+  Submitted: "bg-indigo-50 text-indigo-700",
   Draft: "bg-warning-light text-warning-dark",
   Validated: "bg-info-light text-info-dark",
   Approved: "bg-emerald-50 text-emerald-700",
@@ -282,9 +282,15 @@ const setCycleStatusToStorage = (evidenceId: string, period: string, data: Cycle
 export default function EvidenceDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { t } = useLanguage();
   const id = params.id as string;
+
+  // Context from framework navigation
+  const fromFramework = searchParams.get("from") === "framework";
+  const frameworkId = searchParams.get("frameworkId");
+  const frameworkName = searchParams.get("frameworkName") ? decodeURIComponent(searchParams.get("frameworkName")!) : null;
 
   const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
   const isCustomerAdmin = session?.user?.roles?.includes("CustomerAdministrator");
@@ -1298,25 +1304,27 @@ export default function EvidenceDetailPage() {
   // GRC Admin View - Simplified
   if (isGRCAdmin) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
         {/* Header */}
-        <div className="flex items-center gap-2 border-b pb-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/compliance/evidence")}
-            className="text-slate-600 hover:text-slate-900"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-slate-300">|</span>
-          <h1 className="text-xl font-semibold text-primary-700">
-            {evidence.domain || t("Evidence Details")}
-          </h1>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b pb-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/compliance/evidence")}
+              className="text-slate-600 hover:text-slate-900"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-slate-300">|</span>
+            <h1 className="text-xl sm:text-2xl font-semibold text-primary-700">
+              {evidence.domain || t("Evidence Details")}
+            </h1>
+          </div>
         </div>
 
         {/* Framework Badges */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {evidence.frameworks && evidence.frameworks.length > 0 ? (
             evidence.frameworks.map((fw) => (
               <Badge key={fw.id} className="bg-primary-700 text-white hover:bg-primary-600">
@@ -1339,8 +1347,8 @@ export default function EvidenceDetailPage() {
             </Button>
           </div>
 
-          <div className="bg-slate-50 rounded-xl border border-slate-200 p-6">
-            <div className="grid grid-cols-2 gap-8">
+          <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
               {/* Left Column */}
               <div className="space-y-6">
                 <div>
@@ -1409,11 +1417,11 @@ export default function EvidenceDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="mt-8">
-          <div className="flex gap-2">
+        <div className="mt-6 sm:mt-8">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setActiveTab("artifacts")}
-              className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${activeTab === "artifacts"
+              className={`px-4 sm:px-6 py-2 rounded-t-lg font-medium transition-colors text-sm sm:text-base ${activeTab === "artifacts"
                 ? "bg-primary-700 text-white"
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
@@ -1422,7 +1430,7 @@ export default function EvidenceDetailPage() {
             </button>
             <button
               onClick={() => setActiveTab("controls")}
-              className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${activeTab === "controls"
+              className={`px-4 sm:px-6 py-2 rounded-t-lg font-medium transition-colors text-sm sm:text-base ${activeTab === "controls"
                 ? "bg-primary-700 text-white"
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
@@ -1432,7 +1440,7 @@ export default function EvidenceDetailPage() {
           </div>
 
           {/* Tab Content */}
-          <div className="bg-slate-50 rounded-b-lg rounded-tr-lg p-6">
+          <div className="bg-slate-50 rounded-b-lg rounded-tr-lg p-3 sm:p-6">
             {activeTab === "controls" && (
               <div>
                 <h3 className="text-lg font-semibold text-primary-700 mb-4">{t("Controls")}</h3>
@@ -1515,25 +1523,37 @@ export default function EvidenceDetailPage() {
 
   // Regular User View - Full features
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+        <Link href={fromFramework ? "/roles/customer-administrator/compliance" : ""} className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <Link href="/compliance/evidence" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Evidence")}
-        </Link>
+        {fromFramework && frameworkId ? (
+          <>
+            <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Integrated Frameworks")}
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+            <Link href={`/roles/customer-administrator/compliance/framework/${frameworkId}/evidence`} className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Evidence")}
+            </Link>
+          </>
+        ) : (
+          <Link href="/compliance/evidence" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Evidence")}
+          </Link>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{evidence.evidenceCode}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-800">{evidence.name}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{evidence.name}</h1>
           <Badge className={statusColors[evidence.status] || "bg-slate-100 text-slate-600"}>
             {t(evidence.status)}
           </Badge>
@@ -1542,6 +1562,7 @@ export default function EvidenceDetailPage() {
           <Button
             variant="outline"
             onClick={() => setCommentDialogOpen(true)}
+            className="w-full sm:w-auto"
           >
             <MessageSquare className="h-4 w-4 mr-2" />
             {t("Comments")} ({evidence.comments?.length || 0})
@@ -1551,40 +1572,40 @@ export default function EvidenceDetailPage() {
       <p className="text-slate-500">{evidence.evidenceCode}</p>
 
       {/* Status Workflow Steps */}
-      <div className="flex items-center justify-center gap-4 py-4 bg-slate-50 rounded-xl border border-slate-200">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 py-4 px-3 sm:px-6 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
         {/* Upload Step */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 0 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 0 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
               }`}
           >
-            {currentStep > 0 ? <Check className="h-6 w-6" /> : <Upload className="h-5 w-5" />}
+            {currentStep > 0 ? <Check className="h-5 w-5 sm:h-6 sm:w-6" /> : <Upload className="h-4 w-4 sm:h-5 sm:w-5" />}
           </div>
-          <span className={`text-sm ${currentStep >= 0 ? "text-slate-800" : "text-slate-400"}`}>{t("Upload")}</span>
+          <span className={`text-xs sm:text-sm ${currentStep >= 0 ? "text-slate-800" : "text-slate-400"}`}>{t("Upload")}</span>
         </div>
-        <div className={`w-24 h-0.5 ${currentStep >= 1 ? "bg-primary-600" : "bg-slate-300"}`} />
+        <div className={`w-12 sm:w-24 h-0.5 shrink-0 ${currentStep >= 1 ? "bg-primary-600" : "bg-slate-300"}`} />
 
         {/* Draft Step */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 1 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 1 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
               }`}
           >
-            {currentStep > 1 ? <Check className="h-6 w-6" /> : <FileText className="h-5 w-5" />}
+            {currentStep > 1 ? <Check className="h-5 w-5 sm:h-6 sm:w-6" /> : <FileText className="h-4 w-4 sm:h-5 sm:w-5" />}
           </div>
-          <span className={`text-sm ${currentStep >= 1 ? "text-slate-800" : "text-slate-400"}`}>{t("Draft")}</span>
+          <span className={`text-xs sm:text-sm ${currentStep >= 1 ? "text-slate-800" : "text-slate-400"}`}>{t("Draft")}</span>
         </div>
-        <div className={`w-24 h-0.5 ${currentStep >= 2 ? "bg-primary-600" : "bg-slate-300"}`} />
+        <div className={`w-12 sm:w-24 h-0.5 shrink-0 ${currentStep >= 2 ? "bg-primary-600" : "bg-slate-300"}`} />
 
         {/* Publish Step */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 2 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= 2 ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
               }`}
           >
-            {currentStep >= 2 ? <Check className="h-6 w-6" /> : <span className="text-lg font-medium">3</span>}
+            {currentStep >= 2 ? <Check className="h-5 w-5 sm:h-6 sm:w-6" /> : <span className="text-base sm:text-lg font-medium">3</span>}
           </div>
-          <span className={`text-sm ${currentStep >= 2 ? "text-slate-800" : "text-slate-400"}`}>{t("Publish")}</span>
+          <span className={`text-xs sm:text-sm ${currentStep >= 2 ? "text-slate-800" : "text-slate-400"}`}>{t("Publish")}</span>
         </div>
       </div>
 
@@ -1639,14 +1660,14 @@ export default function EvidenceDetailPage() {
       <div className="space-y-6">
         {/* Evidence Details */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Evidence Details")}</h3>
             <Button variant="ghost" size="icon">
               <Eye className="h-4 w-4" />
             </Button>
           </div>
-          <div className="p-5 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="p-3 sm:p-5 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
                 <p>{evidence.name}</p>
@@ -1657,7 +1678,7 @@ export default function EvidenceDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
                 <Select
@@ -1719,7 +1740,7 @@ export default function EvidenceDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</Label>
                 <Select
@@ -1781,7 +1802,7 @@ export default function EvidenceDetailPage() {
         {/* KPI Details - Show if KPI Required */}
         {evidence.kpiRequired && (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-slate-100">
               <h3 className="text-base font-semibold text-slate-800">{t("KPI Details")}</h3>
               {!kpiEditMode && evidence.kpis && evidence.kpis.length > 0 && (
                 <Button variant="outline" size="sm" onClick={() => setKpiEditMode(true)}>
@@ -1789,8 +1810,8 @@ export default function EvidenceDetailPage() {
                 </Button>
               )}
             </div>
-            <div className="p-5 space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+            <div className="p-3 sm:p-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")} <span className="text-red-500">*</span></Label>
                   <Textarea
@@ -1834,7 +1855,7 @@ export default function EvidenceDetailPage() {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")} <span className="text-red-500">*</span></Label>
                   <Textarea
@@ -1937,13 +1958,13 @@ export default function EvidenceDetailPage() {
         {/* Published Section */}
         {evidence.status === "Published" && (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
               <h3 className="text-base font-semibold text-slate-800">{t("Published")}</h3>
-              <Button variant="outline" onClick={handleUnpublish}>
+              <Button variant="outline" onClick={handleUnpublish} className="w-full sm:w-auto">
                 {t("Unpublish")}
               </Button>
             </div>
-            <div className="p-5">
+            <div className="p-3 sm:p-5">
               <div className="space-y-2">
                 {evidence.attachments?.map((att) => (
                   <div key={att.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -1969,9 +1990,9 @@ export default function EvidenceDetailPage() {
 
         {/* Attachments Card */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Attachments")}</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {(isCustomerAdmin || isReviewer || isContributor || isDepartmentReviewer || isDepartmentContributor) && (
                 <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-1" />
@@ -1993,7 +2014,7 @@ export default function EvidenceDetailPage() {
               )}
             </div>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             {/* Period Buttons with Validation Status Tags - Based on recurrence for ALL roles */}
             <div className="flex flex-wrap gap-2 mb-4">
               {getPeriodsForRecurrence(evidence.recurrence).map((period) => {
@@ -2006,7 +2027,7 @@ export default function EvidenceDetailPage() {
                       variant={selectedMonth === period ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSelectedMonth(selectedMonth === period ? null : period)}
-                      className={`text-xs ${isCurrentCycle ? "ring-2 ring-blue-400" : ""}`}
+                      className={`text-xs ${isCurrentCycle ? "ring-2 ring-primary-400" : ""}`}
                     >
                       <FileText className="h-3 w-3 mr-1" />
                       {period}
@@ -2020,7 +2041,7 @@ export default function EvidenceDetailPage() {
                         </span>
                         <button
                           onClick={() => handleOpenViewCycleComments(period)}
-                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          className="text-slate-400 hover:text-slate-600 transition-colors"
                           title={t("View Comments")}
                         >
                           <MessageSquare className="h-3.5 w-3.5" />
@@ -2195,8 +2216,8 @@ export default function EvidenceDetailPage() {
 
         {/* Recent Comments Card */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-100">
-            <div className="flex items-center justify-between">
+          <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h3 className="text-base font-semibold text-slate-800">{t("Recent Comments")}</h3>
               <Button
                 variant="outline"
@@ -2208,7 +2229,7 @@ export default function EvidenceDetailPage() {
               </Button>
             </div>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             {evidence.comments && evidence.comments.length > 0 ? (
               <div className="space-y-3">
                 {evidence.comments.slice(0, 3).map((comment) => (
@@ -2249,10 +2270,10 @@ export default function EvidenceDetailPage() {
 
         {/* Linked Section - Tabs: Linked Controls / Linked Artifacts */}
         <div>
-          <div className="flex border-b">
+          <div className="flex flex-wrap border-b overflow-x-auto">
             <button
               onClick={() => setActiveTab("controls")}
-              className={`px-4 py-2 ${activeTab === "controls"
+              className={`px-3 sm:px-4 py-2 text-sm sm:text-base whitespace-nowrap ${activeTab === "controls"
                 ? "border-b-2 border-primary-600 text-primary-600"
                 : "text-slate-500"
                 }`}
@@ -2261,7 +2282,7 @@ export default function EvidenceDetailPage() {
             </button>
             <button
               onClick={() => setActiveTab("artifacts")}
-              className={`px-4 py-2 ${activeTab === "artifacts"
+              className={`px-3 sm:px-4 py-2 text-sm sm:text-base whitespace-nowrap ${activeTab === "artifacts"
                 ? "border-b-2 border-primary-600 text-primary-600"
                 : "text-slate-500"
                 }`}
@@ -2272,7 +2293,7 @@ export default function EvidenceDetailPage() {
 
           {activeTab === "controls" && (
             <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("Controls")}</h3>
                 <Dialog open={linkControlsOpen} onOpenChange={(open) => {
                   setLinkControlsOpen(open);
@@ -2287,13 +2308,13 @@ export default function EvidenceDetailPage() {
                   <DialogTrigger asChild>
                     <Button size="sm">{t("Link Controls")}</Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
-                    <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                  <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+                    <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
                       <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Control")}</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
                       {/* Filters */}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
                           <SelectTrigger className="bg-slate-50 border border-slate-200 rounded-lg text-sm">
                             <SelectValue placeholder={t("Domain")} />
@@ -2413,12 +2434,12 @@ export default function EvidenceDetailPage() {
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="p-5">
+              <div className="p-3 sm:p-5">
                 <div className="space-y-2">
                   {evidence.evidenceControls?.map((ec) => (
                     <div
                       key={ec.id}
-                      className="flex items-start justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50/60 cursor-pointer hover:border-primary-300 transition-all"
+                      className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 p-3 border border-slate-200 rounded-lg hover:bg-slate-50/60 cursor-pointer hover:border-primary-300 transition-all"
                       onClick={() => router.push(`/compliance/control/${ec.control.id}`)}
                     >
                       <div className="flex-1">
@@ -2458,10 +2479,10 @@ export default function EvidenceDetailPage() {
 
           {activeTab === "artifacts" && (
             <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="px-5 py-3 border-b border-slate-100">
+              <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("Linked Artifacts")}</h3>
               </div>
-              <div className="p-5">
+              <div className="p-3 sm:p-5">
                 <div className="space-y-2">
                   {evidence.linkedArtifacts?.map((la) => (
                     <div
@@ -2502,11 +2523,11 @@ export default function EvidenceDetailPage() {
 
       {/* Comments Dialog */}
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
-        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Comments")}</DialogTitle>
           </div>
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 sm:px-6 py-4 space-y-4">
             {/* Comment List */}
             <div className="max-h-64 overflow-y-auto space-y-3">
               {evidence.comments && evidence.comments.length > 0 ? (
@@ -2536,7 +2557,7 @@ export default function EvidenceDetailPage() {
           </div>
 
           {/* Add Comment Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Add a comment")}</Label>
             <div className="flex items-end gap-2 mt-2">
               <Textarea
@@ -2585,11 +2606,11 @@ export default function EvidenceDetailPage() {
             setIsDraggingFile(false);
           }
         }}>
-          <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
+          <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Evidence Attachment")}</DialogTitle>
             </div>
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-4 sm:px-6 py-5 space-y-4">
               {/* Date Picker */}
               <div>
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Date")}</Label>
@@ -2710,11 +2731,11 @@ export default function EvidenceDetailPage() {
           setArtifactSearchQuery("");
         }
       }}>
-        <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Artifacts")}</DialogTitle>
           </div>
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 sm:px-6 py-4 space-y-4">
             {/* Search input */}
             <div className="relative">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -2850,13 +2871,13 @@ export default function EvidenceDetailPage() {
           setCycleComments([]);
         }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Evidence Send Back")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-blue-600 font-semibold">{t("Comment")}</Label>
+              <Label className="text-primary-600 font-semibold">{t("Comment")}</Label>
               <Textarea
                 value={cycleComment}
                 onChange={(e) => setCycleComment(e.target.value)}
@@ -2868,19 +2889,19 @@ export default function EvidenceDetailPage() {
 
             {cycleComments.length > 0 && (
               <div>
-                <Label className="text-blue-600 font-semibold">{t("Previous Comments")}</Label>
-                <div className="mt-1 max-h-[200px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-gray-50">
+                <Label className="text-primary-600 font-semibold">{t("Previous Comments")}</Label>
+                <div className="mt-1 max-h-[200px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-slate-50">
                   {cycleComments.map((c) => {
                     const date = new Date(c.createdAt);
                     return (
                       <div key={c.id} className="text-sm">
                         <div className="flex justify-between items-start">
                           <span>{c.comment}</span>
-                          <span className="text-gray-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
+                          <span className="text-slate-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
                             {date.toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center text-gray-500">
+                        <div className="flex justify-between items-center text-slate-500">
                           <span>~ {c.userName || t("Unknown")}</span>
                           <span className="text-xs">{date.toLocaleTimeString()}</span>
                         </div>
@@ -2891,14 +2912,14 @@ export default function EvidenceDetailPage() {
               </div>
             )}
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setSendBackDialogOpen(false)}>
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
+              <Button variant="outline" onClick={() => setSendBackDialogOpen(false)} className="w-full sm:w-auto">
                 {t("Cancel")}
               </Button>
               <Button
                 onClick={handleSendBack}
                 disabled={!cycleComment.trim() || cycleCommentSubmitting}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
               >
                 {cycleCommentSubmitting ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -2920,13 +2941,13 @@ export default function EvidenceDetailPage() {
           setCycleComments([]);
         }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Comment")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-blue-600 font-semibold">{t("Comment")}</Label>
+              <Label className="text-primary-600 font-semibold">{t("Comment")}</Label>
               <Textarea
                 value={cycleComment}
                 onChange={(e) => setCycleComment(e.target.value)}
@@ -2938,19 +2959,19 @@ export default function EvidenceDetailPage() {
 
             {cycleComments.length > 0 && (
               <div>
-                <Label className="text-blue-600 font-semibold">{t("Previous Comments")}</Label>
-                <div className="mt-1 max-h-[200px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-gray-50">
+                <Label className="text-primary-600 font-semibold">{t("Previous Comments")}</Label>
+                <div className="mt-1 max-h-[200px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-slate-50">
                   {cycleComments.map((c) => {
                     const date = new Date(c.createdAt);
                     return (
                       <div key={c.id} className="text-sm">
                         <div className="flex justify-between items-start">
                           <span>{c.comment}</span>
-                          <span className="text-gray-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
+                          <span className="text-slate-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
                             {date.toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center text-gray-500">
+                        <div className="flex justify-between items-center text-slate-500">
                           <span>~ {c.userName || t("Unknown")}</span>
                           <span className="text-xs">{date.toLocaleTimeString()}</span>
                         </div>
@@ -2961,14 +2982,14 @@ export default function EvidenceDetailPage() {
               </div>
             )}
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setResubmitDialogOpen(false)}>
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
+              <Button variant="outline" onClick={() => setResubmitDialogOpen(false)} className="w-full sm:w-auto">
                 {t("Cancel")}
               </Button>
               <Button
                 onClick={handleResubmit}
                 disabled={!cycleComment.trim() || cycleCommentSubmitting}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
+                className="bg-orange-600 hover:bg-orange-700 text-white w-full sm:w-auto"
               >
                 {cycleCommentSubmitting ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -2989,24 +3010,24 @@ export default function EvidenceDetailPage() {
           setCycleComments([]);
         }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Comments")} - {selectedMonth}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {cycleComments.length > 0 ? (
-              <div className="max-h-[300px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-gray-50">
+              <div className="max-h-[300px] overflow-y-auto space-y-3 border rounded-lg p-3 bg-slate-50">
                 {cycleComments.map((c) => {
                   const date = new Date(c.createdAt);
                   return (
                     <div key={c.id} className="text-sm">
                       <div className="flex justify-between items-start">
                         <span>{c.comment}</span>
-                        <span className="text-gray-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
+                        <span className="text-slate-400 text-xs whitespace-nowrap ltr:ml-2 rtl:mr-2">
                           {date.toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center text-gray-500">
+                      <div className="flex justify-between items-center text-slate-500">
                         <span>~ {c.userName || t("Unknown")}</span>
                         <span className="text-xs">{date.toLocaleTimeString()}</span>
                       </div>
@@ -3015,7 +3036,7 @@ export default function EvidenceDetailPage() {
                 })}
               </div>
             ) : (
-              <p className="text-center text-gray-500 text-sm py-4">
+              <p className="text-center text-slate-500 text-sm py-4">
                 {t("No comments yet")}
               </p>
             )}

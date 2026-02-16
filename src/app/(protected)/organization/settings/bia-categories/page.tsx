@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { ArrowLeft, ChevronRight, Home, Plus, Pencil, Trash2, Search } from "lucide-react";
+import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,7 @@ interface BIACategory {
 
 export default function BIACategoriesPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [categories, setCategories] = useState<BIACategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -206,33 +209,61 @@ export default function BIACategoriesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="space-y-4 sm:space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 flex-wrap">
+          <Link href="/organization/settings" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Organization")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/organization/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Settings")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("BIA Categories")}</span>
+        </nav>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">{t("Loading...")}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 flex-wrap">
+        <Link href="/organization/settings" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Organization")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/organization/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Settings")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("BIA Categories")}</span>
+      </nav>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t("Back")}
         </Button>
         <div>
-          <p className="text-sm text-muted-foreground">Organization Settings</p>
-          <h1 className="text-2xl font-semibold">BIA Categories</h1>
+          <p className="text-sm text-muted-foreground">{t("Organization Settings")}</p>
+          <h1 className="text-xl sm:text-2xl font-semibold">{t("BIA Categories")}</h1>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search categories..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[250px] bg-slate-50"
+            className="pl-10 w-full sm:w-[250px] bg-slate-50"
           />
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
@@ -245,7 +276,7 @@ export default function BIACategoriesPage() {
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Add BIA Category</DialogTitle>
             <DialogDescription>
@@ -289,7 +320,7 @@ export default function BIACategoriesPage() {
               <Label htmlFor="isActive">Active</Label>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsAddOpen(false); resetForm(); }}>
               Cancel
             </Button>
@@ -300,7 +331,7 @@ export default function BIACategoriesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit BIA Category</DialogTitle>
           </DialogHeader>
@@ -339,7 +370,7 @@ export default function BIACategoriesPage() {
               <Label htmlFor="editIsActive">Active</Label>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingItem(null); resetForm(); }}>
               Cancel
             </Button>
@@ -350,14 +381,14 @@ export default function BIACategoriesPage() {
 
       {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Confirm Delete</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this category? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
               Cancel
             </Button>

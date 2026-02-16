@@ -998,7 +998,7 @@ export default function CustomerAccountsPage() {
           <span className="text-primary-700 font-medium">{t("Customer Accounts")}</span>
         </nav>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
@@ -1022,17 +1022,17 @@ export default function CustomerAccountsPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
-        <Button onClick={() => setShowOnboardDialog(true)} size="sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
+        <Button onClick={() => setShowOnboardDialog(true)} size="sm" className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           {t("Onboard Customer")}
         </Button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <Table>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden overflow-x-auto">
+        <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Customer Code")}</TableHead>
@@ -1121,22 +1121,22 @@ export default function CustomerAccountsPage() {
 
       {/* Onboard Customer Dialog */}
       <Dialog open={showOnboardDialog} onOpenChange={(open) => { setShowOnboardDialog(open); if (!open) { setFormErrors({}); } }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Account")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             <div className="space-y-5">
               {/* Account Information Section */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Account Information")}</h3>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Customer Code")}</Label>
                     <Input value={nextCustomerCode} disabled className="bg-slate-50" />
@@ -1257,7 +1257,7 @@ export default function CustomerAccountsPage() {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Settings")}</h3>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Language")}</Label>
                     <Select value={formData.language || ""} onValueChange={(v) => setFormData({ ...formData, language: v })}>
@@ -1286,7 +1286,7 @@ export default function CustomerAccountsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
                     <div className="flex gap-4 h-9 items-center">
@@ -1385,19 +1385,20 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-between">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row justify-between gap-2">
             <Button
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               onClick={() => openSubscriptionPlanDialog(undefined, true)}
             >
               {t("Subscription Plan")} {pendingSubscriptionPlans.length > 0 && `(${pendingSubscriptionPlans.length})`}
             </Button>
             <div className="flex gap-2">
-              <Button onClick={handleOnboardCustomer} disabled={submitting} size="sm">
+              <Button onClick={handleOnboardCustomer} disabled={submitting} size="sm" className="flex-1 sm:flex-none">
                 {submitting ? t("Saving...") : t("Save")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => { setShowOnboardDialog(false); resetForm(); }}>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => { setShowOnboardDialog(false); resetForm(); }}>
                 {t("Cancel")}
               </Button>
             </div>
@@ -1407,22 +1408,22 @@ export default function CustomerAccountsPage() {
 
       {/* Edit Customer Dialog */}
       <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) { setFormErrors({}); } }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Account")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             <div className="space-y-5">
               {/* Account Information Section */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Account Information")}</h3>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Customer Code")}</Label>
                     <Input value={selectedCustomer?.customerCode || ""} disabled className="bg-slate-50" />
@@ -1543,7 +1544,7 @@ export default function CustomerAccountsPage() {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Settings")}</h3>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Language")}</Label>
                     <Select value={formData.language || ""} onValueChange={(v) => setFormData({ ...formData, language: v })}>
@@ -1572,7 +1573,7 @@ export default function CustomerAccountsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
                     <div className="flex gap-4 h-9 items-center">
@@ -1646,19 +1647,20 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-between">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row justify-between gap-2">
             <Button
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               onClick={() => openSubscriptionPlanDialog(selectedCustomer || undefined)}
             >
               {t("Subscription Plan")}
             </Button>
             <div className="flex gap-2">
-              <Button onClick={handleEditCustomer} disabled={submitting} size="sm">
+              <Button onClick={handleEditCustomer} disabled={submitting} size="sm" className="flex-1 sm:flex-none">
                 {submitting ? t("Saving...") : t("Save")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => { setShowEditDialog(false); resetForm(); setSelectedCustomer(null); }}>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => { setShowEditDialog(false); resetForm(); setSelectedCustomer(null); }}>
                 {t("Cancel")}
               </Button>
             </div>
@@ -1668,7 +1670,7 @@ export default function CustomerAccountsPage() {
 
       {/* Change Password Dialog */}
       <Dialog open={showChangePasswordDialog} onOpenChange={setShowChangePasswordDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1714,18 +1716,18 @@ export default function CustomerAccountsPage() {
 
       {/* Subscription Plans Dialog */}
       <Dialog open={showSubscriptionPlanDialog} onOpenChange={setShowSubscriptionPlanDialog}>
-        <DialogContent className="sm:max-w-[700px] max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Subscription Plans")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <Table>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Frameworks Available")}</TableHead>
@@ -1796,14 +1798,15 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row gap-2">
             <Button
               onClick={() => setShowNewSubscriptionDialog(true)}
               size="sm"
+              className="w-full sm:w-auto"
             >
               {t("New Subscription Plan")}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowSubscriptionPlanDialog(false)}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowSubscriptionPlanDialog(false)}>
               {t("Close")}
             </Button>
           </div>
@@ -1812,7 +1815,7 @@ export default function CustomerAccountsPage() {
 
       {/* New Subscription Dialog */}
       <Dialog open={showNewSubscriptionDialog} onOpenChange={(open) => { setShowNewSubscriptionDialog(open); if (!open) { setSubscriptionErrors({}); } }}>
-        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1928,7 +1931,7 @@ export default function CustomerAccountsPage() {
 
       {/* Edit Subscription Dialog */}
       <Dialog open={showEditSubscriptionDialog} onOpenChange={(open) => { setShowEditSubscriptionDialog(open); if (!open) { setEditSubscriptionErrors({}); } }}>
-        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2044,21 +2047,21 @@ export default function CustomerAccountsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <p className="text-slate-600">{t("Are you sure you want to delete this?")}</p>
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
             <Button
               onClick={handleDeleteCustomer}
               disabled={submitting}
@@ -2075,7 +2078,7 @@ export default function CustomerAccountsPage() {
 
       {/* View Logo Dialog */}
       <Dialog open={showLogoDialog} onOpenChange={setShowLogoDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2110,7 +2113,7 @@ export default function CustomerAccountsPage() {
 
       {/* Subscription Plan Warning Dialog */}
       <Dialog open={showSubscriptionWarningDialog} onOpenChange={setShowSubscriptionWarningDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>

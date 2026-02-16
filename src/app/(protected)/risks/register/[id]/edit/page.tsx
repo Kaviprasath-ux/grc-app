@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Link2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Link2, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import Link from "next/link";
 import {
   Dialog,
   DialogContent,
@@ -504,16 +505,30 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/risks/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/risks/register" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Risk Register")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Edit Risk")} - {riskId}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("editRisk")} - {riskId}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("editRisk")} - {riskId}</h1>
       </div>
 
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-3 sm:p-6 pt-4 sm:pt-6">
           {/* Stepper */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <nav aria-label="Progress">
               <ol className="flex items-center">
                 {steps.map((step, index) => (
@@ -521,22 +536,22 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     key={step.id}
                     className={cn(
                       "relative flex-1",
-                      index !== steps.length - 1 && "pr-8"
+                      index !== steps.length - 1 && "sm:pr-8 pr-4"
                     )}
                   >
                     <div className="flex items-center">
                       <button
                         onClick={() => setCurrentStep(step.id)}
                         className={cn(
-                          "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
+                          "flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full border-2 transition-colors flex-shrink-0",
                           currentStep >= step.id
                             ? "border-primary-500 bg-primary-500 text-white"
                             : "border-slate-300 bg-white text-slate-500"
                         )}
                       >
-                        <span className="text-sm font-medium">{step.id}</span>
+                        <span className="text-xs sm:text-sm font-medium">{step.id}</span>
                       </button>
-                      <div className="ml-3">
+                      <div className="ml-2 sm:ml-3 hidden sm:block">
                         <button
                           onClick={() => setCurrentStep(step.id)}
                           className={cn(
@@ -553,7 +568,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                       {index !== steps.length - 1 && (
                         <div
                           className={cn(
-                            "ml-6 h-0.5 flex-1",
+                            "ml-2 sm:ml-6 h-0.5 flex-1",
                             currentStep > step.id ? "bg-primary-500" : "bg-slate-300"
                           )}
                         />
@@ -572,7 +587,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">{t("riskDetails")}</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <Label htmlFor="riskId">{t("riskId")}</Label>
                     <Input
@@ -604,7 +619,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <Label htmlFor="department">{t("department")}</Label>
                     <Select
@@ -651,7 +666,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <Label htmlFor="riskSources">{t("riskSources")}</Label>
                     <Input
@@ -686,7 +701,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <Label htmlFor="riskType">{t("riskType")}</Label>
                     <Select
@@ -760,7 +775,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <Label>{t("potentialThreats")}</Label>
                     <div className="flex gap-2">
@@ -897,8 +912,8 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                 </div>
 
                 {formData.selectedControls.length > 0 ? (
-                  <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <table className="w-full">
+                  <div className="border border-slate-200 rounded-lg overflow-hidden overflow-x-auto">
+                    <table className="w-full min-w-[500px]">
                       <thead className="bg-slate-50">
                         <tr className="h-12">
                           <th className="text-left px-4 text-sm font-medium text-slate-700">{t("controlCode")}</th>
@@ -946,11 +961,11 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
 
                 {/* Link Control Dialog */}
                 <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
-                  <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-                    <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+                  <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                    <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
                       <DialogTitle className="text-lg font-semibold text-slate-800">{t("linkControls")}</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
+                    <div className="flex-1 overflow-hidden flex flex-col px-4 sm:px-6 py-4">
                       <div className="relative mb-4">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
@@ -961,13 +976,13 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                         />
                       </div>
                       <div className="flex-1 overflow-auto border border-slate-200 rounded-lg">
-                        <table className="w-full">
+                        <table className="w-full min-w-[450px]">
                           <thead className="bg-slate-50 sticky top-0">
                             <tr className="h-12">
-                              <th className="w-10 px-3"></th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("controlCode")}</th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("name")}</th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("domain")}</th>
+                              <th className="w-10 px-2 sm:px-3"></th>
+                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("controlCode")}</th>
+                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("name")}</th>
+                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("domain")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -1000,7 +1015,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                         </table>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+                    <div className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                       <span className="text-sm text-slate-500">
                         {formData.selectedControls.length} {t("controlsSelected")}
                       </span>
@@ -1016,7 +1031,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
 
           {/* Create Cause Dialog */}
           <Dialog open={createCauseDialogOpen} onOpenChange={setCreateCauseDialogOpen}>
-            <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <DialogContent className="max-w-[95vw] sm:max-w-[425px]" onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>{t("createNewCause") || "Create New Cause"}</DialogTitle>
               </DialogHeader>
@@ -1053,8 +1068,8 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
           </Dialog>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center gap-3 mt-8 pt-6 border-t">
-            <span className="text-xs font-medium text-slate-400 me-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t">
+            <span className="text-xs font-medium text-slate-400 sm:me-auto text-center sm:text-left">
               {t("Step")} {currentStep} {t("of")} {steps.length}
             </span>
             <Button

@@ -768,7 +768,7 @@ export default function GovernancePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500 ">
@@ -781,7 +781,7 @@ export default function GovernancePage() {
 
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance")}</h1>
       </div>
 
       {/* Tabs - Only show for Customer Administrator */}
@@ -805,7 +805,7 @@ export default function GovernancePage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
                 <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
                 <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
@@ -819,7 +819,7 @@ export default function GovernancePage() {
           {["Policy", "Standard", "Procedure"].map((docType) => (
             <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
               {/* Status Cards */}
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
                 <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
                 <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
@@ -836,7 +836,7 @@ export default function GovernancePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={handleExport}>
                   <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Export")}
@@ -853,8 +853,8 @@ export default function GovernancePage() {
               {/* Data Table */}
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {/* Toolbar */}
-                <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100">
-                  <div className="relative max-w-xs">
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                  <div className="relative w-full sm:max-w-xs">
                     <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
@@ -862,12 +862,12 @@ export default function GovernancePage() {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="w-75 ltr:pl-9 rtl:pr-9 ltr:pr-4 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-4 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
                     <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                      <SelectTrigger className="w-[200px] h-9 text-sm bg-slate-50 border-slate-200">
+                      <SelectTrigger className="w-full sm:w-[200px] h-9 text-sm bg-slate-50 border-slate-200">
                         <SelectValue placeholder={t("Integrated Framework")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -878,7 +878,7 @@ export default function GovernancePage() {
                       </SelectContent>
                     </Select>
                     <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-                      <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                      <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                         <SelectValue placeholder={t("Status")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="bg-white">
@@ -899,6 +899,7 @@ export default function GovernancePage() {
                 </div>
               ) : (
                 <>
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -984,6 +985,7 @@ export default function GovernancePage() {
                       )}
                     </TableBody>
                   </Table>
+                  </div>
 
                   {/* Pagination */}
                   <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
@@ -1053,6 +1055,7 @@ export default function GovernancePage() {
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -1132,6 +1135,7 @@ export default function GovernancePage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             )}
           </TabsContent>
@@ -1148,7 +1152,7 @@ export default function GovernancePage() {
           {["Policy", "Standard", "Procedure"].map((docType) => (
             <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
                 <PermissionGate resource="compliance.governance" action="create">
                   <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
                     <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1169,8 +1173,8 @@ export default function GovernancePage() {
               {/* Data Table */}
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {/* Toolbar */}
-                <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100">
-                  <div className="relative max-w-xs">
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                  <div className="relative w-full sm:max-w-xs">
                     <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
@@ -1181,9 +1185,9 @@ export default function GovernancePage() {
                       className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
                     <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                      <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                      <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                         <SelectValue placeholder={t("Integrated Framework")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -1202,6 +1206,7 @@ export default function GovernancePage() {
                 </div>
               ) : (
                 <>
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -1293,6 +1298,7 @@ export default function GovernancePage() {
                       )}
                     </TableBody>
                   </Table>
+                  </div>
 
                   <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
                     <span className="text-xs text-slate-500">
@@ -1317,17 +1323,17 @@ export default function GovernancePage() {
 
       {/* Link Governance Dialog */}
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" showCloseButton={false}>
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" showCloseButton={false}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Governance Documents")}</DialogTitle>
             <Button variant="ghost" size="icon" onClick={() => setIsLinkDialogOpen(false)} className="h-8 w-8 text-slate-400 hover:text-slate-600">
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5">
             {/* Search and Filter */}
-            <div className="flex gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <Input
                 placeholder={t("Search by code or name...")}
                 value={linkSearch}
@@ -1335,7 +1341,7 @@ export default function GovernancePage() {
                 className="flex-1 bg-slate-50 border-slate-200"
               />
               <Select value={linkDocTypeFilter} onValueChange={setLinkDocTypeFilter}>
-                <SelectTrigger className="w-[160px] bg-slate-50 border-slate-200">
+                <SelectTrigger className="w-full sm:w-[160px] bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("All Types")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="bg-white">
@@ -1403,11 +1409,11 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
-            <Button variant="outline" onClick={() => setIsLinkDialogOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => setIsLinkDialogOpen(false)} className="w-full sm:w-auto">
               {t("Cancel")}
             </Button>
-            <Button onClick={handleLinkGovernance} disabled={selectedGovernanceIds.length === 0}>
+            <Button onClick={handleLinkGovernance} disabled={selectedGovernanceIds.length === 0} className="w-full sm:w-auto">
               {t("Link Selected")}
             </Button>
           </div>
@@ -1419,14 +1425,14 @@ export default function GovernancePage() {
         if (!open) resetCreateDialog();
         setIsCreateDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("New Governance")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5">
             <div className="flex items-center justify-center gap-2 pb-5">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
@@ -1573,7 +1579,7 @@ export default function GovernancePage() {
                   <Badge variant="secondary">{selectedControlIds.length} {t("selected")}</Badge>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
                     <Input
                       placeholder={t("Search controls...")}
@@ -1583,7 +1589,7 @@ export default function GovernancePage() {
                     />
                   </div>
                   <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
-                    <SelectTrigger className="w-[180px] bg-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -1594,7 +1600,7 @@ export default function GovernancePage() {
                     </SelectContent>
                   </Select>
                   <Select value={controlStatusFilter} onValueChange={setControlStatusFilter}>
-                    <SelectTrigger className="w-[180px] bg-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Status")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -1659,7 +1665,7 @@ export default function GovernancePage() {
               <div className="space-y-6">
                 <div className="text-lg font-medium text-slate-800">{t("Review Information")}</div>
 
-                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
                     <Label className="text-slate-500 text-sm">{t("Governance Name")}</Label>
                     <p className="font-medium text-slate-900">{newPolicy.name}</p>
@@ -1709,8 +1715,8 @@ export default function GovernancePage() {
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
-            <Button variant="outline" onClick={() => {
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
                 resetCreateDialog();
@@ -1720,6 +1726,7 @@ export default function GovernancePage() {
               {createStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={() => {
                 if (createStep === 1) {
                   const errors: Record<string, string> = {};
@@ -1779,8 +1786,8 @@ export default function GovernancePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
@@ -1789,7 +1796,7 @@ export default function GovernancePage() {
             </DialogHeader>
           </div>
 
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <p className="text-sm text-slate-500 mb-4">
               {t("Upload a CSV or Excel file to import")} {t(activeDocType).toLowerCase()}s.
             </p>
@@ -1843,14 +1850,14 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => {
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
             }}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleImport} disabled={!importFile}>
+            <Button onClick={handleImport} disabled={!importFile} className="w-full sm:w-auto">
               {t("Import")}
             </Button>
           </div>
@@ -1864,14 +1871,14 @@ export default function GovernancePage() {
         }
         setIsEditDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit")} {t(editingPolicy?.documentType || "Governance")}</DialogTitle>
             </DialogHeader>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5">
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Governance Name")} *</Label>
@@ -1951,14 +1958,15 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
-            <Button variant="outline" onClick={() => {
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => {
               setIsEditDialogOpen(false);
               setEditingPolicy(null);
             }}>
               {t("Cancel")}
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={handleUpdatePolicy}
               disabled={!editData.name || !editData.departmentId || !editData.documentType || !editData.recurrence}
             >

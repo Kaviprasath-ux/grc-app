@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Download, Pencil } from "lucide-react";
+import { Loader2, ArrowLeft, ChevronRight, Home, Download, Pencil } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -270,15 +270,29 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
+      <div className="p-3 sm:p-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+          <Link href="/internal-audit/report" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/report" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Reports")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Report Details")}</span>
+        </nav>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
+        </div>
       </div>
     );
   }
 
   if (!report) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         <p className="text-gray-500">{t("Report not found")}</p>
       </div>
     );
@@ -289,9 +303,22 @@ export default function AuditReportViewPage({ params }: PageProps) {
   const distribution = "Audit Committee, CFO, Controller, IT Head";
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <Link href="/internal-audit/report" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/internal-audit/report" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Reports")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Report Details")}</span>
+      </nav>
+
       {/* Header with Back button */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
         <Link href="/internal-audit/report" className="flex items-center gap-1 text-slate-600 hover:text-primary-600">
           <ArrowLeft className="h-4 w-4" />
           {t("Back")}
@@ -303,7 +330,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
       </div>
 
       {/* Report Content */}
-      <div className="bg-white border rounded-lg p-8 space-y-6">
+      <div className="bg-white border rounded-lg p-4 sm:p-8 space-y-4 sm:space-y-6">
         {/* Report Title */}
         <h1 className="text-lg font-bold text-center uppercase">
           {t("REPORT ON INTERNAL AUDIT FOR THE PERIOD FROM")} {formatDate(report.engagement.actualStartDate || report.engagement.plannedStartDate)} {t("TO")} {formatDate(report.engagement.actualEndDate || report.engagement.plannedEndDate)}
@@ -311,36 +338,36 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Report Metadata */}
         <div className="space-y-2 text-sm">
-          <div className="flex">
-            <span className="font-semibold w-40">{t("Audit Title")}:</span>
+          <div className="flex flex-col sm:flex-row">
+            <span className="font-semibold w-auto sm:w-40">{t("Audit Title")}:</span>
             <span className="text-blue-600">{report.title}</span>
           </div>
-          <div className="flex">
-            <span className="font-semibold w-40">{t("Report Number")}:</span>
+          <div className="flex flex-col sm:flex-row">
+            <span className="font-semibold w-auto sm:w-40">{t("Report Number")}:</span>
             <span className="text-blue-600">{report.reportCode}</span>
           </div>
-          <div className="flex">
-            <span className="font-semibold w-40">{t("Report Date")}:</span>
+          <div className="flex flex-col sm:flex-row">
+            <span className="font-semibold w-auto sm:w-40">{t("Report Date")}:</span>
             <span className="text-blue-600">{reportDate}</span>
           </div>
-          <div className="flex">
-            <span className="font-semibold w-40">{t("Fieldwork Period")}:</span>
+          <div className="flex flex-col sm:flex-row">
+            <span className="font-semibold w-auto sm:w-40">{t("Fieldwork Period")}:</span>
             <span className="text-blue-600">{fieldworkPeriod}</span>
           </div>
-          <div className="flex">
-            <span className="font-semibold w-40">{t("Assigned Auditor")}:</span>
+          <div className="flex flex-col sm:flex-row">
+            <span className="font-semibold w-auto sm:w-40">{t("Assigned Auditor")}:</span>
             <span>
               {report.engagement.assignedAuditor
                 ? `${report.engagement.assignedAuditor.firstName} ${report.engagement.assignedAuditor.lastName}`
                 : ""}
             </span>
           </div>
-          <div className="flex">
-            <span className="font-semibold w-40">{t("Distribution")}:</span>
+          <div className="flex flex-col sm:flex-row">
+            <span className="font-semibold w-auto sm:w-40">{t("Distribution")}:</span>
             <span className="text-blue-600">{distribution}</span>
           </div>
-          <div className="flex items-center">
-            <span className="font-semibold w-40">{t("Auditee")}:</span>
+          <div className="flex flex-col sm:flex-row sm:items-center">
+            <span className="font-semibold w-auto sm:w-40">{t("Auditee")}:</span>
             {isEditing ? (
               <Select
                 value={editForm.auditeeId}
@@ -536,8 +563,8 @@ export default function AuditReportViewPage({ params }: PageProps) {
           </p>
 
           {/* Summary Table */}
-          <div className="border rounded-lg overflow-hidden mb-4">
-            <table className="w-full text-sm">
+          <div className="border rounded-lg overflow-x-auto mb-4">
+            <table className="w-full text-sm min-w-[600px]">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-4 py-2 text-left font-semibold border-b">{t("Severity")}</th>
@@ -644,7 +671,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
       </div>
 
       {/* Footer with Action Buttons */}
-      <div className="flex justify-end items-center gap-3 pt-4 border-t border-slate-200">
+      <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 pt-4 border-t border-slate-200">
         <Button
           className="bg-primary-600 hover:bg-primary-700"
           onClick={handleDownloadReport}

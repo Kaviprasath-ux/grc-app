@@ -740,7 +740,7 @@ export default function MyAssetInventoryPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
@@ -753,46 +753,46 @@ export default function MyAssetInventoryPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("My Asset Inventory")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("My Asset Inventory")}</h1>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">{t("Total Assets")}</p>
-          <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">{t("Total Assets")}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-slate-800">{stats.total}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">{t("Active Assets")}</p>
-          <p className="text-3xl font-bold text-green-600">{stats.active}</p>
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">{t("Active Assets")}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.active}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">{t("Critical Assets")}</p>
-          <p className="text-3xl font-bold text-red-600">{stats.critical}</p>
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">{t("Critical Assets")}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-red-600">{stats.critical}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1 flex items-center gap-1">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1 flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             {t("Needs Review")}
           </p>
-          <p className="text-3xl font-bold text-orange-600">{stats.needsReview}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-orange-600">{stats.needsReview}</p>
         </div>
       </div>
 
       {/* Filters and Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder={t("Search assets...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px] border-slate-200"
+              className="pl-10 w-full sm:w-56 border-slate-200"
             />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue placeholder={t("Category")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4}>
@@ -805,7 +805,7 @@ export default function MyAssetInventoryPage() {
             </SelectContent>
           </Select>
           <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue placeholder={t("All Status")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4}>
@@ -818,7 +818,7 @@ export default function MyAssetInventoryPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <PermissionGate resource="asset.my-inventory" action="create">
             <label>
               <input
@@ -861,16 +861,16 @@ export default function MyAssetInventoryPage() {
 
       {/* Add Asset Dialog */}
       <Dialog open={isAddAssetOpen} onOpenChange={setIsAddAssetOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Asset")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="space-y-5">
               {/* Asset Name - Full Width */}
               <div>
@@ -884,7 +884,7 @@ export default function MyAssetInventoryPage() {
               </div>
 
               {/* Asset ID & Department */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Asset ID")}</Label>
                   <Input
@@ -925,7 +925,7 @@ export default function MyAssetInventoryPage() {
               </div>
 
               {/* Category & Sub Category */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Category")}</Label>
                   <div className="flex gap-2 mt-1.5">
@@ -976,7 +976,7 @@ export default function MyAssetInventoryPage() {
               </div>
 
               {/* Group & Custodian */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Group")}</Label>
                   <div className="flex gap-2 mt-1.5">
@@ -1021,7 +1021,7 @@ export default function MyAssetInventoryPage() {
               </div>
 
               {/* Lifecycle Status & Location */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Lifecycle Status")}</Label>
                   <div className="flex gap-2 mt-1.5">
@@ -1057,7 +1057,7 @@ export default function MyAssetInventoryPage() {
               </div>
 
               {/* Criticality & Sensitivity */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Criticality")}</Label>
                   <Input value={t("N/A")} disabled className="mt-1.5 bg-slate-50" />
@@ -1069,7 +1069,7 @@ export default function MyAssetInventoryPage() {
               </div>
 
               {/* Dates */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Acquisition Date")}</Label>
                   <div className="mt-1.5">
@@ -1095,7 +1095,7 @@ export default function MyAssetInventoryPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { resetForm(); setIsAddAssetOpen(false); }}>{t("Cancel")}</Button>
             <Button onClick={handleAddAsset}>{t("Save")}</Button>
           </div>
@@ -1104,16 +1104,16 @@ export default function MyAssetInventoryPage() {
 
       {/* Edit Asset Dialog */}
       <Dialog open={isEditAssetOpen} onOpenChange={setIsEditAssetOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Asset")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             {editingAsset && (
               <div className="space-y-5">
                 {/* Asset Name - Full Width */}
@@ -1127,7 +1127,7 @@ export default function MyAssetInventoryPage() {
                 </div>
 
                 {/* Asset ID & Department */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Asset ID")}</Label>
                     <Input value={editingAsset.assetId} disabled className="mt-1.5 bg-slate-50" />
@@ -1164,7 +1164,7 @@ export default function MyAssetInventoryPage() {
                 </div>
 
                 {/* Category & Sub Category */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Asset Category")}</Label>
                     <div className="flex gap-2 mt-1.5">
@@ -1215,7 +1215,7 @@ export default function MyAssetInventoryPage() {
                 </div>
 
                 {/* Group & Custodian */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Asset Group")}</Label>
                     <div className="flex gap-2 mt-1.5">
@@ -1260,7 +1260,7 @@ export default function MyAssetInventoryPage() {
                 </div>
 
                 {/* Lifecycle Status & Location */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Lifecycle Status")}</Label>
                     <div className="flex gap-2 mt-1.5">
@@ -1296,7 +1296,7 @@ export default function MyAssetInventoryPage() {
                 </div>
 
                 {/* Criticality & Sensitivity */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Asset Criticality")}</Label>
                     <Input value={t("N/A")} disabled className="mt-1.5 bg-slate-50" />
@@ -1308,7 +1308,7 @@ export default function MyAssetInventoryPage() {
                 </div>
 
                 {/* Dates */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Acquisition Date")}</Label>
                     <div className="mt-1.5">
@@ -1335,7 +1335,7 @@ export default function MyAssetInventoryPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsEditAssetOpen(false); setEditingAsset(null); }}>{t("Cancel")}</Button>
             <Button onClick={handleEditAsset}>{t("Save Changes")}</Button>
           </div>
@@ -1344,7 +1344,7 @@ export default function MyAssetInventoryPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
@@ -1362,7 +1362,7 @@ export default function MyAssetInventoryPage() {
 
       {/* Inline Add Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Category")}</DialogTitle>
@@ -1379,7 +1379,7 @@ export default function MyAssetInventoryPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => { setNewCategoryName(""); setIsAddCategoryOpen(false); }}>{t("Cancel")}</Button>
             <Button onClick={handleAddCategory}>{t("Save")}</Button>
           </div>
@@ -1388,7 +1388,7 @@ export default function MyAssetInventoryPage() {
 
       {/* Inline Add Sub Category Dialog */}
       <Dialog open={isAddSubCategoryOpen} onOpenChange={setIsAddSubCategoryOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Sub Category")}</DialogTitle>
@@ -1405,7 +1405,7 @@ export default function MyAssetInventoryPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => { setNewSubCategoryName(""); setIsAddSubCategoryOpen(false); }}>{t("Cancel")}</Button>
             <Button onClick={handleAddSubCategory}>{t("Save")}</Button>
           </div>
@@ -1414,7 +1414,7 @@ export default function MyAssetInventoryPage() {
 
       {/* Inline Add Group Dialog */}
       <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Group")}</DialogTitle>
@@ -1431,7 +1431,7 @@ export default function MyAssetInventoryPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => { setNewGroupName(""); setIsAddGroupOpen(false); }}>{t("Cancel")}</Button>
             <Button onClick={handleAddGroup}>{t("Save")}</Button>
           </div>
@@ -1440,7 +1440,7 @@ export default function MyAssetInventoryPage() {
 
       {/* Inline Add Lifecycle Status Dialog */}
       <Dialog open={isAddLifecycleOpen} onOpenChange={setIsAddLifecycleOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
@@ -1457,7 +1457,7 @@ export default function MyAssetInventoryPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => { setNewLifecycleName(""); setIsAddLifecycleOpen(false); }}>{t("Cancel")}</Button>
             <Button onClick={handleAddLifecycle}>{t("Save")}</Button>
           </div>

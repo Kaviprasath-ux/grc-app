@@ -1710,7 +1710,7 @@ export default function FieldworkDetailsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
@@ -1718,13 +1718,13 @@ export default function FieldworkDetailsPage() {
           </div>
           {canViewDashboard && (
             <>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
               <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
                 {t("Dashboard")}
               </Link>
             </>
           )}
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Fieldwork")}
           </Link>
@@ -1738,7 +1738,7 @@ export default function FieldworkDetailsPage() {
 
   if (!engagement) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
@@ -1746,19 +1746,19 @@ export default function FieldworkDetailsPage() {
           </div>
           {canViewDashboard && (
             <>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
               <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
                 {t("Dashboard")}
               </Link>
             </>
           )}
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Fieldwork")}
           </Link>
         </nav>
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
           {t("Engagement not found")}
@@ -1768,7 +1768,7 @@ export default function FieldworkDetailsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -1777,24 +1777,24 @@ export default function FieldworkDetailsPage() {
         </div>
         {canViewDashboard && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
               {t("Dashboard")}
             </Link>
           </>
         )}
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Fieldwork")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{engagement.auditId}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{engagement.engagementTitle}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{engagement.engagementTitle}</h1>
           <p className="text-sm text-slate-500">{engagement.auditId}</p>
         </div>
         {isCompleted && (
@@ -1849,7 +1849,7 @@ export default function FieldworkDetailsPage() {
           </div>
         }
       >
-        <div className="grid grid-cols-3 gap-6 p-4 bg-white rounded-lg border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-3 sm:p-4 bg-white rounded-lg border">
           <div>
             <Label className="text-slate-700 font-medium">{t("Engagement ID")}</Label>
             <p className="mt-1">{engagement.auditId}</p>
@@ -1995,8 +1995,8 @@ export default function FieldworkDetailsPage() {
             </div>
           )}
           {aiWorkpapers.length > 0 ? (
-            <div className="bg-white border rounded-lg overflow-hidden">
-              <Table>
+            <div className="bg-white border rounded-lg overflow-x-auto">
+              <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-slate-50 border-b">
                   <TableHead className="text-slate-700 font-semibold w-[200px]">{t("Task")}</TableHead>
@@ -2130,8 +2130,8 @@ export default function FieldworkDetailsPage() {
               {t("Add Task")}
             </Button>
           </div>
-          <div className="bg-white border rounded-lg overflow-hidden">
-            <Table>
+          <div className="bg-white border rounded-lg overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50/50">
                   <TableHead className="text-xs font-semibold text-slate-600 w-[80px]">{t("Ref No")}</TableHead>
@@ -2492,7 +2492,7 @@ export default function FieldworkDetailsPage() {
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' :
-                          er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
+                          er.status === 'Submitted' ? 'bg-primary-50 text-primary-700' :
                           er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-slate-100 text-slate-800'
                         }`}>
@@ -2605,8 +2605,8 @@ export default function FieldworkDetailsPage() {
             </Button>
           </div>
           {otherDocuments.length > 0 ? (
-            <div className="bg-white border rounded-lg overflow-hidden">
-              <Table>
+            <div className="bg-white border rounded-lg overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50/50">
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
@@ -2701,8 +2701,8 @@ export default function FieldworkDetailsPage() {
           </div>
           )}
           {findings.length > 0 ? (
-            <div className="bg-white border rounded-lg overflow-hidden">
-              <Table>
+            <div className="bg-white border rounded-lg overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50/50">
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Finding ID")}</TableHead>
@@ -2734,7 +2734,7 @@ export default function FieldworkDetailsPage() {
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' :
-                          finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                          finding.status === 'Under Review' ? 'bg-primary-50 text-primary-700' :
                           'bg-slate-100 text-slate-800'
                         }`}>
                           {finding.status}
@@ -2798,7 +2798,7 @@ export default function FieldworkDetailsPage() {
           fetchComments();
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -2869,7 +2869,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Upload Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -2960,7 +2960,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Add Finding Dialog */}
       <Dialog open={addFindingDialogOpen} onOpenChange={setAddFindingDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -3027,7 +3027,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Add Full Finding Dialog */}
       <Dialog open={addFullFindingDialogOpen} onOpenChange={setAddFullFindingDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -3248,7 +3248,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Add Evidence Request Dialog */}
       <Dialog open={addEvidenceDialogOpen} onOpenChange={setAddEvidenceDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -3324,7 +3324,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Delete Finding Confirmation Dialog */}
       <Dialog open={deleteFindingDialogOpen} onOpenChange={setDeleteFindingDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Finding")}</DialogTitle>
@@ -3365,7 +3365,7 @@ export default function FieldworkDetailsPage() {
 
       {/* New Document Upload Dialog */}
       <Dialog open={newDocumentDialogOpen} onOpenChange={setNewDocumentDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -3501,7 +3501,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Delete Document Confirmation Dialog */}
       <Dialog open={deleteDocumentDialogOpen} onOpenChange={setDeleteDocumentDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Document")}</DialogTitle>
@@ -3542,7 +3542,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Delete Workpaper Confirmation Dialog */}
       <Dialog open={deleteWorkpaperDialogOpen} onOpenChange={setDeleteWorkpaperDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Workpaper")}</DialogTitle>
@@ -3583,7 +3583,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Edit AI Workpaper Dialog */}
       <Dialog open={editAIWorkpaperDialogOpen} onOpenChange={setEditAIWorkpaperDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -3668,7 +3668,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Delete AI Workpaper Confirmation Dialog */}
       <Dialog open={deleteAIWorkpaperDialogOpen} onOpenChange={setDeleteAIWorkpaperDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete AI Workpaper")}</DialogTitle>
@@ -3709,7 +3709,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Generated Workpaper with AI Dialog */}
       <Dialog open={generateAIDialogOpen} onOpenChange={setGenerateAIDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Generated Workpaper with AI")}</DialogTitle>
@@ -3722,7 +3722,7 @@ export default function FieldworkDetailsPage() {
                 <span className="ltr:ml-3 rtl:mr-3 text-slate-600">{t("Generating workpapers...")}</span>
               </div>
             ) : generatedWorkpapers.length > 0 ? (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {generatedWorkpapers.map((wp) => (
                   <div
                     key={wp.id}
@@ -3815,7 +3815,7 @@ export default function FieldworkDetailsPage() {
 
       {/* View/Edit Document Dialog */}
       <Dialog open={viewEditDocumentDialogOpen} onOpenChange={setViewEditDocumentDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -3947,7 +3947,7 @@ export default function FieldworkDetailsPage() {
 
       {/* View/Edit Evidence Request Dialog */}
       <Dialog open={viewEditEvidenceDialogOpen} onOpenChange={setViewEditEvidenceDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -4053,12 +4053,12 @@ export default function FieldworkDetailsPage() {
                   <div key={att.id} className="flex items-center justify-between py-2 border-b">
                     <div className="flex items-center gap-3">
                       {att.fileType?.includes('image') ? (
-                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                        <div className="w-10 h-10 bg-primary-50 rounded flex items-center justify-center">
                           <FileText className="h-5 w-5 text-primary-600" />
                         </div>
                       ) : att.fileName?.endsWith('.docx') || att.fileName?.endsWith('.doc') ? (
-                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
-                          <FileSpreadsheet className="h-5 w-5 text-blue-800" />
+                        <div className="w-10 h-10 bg-primary-50 rounded flex items-center justify-center">
+                          <FileSpreadsheet className="h-5 w-5 text-primary-700" />
                         </div>
                       ) : (
                         <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center">
@@ -4109,7 +4109,7 @@ export default function FieldworkDetailsPage() {
                   <div className="p-3 bg-slate-50 rounded-md border">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       selectedEvidence?.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' :
-                      selectedEvidence?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
+                      selectedEvidence?.status === 'Submitted' ? 'bg-primary-50 text-primary-700' :
                       'bg-yellow-100 text-yellow-800'
                     }`}>
                     {selectedEvidence?.status || "-"}
@@ -4272,7 +4272,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Need Clarification Dialog */}
       <Dialog open={clarificationDialogOpen} onOpenChange={setClarificationDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Need Clarification")}</DialogTitle>
@@ -4343,7 +4343,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Auditee Clarification View Popup */}
       <Dialog open={auditeeClariDialogOpen} onOpenChange={setAuditeeClariDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Need Clarification")}</DialogTitle>
@@ -4392,7 +4392,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Auditee Respond Dialog */}
       <Dialog open={respondDialogOpen} onOpenChange={setRespondDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Respond")}</DialogTitle>
@@ -4474,7 +4474,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Delete Evidence Request Confirmation Dialog */}
       <Dialog open={deleteEvidenceDialogOpen} onOpenChange={setDeleteEvidenceDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Evidence Request")}</DialogTitle>
@@ -4515,7 +4515,7 @@ export default function FieldworkDetailsPage() {
 
       {/* AI Review Result Dialog */}
       <Dialog open={aiReviewDialogOpen} onOpenChange={setAiReviewDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
@@ -4557,7 +4557,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Add Attachment Dialog */}
       <Dialog open={attachmentDialogOpen} onOpenChange={setAttachmentDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Attachment")}</DialogTitle>
@@ -4651,7 +4651,7 @@ export default function FieldworkDetailsPage() {
         setViewFindingDialogOpen(open);
         if (!open) setSelectedFindingForView(null);
       }}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("View Finding")} - {selectedFindingForView?.findingId || ''}</DialogTitle>
           </DialogHeader>
@@ -4661,7 +4661,7 @@ export default function FieldworkDetailsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
             </div>
           ) : selectedFindingForView ? (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Audit Plan */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Audit Plan")}</Label>

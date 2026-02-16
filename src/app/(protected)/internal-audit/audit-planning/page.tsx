@@ -913,7 +913,7 @@ export default function AuditPlanningPage() {
       </div>
 
       {/* Two columns for Audit Rating and Audit Type */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-sm font-medium text-slate-700">{t("Audit Rating")}</Label>
           <Select
@@ -965,7 +965,7 @@ export default function AuditPlanningPage() {
       </div>
 
       {/* Two columns for Auditor and Auditee */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-sm font-medium text-slate-700">
             {t("Auditor")} <span className="text-red-500">*</span>
@@ -1022,7 +1022,7 @@ export default function AuditPlanningPage() {
       </div>
 
       {/* Two columns for Start Date and Target Date */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-sm font-medium text-slate-700">
             {t("Start Date")} <span className="text-red-500">*</span>
@@ -1311,8 +1311,8 @@ export default function AuditPlanningPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
+      <div className="space-y-4 sm:space-y-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -1327,7 +1327,7 @@ export default function AuditPlanningPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -1347,9 +1347,9 @@ export default function AuditPlanningPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Upload className="h-4 w-4 mr-2" />
             {t("Export")}
@@ -1370,8 +1370,8 @@ export default function AuditPlanningPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative w-[320px]">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative w-full sm:w-[320px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -1381,9 +1381,9 @@ export default function AuditPlanningPage() {
               className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Department")} />
               </SelectTrigger>
               <SelectContent>
@@ -1396,7 +1396,7 @@ export default function AuditPlanningPage() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Status")} />
               </SelectTrigger>
               <SelectContent>
@@ -1407,7 +1407,7 @@ export default function AuditPlanningPage() {
               </SelectContent>
             </Select>
             <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger className="w-[110px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[110px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Year")} />
               </SelectTrigger>
               <SelectContent>
@@ -1422,11 +1422,12 @@ export default function AuditPlanningPage() {
           </div>
         </div>
 
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Audit ID")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Engagement Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5 whitespace-nowrap">{t("Audit ID")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Engagement Name")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Type")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assigned Auditors")}</TableHead>
@@ -1481,6 +1482,7 @@ export default function AuditPlanningPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -1501,9 +1503,9 @@ export default function AuditPlanningPage() {
 
       {/* Report Selection Dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {t("Generate Annual Plan Report")}
@@ -1512,7 +1514,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6 space-y-4">
+          <div className="px-4 sm:px-6 py-6 space-y-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
                 {t("Filter Type")} <span className="text-red-500">*</span>
@@ -1577,7 +1579,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1590,9 +1592,9 @@ export default function AuditPlanningPage() {
 
       {/* Add Engagement Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {t("Add Engagement")}
@@ -1601,7 +1603,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             {dialogLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
@@ -1612,7 +1614,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1629,9 +1631,9 @@ export default function AuditPlanningPage() {
 
       {/* Edit Engagement Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {t("Edit Audit Plan")}
@@ -1640,7 +1642,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             {dialogLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
@@ -1651,7 +1653,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setEditDialogOpen(false); setEditingEngagementId(null); }}>
               {t("Cancel")}
             </Button>
@@ -1668,8 +1670,8 @@ export default function AuditPlanningPage() {
 
       {/* Add/Edit Task Dialog */}
       <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">
                 {editingTaskId ? t("Edit Task") : t("Add Task")}
@@ -1677,7 +1679,7 @@ export default function AuditPlanningPage() {
             </DialogHeader>
           </div>
 
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 sm:px-6 py-5 space-y-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">{t("Task Description")} <span className="text-red-500">*</span></Label>
               <Input
@@ -1688,7 +1690,7 @@ export default function AuditPlanningPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">{t("Planned Hours")}</Label>
                 <Input
@@ -1764,7 +1766,7 @@ export default function AuditPlanningPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1781,9 +1783,9 @@ export default function AuditPlanningPage() {
 
       {/* Report Preview Modal */}
       <Dialog open={reportPreviewOpen} onOpenChange={setReportPreviewOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {t("Annual Audit Plan Report")}
@@ -1792,15 +1794,15 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="space-y-6">
               {/* Document Metadata */}
               <div className="space-y-3">
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Document Type")} :</span>
                   <span className="text-primary-600">{t("Annual plan report")}</span>
                 </div>
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Document Reference")} :</span>
                   <span className="text-primary-600">
                     {reportFilterType === "DateRange" && reportStartDate && reportEndDate
@@ -1808,34 +1810,34 @@ export default function AuditPlanningPage() {
                       : `MOF-IAD-${reportYear}`}
                   </span>
                 </div>
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Responsible Department")} :</span>
                   <span className="text-slate-700">{t("Internal Audit Department")}</span>
                 </div>
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Document Description")} :</span>
                   <span className="text-slate-700">{t("This document includes the objectives and scope of the engagement, the audit team, completion timeline, execution phases, and reporting procedures.")}</span>
                 </div>
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Purpose")} :</span>
                   <span className="text-slate-700">{t("To use the form for documenting the planning of the internal audit engagement.")}</span>
                 </div>
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Scope of Application")} :</span>
                   <span className="text-slate-700">{t("Internal Audit Department")}</span>
                 </div>
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Related Policies")} :</span>
                   <div className="text-slate-700">
                     <p>• {t("Internal Audit Charter")}</p>
                     <p>• {t("Internal Audit Methodology")}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Related Procedures")} :</span>
                   <span className="text-slate-700">{t("None")}</span>
                 </div>
-                <div className="grid grid-cols-[200px_1fr] gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
                   <span className="font-semibold text-slate-700">{t("Reference Documents")} :</span>
                   <div className="text-slate-700">
                     <p>• {t("International Standards for the Professional Practice of Internal Auditing (IIA)")}</p>
@@ -1908,7 +1910,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setReportPreviewOpen(false)}>
               {t("Close")}
             </Button>

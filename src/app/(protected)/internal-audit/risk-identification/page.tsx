@@ -303,7 +303,7 @@ export default function RiskIdentificationPage() {
 
   if (pageLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -324,7 +324,7 @@ export default function RiskIdentificationPage() {
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
         </div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
@@ -340,7 +340,7 @@ export default function RiskIdentificationPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -361,21 +361,21 @@ export default function RiskIdentificationPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
       </div>
 
       {/* Main Form Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="text-base font-semibold text-slate-800">{t("Risk Assessment Parameters")}</h3>
           <div className="flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2.5 py-1 rounded-full">
             <Sparkles className="h-3 w-3" />
             <span>{t("AI-Powered")}</span>
           </div>
         </div>
-        <div className="px-6 py-5 space-y-5">
+        <div className="px-4 sm:px-6 py-5 space-y-5">
           {/* Department & Audit Focus - 2 column grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Department Selection */}
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">
@@ -472,7 +472,7 @@ export default function RiskIdentificationPage() {
         </div>
 
         {/* Footer with Submit */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex justify-end">
+        <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex justify-end">
           <Button
             size="sm"
             onClick={handleSuggestRisks}
@@ -497,13 +497,13 @@ export default function RiskIdentificationPage() {
       {/* Recent Searches / Generated Risks */}
       {recentSearches.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-base font-semibold text-slate-800">{t("Recent Searches")}</h3>
             <span className="text-xs text-slate-400">{recentSearches.length} {t("result(s)")}</span>
           </div>
           <div className="divide-y divide-slate-100">
             {recentSearches.map((search) => (
-              <div key={search.id} className="px-6 py-5">
+              <div key={search.id} className="px-4 sm:px-6 py-5">
                 {/* Search Header */}
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">

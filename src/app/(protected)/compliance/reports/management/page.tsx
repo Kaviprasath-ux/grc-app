@@ -296,7 +296,7 @@ function ManagementReportContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
@@ -312,9 +312,9 @@ function ManagementReportContent() {
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Compliance Management Report")}</h1>
-        <Button onClick={handleDownloadReport} disabled={downloading}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Compliance Management Report")}</h1>
+        <Button onClick={handleDownloadReport} disabled={downloading} className="w-full sm:w-auto">
           {downloading ? (
             <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
           ) : (
@@ -327,11 +327,11 @@ function ManagementReportContent() {
       {/* Overall Compliance Section */}
       {showOverallCompliance && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Overall Compliance")}</h3>
           </div>
-          <div className="px-5 py-4">
-            <div className="flex items-center justify-center gap-8">
+          <div className="px-3 sm:px-5 py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
               {/* Simple pie chart representation */}
               <div className="relative w-48 h-48">
                 <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
@@ -392,12 +392,12 @@ function ManagementReportContent() {
       {/* Framework Compliance Section - Horizontal Stacked Bar Chart */}
       {showFrameworkCompliance && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Framework Compliance")}</h3>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-3 sm:px-5 py-4">
             {/* Legend */}
-            <div className="flex items-center justify-end gap-6 mb-4">
+            <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-6 mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-green-500 rounded"></div>
                 <span className="text-sm">{t("Compliant")}</span>
@@ -415,9 +415,9 @@ function ManagementReportContent() {
             {/* Stacked Bar Chart */}
             <div className="space-y-3">
               {frameworkComplianceStats.map((stats) => (
-                <div key={stats.frameworkId} className="flex items-center gap-4">
+                <div key={stats.frameworkId} className="flex items-center gap-2 sm:gap-4">
                   {/* Framework Name (Y-axis label) */}
-                  <div className="w-48 min-w-48 text-sm ltr:text-right rtl:text-left truncate text-slate-700" title={stats.frameworkName}>
+                  <div className="w-24 sm:w-48 min-w-[6rem] sm:min-w-48 text-xs sm:text-sm ltr:text-right rtl:text-left truncate text-slate-700" title={stats.frameworkName}>
                     {stats.frameworkName}
                   </div>
                   {/* Stacked Bar */}
@@ -466,7 +466,7 @@ function ManagementReportContent() {
                     )}
                   </div>
                   {/* Total controls count */}
-                  <div className="w-16 text-sm text-slate-500 ltr:text-right rtl:text-left">
+                  <div className="w-12 sm:w-16 text-xs sm:text-sm text-slate-500 ltr:text-right rtl:text-left">
                     {stats.totalControls} {t("Controls")}
                   </div>
                 </div>
@@ -477,8 +477,8 @@ function ManagementReportContent() {
             </div>
 
             {/* X-axis scale indicator */}
-            <div className="flex items-center gap-4 mt-4 pt-2 border-t border-slate-100">
-              <div className="w-48 min-w-48"></div>
+            <div className="flex items-center gap-2 sm:gap-4 mt-4 pt-2 border-t border-slate-100">
+              <div className="w-24 sm:w-48 min-w-[6rem] sm:min-w-48"></div>
               <div className="flex-1 flex justify-between text-xs text-slate-400">
                 <span>0%</span>
                 <span>25%</span>
@@ -486,7 +486,7 @@ function ManagementReportContent() {
                 <span>75%</span>
                 <span>100%</span>
               </div>
-              <div className="w-16"></div>
+              <div className="w-12 sm:w-16"></div>
             </div>
           </div>
         </div>
@@ -495,10 +495,10 @@ function ManagementReportContent() {
       {/* Control Requirements by Framework Section */}
       {showControlRequirementsByFramework && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Control Requirements by Framework")}</h3>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-3 sm:px-5 py-4">
             <div className="space-y-4">
               {filteredFrameworks.map((framework) => (
                 <div key={framework.id} className="space-y-1">
@@ -525,10 +525,10 @@ function ManagementReportContent() {
       {/* Control Implementations by Framework Section */}
       {showControlImplementationsByFramework && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Control Implementations by Framework")}</h3>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-3 sm:px-5 py-4">
             <div className="space-y-4">
               {filteredFrameworks.map((framework) => (
                 <div key={framework.id} className="space-y-1">
@@ -555,15 +555,15 @@ function ManagementReportContent() {
       {/* Compliance Requirements Exceptions Section */}
       {showComplianceRequirementsExceptions && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Compliance Requirements Exceptions")}</h3>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-3 sm:px-5 py-4">
             {requirementExceptionsList.length > 0 ? (
               <div className="space-y-2">
                 {requirementExceptionsList.map((exception) => (
-                  <div key={exception.id} className="flex justify-between p-2 bg-slate-50 rounded">
-                    <span>{exception.title}</span>
+                  <div key={exception.id} className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2 p-2 bg-slate-50 rounded">
+                    <span className="break-words">{exception.title}</span>
                     <span className={`text-sm px-2 py-1 rounded ${
                       exception.status === "Approved" ? "bg-green-100 text-green-800" :
                       exception.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
@@ -584,11 +584,11 @@ function ManagementReportContent() {
       {/* Control Exceptions Section */}
       {showControlExceptions && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Control Exceptions")}</h3>
           </div>
-          <div className="px-5 py-4">
-            <div className="flex items-center justify-center gap-8">
+          <div className="px-3 sm:px-5 py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
               {/* Pie chart for control exceptions */}
               <div className="relative w-48 h-48">
                 {controlExceptionsList.length > 0 ? (
@@ -654,17 +654,17 @@ function ManagementReportContent() {
       {/* Framework along with Governance Data Section */}
       {showFrameworkWithGovernanceData && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Framework with Governance Data")}</h3>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-3 sm:px-5 py-4">
             <div className="space-y-6">
               {filteredFrameworks.map((framework) => (
                 <div key={framework.id} className="space-y-2">
                   <h4 className="font-medium">{framework.name}</h4>
                   <div className="ltr:pl-4 rtl:pr-4 space-y-1">
                     {(governanceByFramework[framework.name] || []).map((doc) => (
-                      <div key={doc.id} className="flex justify-between text-sm p-2 bg-slate-50 rounded">
+                      <div key={doc.id} className="flex flex-col sm:flex-row sm:justify-between gap-1 text-sm p-2 bg-slate-50 rounded">
                         <span>{doc.title}</span>
                         <span className="text-slate-400">{doc.type}</span>
                       </div>
@@ -686,10 +686,10 @@ function ManagementReportContent() {
       {/* Domain based Progress Compliance Section */}
       {showDomainBasedProgressCompliance && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Domain Based Progress Compliance")}</h3>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-3 sm:px-5 py-4">
             <div className="space-y-4">
               {filteredFrameworks.map((framework) => {
                 const policyProgress = framework.policyPercentage || 0;
@@ -700,8 +700,8 @@ function ManagementReportContent() {
                   <div key={framework.id} className="space-y-3 p-4 bg-slate-50 rounded">
                     <h4 className="font-medium">{framework.name}</h4>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm w-32">{t("Policy Progress")}</span>
+                      <div className="flex items-center gap-2 sm:gap-4">
+                        <span className="text-xs sm:text-sm w-24 sm:w-32 shrink-0">{t("Policy Progress")}</span>
                         <div className="flex-1 h-4 bg-slate-200 rounded overflow-hidden">
                           <div
                             className="h-full bg-blue-500 transition-all"
@@ -710,8 +710,8 @@ function ManagementReportContent() {
                         </div>
                         <span className="text-sm w-12 ltr:text-right rtl:text-left">{policyProgress}%</span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm w-32">{t("Evidence Progress")}</span>
+                      <div className="flex items-center gap-2 sm:gap-4">
+                        <span className="text-xs sm:text-sm w-24 sm:w-32 shrink-0">{t("Evidence Progress")}</span>
                         <div className="flex-1 h-4 bg-slate-200 rounded overflow-hidden">
                           <div
                             className="h-full bg-green-500 transition-all"
@@ -720,8 +720,8 @@ function ManagementReportContent() {
                         </div>
                         <span className="text-sm w-12 ltr:text-right rtl:text-left">{evidenceProgress}%</span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm w-32">{t("Compliance")}</span>
+                      <div className="flex items-center gap-2 sm:gap-4">
+                        <span className="text-xs sm:text-sm w-24 sm:w-32 shrink-0">{t("Compliance")}</span>
                         <div className="flex-1 h-4 bg-slate-200 rounded overflow-hidden">
                           <div
                             className="h-full bg-purple-500 transition-all"
@@ -745,20 +745,20 @@ function ManagementReportContent() {
       {/* Compliance Issues Section */}
       {showComplianceIssues && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Compliance Issues")}</h3>
           </div>
-          <div className="px-5 py-4">
+          <div className="px-3 sm:px-5 py-4">
             {/* Show controls that are not implemented or have issues */}
             {filteredControls.filter(c => c.status === "Not Implemented" || c.status === "Partially Implemented").length > 0 ? (
               <div className="space-y-2">
                 {filteredControls
                   .filter(c => c.status === "Not Implemented" || c.status === "Partially Implemented")
                   .map((control) => (
-                    <div key={control.id} className="flex justify-between p-2 bg-slate-50 rounded">
-                      <div>
+                    <div key={control.id} className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2 p-2 bg-slate-50 rounded">
+                      <div className="min-w-0">
                         <span className="font-medium">{control.code}</span>
-                        <span className="text-slate-400 ltr:ml-2 rtl:mr-2">{control.name}</span>
+                        <span className="text-slate-400 ltr:ml-2 rtl:mr-2 break-words">{control.name}</span>
                       </div>
                       <span className={`text-sm px-2 py-1 rounded ${
                         control.status === "Not Implemented" ? "bg-red-100 text-red-800" :

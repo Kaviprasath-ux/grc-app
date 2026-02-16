@@ -96,7 +96,7 @@ const riskRatingColors: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  Open: "bg-blue-50 text-blue-700 border-blue-200",
+  Open: "bg-primary-50 text-primary-700 border-primary-200",
   "In-Progress": "bg-amber-50 text-amber-700 border-amber-200",
   Completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
@@ -104,7 +104,7 @@ const statusColors: Record<string, string> = {
 const controlStatusColors: Record<string, string> = {
   Implemented: "bg-emerald-50 text-emerald-700 border-emerald-200",
   "In Progress": "bg-amber-50 text-amber-700 border-amber-200",
-  Planned: "bg-blue-50 text-blue-700 border-blue-200",
+  Planned: "bg-primary-50 text-primary-700 border-primary-200",
   "Not Implemented": "bg-slate-50 text-slate-600 border-slate-200",
 };
 
@@ -326,15 +326,15 @@ export default function RiskDetailPage() {
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Risk Dashboard")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/risks/risk-control-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Risk Control Matrix")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Loading...")}</span>
         </nav>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -359,15 +359,15 @@ export default function RiskDetailPage() {
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Risk Dashboard")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/risks/risk-control-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Risk Control Matrix")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Not Found")}</span>
         </nav>
         <div className="flex flex-col items-center justify-center min-h-[40vh]">
@@ -387,29 +387,29 @@ export default function RiskDetailPage() {
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Risk Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/risk-control-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Risk Control Matrix")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{risk.riskId}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-800">{risk.riskId}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{risk.riskId}</h1>
           <Badge variant="outline" className={riskRatingColors[risk.riskRating || "Low"]}>
             {risk.riskRating || "Low"}
           </Badge>
@@ -426,11 +426,11 @@ export default function RiskDetailPage() {
                 {t("Edit")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-              <DialogHeader className="px-6 py-5 border-b border-slate-100">
+            <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+              <DialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Risk")}</DialogTitle>
               </DialogHeader>
-              <div className="flex-1 overflow-y-auto px-6 py-5">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm text-slate-600">{t("Name")}</Label>
@@ -643,7 +643,7 @@ export default function RiskDetailPage() {
             <h3 className="text-sm font-semibold text-slate-800">{t("Inherent Risk Assessment")}</h3>
           </div>
           <div className="p-5">
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="text-center p-3 bg-slate-50 rounded-lg">
                 <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Likelihood")}</p>
                 <p className="text-2xl font-bold text-slate-800 mt-1">{risk.likelihood}</p>
@@ -679,7 +679,7 @@ export default function RiskDetailPage() {
           </div>
           <div className="p-5">
             {risk.residualLikelihood && risk.residualImpact ? (
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="text-center p-3 bg-slate-50 rounded-lg">
                   <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Likelihood")}</p>
                   <p className="text-2xl font-bold text-slate-800 mt-1">{risk.residualLikelihood}</p>
@@ -850,8 +850,8 @@ export default function RiskDetailPage() {
                   {t("Link Control")}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] p-0 gap-0">
-                <DialogHeader className="px-6 py-5 border-b border-slate-100">
+              <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0">
+                <DialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
                   <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Control to Risk")}</DialogTitle>
                 </DialogHeader>
                 <div className="px-6 py-5">
@@ -897,7 +897,8 @@ export default function RiskDetailPage() {
         ) : (
           <>
             {/* Controls Table Header */}
-            <div className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-4 px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="overflow-x-auto">
+            <div className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-4 px-3 sm:px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider min-w-[550px]">
               <span>{t("Control ID")}</span>
               <span>{t("Name")}</span>
               <span>{t("Domain")}</span>
@@ -909,7 +910,7 @@ export default function RiskDetailPage() {
               {linkedControls.map((cr) => (
                 <div
                   key={cr.id}
-                  className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-4 px-5 py-3 items-center hover:bg-slate-50/60 transition-colors"
+                  className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-4 px-3 sm:px-5 py-3 items-center hover:bg-slate-50/60 transition-colors min-w-[550px]"
                 >
                   <span className="text-sm font-medium text-slate-800">{cr.control.controlId}</span>
                   <span className="text-sm text-slate-600 truncate">{cr.control.name}</span>
@@ -941,6 +942,7 @@ export default function RiskDetailPage() {
                   </div>
                 </div>
               ))}
+            </div>
             </div>
           </>
         )}

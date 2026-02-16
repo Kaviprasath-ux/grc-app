@@ -1399,21 +1399,21 @@ export default function ContextPage() {
   // Add Issue Form (5-Step Wizard) - Rendered as Modal
   const renderAddIssueModal = () => (
     <Dialog open={showAddIssue} onOpenChange={(open) => { if (!open) { setShowAddIssue(false); setCurrentStep(1); setIssueErrors({}); setStep4Errors({}); } }}>
-      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
         {/* Fixed Header */}
-        <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Issue")}</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Issue")}</DialogTitle>
           </DialogHeader>
         </div>
 
         {/* Step Progress */}
-        <div className="flex-shrink-0 flex items-start justify-center py-5 px-6 border-b border-slate-100">
+        <div className="flex-shrink-0 flex items-start justify-center py-3 sm:py-5 px-2 sm:px-6 border-b border-slate-100 overflow-x-auto">
           {ISSUE_STEP_KEYS.map((step, index) => (
             <div key={step.id} className="flex items-start">
-              <div className="flex flex-col items-center w-24">
+              <div className="flex flex-col items-center w-14 sm:w-24">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                  className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-colors ${
                     currentStep > step.id
                       ? "bg-success text-white"
                       : currentStep === step.id
@@ -1421,10 +1421,10 @@ export default function ContextPage() {
                       : "bg-slate-100 text-slate-400 border border-slate-200"
                   }`}
                 >
-                  {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                  {currentStep > step.id ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : step.id}
                 </div>
                 <span
-                  className={`mt-2 text-xs font-medium text-center ${
+                  className={`mt-1 sm:mt-2 text-[10px] sm:text-xs font-medium text-center ${
                     currentStep >= step.id ? "text-slate-700" : "text-slate-400"
                   }`}
                 >
@@ -1433,7 +1433,7 @@ export default function ContextPage() {
               </div>
               {index < ISSUE_STEP_KEYS.length - 1 && (
                 <div
-                  className={`w-8 h-0.5 mt-[18px] -mx-3 transition-colors ${
+                  className={`w-4 sm:w-8 h-0.5 mt-[14px] sm:mt-[18px] -mx-1 sm:-mx-3 transition-colors ${
                     currentStep > step.id ? "bg-success" : "bg-slate-200"
                   }`}
                 />
@@ -1443,7 +1443,7 @@ export default function ContextPage() {
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
           <div className="space-y-5">
             {/* Step 1: Info */}
             {currentStep === 1 && (
@@ -1460,7 +1460,7 @@ export default function ContextPage() {
                   />
                 </div>
                 {/* Domain & Category */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Domain")} <span className="text-error">*</span></Label>
                     <div className="flex gap-2 mt-1.5">
@@ -1519,7 +1519,7 @@ export default function ContextPage() {
                   </div>
                 </div>
                 {/* Department & Issue Owner */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")} <span className="text-error">*</span></Label>
                     <Select
@@ -1771,7 +1771,7 @@ export default function ContextPage() {
                 </div>
 
                 {/* Need and Expectation */}
-                <div className="flex items-end gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                   <div className="flex-1">
                     <Label className="text-sm font-medium text-slate-700">{t("Need and Expectation")} <span className="text-error">*</span></Label>
                     <div className="flex gap-2 mt-1.5">
@@ -1801,6 +1801,7 @@ export default function ContextPage() {
                     )}
                   </div>
                   <Button
+                    className="w-full sm:w-auto"
                     onClick={handleAddStakeholderNeed}
                   >
                     <Plus className="h-4 w-4 me-1.5" />
@@ -1811,9 +1812,9 @@ export default function ContextPage() {
                 {/* Stakeholder Needs and Exceptions Table */}
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Needs and Expectations")}</Label>
-                  <div className="border rounded-lg min-h-[150px] mt-1.5 overflow-hidden">
+                  <div className="border rounded-lg min-h-[150px] mt-1.5 overflow-hidden overflow-x-auto">
                     {stakeholderNeeds.length > 0 ? (
-                      <table className="w-full">
+                      <table className="w-full min-w-[400px]">
                         <thead className="bg-slate-50 border-b">
                           <tr>
                             <th className="text-left p-3 text-sm font-medium">{t("Stakeholder")}</th>
@@ -1859,8 +1860,8 @@ export default function ContextPage() {
             {currentStep === 5 && (
               <div className="space-y-5">
                 <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Preview & Save")}</h3>
-                <div className="border border-slate-200 rounded-lg p-6 space-y-4 bg-slate-50">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="border border-slate-200 rounded-lg p-4 sm:p-6 space-y-4 bg-slate-50">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-slate-500 mb-1">{t("Title")}</p>
                       <p className="text-sm font-medium text-slate-800">{newIssue.title || "-"}</p>
@@ -1945,12 +1946,14 @@ export default function ContextPage() {
         </div>
 
         {/* Fixed Footer with Navigation */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+        <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
           <span className="text-xs font-medium text-slate-400 me-auto">
             {t("Step")} {currentStep} {t("of")} 5
           </span>
           <Button
             variant="outline"
+            size="sm"
+            className="sm:size-default"
             onClick={() => {
               if (currentStep === 1) {
                 setShowAddIssue(false);
@@ -1966,6 +1969,8 @@ export default function ContextPage() {
             {currentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           <Button
+            size="sm"
+            className="sm:size-default"
             onClick={() => {
               if (currentStep === 5) {
                 handleAddIssue();
@@ -2001,7 +2006,7 @@ export default function ContextPage() {
 
       {/* Issue Step Error Dialog */}
       <Dialog open={!!issueStepError} onOpenChange={(open) => { if (!open) setIssueStepError(""); }}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 [&>button.absolute]:hidden" nested>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 [&>button.absolute]:hidden" nested>
           <DialogHeader className="sr-only">
             <DialogTitle>{t("Error")}</DialogTitle>
           </DialogHeader>
@@ -2024,7 +2029,7 @@ export default function ContextPage() {
 
       {/* Add Domain Dialog */}
         <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Domain")}</DialogTitle>
@@ -2060,7 +2065,7 @@ export default function ContextPage() {
 
         {/* Add Category Dialog */}
         <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Category")}</DialogTitle>
@@ -2096,7 +2101,7 @@ export default function ContextPage() {
 
         {/* Add Issue Type Dialog */}
         <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Issue Type")}</DialogTitle>
@@ -2132,18 +2137,18 @@ export default function ContextPage() {
 
         {/* Choose Processes Dialog */}
         <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
-          <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Process")}</DialogTitle>
+                <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Link Process")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
                   {t("Select processes to link with this issue.")}
                 </DialogDescription>
               </DialogHeader>
             </div>
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
@@ -2208,7 +2213,7 @@ export default function ContextPage() {
 
         {/* Add Need/Expectation Dialog */}
         <Dialog open={showAddNeedDialog} onOpenChange={setShowAddNeedDialog}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -2248,21 +2253,21 @@ export default function ContextPage() {
   // Edit Issue Form (5-Step Wizard) - Rendered as Modal
   const renderEditIssueModal = () => (
     <Dialog open={isEditIssueOpen && !!editingIssue} onOpenChange={(open) => { if (!open) { setIsEditIssueOpen(false); setEditCurrentStep(1); setEditingIssue(null); } }}>
-      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
         {/* Fixed Header */}
-        <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Issue")}</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Issue")}</DialogTitle>
           </DialogHeader>
         </div>
 
         {/* Step Progress */}
-        <div className="flex-shrink-0 flex items-start justify-center py-5 px-6 border-b border-slate-100">
+        <div className="flex-shrink-0 flex items-start justify-center py-3 sm:py-5 px-2 sm:px-6 border-b border-slate-100 overflow-x-auto">
           {ISSUE_STEP_KEYS.map((step, index) => (
             <div key={step.id} className="flex items-start">
-              <div className="flex flex-col items-center w-24">
+              <div className="flex flex-col items-center w-14 sm:w-24">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                  className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-colors ${
                     editCurrentStep > step.id
                       ? "bg-success text-white"
                       : editCurrentStep === step.id
@@ -2270,10 +2275,10 @@ export default function ContextPage() {
                       : "bg-slate-100 text-slate-400 border border-slate-200"
                   }`}
                 >
-                  {editCurrentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                  {editCurrentStep > step.id ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : step.id}
                 </div>
                 <span
-                  className={`mt-2 text-xs font-medium text-center ${
+                  className={`mt-1 sm:mt-2 text-[10px] sm:text-xs font-medium text-center ${
                     editCurrentStep >= step.id ? "text-slate-700" : "text-slate-400"
                   }`}
                 >
@@ -2282,7 +2287,7 @@ export default function ContextPage() {
               </div>
               {index < ISSUE_STEP_KEYS.length - 1 && (
                 <div
-                  className={`w-8 h-0.5 mt-[18px] -mx-3 transition-colors ${
+                  className={`w-4 sm:w-8 h-0.5 mt-[14px] sm:mt-[18px] -mx-1 sm:-mx-3 transition-colors ${
                     editCurrentStep > step.id ? "bg-success" : "bg-slate-200"
                   }`}
                 />
@@ -2292,7 +2297,7 @@ export default function ContextPage() {
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
           <div className="space-y-5">
             {/* Step 1: Info */}
             {editCurrentStep === 1 && (
@@ -2310,7 +2315,7 @@ export default function ContextPage() {
                   />
                 </div>
                 {/* Domain & Category */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Domain")} <span className="text-error">*</span></Label>
                     <div className="flex gap-2 mt-1.5">
@@ -2359,7 +2364,7 @@ export default function ContextPage() {
                   </div>
                 </div>
                 {/* Department & Issue Owner */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                     <Select
@@ -2588,7 +2593,7 @@ export default function ContextPage() {
                 </div>
 
                 {/* Need and Expectation */}
-                <div className="flex items-end gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                   <div className="flex-1">
                     <Label className="text-sm font-medium text-slate-700">{t("Need and Expectation")}</Label>
                     <div className="flex gap-2 mt-1.5">
@@ -2613,6 +2618,7 @@ export default function ContextPage() {
                     </div>
                   </div>
                   <Button
+                    className="w-full sm:w-auto"
                     onClick={handleAddEditStakeholderNeed}
                     disabled={!editSelectedStakeholderId || !editSelectedNeedExpectation}
                   >
@@ -2624,9 +2630,9 @@ export default function ContextPage() {
                 {/* Stakeholder Needs and Exceptions Table */}
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Needs and Expectations")}</Label>
-                  <div className="border rounded-lg min-h-[150px] mt-1.5 overflow-hidden">
+                  <div className="border rounded-lg min-h-[150px] mt-1.5 overflow-hidden overflow-x-auto">
                     {editStakeholderNeeds.length > 0 ? (
-                      <table className="w-full">
+                      <table className="w-full min-w-[400px]">
                         <thead className="bg-slate-50 border-b">
                           <tr>
                             <th className="text-left p-3 text-sm font-medium">{t("Stakeholder")}</th>
@@ -2672,8 +2678,8 @@ export default function ContextPage() {
             {editCurrentStep === 5 && (
               <div className="space-y-5">
                 <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Preview & Save")}</h3>
-                <div className="border border-slate-200 rounded-lg p-6 space-y-4 bg-slate-50">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="border border-slate-200 rounded-lg p-4 sm:p-6 space-y-4 bg-slate-50">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-slate-500 mb-1">{t("Title")}</p>
                       <p className="text-sm font-medium text-slate-800">{editIssueForm.title || "-"}</p>
@@ -2758,12 +2764,14 @@ export default function ContextPage() {
         </div>
 
         {/* Fixed Footer with Navigation */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+        <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
           <span className="text-xs font-medium text-slate-400 me-auto">
             {t("Step")} {editCurrentStep} {t("of")} 5
           </span>
           <Button
             variant="outline"
+            size="sm"
+            className="sm:size-default"
             onClick={() => {
               if (editCurrentStep === 1) {
                 setIsEditIssueOpen(false);
@@ -2778,6 +2786,8 @@ export default function ContextPage() {
             {editCurrentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           <Button
+            size="sm"
+            className="sm:size-default"
             onClick={() => {
               if (editCurrentStep === 5) {
                 handleUpdateIssue();
@@ -2794,7 +2804,7 @@ export default function ContextPage() {
 
       {/* Add Domain Dialog */}
         <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Domain")}</DialogTitle>
@@ -2840,7 +2850,7 @@ export default function ContextPage() {
 
         {/* Add Category Dialog */}
         <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Category")}</DialogTitle>
@@ -2886,7 +2896,7 @@ export default function ContextPage() {
 
         {/* Add Issue Type Dialog */}
         <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Issue Type")}</DialogTitle>
@@ -2932,18 +2942,18 @@ export default function ContextPage() {
 
         {/* Choose Processes Dialog for Edit */}
         <Dialog open={showEditProcessDialog} onOpenChange={setShowEditProcessDialog}>
-          <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Process")}</DialogTitle>
+                <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Link Process")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
                   {t("Select processes to link with this issue.")}
                 </DialogDescription>
               </DialogHeader>
             </div>
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
@@ -3008,7 +3018,7 @@ export default function ContextPage() {
 
         {/* Add Need/Expectation Dialog for Edit */}
         <Dialog open={showAddNeedDialog} onOpenChange={setShowAddNeedDialog}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -3046,24 +3056,24 @@ export default function ContextPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <div className="flex items-center gap-1.5 text-slate-500">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto">
+        <div className="flex items-center gap-1.5 text-slate-500 whitespace-nowrap">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+        <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors whitespace-nowrap">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">{t("Context")}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+        <span className="text-primary-700 font-medium whitespace-nowrap">{t("Context")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Context")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Context")}</h1>
       </div>
 
       {/* DepartmentContributor: Show Stakeholder without tabs */}
@@ -3072,8 +3082,8 @@ export default function ContextPage() {
           {filteredStakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search & Filters */}
-              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                <div className="relative max-w-xs">
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="relative w-full sm:w-56">
                   <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
@@ -3083,9 +3093,9 @@ export default function ContextPage() {
                     className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
-                <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                <div className="flex items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
                 <Select value={stakeholderTypeFilter} onValueChange={(v) => { setStakeholderTypeFilter(v); setStakeholderPage(1); }}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Type")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -3096,7 +3106,7 @@ export default function ContextPage() {
                   </SelectContent>
                 </Select>
                 <Select value={stakeholderStatusFilter} onValueChange={(v) => { setStakeholderStatusFilter(v); setStakeholderPage(1); }}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Status")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -3107,8 +3117,10 @@ export default function ContextPage() {
                 </Select>
                 </div>
               </div>
+              {/* Table with horizontal scroll on mobile */}
+              <div className="overflow-x-auto">
               {/* Column Headers */}
-              <div className="grid grid-cols-[1fr_120px_1fr_120px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <div className="grid grid-cols-[1fr_120px_1fr_120px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px]">
                 <span>{t("Name")}</span>
                 <span>{t("Type")}</span>
                 <span>{t("Department")}</span>
@@ -3124,7 +3136,7 @@ export default function ContextPage() {
                   <>
                     <div className="divide-y divide-slate-100">
                       {paginated.map((s) => (
-                        <div key={s.id} className="grid grid-cols-[1fr_120px_1fr_120px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors">
+                        <div key={s.id} className="grid grid-cols-[1fr_120px_1fr_120px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[600px]">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
                               <Users className="h-4 w-4 text-primary-500" />
@@ -3156,7 +3168,7 @@ export default function ContextPage() {
                     </div>
                     {/* Pagination */}
                     {filteredStakeholders.length > ITEMS_PER_PAGE && (
-                      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                      <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
                         <span className="text-xs text-slate-500">
                           {(stakeholderPage - 1) * ITEMS_PER_PAGE + 1} {t("to")} {Math.min(stakeholderPage * ITEMS_PER_PAGE, filteredStakeholders.length)} {t("of")} {filteredStakeholders.length}
                         </span>
@@ -3173,9 +3185,10 @@ export default function ContextPage() {
                   </>
                 );
               })()}
+              </div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
                 <Users className="h-6 w-6 text-primary-500" />
               </div>
@@ -3193,21 +3206,21 @@ export default function ContextPage() {
           </TabsList>
 
           {/* Stakeholder Tab */}
-          <TabsContent value="stakeholder" className="mt-6">
+          <TabsContent value="stakeholder" className="mt-4 sm:mt-6">
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2 mb-4">
-              <Button variant="outline" size="sm" onClick={handleExportStakeholders}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-4">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportStakeholders}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
               {!isReadOnlyRole && (
-                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowImportDialog(true)}>
                   <Download className="h-4 w-4 me-2" />
                   {t("Import")}
                 </Button>
               )}
               {!isReadOnlyRole && (
-                <Button size="sm" onClick={() => { setStakeholderErrors({}); setNewStakeholder({ name: "", type: "Internal", status: "Active", departmentId: "" }); setShowAddStakeholder(true); }}>
+                <Button size="sm" className="w-full sm:w-auto" onClick={() => { setStakeholderErrors({}); setNewStakeholder({ name: "", type: "Internal", status: "Active", departmentId: "" }); setShowAddStakeholder(true); }}>
                   <Plus className="h-4 w-4 me-2" />
                   {t("New Stakeholder")}
                 </Button>
@@ -3216,8 +3229,8 @@ export default function ContextPage() {
             {stakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {/* Search & Filters */}
-                <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                  <div className="relative max-w-xs">
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                  <div className="relative w-full sm:w-56">
                     <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
@@ -3227,9 +3240,9 @@ export default function ContextPage() {
                       className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                  <div className="flex items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
                   <Select value={stakeholderTypeFilter} onValueChange={(v) => { setStakeholderTypeFilter(v); setStakeholderPage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Type")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3240,7 +3253,7 @@ export default function ContextPage() {
                     </SelectContent>
                   </Select>
                   <Select value={stakeholderStatusFilter} onValueChange={(v) => { setStakeholderStatusFilter(v); setStakeholderPage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Status")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3251,8 +3264,10 @@ export default function ContextPage() {
                   </Select>
                   </div>
                 </div>
+                {/* Table with horizontal scroll on mobile */}
+                <div className="overflow-x-auto">
                 {/* Column Headers */}
-                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1fr_120px_1fr_120px_72px]" : "grid-cols-[1fr_120px_1fr_120px]"} gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider`}>
+                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1fr_120px_1fr_120px_72px]" : "grid-cols-[1fr_120px_1fr_120px]"} gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px]`}>
                   <span>{t("Name")}</span>
                   <span>{t("Type")}</span>
                   <span>{t("Department")}</span>
@@ -3269,7 +3284,7 @@ export default function ContextPage() {
                     <>
                       <div className="divide-y divide-slate-100">
                         {paginated.map((s) => (
-                          <div key={s.id} className={`grid ${!isReadOnlyRole ? "grid-cols-[1fr_120px_1fr_120px_72px]" : "grid-cols-[1fr_120px_1fr_120px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors`}>
+                          <div key={s.id} className={`grid ${!isReadOnlyRole ? "grid-cols-[1fr_120px_1fr_120px_72px]" : "grid-cols-[1fr_120px_1fr_120px]"} gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[600px]`}>
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
                                 <Users className="h-4 w-4 text-primary-500" />
@@ -3311,7 +3326,7 @@ export default function ContextPage() {
                       </div>
                       {/* Pagination */}
                       {filteredStakeholders.length > ITEMS_PER_PAGE && (
-                        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
                           <span className="text-xs text-slate-500">
                             {(stakeholderPage - 1) * ITEMS_PER_PAGE + 1} {t("to")} {Math.min(stakeholderPage * ITEMS_PER_PAGE, filteredStakeholders.length)} {t("of")} {filteredStakeholders.length}
                           </span>
@@ -3328,9 +3343,10 @@ export default function ContextPage() {
                     </>
                   );
                 })()}
+                </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center">
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
                   <Users className="h-6 w-6 text-primary-500" />
                 </div>
@@ -3347,21 +3363,21 @@ export default function ContextPage() {
           </TabsContent>
 
           {/* Issue List Tab */}
-          <TabsContent value="issuelist" className="mt-6">
+          <TabsContent value="issuelist" className="mt-4 sm:mt-6">
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2 mb-4">
-              <Button variant="outline" size="sm" onClick={handleExportIssues}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-4">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportIssues}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
               {!isReadOnlyRole && (
-                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowImportDialog(true)}>
                   <Download className="h-4 w-4 me-2" />
                   {t("Import")}
                 </Button>
               )}
               {!isReadOnlyRole && (
-                <Button size="sm" onClick={() => { setIssueErrors({}); setStep4Errors({}); setShowAddIssue(true); }}>
+                <Button size="sm" className="w-full sm:w-auto" onClick={() => { setIssueErrors({}); setStep4Errors({}); setShowAddIssue(true); }}>
                   <Plus className="h-4 w-4 me-2" />
                   {t("Add Issue")}
                 </Button>
@@ -3370,8 +3386,8 @@ export default function ContextPage() {
             {issues.length > 0 || issueSearch || issueDepartmentFilter !== "all" || issueCategoryFilter !== "all" || issueDomainFilter !== "all" ? (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 {/* Search & Filters */}
-                <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                  <div className="relative max-w-xs">
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                  <div className="relative w-full sm:w-56">
                     <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
@@ -3381,9 +3397,9 @@ export default function ContextPage() {
                       className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
                   <Select value={issueDepartmentFilter} onValueChange={(v) => { setIssueDepartmentFilter(v); setIssuePage(1); }}>
-                    <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectTrigger className="w-[calc(50%-6px)] sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3394,7 +3410,7 @@ export default function ContextPage() {
                     </SelectContent>
                   </Select>
                   <Select value={issueCategoryFilter} onValueChange={(v) => { setIssueCategoryFilter(v); setIssuePage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectTrigger className="w-[calc(50%-6px)] sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3405,7 +3421,7 @@ export default function ContextPage() {
                     </SelectContent>
                   </Select>
                   <Select value={issueDomainFilter} onValueChange={(v) => { setIssueDomainFilter(v); setIssuePage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -3417,8 +3433,10 @@ export default function ContextPage() {
                   </Select>
                   </div>
                 </div>
+                {/* Table with horizontal scroll on mobile */}
+                <div className="overflow-x-auto">
                 {/* Column Headers */}
-                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_120px_100px_1fr_110px_72px]" : "grid-cols-[1.5fr_120px_100px_1fr_110px]"} gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider`}>
+                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_120px_100px_1fr_110px_72px]" : "grid-cols-[1.5fr_120px_100px_1fr_110px]"} gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]`}>
                   <span>{t("Title")}</span>
                   <span>{t("Category")}</span>
                   <span>{t("Domain")}</span>
@@ -3437,7 +3455,7 @@ export default function ContextPage() {
                       <div className="divide-y divide-slate-100">
                         {paginated.map((issue) => (
                           <div key={issue.id}>
-                            <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_120px_100px_1fr_110px_72px]" : "grid-cols-[1.5fr_120px_100px_1fr_110px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors`}>
+                            <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_120px_100px_1fr_110px_72px]" : "grid-cols-[1.5fr_120px_100px_1fr_110px]"} gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]`}>
                               <div className="flex items-center gap-3 min-w-0">
                                 <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
                                   <AlertTriangle className="h-4 w-4 text-primary-500" />
@@ -3505,7 +3523,7 @@ export default function ContextPage() {
                       </div>
                       {/* Pagination */}
                       {filteredIssues.length > ITEMS_PER_PAGE && (
-                        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
                           <span className="text-xs text-slate-500">
                             {(issuePage - 1) * ITEMS_PER_PAGE + 1} {t("to")} {Math.min(issuePage * ITEMS_PER_PAGE, filteredIssues.length)} {t("of")} {filteredIssues.length}
                           </span>
@@ -3522,9 +3540,10 @@ export default function ContextPage() {
                     </>
                   );
                 })()}
+                </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center">
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
                   <AlertTriangle className="h-6 w-6 text-primary-500" />
                 </div>
@@ -3550,16 +3569,16 @@ export default function ContextPage() {
 
       {/* Add Stakeholder Dialog */}
       <Dialog open={showAddStakeholder} onOpenChange={(open) => { setShowAddStakeholder(open); if (!open) setStakeholderErrors({}); }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Stakeholder")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Stakeholder")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Type")} <span className="text-error">*</span></Label>
@@ -3609,7 +3628,7 @@ export default function ContextPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                   <Select
@@ -3667,16 +3686,16 @@ export default function ContextPage() {
 
       {/* Edit Stakeholder Dialog */}
       <Dialog open={showEditStakeholder} onOpenChange={setShowEditStakeholder}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Stakeholder")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Stakeholder")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Stakeholder Type")}</Label>
@@ -3710,7 +3729,7 @@ export default function ContextPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                   <Select
@@ -3760,7 +3779,7 @@ export default function ContextPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3784,7 +3803,7 @@ export default function ContextPage() {
 
       {/* Add Domain Dialog */}
       <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3823,7 +3842,7 @@ export default function ContextPage() {
 
       {/* Add Category Dialog */}
       <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3862,7 +3881,7 @@ export default function ContextPage() {
 
       {/* Add Issue Type Dialog */}
       <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3908,18 +3927,18 @@ export default function ContextPage() {
           setSelectedIssueForAction(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Action Details")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Action Details")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
                 {t("Create a new action for issue:")} {selectedIssueForAction?.title}
               </DialogDescription>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Action Type")} <span className="text-error">*</span></Label>
@@ -4034,18 +4053,18 @@ export default function ContextPage() {
         setShowViewActionsDialog(open);
         if (!open) setSelectedIssueForAction(null);
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Actions for Issue")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Actions for Issue")}</DialogTitle>
               <DialogDescription>
                 {selectedIssueForAction?.title}
               </DialogDescription>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
             {selectedIssueForAction?.actions?.map((action) => (
               <Card key={action.id} className={`${action.status === "Sent Back" ? "border-warning" : action.status === "Resolved" ? "border-success" : ""}`}>
                 <CardContent className="p-4">
@@ -4226,11 +4245,11 @@ export default function ContextPage() {
           setSelectedIssueForAction(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Review Action")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Review Action")}</DialogTitle>
               <DialogDescription>
                 {t("Review and take action on this submission")}
               </DialogDescription>
@@ -4238,7 +4257,7 @@ export default function ContextPage() {
           </div>
           {/* Scrollable Content */}
           {selectedActionForReview && (
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
               <div className="space-y-2">
                 <Label>{t("Action Type")}</Label>
                 <p className="text-sm p-2 bg-muted rounded">{selectedActionForReview.actionType}</p>
@@ -4247,7 +4266,7 @@ export default function ContextPage() {
                 <Label>{t("Description")}</Label>
                 <p className="text-sm p-2 bg-muted rounded whitespace-pre-wrap">{selectedActionForReview.description}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t("Completion")}</Label>
                   <p className="text-sm p-2 bg-muted rounded">{selectedActionForReview.completion}%</p>
@@ -4267,21 +4286,21 @@ export default function ContextPage() {
               {selectedActionForReview.fileName && selectedActionForReview.filePath && (
                 <div className="space-y-2">
                   <Label>{t("Attachment")}</Label>
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-3 min-w-0">
                       {/* File Type Icon */}
                       {selectedActionForReview.fileType?.match(/^(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
-                        <FileImage className="h-8 w-8 text-info" />
+                        <FileImage className="h-8 w-8 text-info shrink-0" />
                       ) : selectedActionForReview.fileType?.match(/^(xls|xlsx|csv)$/i) ? (
-                        <FileSpreadsheet className="h-8 w-8 text-success" />
+                        <FileSpreadsheet className="h-8 w-8 text-success shrink-0" />
                       ) : selectedActionForReview.fileType?.match(/^(doc|docx|txt|pdf)$/i) ? (
-                        <FileText className="h-8 w-8 text-error" />
+                        <FileText className="h-8 w-8 text-error shrink-0" />
                       ) : (
-                        <File className="h-8 w-8 text-slate-500" />
+                        <File className="h-8 w-8 text-slate-500 shrink-0" />
                       )}
                       {/* File Name and Size */}
-                      <div>
-                        <p className="text-sm font-medium truncate max-w-[180px]">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate max-w-[180px] sm:max-w-[250px]">
                           {selectedActionForReview.fileName}
                         </p>
                         {selectedActionForReview.fileSize && (
@@ -4292,7 +4311,7 @@ export default function ContextPage() {
                       </div>
                     </div>
                     {/* View and Download Buttons */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
@@ -4321,12 +4340,13 @@ export default function ContextPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => setShowActionReviewDialog(false)}>
+          <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setShowActionReviewDialog(false)}>
               {t("Cancel")}
             </Button>
             <Button
               variant="default"
+              className="w-full sm:w-auto"
               onClick={() => selectedActionForReview && handleResolveAction(selectedActionForReview)}
               disabled={processingAction}
             >
@@ -4334,6 +4354,7 @@ export default function ContextPage() {
             </Button>
             <Button
               variant="destructive"
+              className="w-full sm:w-auto"
               onClick={() => setShowResendDialog(true)}
               disabled={processingAction}
             >
@@ -4348,7 +4369,7 @@ export default function ContextPage() {
         setShowResendDialog(open);
         if (!open) setResendComment("");
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -4388,18 +4409,18 @@ export default function ContextPage() {
         setShowActionCommentsDialog(open);
         if (!open) setSelectedActionForComments(null);
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Comments")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Comments")}</DialogTitle>
               <DialogDescription>
                 {t("Feedback from reviewer")}
               </DialogDescription>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
             {selectedActionForComments?.comments.map((comment) => (
               <Card key={comment.id}>
                 <CardContent className="p-3">
@@ -4432,7 +4453,7 @@ export default function ContextPage() {
           setEditActionForm({ actionType: "", description: "", completion: 0, comment: "" });
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -4512,7 +4533,7 @@ export default function ContextPage() {
           if (fileInputRef.current) fileInputRef.current.value = '';
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -4547,14 +4568,15 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-between gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={handleDownloadTemplate}>
+          <div className="flex flex-col sm:flex-row justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               {t("Download Template")}
             </Button>
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                className="flex-1 sm:flex-initial"
                 onClick={() => {
                   setShowImportDialog(false);
                   setImportFile(null);
@@ -4563,7 +4585,7 @@ export default function ContextPage() {
               >
                 {t("Cancel")}
               </Button>
-              <Button onClick={handleImport} disabled={!importFile || importing}>
+              <Button className="flex-1 sm:flex-initial" onClick={handleImport} disabled={!importFile || importing}>
                 {importing ? t("Importing...") : t("Import")}
               </Button>
             </div>

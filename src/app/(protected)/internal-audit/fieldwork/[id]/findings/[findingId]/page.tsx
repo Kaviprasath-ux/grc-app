@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,6 +20,8 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  ChevronRight,
+  Home,
   Loader2,
   Save,
   Edit2,
@@ -72,7 +75,7 @@ interface Attachment {
 
 export default function ViewFindingPage() {
   return (
-    <Suspense fallback={<div className="p-6 flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>}>
+    <Suspense fallback={<div className="p-3 sm:p-6 flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>}>
       <ViewFindingContent />
     </Suspense>
   );
@@ -293,29 +296,54 @@ function ViewFindingContent() {
 
   if (loading || !formData) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-2 mb-6">
+      <div className="p-3 sm:p-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+          <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Fieldwork")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Finding Details")}</span>
+        </nav>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             {t("Back")}
           </Button>
-          <span className="text-gray-400">|</span>
-          <span className="text-gray-500">{t("Audit Plan")}</span>
-          <span className="text-gray-400">|</span>
+          <span className="text-slate-400">|</span>
+          <span className="text-slate-500">{t("Audit Plan")}</span>
+          <span className="text-slate-400">|</span>
           <span className="text-[#1e3a5f] font-semibold">{t("Finding Details")}</span>
         </div>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Fieldwork")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Finding Details")}</span>
+      </nav>
+
       {/* Breadcrumb Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -324,9 +352,9 @@ function ViewFindingContent() {
             <ArrowLeft className="h-4 w-4 mr-1" />
             {t("Back")}
           </Button>
-          <span className="text-gray-400">|</span>
-          <span className="text-gray-500">{t("Audit Plan")}</span>
-          <span className="text-gray-400">|</span>
+          <span className="text-slate-400">|</span>
+          <span className="text-slate-500">{t("Audit Plan")}</span>
+          <span className="text-slate-400">|</span>
           <span className="text-[#1e3a5f] font-semibold">{t("Finding Details")} - {formData.findingId}</span>
         </div>
         {!isEditing && (
@@ -341,8 +369,8 @@ function ViewFindingContent() {
       </div>
 
       {/* Form */}
-      <Card className="p-6">
-        <div className="space-y-6">
+      <Card className="p-3 sm:p-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Finding Title */}
           <div className="space-y-2">
             <Label className="text-[#1e3a5f] font-medium">{t("Finding Title")} <span className="text-red-500">*</span></Label>
@@ -350,10 +378,10 @@ function ViewFindingContent() {
               <Input
                 value={formData.title}
                 onChange={(e) => handleInputChange("title", e.target.value)}
-                className="border-gray-300"
+                className="border-slate-300"
               />
             ) : (
-              <div className="p-3 bg-gray-50 rounded-md border">
+              <div className="p-3 bg-slate-50 rounded-md border">
                 {formData.title || "-"}
               </div>
             )}
@@ -367,7 +395,7 @@ function ViewFindingContent() {
                 value={formData.severity}
                 onValueChange={(value) => handleInputChange("severity", value)}
               >
-                <SelectTrigger className="border-gray-300">
+                <SelectTrigger className="border-slate-300">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -378,7 +406,7 @@ function ViewFindingContent() {
                 </SelectContent>
               </Select>
             ) : (
-              <div className="p-3 bg-gray-50 rounded-md border">
+              <div className="p-3 bg-slate-50 rounded-md border">
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                   formData.severity === 'Critical' ? 'bg-red-100 text-red-800' :
                   formData.severity === 'High' ? 'bg-orange-100 text-orange-800' :
@@ -399,10 +427,10 @@ function ViewFindingContent() {
                 value={formData.criteria || ""}
                 onChange={(e) => handleInputChange("criteria", e.target.value)}
                 rows={4}
-                className="border-gray-300 resize-y"
+                className="border-slate-300 resize-y"
               />
             ) : (
-              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+              <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
                 {formData.criteria || "-"}
               </div>
             )}
@@ -416,10 +444,10 @@ function ViewFindingContent() {
                 value={formData.condition || ""}
                 onChange={(e) => handleInputChange("condition", e.target.value)}
                 rows={4}
-                className="border-gray-300 resize-y"
+                className="border-slate-300 resize-y"
               />
             ) : (
-              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+              <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
                 {formData.condition || "-"}
               </div>
             )}
@@ -433,10 +461,10 @@ function ViewFindingContent() {
                 value={formData.cause || ""}
                 onChange={(e) => handleInputChange("cause", e.target.value)}
                 rows={4}
-                className="border-gray-300 resize-y"
+                className="border-slate-300 resize-y"
               />
             ) : (
-              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+              <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
                 {formData.cause || "-"}
               </div>
             )}
@@ -450,10 +478,10 @@ function ViewFindingContent() {
                 value={formData.effect || ""}
                 onChange={(e) => handleInputChange("effect", e.target.value)}
                 rows={4}
-                className="border-gray-300 resize-y"
+                className="border-slate-300 resize-y"
               />
             ) : (
-              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+              <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
                 {formData.effect || "-"}
               </div>
             )}
@@ -467,10 +495,10 @@ function ViewFindingContent() {
                 value={formData.recommendation || ""}
                 onChange={(e) => handleInputChange("recommendation", e.target.value)}
                 rows={4}
-                className="border-gray-300 resize-y"
+                className="border-slate-300 resize-y"
               />
             ) : (
-              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+              <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
                 {formData.recommendation || "-"}
               </div>
             )}
@@ -599,7 +627,7 @@ function ViewFindingContent() {
                   ))}
                 </div>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border text-slate-500 text-sm">
+                <div className="p-3 bg-slate-50 rounded-md border text-slate-500 text-sm">
                   {t("No attachments")}
                 </div>
               )}
@@ -620,7 +648,7 @@ function ViewFindingContent() {
                   value={formData.responsiblePersonId || "none"}
                   onValueChange={(value) => handleInputChange("responsiblePersonId", value)}
                 >
-                  <SelectTrigger className="border-gray-300">
+                  <SelectTrigger className="border-slate-300">
                     <SelectValue placeholder={t("Select person")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -633,7 +661,7 @@ function ViewFindingContent() {
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {formData.responsiblePerson || "-"}
                 </div>
               )}
@@ -647,7 +675,7 @@ function ViewFindingContent() {
                   value={formData.status || "none"}
                   onValueChange={(value) => handleInputChange("status", value)}
                 >
-                  <SelectTrigger className="border-gray-300">
+                  <SelectTrigger className="border-slate-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -658,11 +686,11 @@ function ViewFindingContent() {
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     formData.status === 'Closed' ? 'bg-green-100 text-green-800' :
-                    formData.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
+                    formData.status === 'Under Review' ? 'bg-primary-50 text-primary-700' :
+                    'bg-slate-100 text-slate-800'
                   }`}>
                     {t(formData.status)}
                   </span>
@@ -680,7 +708,7 @@ function ViewFindingContent() {
                   placeholder={t("Select date")}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {formatDisplayDate(formData.targetDate)}
                 </div>
               )}
@@ -689,14 +717,14 @@ function ViewFindingContent() {
 
           {/* Action Buttons */}
           {isEditing && (
-            <div className="flex justify-end gap-3 pt-6 border-t">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
               <Button
                 variant="outline"
                 onClick={() => {
                   setIsEditing(false);
                   fetchFinding();
                 }}
-                className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-gray-50"
+                className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-slate-50"
               >
                 {t("Cancel")}
               </Button>

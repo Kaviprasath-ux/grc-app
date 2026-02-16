@@ -392,32 +392,32 @@ export default function RiskViewPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Risk Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/response" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Response")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{risk?.riskId || t("Risk View")}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-800">{risk?.name || t("Risk View")}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{risk?.name || t("Risk View")}</h1>
           <span className={cn(
             "px-2.5 py-1 rounded-md text-xs font-medium",
-            currentStatus === "Open" && "bg-blue-100 text-blue-800",
+            currentStatus === "Open" && "bg-primary-50 text-primary-700",
             currentStatus === "In-Progress" && "bg-amber-100 text-amber-800",
             currentStatus === "Awaiting Approval" && "bg-purple-100 text-purple-800",
             currentStatus === "Sent Back" && "bg-red-100 text-red-800",
@@ -430,7 +430,7 @@ export default function RiskViewPage() {
       </div>
 
       {/* Charts - 2x2 Grid Layout */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         {/* Risk Treatment - Donut Chart */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Risk Treatment")}</h3>
@@ -465,7 +465,7 @@ export default function RiskViewPage() {
               </div>
               <div className="flex flex-col gap-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                  <div className="w-3 h-3 bg-primary-500 rounded-sm"></div>
                   <span className="text-slate-600">{t("Completed")}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -509,7 +509,7 @@ export default function RiskViewPage() {
                   <div
                     key={idx}
                     className={cn(
-                      "w-8 bg-blue-500 rounded-t",
+                      "w-8 bg-primary-500 rounded-t",
                       daysRemaining >= val ? "opacity-100" : "opacity-30"
                     )}
                     style={{ height: `${(val + 1) * 15}%` }}
@@ -557,7 +557,7 @@ export default function RiskViewPage() {
       </div>
 
       {/* Risk Details */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-2">
           <span className="font-bold text-lg text-primary-600">{risk.riskId}</span>
           <span className="text-slate-300">|</span>
@@ -565,7 +565,7 @@ export default function RiskViewPage() {
         </div>
         <p className="text-sm text-slate-500 mb-6">{risk.description}</p>
 
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Risk Owner")}</p>
             <p className="font-medium text-slate-800">{risk.owner?.fullName || t("No items found")}</p>
@@ -580,7 +580,7 @@ export default function RiskViewPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Inherent Risk Rating")}</p>
             <p className="font-medium text-slate-800">-</p>
@@ -597,7 +597,7 @@ export default function RiskViewPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Risk Response Strategy")}</p>
             <p className="font-medium text-slate-800">{risk.responseStrategy || t("Treat")}</p>
@@ -725,7 +725,7 @@ export default function RiskViewPage() {
                             </span>
                           )}
                           {control.functionalGrouping && (
-                            <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                            <span className="bg-primary-50 text-primary-700 px-2 py-1 rounded text-xs">
                               {control.functionalGrouping}
                             </span>
                           )}
@@ -779,14 +779,14 @@ export default function RiskViewPage() {
         setShowSendBackDialog(open);
         if (!open) setSendBackComment("");
       }}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
-          <DialogHeader className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0">
+          <DialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">{t("Send Back Risk Response")}</DialogTitle>
             <DialogDescription className="text-slate-500">
               {t("Add a comment explaining why this risk response is being sent back")}
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-5">
             <div className="space-y-1.5">
               <Label htmlFor="sendBackComment" className="text-sm font-medium text-slate-700">{t("Comment")} *</Label>
               <Textarea
@@ -798,7 +798,7 @@ export default function RiskViewPage() {
               />
             </div>
           </div>
-          <DialogFooter className="px-6 py-4 border-t border-slate-100">
+          <DialogFooter className="px-4 sm:px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => setShowSendBackDialog(false)}>
               {t("Cancel")}
             </Button>

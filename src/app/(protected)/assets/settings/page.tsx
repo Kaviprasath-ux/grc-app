@@ -1752,9 +1752,9 @@ export default function AssetSettingsPage() {
     const paginatedData = allData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm flex-wrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
@@ -1773,11 +1773,11 @@ export default function AssetSettingsPage() {
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{currentEntitySub?.title || t("Settings")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{currentEntitySub?.title || t("Settings")}</h1>
         </div>
 
         {/* Action Buttons - ABOVE the card */}
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
           <label>
             <input
               type="file"
@@ -1834,21 +1834,22 @@ export default function AssetSettingsPage() {
         {/* Card with search toolbar + table + pagination */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           {/* Search Toolbar */}
-          <div className="flex items-center px-5 py-3 border-b border-slate-100">
-            <div className="relative">
+          <div className="flex items-center px-3 sm:px-5 py-3 border-b border-slate-100">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder={t("Search...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                className="w-full sm:w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
           </div>
 
           {/* Table */}
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="bg-slate-50 border-b border-slate-100 hover:bg-slate-50">
                 {entitySubTab === "asset-list" && (
@@ -2028,9 +2029,10 @@ export default function AssetSettingsPage() {
               ) : null}
             </TableBody>
           </Table>
+          </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <span className="text-xs text-slate-500">
               {t("Showing")} {allData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, allData.length)} {t("of")} {allData.length}
             </span>
@@ -2047,7 +2049,7 @@ export default function AssetSettingsPage() {
 
         {/* Add Dialog for Entity List */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="sm:max-w-[700px] max-h-[85vh] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">
@@ -2642,7 +2644,7 @@ export default function AssetSettingsPage() {
 
         {/* Edit Dialog for Entity List */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">
@@ -2880,7 +2882,7 @@ export default function AssetSettingsPage() {
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -2919,9 +2921,9 @@ export default function AssetSettingsPage() {
   // Show entity sub-navigation (Asset, Asset Sub Category, Asset Group, Asset Category, Asset Sensitivity)
   if (activeCategory === "asset") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex flex-wrap items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
@@ -2936,17 +2938,17 @@ export default function AssetSettingsPage() {
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Asset")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Asset")}</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {entitySubCategories.map((sub) => {
             const Icon = sub.icon;
 
             return (
               <button
                 key={sub.id}
-                className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
+                className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
                 onClick={() => {
                   setEntitySubTab(sub.id);
                   setSearchTerm("");
@@ -2979,9 +2981,9 @@ export default function AssetSettingsPage() {
     const lcPaginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex flex-wrap items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
@@ -2996,11 +2998,11 @@ export default function AssetSettingsPage() {
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Lifecycle Status")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Lifecycle Status")}</h1>
         </div>
 
         {/* Action Buttons - ABOVE the card */}
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-2">
           <label>
             <input
               type="file"
@@ -3031,21 +3033,22 @@ export default function AssetSettingsPage() {
         {/* Card with search + table + pagination */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           {/* Search Toolbar */}
-          <div className="flex items-center px-5 py-3 border-b border-slate-100">
-            <div className="relative">
+          <div className="flex items-center px-3 sm:px-5 py-3 border-b border-slate-100">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder={t("Search...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                className="w-full sm:w-56 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
           </div>
 
           {/* Table */}
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="bg-slate-50 border-b border-slate-100 hover:bg-slate-50">
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
@@ -3089,9 +3092,10 @@ export default function AssetSettingsPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <span className="text-xs text-slate-500">
               {t("Showing")} {filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredData.length)} {t("of")} {filteredData.length}
             </span>
@@ -3108,7 +3112,7 @@ export default function AssetSettingsPage() {
 
         {/* Add Lifecycle Status Dialog */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3154,7 +3158,7 @@ export default function AssetSettingsPage() {
 
         {/* Edit Lifecycle Status Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3199,7 +3203,7 @@ export default function AssetSettingsPage() {
 
         {/* Delete Lifecycle Status Dialog */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3228,9 +3232,9 @@ export default function AssetSettingsPage() {
   // Show CIA Configuration view
   if (activeCategory === "cia") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex flex-wrap items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
@@ -3245,10 +3249,10 @@ export default function AssetSettingsPage() {
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{t("CIA Configuration")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("CIA Configuration")}</h1>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6">
           {/* CIA Rating Card Helper */}
           {[
             { key: "Confidentiality", icon: Lock, iconColor: "text-primary-600", ratings: confidentialityRatings },
@@ -3274,20 +3278,21 @@ export default function AssetSettingsPage() {
               </div>
               {/* Card with table */}
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[400px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="pl-5 pr-3 py-2.5 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Label")}</th>
+                      <th className="pl-3 sm:pl-5 pr-3 py-2.5 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Label")}</th>
                       <th className="px-3 py-2.5 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Value")}</th>
-                      <th className="pl-3 pr-5 py-2.5 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
+                      <th className="pl-3 pr-3 sm:pr-5 py-2.5 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ratingsList.map((r) => (
                       <tr key={r.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                        <td className="pl-5 pr-3 py-3 text-sm font-medium text-slate-800">{r.label}</td>
+                        <td className="pl-3 sm:pl-5 pr-3 py-3 text-sm font-medium text-slate-800">{r.label}</td>
                         <td className="px-3 py-3 text-sm text-slate-700">{r.value}</td>
-                        <td className="pl-3 pr-5 py-3 text-right">
+                        <td className="pl-3 pr-3 sm:pr-5 py-3 text-right">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                               setSelectedCiaRating(r);
@@ -3308,10 +3313,11 @@ export default function AssetSettingsPage() {
                       </tr>
                     ))}
                     {ratingsList.length === 0 && (
-                      <tr><td colSpan={3} className="px-5 py-8 text-center text-sm text-slate-500">{t("No ratings defined")}</td></tr>
+                      <tr><td colSpan={3} className="px-3 sm:px-5 py-8 text-center text-sm text-slate-500">{t("No ratings defined")}</td></tr>
                     )}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           ))}
@@ -3319,7 +3325,7 @@ export default function AssetSettingsPage() {
 
         {/* Scoring Configuration */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold text-slate-800">{t("Scoring Configuration")}</h3>
               <p className="text-sm text-slate-500 mt-0.5">
@@ -3328,9 +3334,9 @@ export default function AssetSettingsPage() {
                   : t("Define low and high range values for each criticality rating")}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <Select value={scoringCalculationType} onValueChange={handleCalculationTypeChange}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -3359,10 +3365,11 @@ export default function AssetSettingsPage() {
             </div>
           </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[500px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="pl-5 pr-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Rating")}</th>
+                <th className="pl-3 sm:pl-5 pr-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Rating")}</th>
                 {scoringCalculationType === "high_of_all" ? (
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("High range")}</th>
                 ) : (
@@ -3371,13 +3378,13 @@ export default function AssetSettingsPage() {
                     <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("High range")}</th>
                   </>
                 )}
-                <th className="pl-3 pr-5 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
+                <th className="pl-3 pr-3 sm:pr-5 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
               </tr>
             </thead>
             <tbody>
               {getCurrentConfigs().map((config) => (
                 <tr key={config.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                  <td className="pl-5 pr-3 py-3 text-sm font-medium text-slate-800">{config.level}</td>
+                  <td className="pl-3 sm:pl-5 pr-3 py-3 text-sm font-medium text-slate-800">{config.level}</td>
                   {scoringCalculationType === "high_of_all" ? (
                     <td className="px-3 py-3 text-sm text-slate-700">{config.maxScore}</td>
                   ) : (
@@ -3386,7 +3393,7 @@ export default function AssetSettingsPage() {
                       <td className="px-3 py-3 text-sm text-slate-700">{config.maxScore}</td>
                     </>
                   )}
-                  <td className="pl-3 pr-5 py-3 text-right">
+                  <td className="pl-3 pr-3 sm:pr-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"
@@ -3430,7 +3437,8 @@ export default function AssetSettingsPage() {
               )}
             </tbody>
           </table>
-          <div className="mx-5 my-4 p-4 bg-slate-50 rounded-lg">
+          </div>
+          <div className="mx-3 sm:mx-5 my-4 p-3 sm:p-4 bg-slate-50 rounded-lg">
             <h4 className="text-sm font-medium text-slate-700 mb-2">{t("How scoring works:")}</h4>
             <p className="text-sm text-slate-500">
               {scoringCalculationType === "high_of_all" &&
@@ -3446,7 +3454,7 @@ export default function AssetSettingsPage() {
 
         {/* Scoring Config Edit Dialog */}
         <Dialog open={isScoringEditOpen} onOpenChange={setIsScoringEditOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3495,7 +3503,7 @@ export default function AssetSettingsPage() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Low range")} <span className="text-semantic-error">*</span></Label>
                     <Input
@@ -3535,7 +3543,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringEditOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3546,7 +3554,7 @@ export default function AssetSettingsPage() {
 
         {/* Scoring Config Add Dialog */}
         <Dialog open={isScoringAddOpen} onOpenChange={setIsScoringAddOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3595,7 +3603,7 @@ export default function AssetSettingsPage() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Low range")} <span className="text-semantic-error">*</span></Label>
                     <Input
@@ -3635,7 +3643,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringAddOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3646,7 +3654,7 @@ export default function AssetSettingsPage() {
 
         {/* Scoring Config Delete Dialog */}
         <Dialog open={isScoringDeleteOpen} onOpenChange={setIsScoringDeleteOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3669,7 +3677,7 @@ export default function AssetSettingsPage() {
 
         {/* CIA Rating Add Dialog */}
         <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3731,7 +3739,7 @@ export default function AssetSettingsPage() {
 
         {/* CIA Rating Edit Dialog */}
         <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3791,7 +3799,7 @@ export default function AssetSettingsPage() {
 
         {/* CIA Rating Delete Dialog */}
         <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-4 border-b border-slate-100">
               <DialogHeader>
@@ -3816,7 +3824,7 @@ export default function AssetSettingsPage() {
 
         {/* CIA Warning Dialog */}
         <Dialog open={isCiaWarningOpen} onOpenChange={setIsCiaWarningOpen}>
-          <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</DialogTitle>
@@ -3835,7 +3843,7 @@ export default function AssetSettingsPage() {
 
         {/* CIA Range Warning Dialog */}
         <Dialog open={isCiaRangeWarningOpen} onOpenChange={setIsCiaRangeWarningOpen}>
-          <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</DialogTitle>
@@ -3854,7 +3862,7 @@ export default function AssetSettingsPage() {
 
         {/* Scoring Error Dialog */}
         <Dialog open={!!scoringErrorMessage} onOpenChange={() => setScoringErrorMessage("")}>
-          <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Error")}</DialogTitle>
@@ -3876,7 +3884,7 @@ export default function AssetSettingsPage() {
 
   // Show main settings grid view (default)
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -3889,17 +3897,17 @@ export default function AssetSettingsPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Asset Settings")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Asset Settings")}</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {settingCategories.map((category) => {
           const Icon = category.icon;
 
           return (
             <button
               key={category.id}
-              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
+              className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
               onClick={() => {
                 setActiveCategory(category.id);
                 setSearchTerm("");
@@ -3922,8 +3930,8 @@ export default function AssetSettingsPage() {
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">
                 {t("Add")} {entitySubTab === "categories" ? t("Category") :
@@ -3936,7 +3944,7 @@ export default function AssetSettingsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
+          <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
             {entitySubTab === "categories" && (
               <>
                 <div>
@@ -4173,7 +4181,7 @@ export default function AssetSettingsPage() {
               </>
             )}
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -4198,8 +4206,8 @@ export default function AssetSettingsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Item")}</DialogTitle>
               <DialogDescription>
@@ -4207,7 +4215,7 @@ export default function AssetSettingsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
+          <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
             {entitySubTab === "categories" && (
               <>
                 <div>
@@ -4436,7 +4444,7 @@ export default function AssetSettingsPage() {
               </>
             )}
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -4461,8 +4469,8 @@ export default function AssetSettingsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription>
@@ -4470,7 +4478,7 @@ export default function AssetSettingsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -4495,7 +4503,7 @@ export default function AssetSettingsPage() {
 
       {/* CIA Rating Add Dialog */}
       <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
@@ -4541,7 +4549,7 @@ export default function AssetSettingsPage() {
 
       {/* CIA Rating Edit Dialog */}
       <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
@@ -4585,7 +4593,7 @@ export default function AssetSettingsPage() {
 
       {/* CIA Rating Delete Dialog */}
       <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>

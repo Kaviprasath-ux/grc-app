@@ -101,7 +101,7 @@ function ReportPreviewContent() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header with Download button */}
       <div className="flex items-center justify-end">
         <Button
@@ -119,14 +119,14 @@ function ReportPreviewContent() {
       </div>
 
       {/* Report Content */}
-      <Card className="p-6 space-y-6">
+      <Card className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Document Metadata */}
         <div className="space-y-3">
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Document Type")} :</span>
             <span className="text-blue-600">{t("Annual plan report")}</span>
           </div>
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Document Reference")} :</span>
             <span className="text-blue-600">
               {filterType === "DateRange" && startDate && endDate
@@ -134,34 +134,34 @@ function ReportPreviewContent() {
                 : `MOF-IAD-${year}`}
             </span>
           </div>
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Responsible Department")} :</span>
             <span>{t("Internal Audit Department")}</span>
           </div>
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Document Description")} :</span>
             <span>{t("This document includes the objectives and scope of the engagement, the audit team, completion timeline, execution phases, and reporting procedures.")}</span>
           </div>
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Purpose")} :</span>
             <span>{t("To use the form for documenting the planning of the internal audit engagement.")}</span>
           </div>
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Scope of Application")} :</span>
             <span>{t("Internal Audit Department")}</span>
           </div>
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Related Policies")} :</span>
             <div>
               <p>• {t("Internal Audit Charter")}</p>
               <p>• {t("Internal Audit Methodology")}</p>
             </div>
           </div>
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Related Procedures")} :</span>
             <span>{t("None")}</span>
           </div>
-          <div className="grid grid-cols-[200px_1fr] gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-2">
             <span className="font-semibold text-gray-700">{t("Reference Documents")} :</span>
             <div>
               <p>• {t("International Standards for the Professional Practice of Internal Auditing (IIA)")}</p>
@@ -195,13 +195,13 @@ function ReportPreviewContent() {
           <h3 className="font-bold text-gray-900">{t("Initial Risks and Observations from Preliminary Document Review")}</h3>
           <div className="space-y-2 mt-2">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-700 w-40">{t("Count of Risk")}:</span>
+              <span className="font-semibold text-gray-700 w-auto sm:w-40">{t("Count of Risk")}:</span>
               <span className="text-blue-600 font-medium">
                 {loadingStats ? <Loader2 className="h-4 w-4 animate-spin inline" /> : stats.riskCount}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-700 w-40">{t("Count of Findings")}:</span>
+              <span className="font-semibold text-gray-700 w-auto sm:w-40">{t("Count of Findings")}:</span>
               <span className="text-blue-600 font-medium">
                 {loadingStats ? <Loader2 className="h-4 w-4 animate-spin inline" /> : stats.findingCount}
               </span>
@@ -238,7 +238,7 @@ function ReportPreviewContent() {
 export default function ReportPreviewPage() {
   return (
     <Suspense fallback={
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>

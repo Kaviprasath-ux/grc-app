@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { formatLocalDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,9 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
+  Home,
   FileText,
   X,
   Loader2,
@@ -240,14 +243,26 @@ export default function AddEvidenceRequestPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="p-3 sm:p-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+          <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Fieldwork")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Add Fieldwork")}</span>
+        </nav>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             {t("Back")}
           </Button>
           <div className="text-sm text-muted-foreground">{t("Fieldwork")}</div>
-          <h1 className="text-xl font-semibold text-blue-900">{t("New Evidence Request")}</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-blue-900">{t("New Evidence Request")}</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -257,18 +272,31 @@ export default function AddEvidenceRequestPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Fieldwork")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Add Fieldwork")}</span>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-1" />
           {t("Back")}
         </Button>
         <div className="text-sm text-muted-foreground">{t("Fieldwork")}</div>
-        <h1 className="text-xl font-semibold text-blue-900">{t("New Evidence Request")}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-blue-900">{t("New Evidence Request")}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 max-w-4xl">
         {/* Audit Engagement */}
         <div className="space-y-2">
           <Label className="text-blue-800">
@@ -371,7 +399,7 @@ export default function AddEvidenceRequestPage() {
         </div>
 
         {/* Priority and Status Row */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <div className="space-y-2">
             <Label className="text-blue-800">{t("Priority")}</Label>
             <Select
@@ -495,7 +523,7 @@ export default function AddEvidenceRequestPage() {
         <div className="space-y-2">
           <Label className="text-blue-800">{t("Attach Reference Documents")}</Label>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors ${
               isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
@@ -542,7 +570,7 @@ export default function AddEvidenceRequestPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-4 pt-6 border-t">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-6 border-t">
           <Button
             type="button"
             variant="outline"

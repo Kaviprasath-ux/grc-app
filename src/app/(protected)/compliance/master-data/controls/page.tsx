@@ -566,7 +566,7 @@ export default function ControlsMasterDataPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
@@ -577,7 +577,7 @@ export default function ControlsMasterDataPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Controls")}</span>
         </nav>
-        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Controls")}</h1>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
             <div className="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
@@ -588,7 +588,7 @@ export default function ControlsMasterDataPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500 ">
@@ -604,10 +604,10 @@ export default function ControlsMasterDataPage() {
       </nav>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Controls")}</h1>
 
       {/* Action Buttons above the card */}
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
         {isCustomerAdmin && (
           <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(true)}>
             <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -638,9 +638,9 @@ export default function ControlsMasterDataPage() {
               {t("New Control")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
             {/* Sticky Header */}
-            <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">
                   {t("Control Details")} - {t("Step")} {wizardStep} {t("of")} 3
@@ -649,7 +649,7 @@ export default function ControlsMasterDataPage() {
             </div>
 
             {/* Step Indicator */}
-            <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+            <div className="flex-shrink-0 flex items-center justify-center px-4 sm:px-6 py-4 bg-slate-50/50 border-b border-slate-100">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
@@ -684,7 +684,7 @@ export default function ControlsMasterDataPage() {
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
               {/* Step 1: Control Information */}
               {wizardStep === 1 && (
                 <div className="space-y-4">
@@ -885,7 +885,7 @@ export default function ControlsMasterDataPage() {
               {/* Step 3: Review */}
               {wizardStep === 3 && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-slate-500">
                         {t("Control Name")}
@@ -915,7 +915,7 @@ export default function ControlsMasterDataPage() {
                       {formData.controlQuestion}
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-slate-500">
                         {t("Control Domain")}
@@ -934,7 +934,7 @@ export default function ControlsMasterDataPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-slate-500">
                         {t("Department")}
@@ -959,7 +959,7 @@ export default function ControlsMasterDataPage() {
             </div>
 
             {/* Sticky Footer */}
-            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               {wizardStep > 1 && (
                 <Button
                   variant="outline"
@@ -1013,7 +1013,7 @@ export default function ControlsMasterDataPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search toolbar inside the card */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           <div className="relative">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
@@ -1024,12 +1024,13 @@ export default function ControlsMasterDataPage() {
                 setSearchTerm(e.target.value);
                 setPage(1);
               }}
-              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full sm:w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
         </div>
 
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">
@@ -1115,9 +1116,10 @@ export default function ControlsMasterDataPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
             {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No controls")}
           </span>
@@ -1134,8 +1136,8 @@ export default function ControlsMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">
                 {t("Edit Control")}
@@ -1143,9 +1145,9 @@ export default function ControlsMasterDataPage() {
             </DialogHeader>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
             {/* Basic Information */}
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
                   {t("Control Code")} <span className="text-red-500">*</span>
@@ -1227,7 +1229,7 @@ export default function ControlsMasterDataPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
                   {t("Function Grouping")}
@@ -1279,7 +1281,7 @@ export default function ControlsMasterDataPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
                   {t("Department")}
@@ -1336,7 +1338,7 @@ export default function ControlsMasterDataPage() {
             </div>
 
             {/* Additional Fields */}
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
                   {t("Relative Control Weighting")}
@@ -1498,7 +1500,7 @@ export default function ControlsMasterDataPage() {
             </div>
           </div>
 
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1577,8 +1579,8 @@ export default function ControlsMasterDataPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">
                 {t("Import Controls")}
@@ -1586,7 +1588,7 @@ export default function ControlsMasterDataPage() {
             </DialogHeader>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
             <p className="text-sm text-slate-500">
               {t("Upload a CSV file to import controls. You can download a template to see the required format.")}
             </p>
@@ -1621,7 +1623,7 @@ export default function ControlsMasterDataPage() {
             </div>
           </div>
 
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}

@@ -198,7 +198,7 @@ export default function RiskReportsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -214,7 +214,7 @@ export default function RiskReportsPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Reports")}</h1>
 
       {/* Management Report - Featured Card */}
       <button
@@ -234,9 +234,9 @@ export default function RiskReportsPage() {
       {/* Reports Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar: Search */}
-        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Risk Reports")}</span>
-          <div className="relative w-56">
+          <div className="relative w-full sm:w-56">
             <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
@@ -282,13 +282,13 @@ export default function RiskReportsPage() {
 
       {/* Report Detail Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport ? t(selectedReport.title) : ""}</DialogTitle>
           </DialogHeader>
 
           {/* Export Button */}
-          <div className="flex-shrink-0 flex justify-end px-6 py-3 border-b border-slate-100">
+          <div className="flex-shrink-0 flex justify-end px-4 sm:px-6 py-3 border-b border-slate-100">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Upload className="h-4 w-4 mr-2" />
               {t("Export")}
@@ -296,7 +296,7 @@ export default function RiskReportsPage() {
           </div>
 
           {/* Table */}
-          <div className="flex-1 overflow-auto px-6 py-4">
+          <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
             <div className="border border-slate-200 rounded-lg overflow-hidden">
               {loading ? (
                 <div className="flex items-center justify-center h-64">
@@ -353,13 +353,13 @@ export default function RiskReportsPage() {
 
       {/* Management Report Parameters Dialog */}
       <Dialog open={isManagementDialogOpen} onOpenChange={setIsManagementDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
-          <DialogHeader className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
+          <DialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">{t("Risk Report Parameters")}</DialogTitle>
           </DialogHeader>
 
-          <div className="px-6 py-6">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="px-4 sm:px-6 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {managementOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2">
                   <Checkbox
@@ -397,7 +397,7 @@ export default function RiskReportsPage() {
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsManagementDialogOpen(false)}>
               {t("Cancel")}
             </Button>

@@ -50,7 +50,7 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
   return (
     <div
       className={cn(
-        "bg-white rounded-xl border border-slate-200 p-5 overflow-visible",
+        "bg-white rounded-xl border border-slate-200 p-3 sm:p-5 overflow-visible",
         onClick && "cursor-pointer hover:bg-slate-50 transition-colors",
         className
       )}
@@ -71,9 +71,9 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
           No data available
         </div>
       ) : (
-        <div className="flex items-center gap-6 overflow-visible">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 overflow-visible">
           {/* Chart container - left side */}
-          <div className="relative w-[180px] h-[180px] flex-shrink-0 overflow-visible">
+          <div className="relative w-[160px] h-[160px] sm:w-[180px] sm:h-[180px] flex-shrink-0 overflow-visible">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -117,7 +117,7 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
             {(centerLabel !== undefined || centerSubLabel) && (
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 {centerLabel !== undefined && (
-                  <span className="text-3xl font-bold text-slate-800">{centerLabel}</span>
+                  <span className="text-2xl sm:text-3xl font-bold text-slate-800">{centerLabel}</span>
                 )}
                 {centerSubLabel && (
                   <span className="text-xs text-slate-500 font-medium">{centerSubLabel}</span>
@@ -127,7 +127,7 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
           </div>
 
           {/* Legend - right side with full names */}
-          <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2">
+          <div className="flex-1 w-full grid grid-cols-2 gap-x-3 sm:gap-x-4 gap-y-2">
             {data.map((item, index) => (
               <div key={index} className="flex items-center gap-2 group cursor-default">
                 <div

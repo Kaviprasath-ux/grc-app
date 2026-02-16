@@ -361,7 +361,7 @@ export default function RiskAssessmentConfigPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -384,7 +384,7 @@ export default function RiskAssessmentConfigPage() {
           <span className="text-primary-700 font-medium">{t("Risk Assessment")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment Configuration")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Assessment Configuration")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -399,7 +399,7 @@ export default function RiskAssessmentConfigPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -424,11 +424,11 @@ export default function RiskAssessmentConfigPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment Configuration")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Assessment Configuration")}</h1>
       </div>
 
       {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Factors Section */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
@@ -706,16 +706,16 @@ export default function RiskAssessmentConfigPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{getDialogTitle()}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-6 space-y-5">
             {dialogType === "factor" && (
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
@@ -733,7 +733,7 @@ export default function RiskAssessmentConfigPage() {
               </div>
             )}
             {(dialogType === "probability" || dialogType === "impact") && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                   <Input
@@ -780,7 +780,7 @@ export default function RiskAssessmentConfigPage() {
                   />
                   {formErrors.label && <p className="text-sm text-red-500 mt-1">{formErrors.label}</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Lowest Value")} <span className="text-red-500">*</span></Label>
                     <Input
@@ -816,7 +816,7 @@ export default function RiskAssessmentConfigPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -829,14 +829,14 @@ export default function RiskAssessmentConfigPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
+          <AlertDialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete this item? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               {t("Delete")}

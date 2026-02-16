@@ -406,7 +406,7 @@ export default function ControlsByFrameworkPage() {
               <div
                 key={control.id}
                 className="grid grid-cols-[1fr_120px_140px_130px_140px_140px_50px] gap-0 items-center px-5 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer group"
-                onClick={() => router.push(`/compliance/control/${control.id}`)}
+                onClick={() => router.push(`/compliance/control/${control.id}?from=framework&frameworkId=${frameworkId}&frameworkName=${encodeURIComponent(framework?.name || '')}`)}
               >
                 {/* Control Name */}
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -462,7 +462,7 @@ export default function ControlsByFrameworkPage() {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50 opacity-0 group-hover:opacity-100 transition-all"
-                    onClick={(e) => { e.stopPropagation(); router.push(`/compliance/control/${control.id}`); }}
+                    onClick={(e) => { e.stopPropagation(); router.push(`/compliance/control/${control.id}?from=framework&frameworkId=${frameworkId}&frameworkName=${encodeURIComponent(framework?.name || '')}`); }}
                   >
                     <Eye className="h-3.5 w-3.5" />
                   </Button>

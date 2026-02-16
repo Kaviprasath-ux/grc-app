@@ -256,12 +256,12 @@ export default function OrganizationReportsPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Reports")}</h1>
 
       {/* Management Report - Featured Card */}
       <button
         onClick={() => setIsManagementDialogOpen(true)}
-        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-5 flex items-center gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
+        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
       >
         <div className="p-2.5 bg-primary-100/80 rounded-lg flex-shrink-0">
           <FileBarChart className="h-5 w-5 text-primary-600" />
@@ -276,9 +276,9 @@ export default function OrganizationReportsPage() {
       {/* Reports Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar: Tabs + Search */}
-        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           {/* Category Tabs */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto">
             {categoryTabs.map((tab) => {
               const count = tab.id === "all"
                 ? reportTypes.length
@@ -287,7 +287,7 @@ export default function OrganizationReportsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveCategory(tab.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap ${
                     activeCategory === tab.id
                       ? "bg-primary-50 text-primary-700"
                       : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
@@ -300,7 +300,7 @@ export default function OrganizationReportsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative w-56">
+          <div className="relative w-full sm:w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
@@ -319,7 +319,7 @@ export default function OrganizationReportsPage() {
               <button
                 key={report.id}
                 onClick={() => handleReportClick(report)}
-                className="group w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+                className="group w-full flex items-center justify-between px-3 sm:px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
               >
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-medium text-slate-800">{t(report.title)}</h4>
@@ -339,13 +339,13 @@ export default function OrganizationReportsPage() {
 
       {/* Report Detail Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <div className="flex items-center justify-between pr-8">
-                <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport ? t(selectedReport.title) : ""}</DialogTitle>
-                <Button variant="outline" size="sm" onClick={handleExport}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pr-8">
+                <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{selectedReport ? t(selectedReport.title) : ""}</DialogTitle>
+                <Button variant="outline" size="sm" onClick={handleExport} className="self-start sm:self-auto">
                   <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Export")}
                 </Button>
@@ -354,7 +354,7 @@ export default function OrganizationReportsPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-auto px-6 py-6">
+          <div className="flex-1 overflow-auto px-3 sm:px-6 py-4 sm:py-6">
             {/* Table */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {loading ? (
@@ -362,7 +362,8 @@ export default function OrganizationReportsPage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               ) : (
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[500px]">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50">
                       {selectedReport?.columns.map((col, idx, arr) => (
@@ -392,13 +393,14 @@ export default function OrganizationReportsPage() {
                     )}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>
 
           {/* Fixed Footer with Pagination */}
           {totalItems > 0 && (
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <span className="text-xs text-slate-500">
                 {startItem} {t("to")} {endItem} {t("of")} {totalItems}
               </span>
@@ -450,17 +452,17 @@ export default function OrganizationReportsPage() {
 
       {/* Management Report Parameters Dialog */}
       <Dialog open={isManagementDialogOpen} onOpenChange={setIsManagementDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Process Report Parameters")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Process Report Parameters")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {managementOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2">
                   <Checkbox
@@ -480,7 +482,7 @@ export default function OrganizationReportsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsManagementDialogOpen(false)}>
               {t("Cancel")}
             </Button>

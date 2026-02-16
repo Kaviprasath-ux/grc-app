@@ -214,7 +214,7 @@ export default function SOAPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
@@ -226,21 +226,21 @@ export default function SOAPage() {
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{t("Statement of Applicability")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t("Statement of Applicability")}</h1>
           <p className="text-gray-600">
             {t("Manage requirement applicability and implementation status")}
           </p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" className="w-full sm:w-auto">
           <Download className="h-4 w-4 mr-2" />
           {t("Export SOA")}
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
@@ -294,7 +294,7 @@ export default function SOAPage() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -307,6 +307,7 @@ export default function SOAPage() {
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
+              className="w-full sm:w-auto"
             >
               <Filter className="h-4 w-4 mr-2" />
               {t("Filters")}
@@ -314,7 +315,7 @@ export default function SOAPage() {
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-4 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
               <div>
                 <Label>{t("Framework")}</Label>
                 <Select
@@ -404,7 +405,8 @@ export default function SOAPage() {
           <CardTitle>{t("Requirements")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("Code")}</TableHead>
@@ -511,12 +513,13 @@ export default function SOAPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {t("Edit SOA Entry")} - {selectedEntry?.code}
@@ -601,7 +604,7 @@ export default function SOAPage() {
               </Select>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col sm:flex-row justify-end gap-2">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               {t("Cancel")}
             </Button>

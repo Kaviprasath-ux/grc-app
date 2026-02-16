@@ -569,7 +569,7 @@ export default function ProcessPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -592,7 +592,7 @@ export default function ProcessPage() {
           <span className="text-primary-700 font-medium">{t("Process")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">{t("Process")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Process")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -607,7 +607,7 @@ export default function ProcessPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -632,11 +632,11 @@ export default function ProcessPage() {
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Process")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Process")}</h1>
       </div>
 
       {/* Content */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -698,7 +698,7 @@ export default function ProcessPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Upload className="h-4 w-4 mr-2" />
             {t("Export")}
@@ -723,19 +723,19 @@ export default function ProcessPage() {
         {/* Table */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           {/* Search & Filters */}
-          <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder={t("Search By Process ID, Name")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-[250px] h-9 bg-slate-50 border-slate-200"
+                className="pl-10 w-full sm:w-[250px] h-9 bg-slate-50 border-slate-200"
               />
             </div>
 
             <Select value={filterDepartment || "all"} onValueChange={(v) => setFilterDepartment(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[160px] h-9 bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Department")} />
               </SelectTrigger>
               <SelectContent>
@@ -749,7 +749,7 @@ export default function ProcessPage() {
             </Select>
 
             <Select value={filterOwner || "all"} onValueChange={(v) => setFilterOwner(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[160px] h-9 bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Process Owner")} />
               </SelectTrigger>
               <SelectContent>
@@ -763,7 +763,7 @@ export default function ProcessPage() {
             </Select>
 
             <Select value={filterFrequency || "all"} onValueChange={(v) => setFilterFrequency(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[160px] h-9 bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Process Frequency")} />
               </SelectTrigger>
               <SelectContent>
@@ -776,7 +776,8 @@ export default function ProcessPage() {
               </SelectContent>
             </Select>
           </div>
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Reference ID")}</TableHead>
@@ -846,9 +847,10 @@ export default function ProcessPage() {
               )}
             </TableBody>
           </Table>
+          </div>
 
           {/* Pagination info */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <span className="text-xs text-slate-500">
               {t("Showing")} {filteredProcesses.length} {t("of")} {processes.length} {t("processes")}
             </span>
@@ -858,9 +860,9 @@ export default function ProcessPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{editItem ? t("Edit Process") : t("New Process")}</DialogTitle>
             </DialogHeader>
@@ -886,10 +888,10 @@ export default function ProcessPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">{currentStep === 1 && (
             <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Process ID (readonly) */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Process ID")}</Label>
@@ -928,7 +930,7 @@ export default function ProcessPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Department */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
@@ -974,7 +976,7 @@ export default function ProcessPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Process Frequency */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Process Frequency")} <span className="text-red-500">*</span></Label>
@@ -1018,7 +1020,7 @@ export default function ProcessPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Asset Dependency */}
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -1048,7 +1050,7 @@ export default function ProcessPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* KPI Measurement Required */}
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -1078,7 +1080,7 @@ export default function ProcessPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Operational Complexity */}
               <div>
                 <Label>{t("Operational Complexity")} <span className="text-red-500">*</span></Label>
@@ -1125,7 +1127,7 @@ export default function ProcessPage() {
             {currentStep === 2 && (
             <>
             <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
+              className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-8 text-center hover:border-primary transition-colors cursor-pointer"
               onClick={() => document.getElementById('fileUpload')?.click()}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -1206,7 +1208,7 @@ export default function ProcessPage() {
             {/* Step 3: RACI Assignment */}
             {currentStep === 3 && (
             <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Responsible */}
               <div>
                 <Label>{t("Responsible")}</Label>
@@ -1248,7 +1250,7 @@ export default function ProcessPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Consulted */}
               <div>
                 <Label>{t("Consulted")}</Label>
@@ -1295,7 +1297,7 @@ export default function ProcessPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-wrap items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <span className="text-xs font-medium text-slate-400 me-auto">
               {t("Step")} {currentStep} {t("of")} {TOTAL_STEPS}
             </span>
@@ -1328,7 +1330,7 @@ export default function ProcessPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
+        <AlertDialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">

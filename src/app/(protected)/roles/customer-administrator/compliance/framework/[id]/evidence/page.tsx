@@ -300,7 +300,7 @@ export default function EvidenceByFrameworkPage() {
                   <TableRow
                     key={evidence.id}
                     className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
-                    onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                    onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}?from=framework&frameworkId=${frameworkId}&frameworkName=${encodeURIComponent(framework?.name || '')}`)}
                   >
                     <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{evidence.evidenceCode}</TableCell>
                     <TableCell className="py-3.5 text-sm text-slate-600">{evidence.name}</TableCell>

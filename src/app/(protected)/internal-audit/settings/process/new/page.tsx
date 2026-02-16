@@ -373,7 +373,7 @@ export default function NewProcessPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button
@@ -384,19 +384,19 @@ export default function NewProcessPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">{t("New Process")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t("New Process")}</h1>
           <p className="text-gray-600">{t("Create a new audit process")}</p>
         </div>
       </div>
 
       {/* Content Card */}
       <div className="bg-card rounded-lg border">
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           {/* Step Indicator */}
-          <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center justify-center mb-6 sm:mb-8">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 text-sm ${
                   step === currentStep
                     ? "bg-primary text-primary-foreground border-primary"
                     : step < currentStep
@@ -406,17 +406,17 @@ export default function NewProcessPage() {
                   {step}
                 </div>
                 {step < 3 && (
-                  <div className={`w-24 h-0.5 ${step < currentStep ? "bg-primary" : "bg-gray-300"}`} />
+                  <div className={`w-12 sm:w-24 h-0.5 ${step < currentStep ? "bg-primary" : "bg-gray-300"}`} />
                 )}
               </div>
             ))}
           </div>
-          <h2 className="text-xl font-semibold text-center mb-6">{getStepTitle()}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 sm:mb-6">{getStepTitle()}</h2>
 
           {/* Step 1: Basic Information */}
           {currentStep === 1 && (
             <div className="space-y-6 max-w-4xl mx-auto">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>{t("Process ID")}</Label>
                   <Input value={nextProcessId} disabled className="mt-2 bg-muted" />
@@ -446,7 +446,7 @@ export default function NewProcessPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>{t("Department")}</Label>
                   <Select
@@ -486,7 +486,7 @@ export default function NewProcessPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>{t("Process Frequency")} <span className="text-red-500">*</span></Label>
                   <div className="flex gap-2 mt-2">
@@ -580,7 +580,7 @@ export default function NewProcessPage() {
                 {fieldErrors.location && <p className="text-sm text-red-500 mt-1">{fieldErrors.location}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -651,7 +651,7 @@ export default function NewProcessPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="kpiMeasurementRequired"
@@ -680,7 +680,7 @@ export default function NewProcessPage() {
 
               {/* Conditional fields: Recurrence and Review Date (shown when KPI or PII is checked) */}
               {(formData.kpiMeasurementRequired || formData.piiCapture) && (
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
                   <div>
                     <Label>{t("Recurrence")}</Label>
                     <Select
@@ -711,7 +711,7 @@ export default function NewProcessPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>{t("Operational Complexity")} <span className="text-red-500">*</span></Label>
                   <Select
@@ -749,7 +749,7 @@ export default function NewProcessPage() {
           {currentStep === 2 && (
             <div className="max-w-4xl mx-auto space-y-4">
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
+                className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-8 text-center hover:border-primary transition-colors cursor-pointer"
                 onClick={() => document.getElementById('fileUpload')?.click()}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -836,7 +836,7 @@ export default function NewProcessPage() {
                 );
                 return (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label>{t("Responsible")}</Label>
                         <Select
@@ -875,7 +875,7 @@ export default function NewProcessPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label>{t("Consulted")}</Label>
                         <Select
@@ -920,7 +920,7 @@ export default function NewProcessPage() {
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex items-center gap-3 mt-8 max-w-4xl mx-auto">
+          <div className="flex flex-wrap items-center gap-3 mt-6 sm:mt-8 max-w-4xl mx-auto">
             <span className="text-xs font-medium text-slate-400 me-auto">
               {t("Step")} {currentStep} {t("of")} {TOTAL_STEPS}
             </span>

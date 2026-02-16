@@ -841,7 +841,7 @@ export default function EvidencePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500 ">
@@ -854,7 +854,7 @@ export default function EvidencePage() {
 
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
       </div>
 
       {/* Tabs */}
@@ -871,7 +871,7 @@ export default function EvidencePage() {
         {/* Evidence Request List Tab */}
         <TabsContent value="evidence-request" className="mt-6 space-y-6">
           {/* Status Tile Cards */}
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {statusCounts.map((statusItem) => {
               const statusIcons: Record<string, React.ReactNode> = {
                 "Not Uploaded": <CloudOff className="h-5 w-5" />,
@@ -918,7 +918,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Action Buttons - Above Card */}
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Export")}
@@ -960,7 +960,7 @@ export default function EvidencePage() {
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search & Filter Toolbar */}
-              <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                 <div className="relative">
                   <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
@@ -969,12 +969,12 @@ export default function EvidencePage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full sm:w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
-                <div className="ltr:ml-auto rtl:mr-auto flex items-center gap-3">
+                <div className="ltr:ml-auto rtl:mr-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                   <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                    <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -985,7 +985,7 @@ export default function EvidencePage() {
                     </SelectContent>
                   </Select>
                   <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                    <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Framework")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -998,6 +998,7 @@ export default function EvidencePage() {
                 </div>
               </div>
 
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -1057,6 +1058,7 @@ export default function EvidencePage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
 
               {/* Pagination */}
               <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
@@ -1220,16 +1222,16 @@ export default function EvidencePage() {
         if (!open) resetCreateForm();
         setCreateDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
-          <div className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("New Evidence")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5">
             {/* Step Indicator */}
             <div className="flex items-center justify-center gap-2 pb-5">
               {[1, 2, 3].map((step) => (
@@ -1271,7 +1273,7 @@ export default function EvidencePage() {
                     </div>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")} *</Label>
                     <Select value={createForm.recurrence} onValueChange={(v) => {
@@ -1372,7 +1374,7 @@ export default function EvidencePage() {
                 </div>
 
                 {/* Control Filters */}
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
                     <Input
                       placeholder={t("Search controls...")}
@@ -1382,7 +1384,7 @@ export default function EvidencePage() {
                     />
                   </div>
                   <Select value={controlFilters.domainId || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, domainId: v === "all" ? "" : v })}>
-                    <SelectTrigger className="w-[180px] bg-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -1393,7 +1395,7 @@ export default function EvidencePage() {
                     </SelectContent>
                   </Select>
                   <Select value={controlFilters.functionalGrouping || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, functionalGrouping: v === "all" ? "" : v })}>
-                    <SelectTrigger className="w-[180px] bg-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Functional Grouping")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -1451,7 +1453,7 @@ export default function EvidencePage() {
               <div className="space-y-6">
                 <div className="text-lg font-medium text-slate-800">{t("Review Information")}</div>
 
-                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
                     <Label className="text-xs text-slate-500">{t("Evidence Name")}</Label>
                     <p className="font-medium text-slate-900">{createForm.name}</p>
@@ -1502,7 +1504,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1553,9 +1555,9 @@ export default function EvidencePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden">
           {/* Sticky Header */}
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
@@ -1565,7 +1567,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <p className="text-sm text-slate-500 mb-4">
               {t("Upload a CSV or Excel file to import evidence records.")}
             </p>
@@ -1639,9 +1641,9 @@ export default function EvidencePage() {
         }
         setLinkEvidenceDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[80vh] flex flex-col">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">
                 {t("Select Evidence")}

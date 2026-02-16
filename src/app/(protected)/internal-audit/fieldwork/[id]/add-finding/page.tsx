@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,6 +20,8 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  ChevronRight,
+  Home,
   Loader2,
   Upload,
   X,
@@ -219,8 +222,20 @@ export default function AddFindingPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-2 mb-6">
+      <div className="p-3 sm:p-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+          <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Fieldwork")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Add Finding")}</span>
+        </nav>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             {t("Back")}
@@ -238,9 +253,22 @@ export default function AddFindingPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Fieldwork")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Add Finding")}</span>
+      </nav>
+
       {/* Breadcrumb Header */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -256,8 +284,8 @@ export default function AddFindingPage() {
       </div>
 
       {/* Form */}
-      <Card className="p-6">
-        <div className="space-y-6">
+      <Card className="p-3 sm:p-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Finding Title */}
           <div className="space-y-2">
             <Label className="text-[#1e3a5f] font-medium">{t("Finding Title")}</Label>
@@ -353,7 +381,7 @@ export default function AddFindingPage() {
           <div className="space-y-2">
             <Label className="text-[#1e3a5f] font-medium">{t("Upload Attachment")}</Label>
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-colors ${
                 isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
               }`}
               onDragOver={(e) => {
@@ -467,7 +495,7 @@ export default function AddFindingPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-6">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6">
             <Button
               variant="outline"
               onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}`)}

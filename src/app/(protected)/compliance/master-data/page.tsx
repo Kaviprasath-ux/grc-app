@@ -66,7 +66,7 @@ export default function MasterDataPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500 ">
@@ -79,18 +79,18 @@ export default function MasterDataPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Compliance Settings")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Compliance Settings")}</h1>
       </div>
 
       {/* Category Cards - matching Organization Settings pattern */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {masterDataCategories.map((category) => {
           const Icon = category.icon;
 
           return (
             <button
               key={category.href}
-              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
+              className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
               onClick={() => router.push(category.href)}
             >
               <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0">

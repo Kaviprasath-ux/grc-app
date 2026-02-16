@@ -661,7 +661,7 @@ export default function InternalAuditDashboard() {
   // Auditee view - simplified dashboard
   if (isAuditee) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -673,13 +673,13 @@ export default function InternalAuditDashboard() {
         </nav>
 
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">{t("My Audit Tasks")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("My Audit Tasks")}</h1>
           <p className="text-sm text-slate-500 mt-1">{t("Track your evidence requests and corrective actions")}</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <Link href="/internal-audit/fieldwork" className="block">
-            <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
                   <Activity className="h-5 w-5" />
@@ -694,7 +694,7 @@ export default function InternalAuditDashboard() {
             </div>
           </Link>
           <Link href="/internal-audit/capa-tracking" className="block">
-            <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
                   <CheckCircle className="h-5 w-5" />
@@ -708,7 +708,7 @@ export default function InternalAuditDashboard() {
               </div>
             </div>
           </Link>
-          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+          <div className="relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
                 <Clock className="h-5 w-5" />
@@ -720,7 +720,7 @@ export default function InternalAuditDashboard() {
               <p className="text-xs text-slate-400 mt-0.5">{t("Items requiring attention")}</p>
             </div>
           </div>
-          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+          <div className="relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
                 <AlertTriangle className="h-5 w-5" />
@@ -739,7 +739,7 @@ export default function InternalAuditDashboard() {
 
   // Main dashboard view for Audit Head / Auditor
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -751,13 +751,13 @@ export default function InternalAuditDashboard() {
       </nav>
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Audit Dashboard")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Audit Dashboard")}</h1>
       </div>
 
       {/* Drill-down Dialog */}
       <Dialog open={drillDown.open} onOpenChange={(open) => !open && closeDrillDown()}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[85vh] flex flex-col">
-          <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[85vh] flex flex-col">
+          <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-slate-800">
               {drillDown.title}
             </DialogTitle>
@@ -765,16 +765,16 @@ export default function InternalAuditDashboard() {
               {t("Click on any row to view more details")}
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 py-5 flex-1 overflow-hidden">
+          <div className="px-4 sm:px-6 py-5 flex-1 overflow-hidden">
             {renderDrillDownContent()}
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <div
-          className={`relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
+          className={`relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
           onClick={() => handleRiskCardClick('all', t('All Risks'))}
         >
           <div className="flex items-start justify-between mb-3">
@@ -788,7 +788,7 @@ export default function InternalAuditDashboard() {
           </div>
         </div>
         <div
-          className={`relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
+          className={`relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
           onClick={() => handleRiskCardClick('extreme', t('Extreme Severity Risks'))}
         >
           <div className="flex items-start justify-between mb-3">
@@ -802,7 +802,7 @@ export default function InternalAuditDashboard() {
           </div>
         </div>
         <div
-          className={`relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
+          className={`relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
           onClick={() => handleAuditCardClick('ongoing', t('Ongoing Audits'))}
         >
           <div className="flex items-start justify-between mb-3">
@@ -816,7 +816,7 @@ export default function InternalAuditDashboard() {
           </div>
         </div>
         <div
-          className={`relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
+          className={`relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
           onClick={() => handleAuditCardClick('completed', t('Completed Audits'))}
         >
           <div className="flex items-start justify-between mb-3">
@@ -832,14 +832,14 @@ export default function InternalAuditDashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Risk by Rating Chart */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Risk by Rating")}</h3>
             {canDrillDown && <p className="text-xs text-slate-400 mt-1">{t("Click on a bar to view risks of that severity")}</p>}
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             {riskChartData.map((item) => {
               const maxValue = Math.max(...riskChartData.map(d => d.value), 1);
               const percentage = (item.value / maxValue) * 100;
@@ -875,7 +875,7 @@ export default function InternalAuditDashboard() {
 
         {/* CAPA Status Overview */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-slate-100">
             <div>
               <h3 className="text-base font-semibold text-slate-800">{t("CAPA Status Overview")}</h3>
               {canDrillDown && <p className="text-xs text-slate-400 mt-1">{t("Click on a status badge to view details")}</p>}
@@ -902,13 +902,13 @@ export default function InternalAuditDashboard() {
               </Button>
             </div>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {paginatedCapaData.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
                 <p className="text-sm">{t("No CAPA data available")}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {paginatedCapaData.map((dept, index) => (
                   <div key={index} className="bg-slate-50/50 border border-slate-200 rounded-xl p-4">
                     <div className="flex items-center gap-1.5 justify-center mb-3">
@@ -991,13 +991,13 @@ export default function InternalAuditDashboard() {
 
       {/* Annual Audit Plan Gantt Chart */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">
             {t("Annual Audit Plan")} - {data?.currentYear || new Date().getFullYear()}
           </h3>
           {canDrillDown && <p className="text-xs text-slate-400 mt-1">{t("Click on an audit row to view details")}</p>}
         </div>
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -1055,13 +1055,13 @@ export default function InternalAuditDashboard() {
 
       {/* Auditor Schedule Chart */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">
             {t("Auditor Schedule")} - {data?.currentYear || new Date().getFullYear()}
           </h3>
           <p className="text-xs text-slate-400 mt-1">{t("Monthly allocation by auditor")}</p>
         </div>
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>

@@ -754,7 +754,7 @@ export default function EmailTemplatesPage() {
           <span className="text-primary-700 font-medium">{t("Email Templates")}</span>
         </nav>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Email Templates")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Email Templates")}</h1>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
@@ -787,15 +787,16 @@ export default function EmailTemplatesPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Email Templates")}</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Email Templates")}</h1>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={handleSeedTemplates}
             disabled={seeding}
             title={t("Seed default email templates")}
+            className="flex-1 sm:flex-none"
           >
             <RefreshCw className={`h-4 w-4 ltr:mr-2 rtl:ml-2 ${seeding ? 'animate-spin' : ''}`} />
             {seeding ? t("Seeding...") : t("Seed Defaults")}
@@ -806,7 +807,7 @@ export default function EmailTemplatesPage() {
             onClick={() => setShowDeleteAllDialog(true)}
             disabled={templates.length === 0}
             title={t("Delete all email templates")}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
           >
             <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Delete All")}
@@ -816,6 +817,7 @@ export default function EmailTemplatesPage() {
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             title={t("Import templates from XML file")}
+            className="flex-1 sm:flex-none"
           >
             <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Import")}
@@ -826,11 +828,12 @@ export default function EmailTemplatesPage() {
             onClick={handleExport}
             disabled={templates.length === 0}
             title={t("Export templates to XML file")}
+            className="flex-1 sm:flex-none"
           >
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Button onClick={openAddDialog} size="sm">
+          <Button onClick={openAddDialog} size="sm" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Add Template")}
           </Button>
@@ -840,7 +843,7 @@ export default function EmailTemplatesPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Filter Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3 border-b border-slate-100">
           <div className="ms-auto flex items-center gap-3">
             <Select value={filterCategory} onValueChange={setFilterCategory}>
               <SelectTrigger className="w-[180px] h-9 bg-slate-50 border-slate-200">
@@ -858,7 +861,8 @@ export default function EmailTemplatesPage() {
           </div>
         </div>
 
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Template")}</TableHead>
@@ -976,11 +980,12 @@ export default function EmailTemplatesPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[800px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
@@ -998,7 +1003,7 @@ export default function EmailTemplatesPage() {
               </TabsList>
 
               <TabsContent value="content" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Template Code")} <span className="text-red-500">*</span></Label>
                     <Input
@@ -1155,7 +1160,7 @@ export default function EmailTemplatesPage() {
 
       {/* Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
@@ -1209,7 +1214,7 @@ export default function EmailTemplatesPage() {
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Email Templates")}</DialogTitle>
@@ -1255,7 +1260,7 @@ export default function EmailTemplatesPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
@@ -1281,7 +1286,7 @@ export default function EmailTemplatesPage() {
 
       {/* Delete All Confirmation Dialog */}
       <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
-        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">

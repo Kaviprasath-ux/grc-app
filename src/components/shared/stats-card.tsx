@@ -43,13 +43,13 @@ export function StatsCard({
       </div>
 
       {/* Value */}
-      <div className="text-3xl font-bold tracking-tight text-slate-800">
+      <div className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800">
         {typeof value === 'number' ? value.toLocaleString() : value}
       </div>
 
       {/* Label and description */}
       <div className="mt-1">
-        <span className="text-sm font-medium text-slate-500">{label}</span>
+        <span className="text-xs sm:text-sm font-medium text-slate-500">{label}</span>
         {description && (
           <p className="text-xs text-slate-400 mt-0.5">{description}</p>
         )}

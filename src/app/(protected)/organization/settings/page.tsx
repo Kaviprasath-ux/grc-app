@@ -351,9 +351,9 @@ export default function OrganizationSettingsPage() {
   // Show settings list view
   if (activeCategory) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm flex-wrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Organization")}</span>
@@ -374,9 +374,9 @@ export default function OrganizationSettingsPage() {
         </nav>
 
         {/* Page Header with Count & Action */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-800">{currentCategory ? t(currentCategory.title) : ""}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{currentCategory ? t(currentCategory.title) : ""}</h1>
           </div>
           <Button size="sm" onClick={() => { setNewItem({ name: "", description: "" }); setAddNameError(""); setIsAddItemOpen(true); }}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -394,9 +394,9 @@ export default function OrganizationSettingsPage() {
 
         {/* Add Item Dialog */}
         <Dialog open={isAddItemOpen} onOpenChange={(open) => { setIsAddItemOpen(open); if (!open) setAddNameError(""); }}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">
                   {t("Add")} {currentCategory ? t(currentCategory.title) : ""}
@@ -405,7 +405,7 @@ export default function OrganizationSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <div className="space-y-5">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
@@ -438,7 +438,7 @@ export default function OrganizationSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setAddNameError(""); setIsAddItemOpen(false); }}>
                 {t("Cancel")}
               </Button>
@@ -449,9 +449,9 @@ export default function OrganizationSettingsPage() {
 
         {/* Edit Item Dialog */}
         <Dialog open={isEditItemOpen} onOpenChange={(open) => { setIsEditItemOpen(open); if (!open) setEditNameError(""); }}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">
                   {t("Edit")} {currentCategory ? t(currentCategory.title) : ""}
@@ -461,7 +461,7 @@ export default function OrganizationSettingsPage() {
 
             {/* Content */}
             {editingItem && (
-              <div className="px-6 py-6">
+              <div className="px-4 sm:px-6 py-4 sm:py-6">
                 <div className="space-y-5">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
@@ -493,7 +493,7 @@ export default function OrganizationSettingsPage() {
             )}
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setEditNameError(""); setIsEditItemOpen(false); }}>
                 {t("Cancel")}
               </Button>
@@ -504,20 +504,20 @@ export default function OrganizationSettingsPage() {
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={!!deletingItemId} onOpenChange={(open) => !open && setDeletingItemId(null)}>
-          <DialogContent className="sm:max-w-[420px] p-0 gap-0">
-            <div className="px-6 py-5 border-b border-slate-100">
+          <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">
                   {t("Delete")} {currentCategory ? t(currentCategory.title) : ""}
                 </DialogTitle>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <p className="text-sm text-slate-600">
                 {t("Are you sure you want to delete this item? This action cannot be undone.")}
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setDeletingItemId(null)}>
                 {t("Cancel")}
               </Button>
@@ -533,9 +533,9 @@ export default function OrganizationSettingsPage() {
 
   // Show settings grid view
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm flex-wrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -550,18 +550,18 @@ export default function OrganizationSettingsPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Organization Settings")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Organization Settings")}</h1>
       </div>
 
       {/* Settings Card Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {settingCategories.map((category) => {
           const Icon = category.icon;
 
           return (
             <button
               key={category.id}
-              className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left    cursor-pointer"
+              className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-left cursor-pointer"
               onClick={() => {
                 if (category.id === "bia") {
                   router.push("/organization/settings/bia");
@@ -570,7 +570,7 @@ export default function OrganizationSettingsPage() {
                 }
               }}
             >
-              <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors ">
+              <div className="p-2.5 sm:p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors">
                 <Icon className="h-5 w-5 text-primary-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -579,16 +579,16 @@ export default function OrganizationSettingsPage() {
                   {t(category.description)}
                 </p>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 " />
+              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
             </button>
           );
         })}
 
         {/* Email Notifications Toggle Card */}
         <div
-          className="group bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left transition-all "
+          className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-left transition-all"
         >
-          <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors group-hover:bg-primary-100">
+          <div className="p-2.5 sm:p-3 bg-primary-50 rounded-xl flex-shrink-0 transition-colors group-hover:bg-primary-100">
             <Mail className="h-5 w-5 text-primary-600" />
           </div>
           <div className="flex-1 min-w-0">

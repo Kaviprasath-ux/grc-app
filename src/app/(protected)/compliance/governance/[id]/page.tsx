@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -313,12 +313,18 @@ const getStepStates = (status: string) => {
 export default function GovernanceDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
   const { data: session } = useSession();
   const currentUserId = session?.user?.id as string | undefined;
   const { canEdit, canApprove, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
   const isCustomerAdmin = useHasRole('CustomerAdministrator');
   const { t } = useLanguage();
+
+  // Context from framework navigation
+  const fromFramework = searchParams.get("from") === "framework";
+  const frameworkId = searchParams.get("frameworkId");
+  const frameworkName = searchParams.get("frameworkName") ? decodeURIComponent(searchParams.get("frameworkName")!) : null;
 
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1264,30 +1270,42 @@ export default function GovernanceDetailPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+        <Link href={fromFramework ? "/roles/customer-administrator/compliance" : ""} className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <Link href="/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Governance")}
-        </Link>
+        {fromFramework && frameworkId ? (
+          <>
+            <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Integrated Frameworks")}
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+            <Link href={`/roles/customer-administrator/compliance/framework/${frameworkId}/policies`} className="text-slate-500 hover:text-primary-600 transition-colors">
+              {t("Governance")}
+            </Link>
+          </>
+        ) : (
+          <Link href="/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Governance")}
+          </Link>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{policy.code}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-800">{policy.name}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{policy.name}</h1>
           <Badge className={statusColors[policy.status] || "bg-slate-100 text-slate-600"}>
             {t(policy.status)}
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Approve Button - CustomerAdmin or assigned Approver can see when status is Draft */}
           {canShowApproveButton && (
             <Button variant="outline" onClick={handleApprove}>
@@ -1342,12 +1360,12 @@ export default function GovernanceDetailPage() {
                   {t("Edit")}
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-[900px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-              <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+            <DialogContent className="max-w-[95vw] sm:max-w-[900px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+              <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit")} {t(typeLabels[policy.documentType])}</DialogTitle>
               </DialogHeader>
-              <div className="flex-1 overflow-y-auto px-6 py-5">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                   <div className="col-span-2 space-y-1.5">
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Name")}</Label>
                     <Input
@@ -1498,14 +1516,15 @@ export default function GovernanceDetailPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                 <Button
                   variant="outline"
                   onClick={() => setEditDialogOpen(false)}
+                  className="w-full sm:w-auto"
                 >
                   {t("Cancel")}
                 </Button>
-                <Button onClick={handleSave}>{t("Save Changes")}</Button>
+                <Button onClick={handleSave} className="w-full sm:w-auto">{t("Save Changes")}</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -1516,7 +1535,7 @@ export default function GovernanceDetailPage() {
 
 
       {/* Status Workflow Steps */}
-      <div className="flex items-center justify-center gap-4 py-4 bg-slate-50 rounded-xl border border-slate-200">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 py-4 px-3 sm:px-6 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
         {STATUS_WORKFLOW.map((step, index) => {
           const isStepActive =
             (step.key === "Upload" && stepStates.upload) ||
@@ -1530,19 +1549,19 @@ export default function GovernanceDetailPage() {
           const Icon = step.icon;
 
           return (
-            <div key={step.key} className="flex items-center">
-              <div className="flex items-center gap-2">
+            <div key={step.key} className="flex items-center shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors ${
                     isStepActive ? "bg-primary-600 text-white" : "bg-slate-200 text-slate-400"
                   }`}
                 >
-                  {isStepActive ? <Check className="h-6 w-6" /> : <Icon className="h-5 w-5" />}
+                  {isStepActive ? <Check className="h-5 w-5 sm:h-6 sm:w-6" /> : <Icon className="h-4 w-4 sm:h-5 sm:w-5" />}
                 </div>
-                <span className={`text-sm ${isStepActive ? "text-slate-800" : "text-slate-400"}`}>{t(step.label)}</span>
+                <span className={`text-xs sm:text-sm ${isStepActive ? "text-slate-800" : "text-slate-400"}`}>{t(step.label)}</span>
               </div>
               {index < STATUS_WORKFLOW.length - 1 && (
-                <div className={`w-24 h-0.5 ltr:ml-4 rtl:mr-4 ${isLineActive ? "bg-primary-600" : "bg-slate-300"}`} />
+                <div className={`w-12 sm:w-24 h-0.5 ltr:ml-2 rtl:mr-2 sm:ltr:ml-4 sm:rtl:mr-4 ${isLineActive ? "bg-primary-600" : "bg-slate-300"}`} />
               )}
             </div>
           );
@@ -1588,11 +1607,11 @@ export default function GovernanceDetailPage() {
 
       {/* Policy Details - Inline Editable (with permission check) */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100">
+        <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">{t("Policy Details")}</h3>
         </div>
-        <div className="p-5">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="p-3 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Department - Inline Dropdown (editable only with permission) */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
@@ -1785,11 +1804,11 @@ export default function GovernanceDetailPage() {
 
       {/* AI Review Section */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100">
+        <div className="flex items-center gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
           <Sparkles className="h-5 w-5 text-primary-600" />
           <h3 className="text-base font-semibold text-slate-800">{t("AI Review")}</h3>
         </div>
-        <div className="p-5">
+        <div className="p-3 sm:p-5">
           {!policy.aiReviewStatus || policy.aiReviewStatus === "Pending" ? (
             <div className="py-10 text-center">
               <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
@@ -1804,7 +1823,7 @@ export default function GovernanceDetailPage() {
               <p className="text-sm text-slate-600">{t("AI Review in progress...")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
                 <div>
@@ -1854,20 +1873,20 @@ export default function GovernanceDetailPage() {
 
       {/* AI Review Details Modal */}
       <Dialog open={aiReviewDetailsOpen} onOpenChange={setAiReviewDetailsOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
               {t("AI Review Details")}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
             {aiReviewResult?.raw_response?.controls_response?.map((control, index) => (
               <div
                 key={index}
-                className="bg-slate-50 rounded-lg p-6 border border-slate-200"
+                className="bg-slate-50 rounded-lg p-3 sm:p-6 border border-slate-200"
               >
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   {/* Left Column */}
                   <div className="space-y-4">
                     <div>
@@ -1933,12 +1952,12 @@ export default function GovernanceDetailPage() {
       {/* Published Section - Only show when status is Published */}
       {policy.status === "Published" && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <Check className="h-5 w-5 text-green-600" />
               {t("Published")}
             </h3>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Download Published Document Button */}
               {(attachments.length > 0 || linkedVaultDocuments.length > 0) && (
                 <Button
@@ -1969,8 +1988,8 @@ export default function GovernanceDetailPage() {
               </PermissionGate>
             </div>
           </div>
-          <div className="p-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-3 sm:p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Left Column - Published Info */}
               <div className="space-y-4">
                 {/* Published On */}
@@ -2083,15 +2102,15 @@ export default function GovernanceDetailPage() {
 
       {/* Attachments Section */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100">
+        <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">{t("Attachments")}</h3>
         </div>
-        <div className="p-5">
+        <div className="p-3 sm:p-5">
           {isCustomerAdmin ? (
             /* Customer Admin: 3 Card Options */
             <div className="space-y-6">
               {/* 3 Option Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Option 1: Upload Existing File */}
                 {(() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
@@ -2127,11 +2146,11 @@ export default function GovernanceDetailPage() {
                           </p>
                         </div>
                       </DialogTrigger>
-                  <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
-                    <DialogHeader className="px-6 py-4 border-b border-slate-100">
+                  <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100">
                       <DialogTitle className="text-base font-semibold text-slate-800">{t("Upload Existing File")}</DialogTitle>
                     </DialogHeader>
-                    <div className="px-6 py-5 space-y-4">
+                    <div className="px-4 sm:px-6 py-5 space-y-4">
                       {/* Drag and Drop Area */}
                       <div
                         onDragOver={handleDragOver}
@@ -2256,12 +2275,12 @@ export default function GovernanceDetailPage() {
                           </p>
                         </div>
                       </DialogTrigger>
-                      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-                        <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                      <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                        <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
                           <DialogTitle className="text-base font-semibold text-slate-800">{t("Generate Policy Using AI")}</DialogTitle>
                         </DialogHeader>
-                        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Policy Name")}</Label>
                               <Input value={policy?.name || ""} disabled className="bg-slate-50" />
@@ -2457,11 +2476,11 @@ export default function GovernanceDetailPage() {
                           </p>
                         </div>
                       </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-                    <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                  <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
                       <DialogTitle className="text-base font-semibold text-slate-800">{t("Link from Vault")}</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                       {/* Search Bar */}
                       <div className="relative">
                         <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -2786,11 +2805,11 @@ export default function GovernanceDetailPage() {
         setSignatureDialogOpen(open);
         if (!open) clearSignature();
       }}>
-        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">{t(typeLabels[policy.documentType] || "Policy")} {t("signature Publish")}</DialogTitle>
           </DialogHeader>
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 sm:px-6 py-5 space-y-4">
             <p className="text-sm text-slate-500">
               {t("Please sign below to publish this")} {(policy.documentType || "document").toLowerCase()}.
             </p>
@@ -2835,12 +2854,12 @@ export default function GovernanceDetailPage() {
       </Dialog>
 
       {/* Tabs */}
-      <div className="flex border-b">
+      <div className="flex flex-wrap border-b overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base whitespace-nowrap ${
               activeTab === tab.id
                 ? "border-b-2 border-primary-600 text-primary-600"
                 : "text-slate-500 hover:text-slate-700"
@@ -2860,7 +2879,7 @@ export default function GovernanceDetailPage() {
       {/* Tab Content */}
       {activeTab === "controls" && (
         <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Linked Control")}</h3>
             <PermissionGate resource="compliance.governance" action="edit">
               <Dialog open={linkControlDialogOpen} onOpenChange={(open) => {
@@ -2879,13 +2898,13 @@ export default function GovernanceDetailPage() {
                     {t("Link Control")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-                  <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                  <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
                     <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Control")}</DialogTitle>
                   </DialogHeader>
-                  <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                     {/* Filters */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
                         <SelectTrigger className="w-full bg-slate-50 border-slate-200 text-sm">
                           <SelectValue placeholder={t("Domain")} />
@@ -3011,7 +3030,7 @@ export default function GovernanceDetailPage() {
               </Dialog>
             </PermissionGate>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             {linkedControls.length === 0 ? (
               <div className="py-16 text-center">
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
@@ -3021,7 +3040,8 @@ export default function GovernanceDetailPage() {
                 <p className="text-xs text-slate-400">{t("Link controls to track compliance")}</p>
               </div>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Control ID")}</TableHead>
@@ -3074,6 +3094,7 @@ export default function GovernanceDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </div>
         </div>
@@ -3081,7 +3102,7 @@ export default function GovernanceDetailPage() {
 
       {activeTab === "exceptions" && (
         <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Linked Exception")}</h3>
             {isCustomerAdmin && (
               <Dialog open={linkExceptionDialogOpen} onOpenChange={setLinkExceptionDialogOpen}>
@@ -3091,11 +3112,11 @@ export default function GovernanceDetailPage() {
                     {t("Link Exception")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="p-0 gap-0 overflow-hidden">
-                  <DialogHeader className="px-6 py-4 border-b border-slate-100">
+                <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
+                  <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100">
                     <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Exception")}</DialogTitle>
                   </DialogHeader>
-                  <div className="px-6 py-5">
+                  <div className="px-4 sm:px-6 py-5">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Exception")}</Label>
                       <Select value={selectedExceptionId} onValueChange={setSelectedExceptionId}>
@@ -3126,7 +3147,7 @@ export default function GovernanceDetailPage() {
               </Dialog>
             )}
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             {linkedExceptions.length === 0 ? (
               <div className="py-16 text-center">
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
@@ -3136,7 +3157,8 @@ export default function GovernanceDetailPage() {
                 <p className="text-xs text-slate-400">{t("Link exceptions to track deviations")}</p>
               </div>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Exception Code")}</TableHead>
@@ -3189,6 +3211,7 @@ export default function GovernanceDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </div>
         </div>

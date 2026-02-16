@@ -252,7 +252,7 @@ export default function ReportsPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         {isGRCAdmin ? (
@@ -275,12 +275,12 @@ export default function ReportsPage() {
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Reports")}</h1>
 
       {/* Management Report - Featured Card */}
       <button
         onClick={() => setIsManagementReportOpen(true)}
-        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-5 flex items-center gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
+        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
       >
         <div className="p-2.5 bg-primary-100/80 rounded-lg flex-shrink-0">
           <FileBarChart className="h-5 w-5 text-primary-600" />
@@ -295,9 +295,9 @@ export default function ReportsPage() {
       {/* Reports Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Toolbar: Tabs + Search */}
-        <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 px-3 sm:px-5 py-3 border-b border-slate-100">
           {/* Category Tabs */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto">
             {categoryTabs.map((tab) => {
               const count = tab.id === "all"
                 ? reportTypes.length
@@ -319,7 +319,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative w-56">
+          <div className="relative w-full sm:w-56">
             <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
@@ -341,7 +341,7 @@ export default function ReportsPage() {
                   setSelectedReport(report.id);
                   setIsGenerateDialogOpen(true);
                 }}
-                className="group w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+                className="group w-full flex items-center justify-between px-3 sm:px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
               >
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-medium text-slate-800">{t(report.title)}</h4>
@@ -364,13 +364,13 @@ export default function ReportsPage() {
 
       {/* Generate Report Dialog */}
       <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">
               {t("Generate Report")}
             </DialogTitle>
           </div>
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 sm:px-6 py-4 space-y-4">
             <p className="text-sm text-slate-500">
               {t("Configure and generate the")}{" "}
               {t(reportTypes.find((r) => r.id === selectedReport)?.title || "")}
@@ -404,7 +404,7 @@ export default function ReportsPage() {
               </ul>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsGenerateDialogOpen(false)}
@@ -431,15 +431,15 @@ export default function ReportsPage() {
         open={isManagementReportOpen}
         onOpenChange={setIsManagementReportOpen}
       >
-        <DialogContent className="max-w-[700px] p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogTitle className="text-base font-semibold text-slate-800">
               {t("Compliance Report Parameters")}
             </DialogTitle>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-5">
             {/* Checkbox grid - 2 columns, 5 rows matching UAT layout */}
-            <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
               {/* Row 1 */}
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -614,7 +614,7 @@ export default function ReportsPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsManagementReportOpen(false)}

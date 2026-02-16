@@ -291,7 +291,7 @@ export default function RiskAssessmentPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -308,14 +308,14 @@ export default function RiskAssessmentPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
       </div>
 
       {/* Data Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search and Filters */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative flex-1 min-w-[280px] max-w-md">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative flex-1 min-w-0 sm:min-w-[280px] max-w-md">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -325,9 +325,9 @@ export default function RiskAssessmentPage() {
               className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-3 ms-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:ms-auto">
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Status")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -340,7 +340,7 @@ export default function RiskAssessmentPage() {
               </SelectContent>
             </Select>
             <Select value={ratingFilter} onValueChange={(v) => { setRatingFilter(v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Rating")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -353,7 +353,7 @@ export default function RiskAssessmentPage() {
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Category")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -366,7 +366,7 @@ export default function RiskAssessmentPage() {
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("Type")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -382,7 +382,8 @@ export default function RiskAssessmentPage() {
         </div>
 
         {/* Column Headers */}
-        <div className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+        <div className="overflow-x-auto">
+        <div className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[800px]">
           <span>{t("Risk ID")}</span>
           <span>{t("Risk Name")}</span>
           <span>{t("Description")}</span>
@@ -409,7 +410,7 @@ export default function RiskAssessmentPage() {
               return (
                 <div
                   key={risk.id}
-                  className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-5 py-3 items-center hover:bg-slate-50/50 transition-colors"
+                  className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-3 sm:px-5 py-3 items-center hover:bg-slate-50/50 transition-colors min-w-[800px]"
                 >
                   <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                   <span className="text-sm text-slate-700 truncate">{risk.name}</span>
@@ -434,6 +435,7 @@ export default function RiskAssessmentPage() {
               );
             })
           )}
+        </div>
         </div>
 
         {/* Pagination */}

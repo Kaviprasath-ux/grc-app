@@ -639,7 +639,7 @@ export default function FrameworkOverviewPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         {isGRCAdmin ? (
@@ -662,10 +662,10 @@ export default function FrameworkOverviewPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
         {!isReviewerRole && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={() => openCreateDialog(true)}
               variant="outline"
@@ -689,8 +689,8 @@ export default function FrameworkOverviewPage() {
       {/* Data Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-          <div className="relative max-w-xs">
+        <div className="flex flex-wrap items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder={t("Search frameworks...")}
@@ -701,6 +701,7 @@ export default function FrameworkOverviewPage() {
           </div>
         </div>
 
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
@@ -788,6 +789,7 @@ export default function FrameworkOverviewPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
         <PaginationUI
@@ -801,9 +803,9 @@ export default function FrameworkOverviewPage() {
 
       {/* Step 1: Create/Edit Framework Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {isEditMode ? t("Edit Framework") : t("Create Framework")}
@@ -812,7 +814,7 @@ export default function FrameworkOverviewPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <p className="text-sm text-slate-500">
                 {t("Please provide the following details to create a new compliance framework.")}
@@ -874,7 +876,7 @@ export default function FrameworkOverviewPage() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Country")}</Label>
                   <Input
@@ -948,15 +950,17 @@ export default function FrameworkOverviewPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => setIsCreateDialogOpen(false)}
               disabled={isAISubmitting}
             >
               {t("Cancel")}
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={handleCreateOrUpdate}
               disabled={!formData.name || isAISubmitting}
             >
@@ -981,9 +985,9 @@ export default function FrameworkOverviewPage() {
 
       {/* Step 2: Import Requirements Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={handleCloseImportDialog}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-success-dark" />
@@ -993,17 +997,18 @@ export default function FrameworkOverviewPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
               <p className="text-sm text-slate-500">
                 {t("Upload an Excel file (.xlsx) containing your framework requirements. You can download the sample template to see the required format.")}
               </p>
 
               {/* Download Template Button */}
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="w-full sm:w-auto"
                   onClick={handleDownloadTemplate}
                 >
                   <Download className="h-4 w-4 me-2" />
@@ -1133,11 +1138,12 @@ export default function FrameworkOverviewPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={handleCloseImportDialog}>
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={handleCloseImportDialog}>
               {importSuccess ? t("Close") : t("Skip")}
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={handleImport}
               disabled={!importFile || isImporting}
             >
@@ -1159,20 +1165,20 @@ export default function FrameworkOverviewPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[440px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[440px] p-0 gap-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Framework")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete this framework? This action cannot be undone.")}
             </p>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>{t("Cancel")}</Button>
-            <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsDeleteDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button variant="destructive" className="w-full sm:w-auto" onClick={handleDelete}>{t("Delete")}</Button>
           </div>
         </DialogContent>
       </Dialog>

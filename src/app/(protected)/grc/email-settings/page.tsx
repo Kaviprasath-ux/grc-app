@@ -277,7 +277,7 @@ export default function EmailSettingsPage() {
           <span className="text-primary-700 font-medium">{t("Email Settings")}</span>
         </nav>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Email Settings")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Email Settings")}</h1>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
@@ -301,9 +301,9 @@ export default function EmailSettingsPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-800">{t("Email Settings")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Email Settings")}</h1>
           {emailSettings && (
             <Badge className={emailSettings.isVerified
               ? "bg-green-100 text-green-700 hover:bg-green-100"
@@ -313,17 +313,17 @@ export default function EmailSettingsPage() {
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {emailSettings && (
             <>
-              <Button variant="outline" size="sm" onClick={() => setShowTestDialog(true)}>
+              <Button variant="outline" size="sm" onClick={() => setShowTestDialog(true)} className="flex-1 sm:flex-none">
                 <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Test Connection")}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
+                className="text-semantic-error hover:text-semantic-error hover:bg-red-50 flex-1 sm:flex-none"
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -331,7 +331,7 @@ export default function EmailSettingsPage() {
               </Button>
             </>
           )}
-          <Button size="sm" onClick={handleSave} disabled={submitting}>
+          <Button size="sm" onClick={handleSave} disabled={submitting} className="w-full sm:w-auto">
             {submitting ? t("Saving...") : t("Save Settings")}
           </Button>
         </div>
@@ -339,7 +339,7 @@ export default function EmailSettingsPage() {
 
       {/* Configuration Form */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="p-6 space-y-5">
+        <div className="p-4 sm:p-6 space-y-5">
           {/* SMTP Provider */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-slate-700">{t("SMTP Provider")}</Label>
@@ -483,7 +483,7 @@ export default function EmailSettingsPage() {
 
       {/* Test Email Dialog */}
       <Dialog open={showTestDialog} onOpenChange={setShowTestDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Test Email Configuration")}</DialogTitle>
@@ -519,7 +519,7 @@ export default function EmailSettingsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>

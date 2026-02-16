@@ -358,7 +358,7 @@ function RiskRegisterContent() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -375,12 +375,12 @@ function RiskRegisterContent() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Shield className="h-5 w-5" />
@@ -396,7 +396,7 @@ function RiskRegisterContent() {
         <button
           onClick={() => handleStatusCardClick("Open")}
           className={cn(
-            "relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
+            "relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
             statusFilter === "Open" && "border-red-500 ring-2 ring-red-200"
           )}
         >
@@ -415,7 +415,7 @@ function RiskRegisterContent() {
         <button
           onClick={() => handleStatusCardClick("In Progress")}
           className={cn(
-            "relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
+            "relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
             statusFilter === "In Progress" && "border-amber-500 ring-2 ring-amber-200"
           )}
         >
@@ -434,7 +434,7 @@ function RiskRegisterContent() {
         <button
           onClick={() => handleStatusCardClick("Closed")}
           className={cn(
-            "relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
+            "relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
             statusFilter === "Closed" && "border-green-500 ring-2 ring-green-200"
           )}
         >
@@ -453,7 +453,7 @@ function RiskRegisterContent() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -488,8 +488,8 @@ function RiskRegisterContent() {
       ) : displayRisks.length > 0 || search || categoryFilter !== "all" || typeFilter !== "all" || ratingFilter !== "all" ? (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           {/* Search and Filters */}
-          <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-            <div className="relative flex-1 min-w-[280px] max-w-md">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+            <div className="relative flex-1 min-w-0 sm:min-w-[280px] max-w-md">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
@@ -499,9 +499,9 @@ function RiskRegisterContent() {
                 className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
-            <div className="flex flex-wrap items-center gap-3 ms-auto">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:ms-auto">
               <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("Category")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
@@ -514,7 +514,7 @@ function RiskRegisterContent() {
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("Type")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
@@ -527,7 +527,7 @@ function RiskRegisterContent() {
                 </SelectContent>
               </Select>
               <Select value={ratingFilter} onValueChange={(v) => { setRatingFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("Rating")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
@@ -541,8 +541,9 @@ function RiskRegisterContent() {
             </div>
           </div>
 
-          {/* Column Headers */}
-          <div className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider`}>
+          {/* Column Headers + Rows */}
+          <div className="overflow-x-auto">
+          <div className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]`}>
             <span>{t("Risk ID")}</span>
             <span>{t("Risk Name")}</span>
             <span>{t("Risk Description")}</span>
@@ -557,7 +558,7 @@ function RiskRegisterContent() {
             {paginatedRisks.map((risk) => (
               <div
                 key={risk.id}
-                className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors`}
+                className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]`}
               >
                 <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                 <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
@@ -594,6 +595,7 @@ function RiskRegisterContent() {
               </div>
             ))}
           </div>
+          </div>
 
           {/* Pagination */}
           <Pagination
@@ -629,13 +631,13 @@ function RiskRegisterContent() {
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+          <AlertDialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle>{t("Confirmation")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("Are you sure you want to delete this risk?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
@@ -649,39 +651,39 @@ function RiskRegisterContent() {
 
       {/* Activity Log Dialog */}
       <Dialog open={activityLogOpen} onOpenChange={setActivityLogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle>{t("Activity Log")}</DialogTitle>
             <p className="text-sm text-slate-500">
               {t("Showing")} {activityLogs.length} {t("of")} {activityLogsTotal} {t("activities")}
             </p>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto">
-            <table className="w-full">
+          <div className="flex-1 overflow-y-auto overflow-x-auto">
+            <table className="w-full min-w-[500px]">
               <thead className="bg-slate-50 sticky top-0">
                 <tr className="h-12">
-                  <th className="text-left px-6 py-3 font-medium text-slate-700">{t("Date")}</th>
-                  <th className="text-left px-6 py-3 font-medium text-slate-700">{t("Risk")}</th>
-                  <th className="text-left px-6 py-3 font-medium text-slate-700">{t("Activity")}</th>
-                  <th className="text-left px-6 py-3 font-medium text-slate-700">{t("Actor")}</th>
+                  <th className="text-left px-4 sm:px-6 py-3 font-medium text-slate-700">{t("Date")}</th>
+                  <th className="text-left px-4 sm:px-6 py-3 font-medium text-slate-700">{t("Risk")}</th>
+                  <th className="text-left px-4 sm:px-6 py-3 font-medium text-slate-700">{t("Activity")}</th>
+                  <th className="text-left px-4 sm:px-6 py-3 font-medium text-slate-700">{t("Actor")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {activityLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-3 text-sm text-slate-600">
+                    <td className="px-4 sm:px-6 py-3 text-sm text-slate-600">
                       {new Date(log.createdAt).toLocaleDateString("en-GB")}
                     </td>
-                    <td className="px-6 py-3 text-sm font-medium text-primary-600">
+                    <td className="px-4 sm:px-6 py-3 text-sm font-medium text-primary-600">
                       {log.risk.riskId}
                     </td>
-                    <td className="px-6 py-3 text-sm text-slate-600">{log.activity}</td>
-                    <td className="px-6 py-3 text-sm text-slate-600">{log.actor}</td>
+                    <td className="px-4 sm:px-6 py-3 text-sm text-slate-600">{log.activity}</td>
+                    <td className="px-4 sm:px-6 py-3 text-sm text-slate-600">{log.actor}</td>
                   </tr>
                 ))}
                 {activityLogs.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={4} className="px-4 sm:px-6 py-8 text-center text-slate-500">
                       {t("No activity logs found")}
                     </td>
                   </tr>
@@ -699,11 +701,11 @@ function RiskRegisterContent() {
           setSelectedFile(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}> 
-          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogTitle>{t("Import Risks")}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="space-y-4">
               <p className="text-sm text-slate-500">
                 {t("Upload a CSV file to import risks. Download the template first to see the required format.")}
@@ -783,7 +785,7 @@ function RiskRegisterContent() {
             </div>
           </div>
           {selectedFile && (
-            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => setSelectedFile(null)}

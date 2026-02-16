@@ -581,7 +581,7 @@ function ProfilePageContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -598,39 +598,41 @@ function ProfilePageContent() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Organization Profile")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Organization Profile")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">{t("Company Info")}</TabsTrigger>
-          <TabsTrigger value="services">{t("Services")}</TabsTrigger>
-          <TabsTrigger value="regulations">{t("Regulations")}</TabsTrigger>
-          <TabsTrigger value="departments">{t("Departments")}</TabsTrigger>
-          <TabsTrigger value="orgchart">{t("Organization Chart")}</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-1 px-1">
+          <TabsList className="w-full sm:w-auto inline-flex">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">{t("Company Info")}</TabsTrigger>
+            <TabsTrigger value="services" className="text-xs sm:text-sm">{t("Services")}</TabsTrigger>
+            <TabsTrigger value="regulations" className="text-xs sm:text-sm">{t("Regulations")}</TabsTrigger>
+            <TabsTrigger value="departments" className="text-xs sm:text-sm">{t("Departments")}</TabsTrigger>
+            <TabsTrigger value="orgchart" className="text-xs sm:text-sm">{t("Organization Chart")}</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="mt-6">
+        <TabsContent value="overview" className="mt-4 sm:mt-6">
           {organization ? (
             <>
               {/* Header - matches other tabs */}
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
                 <h3 className="text-base font-semibold text-slate-800">{t("Organization Information")}</h3>
-                <Button size="sm" onClick={openEditOrganization}>
+                <Button size="sm" onClick={openEditOrganization} className="w-full sm:w-auto">
                   <Pencil className="h-4 w-4 me-2" />
                   {t("Edit Profile")}
                 </Button>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-4 sm:space-y-5">
                 {/* General Information Section */}
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                  <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">
                     <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("General Information")}</span>
                   </div>
-                  <div className="p-5">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                  <div className="p-3 sm:p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                       <div className="flex items-start gap-3">
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <Building2 className="h-4 w-4 text-primary-500" />
@@ -673,11 +675,11 @@ function ProfilePageContent() {
 
                 {/* Location & Contact Section */}
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                  <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">
                     <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Location & Contact")}</span>
                   </div>
-                  <div className="p-5">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                  <div className="p-3 sm:p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                       <div className="flex items-start gap-3">
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <MapPin className="h-4 w-4 text-primary-500" />
@@ -687,7 +689,7 @@ function ProfilePageContent() {
                           <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3 col-span-2 lg:col-span-1">
+                      <div className="flex items-start gap-3 sm:col-span-2 lg:col-span-1">
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <Home className="h-4 w-4 text-primary-500" />
                         </div>
@@ -720,10 +722,10 @@ function ProfilePageContent() {
 
                 {/* About Section - Description, Vision, Mission */}
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                  <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">
                     <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("About")}</span>
                   </div>
-                  <div className="p-5 space-y-5">
+                  <div className="p-3 sm:p-5 space-y-4 sm:space-y-5">
                     {/* Description */}
                     {organization.description && (
                       <div className="border-l-2 border-primary-200 pl-4">
@@ -733,7 +735,7 @@ function ProfilePageContent() {
                     )}
 
                     {/* Vision & Mission */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                       {organization.vision && (
                         <div className="border-l-2 border-emerald-200 pl-4">
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Vision")}</p>
@@ -753,11 +755,11 @@ function ProfilePageContent() {
                 {/* Brochure / Documents Section */}
                 {organization.brochure && (
                   <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                    <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">
                       <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Documents")}</span>
                     </div>
-                    <div className="p-5">
-                      <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-lg border border-slate-200 w-fit">
+                    <div className="p-3 sm:p-5">
+                      <div className="flex items-center gap-3 px-3 sm:px-4 py-3 bg-slate-50 rounded-lg border border-slate-200 w-full sm:w-fit">
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
                           <FileText className="h-4 w-4 text-primary-500" />
                         </div>
@@ -784,7 +786,7 @@ function ProfilePageContent() {
               </div>
             </>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
                 <Building2 className="h-6 w-6 text-primary-500" />
               </div>
@@ -801,9 +803,9 @@ function ProfilePageContent() {
         </TabsContent>
 
         {/* Services Tab */}
-        <TabsContent value="services" className="mt-6">
+        <TabsContent value="services" className="mt-4 sm:mt-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
             <div className="flex items-center gap-3">
               <h3 className="text-base font-semibold text-slate-800">{t("Services")}</h3>
               {services.length > 0 && (
@@ -812,7 +814,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => { setServiceErrors({}); setIsAddServiceOpen(true); }}>
+            <Button size="sm" onClick={() => { setServiceErrors({}); setIsAddServiceOpen(true); }} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 me-2" />
               {t("Add Service")}
             </Button>
@@ -821,8 +823,8 @@ function ProfilePageContent() {
           {services.length > 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search */}
-              <div className="px-5 py-3 border-b border-slate-100">
-                <div className="relative max-w-xs">
+              <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="relative w-full sm:max-w-xs">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
@@ -833,8 +835,9 @@ function ProfilePageContent() {
                   />
                 </div>
               </div>
+              <div className="overflow-x-auto">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <div className="grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px]">
                 <span>{t("Service Name")}</span>
                 <span>{t("User Type")}</span>
                 <span>{t("Category")}</span>
@@ -858,7 +861,7 @@ function ProfilePageContent() {
                       {paginated.map((service) => (
                         <div
                           key={service.id}
-                          className="grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
+                          className="grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[600px]"
                         >
                           {/* Service Name */}
                           <div className="flex items-center gap-3 min-w-0">
@@ -912,45 +915,53 @@ function ProfilePageContent() {
                         </div>
                       ))}
                       {filtered.length === 0 && (
-                        <div className="px-5 py-8 text-center text-sm text-slate-400">
+                        <div className="px-3 sm:px-5 py-8 text-center text-sm text-slate-400 min-w-[600px]">
                           {t("No services match your search.")}
                         </div>
                       )}
                     </div>
-                    {/* Pagination */}
-                    {filtered.length > ITEMS_PER_PAGE && (
-                      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-                        <span className="text-xs text-slate-500">
-                          {(servicePage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(servicePage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                            disabled={servicePage === 1}
-                            onClick={() => setServicePage(servicePage - 1)}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                            disabled={servicePage * ITEMS_PER_PAGE >= filtered.length}
-                            onClick={() => setServicePage(servicePage + 1)}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
                   </>
                 );
               })()}
+              </div>
+              {/* Pagination */}
+              {(() => {
+                const filtered = services.filter((s) =>
+                  s.title.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+                  s.serviceCategory?.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+                  s.serviceUser?.toLowerCase().includes(serviceSearch.toLowerCase())
+                );
+                return filtered.length > ITEMS_PER_PAGE ? (
+                  <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                    <span className="text-xs text-slate-500">
+                      {(servicePage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(servicePage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                        disabled={servicePage === 1}
+                        onClick={() => setServicePage(servicePage - 1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                        disabled={servicePage * ITEMS_PER_PAGE >= filtered.length}
+                        onClick={() => setServicePage(servicePage + 1)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <Briefcase className="h-6 w-6 text-slate-400" />
               </div>
@@ -967,9 +978,9 @@ function ProfilePageContent() {
         </TabsContent>
 
         {/* Regulations Tab */}
-        <TabsContent value="regulations" className="mt-6">
+        <TabsContent value="regulations" className="mt-4 sm:mt-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
             <div className="flex items-center gap-3">
               <h3 className="text-base font-semibold text-slate-800">{t("Regulations")}</h3>
               {regulations.length > 0 && (
@@ -978,7 +989,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => { setRegulationErrors({}); setIsAddRegulationOpen(true); }}>
+            <Button size="sm" onClick={() => { setRegulationErrors({}); setIsAddRegulationOpen(true); }} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 me-2" />
               {t("Add Regulation")}
             </Button>
@@ -987,8 +998,8 @@ function ProfilePageContent() {
           {regulations.length > 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search */}
-              <div className="px-5 py-3 border-b border-slate-100">
-                <div className="relative max-w-xs">
+              <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="relative w-full sm:max-w-xs">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
@@ -999,8 +1010,9 @@ function ProfilePageContent() {
                   />
                 </div>
               </div>
+              <div className="overflow-x-auto">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_100px_120px_72px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <div className="grid grid-cols-[1fr_100px_120px_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[500px]">
                 <span>{t("Regulation Name")}</span>
                 <span>{t("Version")}</span>
                 <span>{t("Status")}</span>
@@ -1022,7 +1034,7 @@ function ProfilePageContent() {
                       {paginated.map((regulation) => (
                         <div
                           key={regulation.id}
-                          className="grid grid-cols-[1fr_100px_120px_72px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
+                          className="grid grid-cols-[1fr_100px_120px_72px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[500px]"
                         >
                           {/* Regulation Name */}
                           <div className="flex items-center gap-3 min-w-0">
@@ -1067,45 +1079,52 @@ function ProfilePageContent() {
                         </div>
                       ))}
                       {filtered.length === 0 && (
-                        <div className="px-5 py-8 text-center text-sm text-slate-400">
+                        <div className="px-3 sm:px-5 py-8 text-center text-sm text-slate-400 min-w-[500px]">
                           {t("No regulations match your search.")}
                         </div>
                       )}
                     </div>
-                    {/* Pagination */}
-                    {filtered.length > ITEMS_PER_PAGE && (
-                      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-                        <span className="text-xs text-slate-500">
-                          {(regulationPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(regulationPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                            disabled={regulationPage === 1}
-                            onClick={() => setRegulationPage(regulationPage - 1)}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-slate-400 hover:text-slate-600"
-                            disabled={regulationPage * ITEMS_PER_PAGE >= filtered.length}
-                            onClick={() => setRegulationPage(regulationPage + 1)}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
                   </>
                 );
               })()}
+              </div>
+              {/* Pagination */}
+              {(() => {
+                const filtered = regulations.filter((r) =>
+                  r.name.toLowerCase().includes(regulationSearch.toLowerCase()) ||
+                  r.version?.toLowerCase().includes(regulationSearch.toLowerCase())
+                );
+                return filtered.length > ITEMS_PER_PAGE ? (
+                  <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                    <span className="text-xs text-slate-500">
+                      {(regulationPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(regulationPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                        disabled={regulationPage === 1}
+                        onClick={() => setRegulationPage(regulationPage - 1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                        disabled={regulationPage * ITEMS_PER_PAGE >= filtered.length}
+                        onClick={() => setRegulationPage(regulationPage + 1)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <Scale className="h-6 w-6 text-slate-400" />
               </div>
@@ -1122,9 +1141,9 @@ function ProfilePageContent() {
         </TabsContent>
 
         {/* Departments Tab */}
-        <TabsContent value="departments" className="mt-6">
+        <TabsContent value="departments" className="mt-4 sm:mt-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
             <div className="flex items-center gap-3">
               <h3 className="text-base font-semibold text-slate-800">{t("Departments")}</h3>
               {departments.length > 0 && (
@@ -1133,7 +1152,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => { setDepartmentNameError(""); setIsAddDepartmentOpen(true); }}>
+            <Button size="sm" onClick={() => { setDepartmentNameError(""); setIsAddDepartmentOpen(true); }} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 me-2" />
               {t("Add Department")}
             </Button>
@@ -1142,8 +1161,8 @@ function ProfilePageContent() {
           {departments.length > 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {/* Search */}
-              <div className="px-5 py-3 border-b border-slate-100">
-                <div className="relative max-w-xs">
+              <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="relative w-full sm:max-w-xs">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
@@ -1155,7 +1174,7 @@ function ProfilePageContent() {
                 </div>
               </div>
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_72px] gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <div className="grid grid-cols-[1fr_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
                 <span>{t("Department Name")}</span>
                 <span className="text-end">{t("Actions")}</span>
               </div>
@@ -1174,7 +1193,7 @@ function ProfilePageContent() {
                       {paginated.map((dept) => (
                         <div
                           key={dept.id}
-                          className="grid grid-cols-[1fr_72px] gap-4 px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
+                          className="grid grid-cols-[1fr_72px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors"
                         >
                           {/* Department Name */}
                           <div className="flex items-center gap-3 min-w-0">
@@ -1209,14 +1228,14 @@ function ProfilePageContent() {
                         </div>
                       ))}
                       {filtered.length === 0 && (
-                        <div className="px-5 py-8 text-center text-sm text-slate-400">
+                        <div className="px-3 sm:px-5 py-8 text-center text-sm text-slate-400">
                           {t("No departments match your search.")}
                         </div>
                       )}
                     </div>
                     {/* Pagination */}
                     {filtered.length > ITEMS_PER_PAGE && (
-                      <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                      <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
                         <span className="text-xs text-slate-500">
                           {(departmentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(departmentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
                         </span>
@@ -1247,7 +1266,7 @@ function ProfilePageContent() {
               })()}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <Users className="h-6 w-6 text-slate-400" />
               </div>
@@ -1264,13 +1283,13 @@ function ProfilePageContent() {
         </TabsContent>
 
         {/* Organization Chart Tab */}
-        <TabsContent value="orgchart" className="mt-6">
+        <TabsContent value="orgchart" className="mt-4 sm:mt-6">
           {/* Header - matches other tabs */}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4 sm:mb-5">
             <h3 className="text-base font-semibold text-slate-800">{t("Organization Structure")}</h3>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
             <OrgChart />
           </div>
         </TabsContent>
@@ -1278,16 +1297,16 @@ function ProfilePageContent() {
 
       {/* Add Department Dialog */}
       <Dialog open={isAddDepartmentOpen} onOpenChange={(open) => { if (!open) { setIsAddDepartmentOpen(false); setDepartmentNameError(""); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Department")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Department")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <Label className="text-sm font-medium text-slate-700">{t("Department Name")}</Label>
             <Input
               value={newDepartmentName}
@@ -1303,7 +1322,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddDepartmentOpen(false); setDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
@@ -1314,17 +1333,17 @@ function ProfilePageContent() {
 
       {/* Edit Department Dialog */}
       <Dialog open={isEditDepartmentOpen} onOpenChange={setIsEditDepartmentOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Department")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Department")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           {editingDepartment && (
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <Label className="text-sm font-medium text-slate-700">{t("Department Name")}</Label>
               <Input
                 value={editingDepartment.name}
@@ -1336,7 +1355,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditDepartmentOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1347,16 +1366,16 @@ function ProfilePageContent() {
 
       {/* Add Service Dialog */}
       <Dialog open={isAddServiceOpen} onOpenChange={(open) => { if (!open) { setIsAddServiceOpen(false); setServiceErrors({}); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Service")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
             {/* Service Title */}
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Service Title")}</Label>
@@ -1388,7 +1407,7 @@ function ProfilePageContent() {
             {/* Service User */}
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Service User")}</Label>
-              <div className="flex gap-6 mt-2">
+              <div className="flex flex-wrap gap-4 sm:gap-6 mt-2">
                 {["Internal", "External", "Public"].map((userType) => (
                   <label key={userType} className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1483,7 +1502,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddServiceOpen(false); setServiceErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -1494,17 +1513,17 @@ function ProfilePageContent() {
 
       {/* Edit Service Dialog */}
       <Dialog open={isEditServiceOpen} onOpenChange={setIsEditServiceOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Service")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Service")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           {editingService && (
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
               {/* Service Title */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Service Title")}</Label>
@@ -1531,7 +1550,7 @@ function ProfilePageContent() {
               {/* Service User */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Service User")}</Label>
-                <div className="flex gap-6 mt-2">
+                <div className="flex flex-wrap gap-4 sm:gap-6 mt-2">
                   {["Internal", "External", "Public"].map((userType) => (
                     <label key={userType} className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -1612,7 +1631,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditServiceOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1623,19 +1642,19 @@ function ProfilePageContent() {
 
       {/* Add Regulation Dialog */}
       <Dialog open={isAddRegulationOpen} onOpenChange={(open) => { if (!open) { setIsAddRegulationOpen(false); setRegulationErrors({}); } }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Regulation")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Regulation")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <div className="space-y-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+            <div className="space-y-4 sm:space-y-5">
               {/* Name and Version */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Regulation Name")} <span className="text-error">*</span></Label>
                   <Input
@@ -1667,7 +1686,7 @@ function ProfilePageContent() {
               </div>
 
               {/* SA1 and SA2 Dates */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("SA1 Date")}</Label>
                   <div className="mt-1.5">
@@ -1791,7 +1810,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddRegulationOpen(false); setRegulationErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -1802,20 +1821,20 @@ function ProfilePageContent() {
 
       {/* Edit Regulation Dialog */}
       <Dialog open={isEditRegulationOpen} onOpenChange={setIsEditRegulationOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Regulation")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Regulation")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
           {editingRegulation && (
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              <div className="space-y-5">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+              <div className="space-y-4 sm:space-y-5">
                 {/* Name and Version */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Regulation Name")} <span className="text-error">*</span></Label>
                     <Input
@@ -1835,7 +1854,7 @@ function ProfilePageContent() {
                 </div>
 
                 {/* SA1 and SA2 Dates */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("SA1 Date")}</Label>
                     <div className="mt-1.5">
@@ -1980,7 +1999,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditRegulationOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1991,16 +2010,16 @@ function ProfilePageContent() {
 
       {/* Add Service Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={(open) => { if (!open) { setIsAddCategoryOpen(false); setCategoryNameError(""); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service Category")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Service Category")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <Label className="text-sm font-medium text-slate-700">{t("Category Name")}</Label>
             <Input
               value={newCategoryName}
@@ -2016,7 +2035,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddCategoryOpen(false); setCategoryNameError(""); }}>
               {t("Cancel")}
             </Button>
@@ -2027,16 +2046,16 @@ function ProfilePageContent() {
 
       {/* Add Service Item Dialog */}
       <Dialog open={isAddItemOpen} onOpenChange={(open) => { if (!open) { setIsAddItemOpen(false); setItemNameError(""); } }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service Item")}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Service Item")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <Label className="text-sm font-medium text-slate-700">{t("Item Name")}</Label>
             <Input
               value={newItemName}
@@ -2052,7 +2071,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddItemOpen(false); setItemNameError(""); }}>
               {t("Cancel")}
             </Button>

@@ -5,8 +5,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 export default function GRCAdminLandingPage() {
   const { t } = useLanguage();
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-      <div className="relative w-[600px] h-[600px]">
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4">
+      <div className="relative w-full max-w-[600px] aspect-square">
         {/* GRC Landing Page Infographic */}
         <svg viewBox="0 0 600 600" className="w-full h-full">
           <defs>

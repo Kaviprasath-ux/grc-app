@@ -1659,7 +1659,7 @@ export default function ProcessPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Process")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Process")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -1672,7 +1672,7 @@ export default function ProcessPage() {
         {/* Repository Tab */}
         <TabsContent value="repository" className="mt-6">
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 mb-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-4">
             <Button variant="outline" size="sm" onClick={handleExportRepository}>
               <Upload className="h-4 w-4 me-2" />
               {t("Export")}
@@ -1693,8 +1693,8 @@ export default function ProcessPage() {
           {/* Table Card with Integrated Filters */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {/* Search & Filters */}
-            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-              <div className="relative max-w-xs">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+              <div className="relative w-full sm:w-56">
                 <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
@@ -1704,9 +1704,9 @@ export default function ProcessPage() {
                   className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                 />
               </div>
-              <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ltr:sm:ml-auto rtl:sm:mr-auto">
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1719,7 +1719,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Process Owner")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1732,7 +1732,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Frequency")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1768,8 +1768,8 @@ export default function ProcessPage() {
 
           {/* Table Card with Integrated Filters */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-              <div className="relative max-w-xs">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+              <div className="relative w-full sm:w-56">
                 <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   placeholder={t("Search By Process ID, Name")}
@@ -1778,9 +1778,9 @@ export default function ProcessPage() {
                   className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                 />
               </div>
-              <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ltr:sm:ml-auto rtl:sm:mr-auto">
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1793,7 +1793,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Process Owner")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1819,10 +1819,10 @@ export default function ProcessPage() {
         {/* Performance Dashboard Tab - Matching UAT structure */}
         <TabsContent value="performance" className="mt-6 space-y-6">
           {/* Two Donut Charts Side by Side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Status Chart */}
             <div className="bg-white rounded-xl border border-slate-200">
-              <div className="px-6 py-4 border-b border-slate-100">
+              <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
               </div>
               <div className="p-6">
@@ -1878,7 +1878,7 @@ export default function ProcessPage() {
 
             {/* Department Chart */}
             <div className="bg-white rounded-xl border border-slate-200">
-              <div className="px-6 py-4 border-b border-slate-100">
+              <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
                 <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
               </div>
               <div className="p-6">
@@ -1959,8 +1959,8 @@ export default function ProcessPage() {
                 {/* Card with Search + Filter + Table */}
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                   {/* Search and Filter Row */}
-                  <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-slate-100">
-                    <div className="relative max-w-xs">
+                  <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+                    <div className="relative w-full sm:w-56">
                       <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
@@ -1970,9 +1970,9 @@ export default function ProcessPage() {
                         className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                       />
                     </div>
-                    <div className="flex items-center gap-3 ltr:ml-auto rtl:mr-auto">
+                    <div className="flex items-stretch sm:items-center gap-3 ltr:sm:ml-auto rtl:sm:mr-auto">
                       <Select value={kpiDepartmentFilter} onValueChange={setKpiDepartmentFilter}>
-                        <SelectTrigger className="w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                        <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                           <SelectValue placeholder={t("Department")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
@@ -2039,8 +2039,8 @@ export default function ProcessPage() {
 
       {/* AI Risk Evaluation Dialog */}
       <Dialog open={isAIEvaluationOpen} onOpenChange={setIsAIEvaluationOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                 <Sparkles className="h-5 w-5 text-primary-600" />
@@ -2048,7 +2048,7 @@ export default function ProcessPage() {
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
             <div className="space-y-1">
               <p className="text-sm font-medium text-slate-700">{t("Process")}: {evaluatingProcess?.name}</p>
               <p className="text-xs text-slate-500 line-clamp-2">{evaluatingProcess?.description}</p>
@@ -2284,22 +2284,22 @@ export default function ProcessPage() {
 
       {/* BIA Form Dialog */}
       <Dialog open={isBIAFormOpen} onOpenChange={setIsBIAFormOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Business Impact Analysis")} - {biaProcess?.name}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
             {/* Status and Controls Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <h4 className="text-sm font-semibold text-slate-900">{t("Status & Approval")}</h4>
                 <Badge variant="outline" className="bg-info-light text-info-dark border-info">{t("Open")}</Badge>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                   <Select value={biaDepartment} onValueChange={(value) => { setBiaDepartment(value); setBiaApprover(""); }}>
@@ -2345,7 +2345,8 @@ export default function ProcessPage() {
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Impact Assessment")}</h4>
 
               {/* Category Table */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <div className="border border-slate-200 rounded-lg overflow-x-auto">
+                <div className="min-w-[500px]">
                 {/* Table Header */}
                 <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-100">
                   <div className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Category")}</div>
@@ -2379,6 +2380,7 @@ export default function ProcessPage() {
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
 
               {/* Impact Rating Box */}
@@ -2406,7 +2408,7 @@ export default function ProcessPage() {
             {/* Recovery Metrics Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Recovery Metrics")}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("RTO")}</Label>
                   <Input
@@ -2487,15 +2489,15 @@ export default function ProcessPage() {
         setIsAddProcessOpen(open);
         if (!open) resetProcessForm();
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Process")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
             {/* Basic Information Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Basic Information")}</h4>
@@ -2525,7 +2527,7 @@ export default function ProcessPage() {
                     rows={3}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                     <Select value={processForm.departmentId} onValueChange={(value) => setProcessForm({ ...processForm, departmentId: value, ownerId: "" })}>
@@ -2546,7 +2548,7 @@ export default function ProcessPage() {
             {/* Process Details Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Process Details")}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
                   <Select value={processForm.ownerId} onValueChange={(value) => setProcessForm({ ...processForm, ownerId: value })} disabled={!processForm.departmentId}>
@@ -2597,7 +2599,7 @@ export default function ProcessPage() {
                     />
                   </div>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Label className="text-sm font-medium text-slate-700">{t("Operational Complexity")}</Label>
                   <Select value={processForm.operationalComplexity} onValueChange={(value) => setProcessForm({ ...processForm, operationalComplexity: value })}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
@@ -2616,7 +2618,7 @@ export default function ProcessPage() {
             {/* Dependencies & Options Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Dependencies & Options")}</h4>
-              <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="assetDependency"
@@ -2669,7 +2671,7 @@ export default function ProcessPage() {
               )}
 
               {processForm.kpiMeasurementRequired && (
-                <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("KPI Recurrence")}</Label>
                     <Select value={processForm.kpiRecurrence} onValueChange={(value) => setProcessForm({ ...processForm, kpiRecurrence: value })}>
@@ -2701,7 +2703,7 @@ export default function ProcessPage() {
             {/* RACI Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("RACI Matrix")}</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
                   <Select value={processForm.responsible} onValueChange={(value) => setProcessForm({ ...processForm, responsible: value })}>
@@ -2846,19 +2848,19 @@ export default function ProcessPage() {
         setIsEditProcessOpen(open);
         if (!open) setEditingProcess(null);
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Process")}</DialogTitle>
             </DialogHeader>
           </div>
           {editingProcess && (
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
               {/* Basic Information Section */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Basic Information")}</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Process Code")}</Label>
                     <Input
@@ -2897,7 +2899,7 @@ export default function ProcessPage() {
                     rows={3}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                     <Select value={editingProcess.departmentId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, departmentId: value, ownerId: "" })}>
@@ -2917,7 +2919,7 @@ export default function ProcessPage() {
               {/* Process Details Section */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Process Details")}</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
                     <Select value={editingProcess.ownerId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, ownerId: value })} disabled={!editingProcess.departmentId}>
@@ -2968,7 +2970,7 @@ export default function ProcessPage() {
                       />
                     </div>
                   </div>
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <Label className="text-sm font-medium text-slate-700">{t("Operational Complexity")}</Label>
                     <Select value={editingProcess.operationalComplexity || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, operationalComplexity: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
@@ -2987,7 +2989,7 @@ export default function ProcessPage() {
               {/* Dependencies & Options Section */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Dependencies & Options")}</h4>
-                <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="editAssetDependency"
@@ -3040,7 +3042,7 @@ export default function ProcessPage() {
                 )}
 
                 {editingProcess.kpiMeasurementRequired && (
-                  <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("KPI Recurrence")}</Label>
                       <Select value={editingProcess.recurrence || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, recurrence: value })}>
@@ -3072,7 +3074,7 @@ export default function ProcessPage() {
               {/* RACI Section */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("RACI Matrix")}</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
                     <Select value={editingProcess.responsible || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, responsible: value })}>
@@ -3284,15 +3286,15 @@ export default function ProcessPage() {
         setIsKPIModalOpen(open);
         if (!open) { setSelectedKPIProcess(null); setKpiErrors({}); }
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("KPI Details")} - {selectedKPIProcess?.name}</DialogTitle>
             </DialogHeader>
           </div>
           {selectedKPIProcess && (
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
               {/* KPI Chart Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -3377,7 +3379,7 @@ export default function ProcessPage() {
               {/* KPI Configuration Section */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("KPI Configuration")}</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("KPI Objective")}</Label>
                     <Input
@@ -3506,9 +3508,9 @@ export default function ProcessPage() {
           if (fileInputRef.current) fileInputRef.current.value = '';
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {t("Import Processes")}
@@ -3519,7 +3521,7 @@ export default function ProcessPage() {
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <div className="flex gap-2 mt-1.5">
@@ -3544,7 +3546,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex justify-between gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-col sm:flex-row justify-between gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               {t("Download Template")}

@@ -154,7 +154,7 @@ export default function KPIsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         {isGRCAdmin ? (
@@ -178,13 +178,13 @@ export default function KPIsPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("KPI Dashboard")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("KPI Dashboard")}</h1>
       </div>
 
       {/* Summary Charts Row */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         {/* Status Chart Card */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
           <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Status")}</h3>
           {isCustomerAdmin ? (
             <div className="h-[200px]">
@@ -278,7 +278,7 @@ export default function KPIsPage() {
         </div>
 
         {/* Department Chart Card */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
           <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Department")}</h3>
           {isCustomerAdmin ? (
             <div className="h-[200px]">
@@ -364,7 +364,7 @@ export default function KPIsPage() {
       {/* KPI Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Search and Filter Toolbar */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           <div className="relative">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
@@ -372,7 +372,7 @@ export default function KPIsPage() {
               placeholder={t("Search by code, objective or description...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full sm:w-[300px] ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
           <div className="ltr:ml-auto rtl:mr-auto">
@@ -380,7 +380,7 @@ export default function KPIsPage() {
               value={statusFilter || "all"}
               onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
             >
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Statuses")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
@@ -394,6 +394,7 @@ export default function KPIsPage() {
             </Select>
           </div>
         </div>
+        <div className="overflow-x-auto">
         <Table className="min-w-[930px]">
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50">
@@ -479,9 +480,10 @@ export default function KPIsPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
             {filteredKpis.length > 0
               ? `${t("Showing")} ${(currentPage - 1) * itemsPerPage + 1} ${t("to")} ${Math.min(currentPage * itemsPerPage, filteredKpis.length)} ${t("of")} ${filteredKpis.length}`
