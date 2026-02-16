@@ -125,6 +125,7 @@ export function EditProfileWizard({
   useEffect(() => {
     if (open && organization) {
       setCurrentStep(1);
+      setFormErrors({});
       setFormData({
         ...organization,
         email: organization.email || "",
@@ -147,6 +148,7 @@ export function EditProfileWizard({
   // Reset form when dialog opens with new organization
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen && organization) {
+      setFormErrors({});
       setFormData({
         ...organization,
         email: organization.email || "",

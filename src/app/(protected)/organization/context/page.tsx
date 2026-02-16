@@ -1495,10 +1495,13 @@ export default function ContextPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Issue Title")} <span className="text-error">*</span></Label>
                   <Input
                     value={newIssue.title}
-                    onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
+                    onChange={(e) => { setNewIssue({ ...newIssue, title: e.target.value }); if (issueErrors.title) setIssueErrors((prev) => { const { title, ...rest } = prev; return rest; }); }}
                     placeholder={t("Enter issue title")}
-                    className="mt-1.5"
+                    className={`mt-1.5 ${issueErrors.title ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {issueErrors.title && (
+                    <p className="text-sm text-red-600 mt-1">{issueErrors.title}</p>
+                  )}
                 </div>
                 {/* Domain & Category */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2017,6 +2020,11 @@ export default function ContextPage() {
                 handleAddIssue();
               } else if (currentStep === 1) {
                 const errors: Record<string, string> = {};
+                if (!newIssue.title.trim()) {
+                  errors.title = t("Title is required");
+                } else if (!isValidName(newIssue.title.trim())) {
+                  errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
+                }
                 if (!newIssue.domain) errors.domain = t("Please select Domain");
                 if (!newIssue.category) errors.category = t("Please select Category");
                 if (!newIssue.departmentId) errors.departmentId = t("Please select Department");
@@ -2832,6 +2840,16 @@ export default function ContextPage() {
             onClick={() => {
               if (editCurrentStep === 5) {
                 handleUpdateIssue();
+              } else if (editCurrentStep === 1) {
+                if (!editIssueForm.title.trim()) {
+                  toast({ title: t("Error"), description: t("Title is required"), variant: "destructive" });
+                  return;
+                }
+                if (!isValidName(editIssueForm.title.trim())) {
+                  toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
+                  return;
+                }
+                setEditCurrentStep(2);
               } else {
                 setEditCurrentStep(editCurrentStep + 1);
               }

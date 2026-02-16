@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Switch } from "@/components/ui/switch";
+import { isValidName } from "@/lib/validations";
 
 interface SettingItem {
   id: string;
@@ -243,6 +244,10 @@ export default function OrganizationSettingsPage() {
       setAddNameError(t("Please enter the name"));
       return;
     }
+    if (!isValidName(newItem.name.trim())) {
+      setAddNameError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
     setAddNameError("");
 
     const apiEndpoint = categoryApiEndpoints[activeCategory];
@@ -281,6 +286,10 @@ export default function OrganizationSettingsPage() {
     if (!activeCategory || !editingItem) return;
     if (!editingItem.name.trim()) {
       setEditNameError(t("Please enter the name"));
+      return;
+    }
+    if (!isValidName(editingItem.name.trim())) {
+      setEditNameError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
     setEditNameError("");
