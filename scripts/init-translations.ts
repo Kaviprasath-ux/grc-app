@@ -990,6 +990,8 @@ const translations: [string, string, string][] = [
   ['Only letters and spaces are allowed', 'يُسمح فقط بالأحرف والمسافات', 'Atļauti tikai burti un atstarpes'],
   ['Only letters, numbers, and underscores are allowed', 'يُسمح فقط بالأحرف والأرقام والشرطات السفلية', 'Atļauti tikai burti, cipari un apakšsvītras'],
   ['Please enter a valid number', 'يرجى إدخال رقم صحيح', 'Lūdzu, ievadiet derīgu skaitli'],
+  ['Organization Name is required', 'اسم المنظمة مطلوب', 'Organizācijas nosaukums ir obligāts'],
+  ['Enter organization name', 'أدخل اسم المنظمة', 'Ievadiet organizācijas nosaukumu'],
 ];
 
 function createExcelFile(): void {
