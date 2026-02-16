@@ -77,6 +77,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { isValidName } from "@/lib/validations";
 
 interface Evidence {
   id: string;
@@ -1516,7 +1517,11 @@ export default function EvidencePage() {
               onClick={() => {
                 if (createStep === 1) {
                   const errors: Record<string, string> = {};
-                  if (!createForm.name) errors.name = t("Please enter the evidence name");
+                  if (!createForm.name) {
+                    errors.name = t("Please enter the evidence name");
+                  } else if (!isValidName(createForm.name.trim())) {
+                    errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                  }
                   if (!createForm.recurrence) errors.recurrence = t("Please select the recurrence");
                   if (!createForm.departmentId) errors.departmentId = t("Please select the Department");
                   if (!createForm.assigneeId) errors.assigneeId = t("Please select the assignee");

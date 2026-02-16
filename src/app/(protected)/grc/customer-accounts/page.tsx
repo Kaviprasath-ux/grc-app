@@ -35,6 +35,7 @@ import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw, Home, ChevronRight, 
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName, isAlphanumeric } from "@/lib/validations";
 
 interface CustomerAccount {
   id: string;
@@ -381,6 +382,13 @@ export default function CustomerAccountsPage() {
       errors.confirmPassword = t("Passwords do not match");
     }
 
+    if (formData.customerName.trim() && !isValidName(formData.customerName.trim())) {
+      errors.customerName = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (formData.userName.trim() && !isAlphanumeric(formData.userName.trim())) {
+      errors.userName = t("Only letters, numbers, and underscores are allowed");
+    }
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -463,6 +471,13 @@ export default function CustomerAccountsPage() {
     }
     if (!formData.email.trim()) {
       errors.email = t("Please Enter the Email");
+    }
+
+    if (formData.customerName.trim() && !isValidName(formData.customerName.trim())) {
+      errors.customerName = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (formData.userName.trim() && !isAlphanumeric(formData.userName.trim())) {
+      errors.userName = t("Only letters, numbers, and underscores are allowed");
     }
 
     if (Object.keys(errors).length > 0) {

@@ -47,6 +47,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { formatLocalDate } from "@/lib/utils";
+import { isValidName } from "@/lib/validations";
 
 interface Process {
   id: string;
@@ -341,7 +342,11 @@ export default function ProcessPage() {
 
   const validateStep1 = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = t("Process Name is required");
+    if (!formData.name.trim()) {
+      errors.name = t("Process Name is required");
+    } else if (!isValidName(formData.name)) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
     if (!formData.ownerId) errors.ownerId = t("Process Owner is required");
     if (!formData.processFrequency) errors.processFrequency = t("Process Frequency is required");
     if (!formData.natureOfImplementation) errors.natureOfImplementation = t("Nature of Implementation is required");

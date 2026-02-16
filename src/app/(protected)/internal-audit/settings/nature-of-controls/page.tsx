@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { isValidName } from "@/lib/validations";
 
 interface NatureOfControl {
   id: string;
@@ -102,6 +103,10 @@ export default function NatureOfControlsPage() {
   const handleSave = async () => {
     if (!formData.label.trim()) {
       setFormError(t("Label is required"));
+      return;
+    }
+    if (!isValidName(formData.label)) {
+      setFormError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
 

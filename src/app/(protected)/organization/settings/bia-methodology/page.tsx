@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName, isValidNumber } from "@/lib/validations";
 
 interface BIARating {
   id: string;
@@ -56,6 +58,7 @@ interface BIAScoringConfig {
 
 export default function BIAMethodologyPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("ratings");
 
   // Ratings state
@@ -179,6 +182,14 @@ export default function BIAMethodologyPage() {
   // Rating CRUD handlers
   const handleAddRating = async () => {
     if (!ratingForm.label.trim()) return;
+    if (!isValidName(ratingForm.label)) {
+      alert(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    if (!isValidNumber(ratingForm.score)) {
+      alert(t("Please enter a valid number"));
+      return;
+    }
     try {
       const res = await fetch("/api/bia/ratings", {
         method: "POST",
@@ -200,6 +211,14 @@ export default function BIAMethodologyPage() {
 
   const handleEditRating = async () => {
     if (!editingRating || !ratingForm.label.trim()) return;
+    if (!isValidName(ratingForm.label)) {
+      alert(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    if (!isValidNumber(ratingForm.score)) {
+      alert(t("Please enter a valid number"));
+      return;
+    }
     try {
       const res = await fetch(`/api/bia/ratings/${editingRating.id}`, {
         method: "PUT",
@@ -242,13 +261,19 @@ export default function BIAMethodologyPage() {
 
     if (!rangeForm.label.trim()) {
       errors.label = "Criticality Label is required";
+    } else if (!isValidName(rangeForm.label)) {
+      errors.label = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
 
-    if (rangeForm.lowValue < 0) {
+    if (!isValidNumber(rangeForm.lowValue)) {
+      errors.lowValue = t("Please enter a valid number");
+    } else if (rangeForm.lowValue < 0) {
       errors.lowValue = "Min Score cannot be negative";
     }
 
-    if (rangeForm.highValue < 0) {
+    if (!isValidNumber(rangeForm.highValue)) {
+      errors.highValue = t("Please enter a valid number");
+    } else if (rangeForm.highValue < 0) {
       errors.highValue = "Max Score cannot be negative";
     }
 

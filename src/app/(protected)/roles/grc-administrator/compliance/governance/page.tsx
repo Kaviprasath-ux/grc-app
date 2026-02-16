@@ -58,6 +58,7 @@ import {
   Download,
 } from "lucide-react";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
+import { isValidName } from "@/lib/validations";
 import Link from "next/link";
 
 interface Policy {
@@ -169,6 +170,7 @@ export default function GRCAdminGovernancePage() {
   // Edit dialog
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const [editData, setEditData] = useState({
     name: "",
     documentType: "",
@@ -389,6 +391,7 @@ export default function GRCAdminGovernancePage() {
 
   const openEditDialog = (policy: Policy) => {
     setEditingPolicy(policy);
+    setEditErrors({});
     setEditData({
       name: policy.name,
       documentType: policy.documentType,
@@ -401,6 +404,10 @@ export default function GRCAdminGovernancePage() {
 
   const handleUpdatePolicy = async () => {
     if (!editingPolicy) return;
+    const errors: Record<string, string> = {};
+    if (editData.name && !isValidName(editData.name)) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    if (Object.keys(errors).length > 0) { setEditErrors(errors); return; }
+    setEditErrors({});
     try {
       const response = await fetch(`/api/policies/${editingPolicy.id}`, {
         method: "PATCH",
@@ -977,6 +984,7 @@ export default function GRCAdminGovernancePage() {
                 if (createStep === 1) {
                   const errors: Record<string, string> = {};
                   if (!newPolicy.name) errors.name = t("Please enter the policy name");
+                  else if (!isValidName(newPolicy.name)) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
                   if (!newPolicy.departmentId) errors.departmentId = t("Please select the Department");
                   if (!newPolicy.documentType) errors.documentType = t("Please select the document type");
                   if (!newPolicy.recurrence) errors.recurrence = t("Please select the recurrence");
@@ -1133,10 +1141,18 @@ export default function GRCAdminGovernancePage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Governance Name")} *</Label>
                 <Input
                   value={editData.name}
-                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                  onChange={(e) => {
+                    setEditData({ ...editData, name: e.target.value });
+                    if (editErrors.name) setEditErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                  }}
                   placeholder={t("Enter governance name")}
-                  className="mt-1.5 w-full"
+                  className={`mt-1.5 w-full ${editErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                 />
+                {editErrors.name && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{editErrors.name}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Department")} *</Label>

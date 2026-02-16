@@ -33,6 +33,7 @@ import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Up
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 
 interface EmailTemplate {
   id: string;
@@ -203,6 +204,15 @@ export default function EmailTemplatesPage() {
       toast({
         title: t("Validation Error"),
         description: t("Please fill in all required fields"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isValidName(formData.name.trim())) {
+      toast({
+        title: t("Validation Error"),
+        description: t("Only letters, numbers, spaces, and hyphens are allowed"),
         variant: "destructive",
       });
       return;

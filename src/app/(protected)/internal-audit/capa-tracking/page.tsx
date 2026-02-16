@@ -576,7 +576,7 @@ export default function CAPATrackingPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={showActions ? (isAuditHead ? 10 : 9) : 8} className="h-24 text-center">
+                <TableCell colSpan={isAuditHead ? 10 : 9} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <div className="relative h-6 w-6">
                       <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
@@ -692,7 +692,7 @@ export default function CAPATrackingPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={showActions ? (isAuditHead ? 10 : 9) : 8} className="h-24 text-center text-sm text-slate-500">
+                <TableCell colSpan={isAuditHead ? 10 : 9} className="h-24 text-center text-sm text-slate-500">
                   {t("No findings found")}
                 </TableCell>
               </TableRow>

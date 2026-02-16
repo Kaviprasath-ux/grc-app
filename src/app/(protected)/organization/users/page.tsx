@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
+import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -251,32 +252,28 @@ export default function UsersPage() {
     setIsAddUserOpen(true);
   };
 
-  // Validation helpers
-  const isAlphaWithSpaces = (str: string) => /^[a-zA-Z\s]+$/.test(str);
-  const isAlphanumeric = (str: string) => /^[a-zA-Z0-9_]+$/.test(str);
-
   // User CRUD
   const handleAddUser = async () => {
     const errors: Record<string, string> = {};
     if (!userForm.firstName.trim()) {
       errors.firstName = t("Please Enter the First Name");
     } else if (!isAlphaWithSpaces(userForm.firstName.trim())) {
-      errors.firstName = t("First Name should only contain letters");
+      errors.firstName = t("Only letters and spaces are allowed");
     }
     if (!userForm.lastName.trim()) {
       errors.lastName = t("Please Enter the Last Name");
     } else if (!isAlphaWithSpaces(userForm.lastName.trim())) {
-      errors.lastName = t("Last Name should only contain letters");
+      errors.lastName = t("Only letters and spaces are allowed");
     }
     if (!userForm.fullName.trim()) {
       errors.fullName = t("Please Enter the Name");
     } else if (!isAlphaWithSpaces(userForm.fullName.trim())) {
-      errors.fullName = t("Full Name should only contain letters");
+      errors.fullName = t("Only letters and spaces are allowed");
     }
     if (!userForm.userName.trim()) {
       errors.userName = t("Please Enter the UserName");
     } else if (!isAlphanumeric(userForm.userName.trim())) {
-      errors.userName = t("Username should only contain letters, numbers and underscores");
+      errors.userName = t("Only letters, numbers, and underscores are allowed");
     }
     if (!userForm.email.trim()) errors.email = t("Please Enter the Email");
     if (!userForm.function) errors.function = t("Please Select the Function");
@@ -336,6 +333,32 @@ export default function UsersPage() {
 
   const handleEditUser = async () => {
     if (!editingUser) return;
+    const errors: Record<string, string> = {};
+    if (!editingUser.firstName.trim()) {
+      errors.firstName = t("Please Enter the First Name");
+    } else if (!isAlphaWithSpaces(editingUser.firstName.trim())) {
+      errors.firstName = t("Only letters and spaces are allowed");
+    }
+    if (!editingUser.lastName.trim()) {
+      errors.lastName = t("Please Enter the Last Name");
+    } else if (!isAlphaWithSpaces(editingUser.lastName.trim())) {
+      errors.lastName = t("Only letters and spaces are allowed");
+    }
+    if (!editingUser.fullName.trim()) {
+      errors.fullName = t("Please Enter the Name");
+    } else if (!isAlphaWithSpaces(editingUser.fullName.trim())) {
+      errors.fullName = t("Only letters and spaces are allowed");
+    }
+    if (!editingUser.userName.trim()) {
+      errors.userName = t("Please Enter the UserName");
+    } else if (!isAlphanumeric(editingUser.userName.trim())) {
+      errors.userName = t("Only letters, numbers, and underscores are allowed");
+    }
+    if (Object.keys(errors).length > 0) {
+      setUserFormErrors(errors);
+      return;
+    }
+    setUserFormErrors({});
     try {
       const res = await fetch(`/api/users/${editingUser.id}`, {
         method: "PUT",

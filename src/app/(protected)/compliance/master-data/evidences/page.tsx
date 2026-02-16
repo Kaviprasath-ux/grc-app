@@ -46,6 +46,7 @@ import {
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 
 interface Evidence {
   id: string;
@@ -153,6 +154,7 @@ export default function EvidencesMasterDataPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingEvidence, setEditingEvidence] = useState<Evidence | null>(null);
   const [editControlId, setEditControlId] = useState<string>("");
+  const [editFormErrors, setEditFormErrors] = useState<Record<string, string>>({});
 
   // Delete Dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -307,7 +309,11 @@ export default function EvidencesMasterDataPage() {
   // New Evidence - Step 1 Validation
   const validateStep1 = () => {
     const errors: Record<string, string> = {};
-    if (!newFormData.name) errors.name = "Please enter the evidence name";
+    if (!newFormData.name) {
+      errors.name = "Please enter the evidence name";
+    } else if (!isValidName(newFormData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
     if (!newFormData.recurrence) errors.recurrence = "Please select the recurrence";
     if (!newFormData.departmentId) errors.departmentId = "Please select the Department";
     if (!newFormData.assigneeId) errors.assigneeId = "Please select the assignee";
@@ -397,6 +403,15 @@ export default function EvidencesMasterDataPage() {
 
   const handleEditSave = async () => {
     if (!editingEvidence) return;
+
+    const errors: Record<string, string> = {};
+    if (!editingEvidence.name) {
+      errors.name = t("Please enter the evidence name");
+    } else if (!isValidName(editingEvidence.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    setEditFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
     try {
       const response = await fetch(`/api/evidences/${editingEvidence.id}`, {
@@ -1068,6 +1083,7 @@ export default function EvidencesMasterDataPage() {
         if (!open) {
           setEditingEvidence(null);
           setEditControlId("");
+          setEditFormErrors({});
         }
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -1088,11 +1104,19 @@ export default function EvidencesMasterDataPage() {
                   </Label>
                   <Input
                     value={editingEvidence.name}
-                    onChange={(e) =>
-                      setEditingEvidence({ ...editingEvidence, name: e.target.value })
-                    }
-                    className="mt-1.5 w-full bg-white"
+                    onChange={(e) => {
+                      setEditingEvidence({ ...editingEvidence, name: e.target.value });
+                      if (editFormErrors.name) {
+                        setEditFormErrors({ ...editFormErrors, name: "" });
+                      }
+                    }}
+                    className={`mt-1.5 w-full bg-white ${editFormErrors.name ? "border-red-500" : ""}`}
                   />
+                  {editFormErrors.name && (
+                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                      <p className="text-sm text-red-600">{editFormErrors.name}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

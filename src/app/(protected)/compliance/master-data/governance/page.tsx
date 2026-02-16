@@ -42,6 +42,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
+import { isValidName } from "@/lib/validations";
 
 interface Department {
   id: string;
@@ -1078,6 +1079,7 @@ export default function GovernanceMasterDataPage() {
                   if (wizardStep === 1) {
                     const errors: Record<string, string> = {};
                     if (!formData.name) errors.name = t("Please enter the policy name");
+                    else if (!isValidName(formData.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
                     if (!formData.departmentId) errors.departmentId = t("Please select the Department");
                     if (!formData.documentType) errors.documentType = t("Please select the document type");
                     if (!formData.recurrence) errors.recurrence = t("Please select the recurrence");
@@ -1113,11 +1115,17 @@ export default function GovernanceMasterDataPage() {
                 </Label>
                 <Input
                   value={formData.code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
-                  }
-                  className="mt-1.5 w-full bg-white"
+                  onChange={(e) => {
+                    setFormData({ ...formData, code: e.target.value });
+                    if (policyErrors.code) setPolicyErrors((prev) => { const { code, ...rest } = prev; return rest; });
+                  }}
+                  className={`mt-1.5 w-full bg-white ${policyErrors.code ? "border-red-500 focus:ring-red-500" : ""}`}
                 />
+                {policyErrors.code && (
+                  <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="text-sm text-red-600">{policyErrors.code}</p>
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Document Type")}</Label>
@@ -1147,11 +1155,17 @@ export default function GovernanceMasterDataPage() {
               </Label>
               <Input
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="mt-1.5 w-full bg-white"
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (policyErrors.name) setPolicyErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                }}
+                className={`mt-1.5 w-full bg-white ${policyErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
               />
+              {policyErrors.name && (
+                <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
+                  <p className="text-sm text-red-600">{policyErrors.name}</p>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1281,8 +1295,15 @@ export default function GovernanceMasterDataPage() {
             </Button>
             <Button
               size="sm"
-              onClick={handleEdit}
-              disabled={!formData.code || !formData.name}
+              onClick={() => {
+                const errors: Record<string, string> = {};
+                if (!formData.name) errors.name = t("Please enter the policy name");
+                else if (!isValidName(formData.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                if (!formData.code) errors.code = t("Please enter the policy code");
+                if (Object.keys(errors).length > 0) { setPolicyErrors(errors); return; }
+                setPolicyErrors({});
+                handleEdit();
+              }}
             >
               {t("Save")}
             </Button>

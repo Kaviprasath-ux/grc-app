@@ -63,6 +63,7 @@ import {
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 import { DatePicker } from "@/components/ui/date-picker";
 import Link from "next/link";
 
@@ -880,6 +881,10 @@ export default function FieldworkDetailsPage() {
       toast.error(t("Finding title is required"));
       return;
     }
+    if (!isValidName(newFinding.title.trim())) {
+      toast.error(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
 
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, {
@@ -905,6 +910,10 @@ export default function FieldworkDetailsPage() {
   const handleAddFullFinding = async () => {
     if (!fullFinding.findingTitle.trim()) {
       toast.error(t("Finding title is required"));
+      return;
+    }
+    if (!isValidName(fullFinding.findingTitle.trim())) {
+      toast.error(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
 

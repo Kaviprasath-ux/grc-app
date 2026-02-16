@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName, isValidNumber } from "@/lib/validations";
 
 interface AssetCategory {
   id: string;
@@ -323,6 +324,8 @@ export default function AssetSettingsPage() {
     // Validation
     if (!categoryForm.name.trim()) {
       errors.categoryName = t("Please enter category name");
+    } else if (!isValidName(categoryForm.name)) {
+      errors.categoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!categoryForm.status) {
       errors.categoryStatus = t("Please select status");
@@ -366,6 +369,8 @@ export default function AssetSettingsPage() {
     // Validation
     if (!categoryForm.name.trim()) {
       errors.categoryName = t("Please enter category name");
+    } else if (!isValidName(categoryForm.name)) {
+      errors.categoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!categoryForm.status) {
       errors.categoryStatus = t("Please select status");
@@ -425,6 +430,8 @@ export default function AssetSettingsPage() {
     // Validation
     if (!subCategoryForm.name.trim()) {
       errors.subCategoryName = t("Please enter sub category name");
+    } else if (!isValidName(subCategoryForm.name)) {
+      errors.subCategoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!subCategoryForm.categoryId) {
       errors.subCategoryCategoryId = t("Please select category");
@@ -466,6 +473,8 @@ export default function AssetSettingsPage() {
 
     if (!subCategoryForm.name.trim()) {
       errors.subCategoryName = t("Please enter sub category name");
+    } else if (!isValidName(subCategoryForm.name)) {
+      errors.subCategoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!subCategoryForm.categoryId) {
       errors.subCategoryCategoryId = t("Please select category");
@@ -524,6 +533,8 @@ export default function AssetSettingsPage() {
 
     if (!groupForm.name.trim()) {
       errors.groupName = t("Please enter group name");
+    } else if (!isValidName(groupForm.name)) {
+      errors.groupName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!groupForm.status) {
       errors.groupStatus = t("Please select status");
@@ -563,6 +574,8 @@ export default function AssetSettingsPage() {
 
     if (!groupForm.name.trim()) {
       errors.groupName = t("Please enter group name");
+    } else if (!isValidName(groupForm.name)) {
+      errors.groupName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!groupForm.status) {
       errors.groupStatus = t("Please select status");
@@ -618,6 +631,11 @@ export default function AssetSettingsPage() {
 
     if (!lifecycleForm.name.trim()) {
       errors.lifecycleName = t("Please enter lifecycle name");
+    } else if (!isValidName(lifecycleForm.name)) {
+      errors.lifecycleName = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (!isValidNumber(lifecycleForm.order)) {
+      errors.lifecycleOrder = t("Please enter a valid number");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -654,6 +672,11 @@ export default function AssetSettingsPage() {
 
     if (!lifecycleForm.name.trim()) {
       errors.lifecycleName = t("Please enter lifecycle name");
+    } else if (!isValidName(lifecycleForm.name)) {
+      errors.lifecycleName = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
+    if (!isValidNumber(lifecycleForm.order)) {
+      errors.lifecycleOrder = t("Please enter a valid number");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -706,6 +729,8 @@ export default function AssetSettingsPage() {
 
     if (!assetForm.name.trim()) {
       errors.assetName = t("Please enter asset name");
+    } else if (!isValidName(assetForm.name)) {
+      errors.assetName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!assetForm.sensitivityId) {
       errors.assetSensitivityId = t("Please select asset sensitivity");
@@ -783,6 +808,8 @@ export default function AssetSettingsPage() {
 
     if (!sensitivityForm.name.trim()) {
       errors.sensitivityName = t("Please enter sensitivity name");
+    } else if (!isValidName(sensitivityForm.name)) {
+      errors.sensitivityName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -819,6 +846,8 @@ export default function AssetSettingsPage() {
 
     if (!sensitivityForm.name.trim()) {
       errors.sensitivityName = t("Please enter sensitivity name");
+    } else if (!isValidName(sensitivityForm.name)) {
+      errors.sensitivityName = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -871,9 +900,13 @@ export default function AssetSettingsPage() {
 
     if (!ciaRatingForm.label.trim()) {
       errors.ciaRatingLabel = t("Please enter label");
+    } else if (!isValidName(ciaRatingForm.label)) {
+      errors.ciaRatingLabel = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (ciaRatingForm.value === null || ciaRatingForm.value === undefined) {
       errors.ciaRatingValue = t("Please enter value");
+    } else if (!isValidNumber(ciaRatingForm.value)) {
+      errors.ciaRatingValue = t("Please enter a valid number");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -914,9 +947,13 @@ export default function AssetSettingsPage() {
 
     if (!ciaRatingForm.label.trim()) {
       errors.ciaRatingLabel = t("Please enter label");
+    } else if (!isValidName(ciaRatingForm.label)) {
+      errors.ciaRatingLabel = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (ciaRatingForm.value === null || ciaRatingForm.value === undefined) {
       errors.ciaRatingValue = t("Please enter value");
+    } else if (!isValidNumber(ciaRatingForm.value)) {
+      errors.ciaRatingValue = t("Please enter a valid number");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -991,12 +1028,18 @@ export default function AssetSettingsPage() {
 
     if (!scoringConfigForm.level.trim()) {
       errors.scoringConfigLevel = t("Please enter level");
+    } else if (!isValidName(scoringConfigForm.level)) {
+      errors.scoringConfigLevel = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (scoringConfigForm.minScore === null || scoringConfigForm.minScore === undefined) {
       errors.scoringConfigMinScore = t("Please enter minimum score");
+    } else if (!isValidNumber(scoringConfigForm.minScore)) {
+      errors.scoringConfigMinScore = t("Please enter a valid number");
     }
     if (scoringConfigForm.maxScore === null || scoringConfigForm.maxScore === undefined) {
       errors.scoringConfigMaxScore = t("Please enter maximum score");
+    } else if (!isValidNumber(scoringConfigForm.maxScore)) {
+      errors.scoringConfigMaxScore = t("Please enter a valid number");
     }
     if (!scoringConfigForm.color) {
       errors.scoringConfigColor = t("Please select color");
@@ -1129,12 +1172,18 @@ export default function AssetSettingsPage() {
 
     if (!scoringConfigForm.level.trim()) {
       errors.scoringConfigLevel = t("Please enter level");
+    } else if (!isValidName(scoringConfigForm.level)) {
+      errors.scoringConfigLevel = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (scoringConfigForm.minScore === null || scoringConfigForm.minScore === undefined) {
       errors.scoringConfigMinScore = t("Please enter minimum score");
+    } else if (!isValidNumber(scoringConfigForm.minScore)) {
+      errors.scoringConfigMinScore = t("Please enter a valid number");
     }
     if (scoringConfigForm.maxScore === null || scoringConfigForm.maxScore === undefined) {
       errors.scoringConfigMaxScore = t("Please enter maximum score");
+    } else if (!isValidNumber(scoringConfigForm.maxScore)) {
+      errors.scoringConfigMaxScore = t("Please enter a valid number");
     }
     if (!scoringConfigForm.color) {
       errors.scoringConfigColor = t("Please select color");

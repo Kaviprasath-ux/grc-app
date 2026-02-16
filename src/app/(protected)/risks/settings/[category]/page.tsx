@@ -46,6 +46,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
+import { isValidName, isValidNumber } from "@/lib/validations";
 import * as XLSX from "xlsx";
 
 // Type definitions
@@ -309,6 +310,9 @@ export default function RiskSettingsCategoryPage() {
     if (!vulnCatForm.name.trim()) {
       setVulnCatError(t("Name is required"));
       return;
+    } else if (!isValidName(vulnCatForm.name.trim())) {
+      setVulnCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     try {
       const res = await fetch("/api/vulnerability-categories", {
@@ -335,6 +339,9 @@ export default function RiskSettingsCategoryPage() {
       if (!vulnCatForm.name.trim()) {
         setVulnCatError(t("Name is required"));
       }
+      return;
+    } else if (!isValidName(vulnCatForm.name.trim())) {
+      setVulnCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -373,6 +380,9 @@ export default function RiskSettingsCategoryPage() {
     if (!threatCatForm.name.trim()) {
       setThreatCatError(t("Name is required"));
       return;
+    } else if (!isValidName(threatCatForm.name.trim())) {
+      setThreatCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     try {
       const res = await fetch("/api/threat-categories", {
@@ -399,6 +409,9 @@ export default function RiskSettingsCategoryPage() {
       if (!threatCatForm.name.trim()) {
         setThreatCatError(t("Name is required"));
       }
+      return;
+    } else if (!isValidName(threatCatForm.name.trim())) {
+      setThreatCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -437,9 +450,15 @@ export default function RiskSettingsCategoryPage() {
     if (!controlStrengthForm.name.trim()) {
       setControlStrengthError(t("Name is required"));
       return;
+    } else if (!isValidName(controlStrengthForm.name.trim())) {
+      setControlStrengthError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
       setControlStrengthError(t("Score is required"));
+      return;
+    } else if (!isValidNumber(controlStrengthForm.score)) {
+      setControlStrengthError(t("Please enter a valid number"));
       return;
     }
     try {
@@ -468,9 +487,15 @@ export default function RiskSettingsCategoryPage() {
         setControlStrengthError(t("Name is required"));
       }
       return;
+    } else if (!isValidName(controlStrengthForm.name.trim())) {
+      setControlStrengthError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
       setControlStrengthError(t("Score is required"));
+      return;
+    } else if (!isValidNumber(controlStrengthForm.score)) {
+      setControlStrengthError(t("Please enter a valid number"));
       return;
     }
     try {
@@ -509,6 +534,13 @@ export default function RiskSettingsCategoryPage() {
     if (!likelihoodForm.title.trim()) {
       setLikelihoodError(t("Title is required"));
       return;
+    } else if (!isValidName(likelihoodForm.title.trim())) {
+      setLikelihoodError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    if (!isValidNumber(likelihoodForm.score)) {
+      setLikelihoodError(t("Please enter a valid number"));
+      return;
     }
     if (!likelihoodForm.timeFrame || !likelihoodForm.timeFrame.trim()) {
       setLikelihoodError(t("Time Frame is required"));
@@ -543,6 +575,13 @@ export default function RiskSettingsCategoryPage() {
       if (!likelihoodForm.title.trim()) {
         setLikelihoodError(t("Title is required"));
       }
+      return;
+    } else if (!isValidName(likelihoodForm.title.trim())) {
+      setLikelihoodError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    if (!isValidNumber(likelihoodForm.score)) {
+      setLikelihoodError(t("Please enter a valid number"));
       return;
     }
     if (!likelihoodForm.timeFrame || !likelihoodForm.timeFrame.trim()) {
@@ -589,6 +628,9 @@ export default function RiskSettingsCategoryPage() {
     if (!threatForm.name.trim()) {
       setThreatError(t("Name is required"));
       return;
+    } else if (!isValidName(threatForm.name.trim())) {
+      setThreatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     try {
       const res = await fetch("/api/risk-threats", {
@@ -615,6 +657,9 @@ export default function RiskSettingsCategoryPage() {
       if (!threatForm.name.trim()) {
         setThreatError(t("Name is required"));
       }
+      return;
+    } else if (!isValidName(threatForm.name.trim())) {
+      setThreatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -653,6 +698,9 @@ export default function RiskSettingsCategoryPage() {
     if (!vulnerabilityForm.name.trim()) {
       setVulnerabilityError(t("Name is required"));
       return;
+    } else if (!isValidName(vulnerabilityForm.name.trim())) {
+      setVulnerabilityError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     try {
       const res = await fetch("/api/risk-vulnerabilities", {
@@ -679,6 +727,9 @@ export default function RiskSettingsCategoryPage() {
       if (!vulnerabilityForm.name.trim()) {
         setVulnerabilityError(t("Name is required"));
       }
+      return;
+    } else if (!isValidName(vulnerabilityForm.name.trim())) {
+      setVulnerabilityError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -717,6 +768,9 @@ export default function RiskSettingsCategoryPage() {
     if (!riskCategoryForm.name.trim()) {
       setRiskCategoryError(t("Name is required"));
       return;
+    } else if (!isValidName(riskCategoryForm.name.trim())) {
+      setRiskCategoryError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     try {
       const res = await fetch("/api/risk-categories", {
@@ -743,6 +797,9 @@ export default function RiskSettingsCategoryPage() {
       if (!riskCategoryForm.name.trim()) {
         setRiskCategoryError(t("Name is required"));
       }
+      return;
+    } else if (!isValidName(riskCategoryForm.name.trim())) {
+      setRiskCategoryError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -781,6 +838,9 @@ export default function RiskSettingsCategoryPage() {
     if (!impactCatForm.name.trim()) {
       setImpactCatError(t("Name is required"));
       return;
+    } else if (!isValidName(impactCatForm.name.trim())) {
+      setImpactCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     try {
       const res = await fetch("/api/impact-categories", {
@@ -807,6 +867,9 @@ export default function RiskSettingsCategoryPage() {
       if (!impactCatForm.name.trim()) {
         setImpactCatError(t("Name is required"));
       }
+      return;
+    } else if (!isValidName(impactCatForm.name.trim())) {
+      setImpactCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -845,6 +908,13 @@ export default function RiskSettingsCategoryPage() {
     if (!impactRatingForm.name.trim()) {
       setImpactRatingError(t("Name is required"));
       return;
+    } else if (!isValidName(impactRatingForm.name.trim())) {
+      setImpactRatingError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    if (!isValidNumber(impactRatingForm.score)) {
+      setImpactRatingError(t("Please enter a valid number"));
+      return;
     }
     try {
       const res = await fetch("/api/impact-ratings", {
@@ -871,6 +941,13 @@ export default function RiskSettingsCategoryPage() {
       if (!impactRatingForm.name.trim()) {
         setImpactRatingError(t("Name is required"));
       }
+      return;
+    } else if (!isValidName(impactRatingForm.name.trim())) {
+      setImpactRatingError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    if (!isValidNumber(impactRatingForm.score)) {
+      setImpactRatingError(t("Please enter a valid number"));
       return;
     }
     try {
@@ -909,6 +986,13 @@ export default function RiskSettingsCategoryPage() {
     if (!vulnRatingForm.label.trim()) {
       setVulnRatingError(t("Label is required"));
       return;
+    } else if (!isValidName(vulnRatingForm.label.trim())) {
+      setVulnRatingError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    if (!isValidNumber(vulnRatingForm.score)) {
+      setVulnRatingError(t("Please enter a valid number"));
+      return;
     }
     try {
       const res = await fetch("/api/vulnerability-ratings", {
@@ -935,6 +1019,13 @@ export default function RiskSettingsCategoryPage() {
       if (!vulnRatingForm.label.trim()) {
         setVulnRatingError(t("Label is required"));
       }
+      return;
+    } else if (!isValidName(vulnRatingForm.label.trim())) {
+      setVulnRatingError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
+    }
+    if (!isValidNumber(vulnRatingForm.score)) {
+      setVulnRatingError(t("Please enter a valid number"));
       return;
     }
     try {
@@ -973,6 +1064,9 @@ export default function RiskSettingsCategoryPage() {
     if (!riskSubCatForm.type.trim()) {
       setRiskSubCatError(t("Type is required"));
       return;
+    } else if (!isValidName(riskSubCatForm.type.trim())) {
+      setRiskSubCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     try {
       const res = await fetch("/api/risk-sub-categories", {
@@ -999,6 +1093,9 @@ export default function RiskSettingsCategoryPage() {
       if (!riskSubCatForm.type.trim()) {
         setRiskSubCatError(t("Type is required"));
       }
+      return;
+    } else if (!isValidName(riskSubCatForm.type.trim())) {
+      setRiskSubCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -1037,6 +1134,9 @@ export default function RiskSettingsCategoryPage() {
     if (!riskRangeForm.title.trim()) {
       setRiskRangeError(t("Title is required"));
       return;
+    } else if (!isValidName(riskRangeForm.title.trim())) {
+      setRiskRangeError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
       setRiskRangeError(t("Color is required"));
@@ -1045,9 +1145,19 @@ export default function RiskSettingsCategoryPage() {
     if (riskRangeForm.lowRange === null || riskRangeForm.lowRange === undefined) {
       setRiskRangeError(t("Low Range is required"));
       return;
+    } else if (!isValidNumber(riskRangeForm.lowRange)) {
+      setRiskRangeError(t("Please enter a valid number"));
+      return;
     }
     if (riskRangeForm.highRange === null || riskRangeForm.highRange === undefined) {
       setRiskRangeError(t("High Range is required"));
+      return;
+    } else if (!isValidNumber(riskRangeForm.highRange)) {
+      setRiskRangeError(t("Please enter a valid number"));
+      return;
+    }
+    if (!isValidNumber(riskRangeForm.timelineDays)) {
+      setRiskRangeError(t("Please enter a valid number"));
       return;
     }
     try {
@@ -1076,6 +1186,9 @@ export default function RiskSettingsCategoryPage() {
         setRiskRangeError(t("Title is required"));
       }
       return;
+    } else if (!isValidName(riskRangeForm.title.trim())) {
+      setRiskRangeError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      return;
     }
     if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
       setRiskRangeError(t("Color is required"));
@@ -1084,9 +1197,19 @@ export default function RiskSettingsCategoryPage() {
     if (riskRangeForm.lowRange === null || riskRangeForm.lowRange === undefined) {
       setRiskRangeError(t("Low Range is required"));
       return;
+    } else if (!isValidNumber(riskRangeForm.lowRange)) {
+      setRiskRangeError(t("Please enter a valid number"));
+      return;
     }
     if (riskRangeForm.highRange === null || riskRangeForm.highRange === undefined) {
       setRiskRangeError(t("High Range is required"));
+      return;
+    } else if (!isValidNumber(riskRangeForm.highRange)) {
+      setRiskRangeError(t("Please enter a valid number"));
+      return;
+    }
+    if (!isValidNumber(riskRangeForm.timelineDays)) {
+      setRiskRangeError(t("Please enter a valid number"));
       return;
     }
     try {

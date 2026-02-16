@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 import {
   Dialog,
   DialogContent,
@@ -143,7 +144,11 @@ export default function DomainPage() {
 
   const handleSave = async () => {
     const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = t("Please enter Domain name");
+    if (!formData.name.trim()) {
+      errors.name = t("Please enter Domain name");
+    } else if (!isValidName(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    }
     if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
     setDomainErrors({});
 

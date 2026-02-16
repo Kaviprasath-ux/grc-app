@@ -38,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { isValidName } from "@/lib/validations";
 
 interface Department {
   id: string;
@@ -378,6 +379,8 @@ export default function AssetInventoryPage() {
     // Validation: Asset Name
     if (!newAsset.name.trim()) {
       errors.name = t("Asset name is required");
+    } else if (!isValidName(newAsset.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
 
     // Validation: Department
@@ -471,6 +474,8 @@ export default function AssetInventoryPage() {
     // Validation: Asset Name
     if (!editingAsset.name.trim()) {
       errors.name = t("Asset name is required");
+    } else if (!isValidName(editingAsset.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
 
     // Validation: Department

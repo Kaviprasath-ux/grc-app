@@ -53,10 +53,12 @@ import {
   AlertCircle,
   HelpCircle,
   Sparkles,
+  Save,
 } from "lucide-react";
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 import { DatePicker } from "@/components/ui/date-picker";
 import { formatLocalDate } from "@/lib/utils";
 
@@ -590,6 +592,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleAddFinding = async () => {
     if (!newFinding.title.trim()) { setFindingTitleError(t("Finding title is required")); return; }
+    if (!isValidName(newFinding.title.trim())) { setFindingTitleError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setFindingTitleError("");
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newFinding, status: "Open" }) });
@@ -600,6 +603,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleAddFullFinding = async () => {
     if (!fullFinding.findingTitle.trim()) { setFullFindingTitleError(t("Finding title is required")); return; }
+    if (!isValidName(fullFinding.findingTitle.trim())) { setFullFindingTitleError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setFullFindingTitleError("");
     setSavingFullFinding(true);
     try {
@@ -629,6 +633,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const handleSaveEditFinding = async () => {
     if (!selectedFindingId) return;
     if (!editFinding.findingTitle.trim()) { setEditFindingTitleError(t("Finding title is required")); return; }
+    if (!isValidName(editFinding.findingTitle.trim())) { setEditFindingTitleError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
     setEditFindingTitleError("");
     setSavingEditFinding(true);
     try {
@@ -1414,8 +1419,6 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                     <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)} className="h-8 w-8"><Paperclip className="h-5 w-5 text-slate-700" /></Button>
                                   </div>
                                 </div>
-                                </div>
-                            ))}
                                 {er.status === 'Pending' && (
                                   <div className="flex justify-end mt-4">
                                     <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setAuditeeClariEvidence(er); setRespondDialogOpen(true); }}>{t("Submit Response")}</Button>

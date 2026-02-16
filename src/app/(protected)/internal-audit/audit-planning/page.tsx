@@ -63,6 +63,7 @@ import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 
 interface Department {
   id: string;
@@ -520,6 +521,8 @@ export default function AuditPlanningPage() {
 
     if (!engagementForm.engagementTitle.trim()) {
       errors.engagementTitle = t("Engagement Title is required") || "Engagement Title is required";
+    } else if (!isValidName(engagementForm.engagementTitle.trim())) {
+      errors.engagementTitle = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
     if (!engagementForm.engagementObjective.trim()) {
       errors.engagementObjective = t("Engagement Objective is required") || "Engagement Objective is required";
