@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
+import { existsSync } from "fs";
 import path from "path";
 import { getUploadBaseDir } from "@/lib/file-upload";
 
@@ -24,31 +25,50 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Read file from disk (uses /tmp on Vercel)
-    const baseDir = getUploadBaseDir();
-    const relativePath = document.filePath.replace(/^\/uploads\//, '');
-    const filePath = path.join(baseDir, relativePath);
+    let fileBuffer: Buffer | null = null;
 
-    try {
-      const fileBuffer = await readFile(filePath);
+    // 1. Try fileData from DB first (works on Vercel serverless)
+    if (document.fileData) {
+      fileBuffer = Buffer.from(document.fileData);
+    }
 
-      // Determine content type
-      const contentType = getContentType(document.fileType || "");
+    // 2. Fall back to disk read (local dev or old documents without fileData)
+    if (!fileBuffer) {
+      const baseDir = getUploadBaseDir();
+      const relativePath = document.filePath.replace(/^\/uploads\//, '');
+      const candidates = [
+        path.join(baseDir, relativePath),
+        path.join('/tmp', 'uploads', relativePath),
+      ];
 
-      return new NextResponse(fileBuffer, {
-        headers: {
-          "Content-Type": contentType,
-          "Content-Disposition": `attachment; filename="${document.fileName}"`,
-          "Content-Length": fileBuffer.length.toString(),
-        },
-      });
-    } catch (err) {
-      console.error("File not found on disk:", err);
+      for (const filePath of candidates) {
+        if (existsSync(filePath)) {
+          try {
+            fileBuffer = await readFile(filePath);
+            break;
+          } catch {
+            // try next candidate
+          }
+        }
+      }
+    }
+
+    if (!fileBuffer) {
       return NextResponse.json(
         { error: "File not found on server" },
         { status: 404 }
       );
     }
+
+    const contentType = getContentType(document.fileType || "");
+
+    return new NextResponse(new Uint8Array(fileBuffer), {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${document.fileName}"`,
+        "Content-Length": fileBuffer.length.toString(),
+      },
+    });
   } catch (error) {
     console.error("Error downloading document:", error);
     return NextResponse.json(

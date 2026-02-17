@@ -2875,6 +2875,7 @@ model InternalAuditDocument {
   fileType     String?
   fileSize     Int?
   filePath     String
+  fileData     Bytes?        // Store file binary for serverless (Vercel) compatibility
   uploadedBy   String?
   uploadedAt   DateTime @default(now())
   createdAt    DateTime @default(now())

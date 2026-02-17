@@ -26,62 +26,52 @@ export const GET = withAuth(
           orderBy: { uploadedAt: "desc" },
           skip,
           take: limit,
+          select: {
+            id: true, documentCode: true, name: true, description: true,
+            category: true, fileName: true, fileType: true, fileSize: true,
+            filePath: true, uploadedBy: true, uploadedAt: true,
+            customerAccountId: true, auditHeadId: true,
+            createdAt: true, updatedAt: true,
+          },
         }),
         prisma.internalAuditDocument.count({ where }),
       ]);
 
       // If no category filter, organize by category
       if (!category) {
+        // Shared select to exclude large fileData binary from list queries
+        const docSelect = {
+          id: true, documentCode: true, name: true, description: true,
+          category: true, fileName: true, fileType: true, fileSize: true,
+          filePath: true, uploadedBy: true, uploadedAt: true,
+          customerAccountId: true, auditHeadId: true,
+          createdAt: true, updatedAt: true,
+          ingestJobs: {
+            orderBy: { createdAt: "desc" as const },
+            take: 1,
+            select: {
+              id: true,
+              runpodJobId: true,
+              status: true,
+              error: true,
+              completedAt: true,
+            },
+          },
+        };
         const policies = await prisma.internalAuditDocument.findMany({
           where: { ...baseWhere, category: "Policy" },
           orderBy: { uploadedAt: "desc" },
-          include: {
-            ingestJobs: {
-              orderBy: { createdAt: "desc" },
-              take: 1,
-              select: {
-                id: true,
-                runpodJobId: true,
-                status: true,
-                error: true,
-                completedAt: true,
-              },
-            },
-          },
+          select: docSelect,
         });
         const regulations = await prisma.internalAuditDocument.findMany({
           where: { ...baseWhere, category: "Regulation" },
           orderBy: { uploadedAt: "desc" },
-          include: {
-            ingestJobs: {
-              orderBy: { createdAt: "desc" },
-              take: 1,
-              select: {
-                id: true,
-                runpodJobId: true,
-                status: true,
-                error: true,
-                completedAt: true,
-              },
-            },
-          },
+          select: docSelect,
         });
         const auditReports = await prisma.internalAuditDocument.findMany({
           where: { ...baseWhere, category: "PreviousReport" },
           orderBy: { uploadedAt: "desc" },
-          include: {
-            ingestJobs: {
-              orderBy: { createdAt: "desc" },
-              take: 1,
-              select: {
-                id: true,
-                runpodJobId: true,
-                status: true,
-                error: true,
-                completedAt: true,
-              },
-            },
-          },
+          select: docSelect,
         });
 
         return NextResponse.json({
@@ -155,7 +145,7 @@ export const POST = withAuth(
       }
       const documentCode = `DOC-${String(nextNum).padStart(4, "0")}`;
 
-      // Create document record in database
+      // Create document record in database (store binary for Vercel serverless compatibility)
       const document = await prisma.internalAuditDocument.create({
         data: {
           documentCode,
@@ -166,13 +156,16 @@ export const POST = withAuth(
           fileType: ext.replace(".", "").toLowerCase(),
           fileSize: buffer.length,
           filePath: urlPath,
+          fileData: Buffer.from(buffer),
           uploadedAt: new Date(),
           ...(customerAccountId ? { customerAccountId } : {}),
           ...(auditHeadId ? { auditHeadId } : {}),
         },
       });
 
-      return NextResponse.json(document, { status: 201 });
+      // Return document without fileData binary
+      const { fileData: _, ...docResponse } = document;
+      return NextResponse.json(docResponse, { status: 201 });
     } catch (error) {
       console.error("Error uploading document:", error);
       return NextResponse.json(
