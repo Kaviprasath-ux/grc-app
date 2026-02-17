@@ -1451,7 +1451,7 @@ export default function AuditPlanningPage() {
                       ? engagement.assignedAuditors.join(", ")
                       : "-"}
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{engagement.status}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{t(engagement.status)}</TableCell>
                   <TableCell className="py-3 pr-5">
                     <div className="flex items-center justify-end gap-0.5">
                       <Button

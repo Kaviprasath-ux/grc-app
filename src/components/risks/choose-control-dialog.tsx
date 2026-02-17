@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Search, Check } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ChooseControlDialogProps {
   open: boolean;
@@ -141,6 +142,7 @@ export function ChooseControlDialog({
   onControlSelected,
   riskId,
 }: ChooseControlDialogProps) {
+  const { t } = useLanguage();
   const [domain, setDomain] = useState("");
   const [functionalGrouping, setFunctionalGrouping] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -200,17 +202,17 @@ export function ChooseControlDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
         <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-          <DialogTitle className="text-lg font-semibold text-slate-800">Select Governance</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-slate-800">{t("Select Governance")}</DialogTitle>
         </DialogHeader>
 
         {/* Filters */}
         <div className="flex-shrink-0 grid grid-cols-2 gap-4 px-6 py-4 border-b border-slate-100">
           <Select value={domain} onValueChange={setDomain}>
             <SelectTrigger className="w-full bg-white">
-              <SelectValue placeholder="Domain" />
+              <SelectValue placeholder={t("Domain")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Domains</SelectItem>
+              <SelectItem value="all">{t("All Domains")}</SelectItem>
               {DOMAINS.map((d) => (
                 <SelectItem key={d} value={d}>
                   {d}
@@ -221,10 +223,10 @@ export function ChooseControlDialog({
 
           <Select value={functionalGrouping} onValueChange={setFunctionalGrouping}>
             <SelectTrigger className="w-full bg-white">
-              <SelectValue placeholder="Functional Grouping" />
+              <SelectValue placeholder={t("Functional Grouping")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Groupings</SelectItem>
+              <SelectItem value="all">{t("All Groupings")}</SelectItem>
               {FUNCTIONAL_GROUPINGS.map((fg) => (
                 <SelectItem key={fg} value={fg}>
                   {fg}
@@ -241,7 +243,7 @@ export function ChooseControlDialog({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               className="pl-10 bg-white"
-              placeholder="Search By Control Code, Name"
+              placeholder={t("Search By Control Code, Name")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -252,7 +254,7 @@ export function ChooseControlDialog({
             <div className="h-full overflow-y-auto">
               {filteredControls.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
-                  No controls found matching your criteria
+                  {t("No controls found matching your criteria")}
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
@@ -303,13 +305,13 @@ export function ChooseControlDialog({
         {/* Actions */}
         <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button
             onClick={handleLinkControl}
             disabled={!selectedControl || loading}
           >
-            {loading ? "Linking..." : "Link Control"}
+            {loading ? t("Linking...") : t("Link Control")}
           </Button>
         </div>
       </DialogContent>

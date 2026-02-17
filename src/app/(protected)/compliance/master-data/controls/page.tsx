@@ -552,8 +552,8 @@ export default function ControlsMasterDataPage() {
       }
 
       toast({
-        title: "Success",
-        description: `Import completed: ${successCount} controls imported, ${errorCount} errors`,
+        title: t("Success"),
+        description: `${t("Import completed")}: ${successCount} ${t("controls imported")}, ${errorCount} ${t("errors")}`,
       });
       setImportDialogOpen(false);
       setImportFile(null);
@@ -564,8 +564,8 @@ export default function ControlsMasterDataPage() {
     } catch (error) {
       console.error("Error importing controls:", error);
       toast({
-        title: "Error",
-        description: "Failed to import controls. Please check the file format.",
+        title: t("Error"),
+        description: t("Failed to import controls. Please check the file format."),
         variant: "destructive",
       });
     } finally {
@@ -1104,7 +1104,7 @@ export default function ControlsMasterDataPage() {
                         "bg-slate-100 text-slate-600"
                       }
                     >
-                      {control.status}
+                      {t(control.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-3 text-sm pe-5">

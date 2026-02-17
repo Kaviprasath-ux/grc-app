@@ -327,7 +327,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -397,7 +397,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -474,7 +474,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -563,7 +563,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -645,7 +645,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -715,7 +715,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -785,7 +785,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -855,7 +855,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -929,7 +929,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -1007,7 +1007,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -1081,7 +1081,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -1173,7 +1173,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -1591,7 +1591,7 @@ export default function RiskSettingsCategoryPage() {
     return data.slice(start, start + pageSize);
   };
 
-  const title = categoryTitles[category] || "Settings";
+  const title = t(categoryTitles[category] || "Settings");
 
   // Show loading state while permissions or data is loading
   if (permissionsLoading || loading) {

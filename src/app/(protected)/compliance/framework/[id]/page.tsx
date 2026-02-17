@@ -1832,7 +1832,7 @@ export default function FrameworkDetailPage({
                                                   : "bg-red-100 text-red-800"
                                               }`}
                                             >
-                                              {rc.control.status}
+                                              {t(rc.control.status)}
                                             </span>
                                           </TableCell>
                                           <TableCell>

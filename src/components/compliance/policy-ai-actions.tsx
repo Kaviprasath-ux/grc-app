@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import * as ComplianceService from "@/services/ai-compliance-service";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Policy {
     id: string;
@@ -41,6 +42,7 @@ interface PolicyAIActionsProps {
 }
 
 export function PolicyAIActions({ policy, onPolicyUpdate }: PolicyAIActionsProps) {
+    const { t } = useLanguage();
     // State for dialogs
     const [ingestOpen, setIngestOpen] = useState(false);
     const [generateOpen, setGenerateOpen] = useState(false);
@@ -88,19 +90,19 @@ export function PolicyAIActions({ policy, onPolicyUpdate }: PolicyAIActionsProps
                 <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2">
                         <Upload className="h-4 w-4" />
-                        Ingest Policy
+                        {t("Ingest Policy")}
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Ingest Policy Documents</DialogTitle>
+                        <DialogTitle>{t("Ingest Policy Documents")}</DialogTitle>
                         <DialogDescription>
-                            Upload policy documents for AI analysis and embedding.
+                            {t("Upload policy documents for AI analysis and embedding.")}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="files">Select Files</Label>
+                            <Label htmlFor="files">{t("Select Files")}</Label>
                             <Input
                                 id="files"
                                 type="file"
@@ -116,9 +118,9 @@ export function PolicyAIActions({ policy, onPolicyUpdate }: PolicyAIActionsProps
                         )}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIngestOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setIngestOpen(false)}>{t("Cancel")}</Button>
                         <Button onClick={handleIngest} disabled={loading || !selectedFiles}>
-                            {loading ? "Ingesting..." : "Start Ingestion"}
+                            {loading ? t("Ingesting...") : t("Start Ingestion")}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -129,31 +131,31 @@ export function PolicyAIActions({ policy, onPolicyUpdate }: PolicyAIActionsProps
                 <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2">
                         <Sparkles className="h-4 w-4" />
-                        Generate Policy
+                        {t("Generate Policy")}
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Generate Policy Content</DialogTitle>
+                        <DialogTitle>{t("Generate Policy Content")}</DialogTitle>
                         <DialogDescription>
-                            Use AI to generate policy content based on requirements.
+                            {t("Use AI to generate policy content based on requirements.")}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="prompt">Requirements</Label>
+                            <Label htmlFor="prompt">{t("Requirements")}</Label>
                             <Textarea
                                 id="prompt"
-                                placeholder="Describe the policy requirements..."
+                                placeholder={t("Describe the policy requirements...")}
                                 value={generatePrompt}
                                 onChange={(e) => setGeneratePrompt(e.target.value)}
                             />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setGenerateOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setGenerateOpen(false)}>{t("Cancel")}</Button>
                         <Button onClick={handleGenerate} disabled={loading}>
-                            {loading ? "Generating..." : "Generate"}
+                            {loading ? t("Generating...") : t("Generate")}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -162,7 +164,7 @@ export function PolicyAIActions({ policy, onPolicyUpdate }: PolicyAIActionsProps
             {/* Regenerate Button */}
             <Button variant="outline" className="gap-2" onClick={() => setRegenerateOpen(true)}>
                 <RefreshCw className="h-4 w-4" />
-                Regenerate
+                {t("Regenerate")}
             </Button>
 
             {/* Assessment Dialog */}
@@ -170,19 +172,19 @@ export function PolicyAIActions({ policy, onPolicyUpdate }: PolicyAIActionsProps
                 <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2">
                         <MessageSquare className="h-4 w-4" />
-                        Self-Assessment
+                        {t("Self-Assessment")}
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Policy Self-Assessment</DialogTitle>
+                        <DialogTitle>{t("Policy Self-Assessment")}</DialogTitle>
                         <DialogDescription>
-                            Ask questions about this policy to verify compliance coverage.
+                            {t("Ask questions about this policy to verify compliance coverage.")}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="query">Question</Label>
+                            <Label htmlFor="query">{t("Question")}</Label>
                             <div className="flex gap-2">
                                 <Input
                                     id="query"
@@ -190,12 +192,12 @@ export function PolicyAIActions({ policy, onPolicyUpdate }: PolicyAIActionsProps
                                     value={assessmentQuery}
                                     onChange={(e) => setAssessmentQuery(e.target.value)}
                                 />
-                                <Button onClick={handleAssessment} disabled={loading}>Ask</Button>
+                                <Button onClick={handleAssessment} disabled={loading}>{t("Ask")}</Button>
                             </div>
                         </div>
                         {assessmentAnswer && (
                             <div className="mt-4 p-4 bg-muted rounded-md">
-                                <h4 className="font-semibold mb-2">AI Answer:</h4>
+                                <h4 className="font-semibold mb-2">{t("AI Answer")}:</h4>
                                 <p className="whitespace-pre-wrap">{assessmentAnswer}</p>
                             </div>
                         )}

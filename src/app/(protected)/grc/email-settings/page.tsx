@@ -417,7 +417,7 @@ export default function EmailSettingsPage() {
               <Input
                 value={formData.fromName}
                 onChange={(e) => setFormData({ ...formData, fromName: e.target.value })}
-                placeholder="GRC Platform"
+                placeholder={t("GRC Platform")}
               />
             </div>
           </div>

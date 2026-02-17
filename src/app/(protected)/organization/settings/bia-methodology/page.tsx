@@ -261,7 +261,7 @@ export default function BIAMethodologyPage() {
     const errors: typeof rangeFormErrors = {};
 
     if (!rangeForm.label.trim()) {
-      errors.label = "Criticality Label is required";
+      errors.label = t("Criticality Label is required");
     } else if (!isValidName(rangeForm.label)) {
       errors.label = t("Only letters, numbers, spaces, and hyphens are allowed");
     }
@@ -269,17 +269,17 @@ export default function BIAMethodologyPage() {
     if (!isValidNumber(rangeForm.lowValue)) {
       errors.lowValue = t("Please enter a valid number");
     } else if (rangeForm.lowValue < 0) {
-      errors.lowValue = "Min Score cannot be negative";
+      errors.lowValue = t("Min Score cannot be negative");
     }
 
     if (!isValidNumber(rangeForm.highValue)) {
       errors.highValue = t("Please enter a valid number");
     } else if (rangeForm.highValue < 0) {
-      errors.highValue = "Max Score cannot be negative";
+      errors.highValue = t("Max Score cannot be negative");
     }
 
     if (rangeForm.lowValue > rangeForm.highValue) {
-      errors.highValue = "Max Score must be greater than or equal to Min Score";
+      errors.highValue = t("Max Score must be greater than or equal to Min Score");
     }
 
     // Check for overlapping ranges (client-side)
@@ -293,7 +293,7 @@ export default function BIAMethodologyPage() {
       // Two ranges overlap if: newLow <= existingHigh AND newHigh >= existingLow
       if (newLow <= existingHigh && newHigh >= existingLow) {
         const existingHighDisplay = existing.highValue !== null ? existing.highValue : "∞";
-        errors.overlap = `Range ${newLow}-${newHigh} overlaps with "${existing.label}" (${existingLow}-${existingHighDisplay})`;
+        errors.overlap = `${t("Range")} ${newLow}-${newHigh} ${t("overlaps with")} "${existing.label}" (${existingLow}-${existingHighDisplay})`;
         break;
       }
     }
@@ -427,7 +427,7 @@ export default function BIAMethodologyPage() {
   const ratingColumns: ColumnDef<BIARating>[] = [
     {
       accessorKey: "label",
-      header: "Rating Label",
+      header: t("Rating Label"),
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <div
@@ -440,12 +440,12 @@ export default function BIAMethodologyPage() {
     },
     {
       accessorKey: "score",
-      header: "Score Value",
+      header: t("Score Value"),
       cell: ({ row }) => row.getValue("score"),
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("Description"),
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm truncate max-w-[300px] block">
           {row.getValue("description") || "-"}
@@ -454,16 +454,16 @@ export default function BIAMethodologyPage() {
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("isActive") ? "default" : "secondary"}>
-          {row.getValue("isActive") ? "Active" : "Inactive"}
+          {row.getValue("isActive") ? t("Active") : t("Inactive")}
         </Badge>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" onClick={() => openEditRatingDialog(row.original)}>
@@ -488,7 +488,7 @@ export default function BIAMethodologyPage() {
   const rangeColumns: ColumnDef<BIAScoringRange>[] = [
     {
       accessorKey: "label",
-      header: "Criticality Label",
+      header: t("Criticality Label"),
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <div
@@ -501,17 +501,17 @@ export default function BIAMethodologyPage() {
     },
     {
       accessorKey: "lowValue",
-      header: "Min Score",
+      header: t("Min Score"),
       cell: ({ row }) => row.getValue("lowValue"),
     },
     {
       accessorKey: "highValue",
-      header: "Max Score",
-      cell: ({ row }) => row.getValue("highValue") ?? "No limit",
+      header: t("Max Score"),
+      cell: ({ row }) => row.getValue("highValue") ?? t("No limit"),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" onClick={() => openEditRangeDialog(row.original)}>
@@ -562,8 +562,8 @@ export default function BIAMethodologyPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full sm:w-auto flex-wrap">
-          <TabsTrigger value="ratings">Rating Methodology</TabsTrigger>
-          <TabsTrigger value="scoring">Scoring Configuration</TabsTrigger>
+          <TabsTrigger value="ratings">{t("Rating Methodology")}</TabsTrigger>
+          <TabsTrigger value="scoring">{t("Scoring Configuration")}</TabsTrigger>
         </TabsList>
 
         {/* Rating Methodology Tab */}
@@ -572,7 +572,7 @@ export default function BIAMethodologyPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search ratings..."
+                placeholder={t("Search ratings...")}
                 value={searchRatings}
                 onChange={(e) => setSearchRatings(e.target.value)}
                 className="pl-10 w-full sm:w-[250px]"
@@ -580,16 +580,16 @@ export default function BIAMethodologyPage() {
             </div>
             <Button onClick={() => setIsAddRatingOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Rating
+              {t("Add Rating")}
             </Button>
           </div>
 
           {loadingRatings ? (
             <div className="flex items-center justify-center h-32">
-              <p className="text-muted-foreground">Loading...</p>
+              <p className="text-muted-foreground">{t("Loading...")}</p>
             </div>
           ) : (
-            <DataGrid columns={ratingColumns} data={filteredRatings} searchPlaceholder="Search..." />
+            <DataGrid columns={ratingColumns} data={filteredRatings} searchPlaceholder={t("Search...")} />
           )}
         </TabsContent>
 
@@ -600,15 +600,15 @@ export default function BIAMethodologyPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                Calculation Type
+                {t("Calculation Type")}
               </CardTitle>
               <CardDescription>
-                Configure how the BIA impact rating is calculated from individual category scores
+                {t("Configure how the BIA impact rating is calculated from individual category scores")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loadingConfig ? (
-                <p className="text-muted-foreground">Loading...</p>
+                <p className="text-muted-foreground">{t("Loading...")}</p>
               ) : (
                 <div className="space-y-4">
                   <Select
@@ -616,21 +616,21 @@ export default function BIAMethodologyPage() {
                     onValueChange={updateScoringConfig}
                   >
                     <SelectTrigger className="w-full sm:w-[300px]">
-                      <SelectValue placeholder="Select calculation type" />
+                      <SelectValue placeholder={t("Select calculation type")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="High of all">High of all (Maximum)</SelectItem>
-                      <SelectItem value="Addition of all">Addition of all (Sum)</SelectItem>
-                      <SelectItem value="Product of all">Product of all (Multiply)</SelectItem>
+                      <SelectItem value="High of all">{t("High of all (Maximum)")}</SelectItem>
+                      <SelectItem value="Addition of all">{t("Addition of all (Sum)")}</SelectItem>
+                      <SelectItem value="Product of all">{t("Product of all (Multiply)")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-muted-foreground">
                     {scoringConfig?.calculationType === "High of all" &&
-                      "The highest score among all categories will be used as the impact rating."}
+                      t("The highest score among all categories will be used as the impact rating.")}
                     {scoringConfig?.calculationType === "Addition of all" &&
-                      "All category scores will be added together for the impact rating."}
+                      t("All category scores will be added together for the impact rating.")}
                     {scoringConfig?.calculationType === "Product of all" &&
-                      "All category scores will be multiplied together for the impact rating."}
+                      t("All category scores will be multiplied together for the impact rating.")}
                   </p>
                 </div>
               )}
@@ -641,21 +641,21 @@ export default function BIAMethodologyPage() {
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <CardTitle>Criticality Ranges</CardTitle>
+                <CardTitle>{t("Criticality Ranges")}</CardTitle>
                 <CardDescription>
-                  Define score ranges to determine process criticality levels
+                  {t("Define score ranges to determine process criticality levels")}
                 </CardDescription>
               </div>
               <Button onClick={() => setIsAddRangeOpen(true)} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Range
+                {t("Add Range")}
               </Button>
             </CardHeader>
             <CardContent>
               {loadingRanges ? (
-                <p className="text-muted-foreground">Loading...</p>
+                <p className="text-muted-foreground">{t("Loading...")}</p>
               ) : (
-                <DataGrid columns={rangeColumns} data={scoringRanges} searchPlaceholder="Search..." />
+                <DataGrid columns={rangeColumns} data={scoringRanges} searchPlaceholder={t("Search...")} />
               )}
             </CardContent>
           </Card>
@@ -666,22 +666,22 @@ export default function BIAMethodologyPage() {
       <Dialog open={isAddRatingOpen} onOpenChange={setIsAddRatingOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add BIA Rating</DialogTitle>
-            <DialogDescription>Define a new rating level for BIA assessments</DialogDescription>
+            <DialogTitle>{t("Add BIA Rating")}</DialogTitle>
+            <DialogDescription>{t("Define a new rating level for BIA assessments")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="ratingLabel">Rating Label *</Label>
+              <Label htmlFor="ratingLabel">{t("Rating Label")} *</Label>
               <Input
                 id="ratingLabel"
                 value={ratingForm.label}
                 onChange={(e) => setRatingForm({ ...ratingForm, label: e.target.value })}
-                placeholder="e.g., High, Medium, Low"
+                placeholder={t("e.g., High, Medium, Low")}
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="ratingScore">Score Value *</Label>
+                <Label htmlFor="ratingScore">{t("Score Value")} *</Label>
                 <Input
                   id="ratingScore"
                   type="number"
@@ -690,7 +690,7 @@ export default function BIAMethodologyPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ratingColor">Color</Label>
+                <Label htmlFor="ratingColor">{t("Color")}</Label>
                 <Input
                   id="ratingColor"
                   type="color"
@@ -700,12 +700,12 @@ export default function BIAMethodologyPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ratingDescription">Description</Label>
+              <Label htmlFor="ratingDescription">{t("Description")}</Label>
               <Input
                 id="ratingDescription"
                 value={ratingForm.description}
                 onChange={(e) => setRatingForm({ ...ratingForm, description: e.target.value })}
-                placeholder="Impact description for this rating"
+                placeholder={t("Impact description for this rating")}
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -714,14 +714,14 @@ export default function BIAMethodologyPage() {
                 checked={ratingForm.isActive}
                 onCheckedChange={(checked) => setRatingForm({ ...ratingForm, isActive: checked })}
               />
-              <Label htmlFor="ratingActive">Active</Label>
+              <Label htmlFor="ratingActive">{t("Active")}</Label>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsAddRatingOpen(false); resetRatingForm(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddRating}>Save</Button>
+            <Button onClick={handleAddRating}>{t("Save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -730,11 +730,11 @@ export default function BIAMethodologyPage() {
       <Dialog open={isEditRatingOpen} onOpenChange={setIsEditRatingOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit BIA Rating</DialogTitle>
+            <DialogTitle>{t("Edit BIA Rating")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Rating Label *</Label>
+              <Label>{t("Rating Label")} *</Label>
               <Input
                 value={ratingForm.label}
                 onChange={(e) => setRatingForm({ ...ratingForm, label: e.target.value })}
@@ -742,7 +742,7 @@ export default function BIAMethodologyPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Score Value *</Label>
+                <Label>{t("Score Value")} *</Label>
                 <Input
                   type="number"
                   value={ratingForm.score}
@@ -750,7 +750,7 @@ export default function BIAMethodologyPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Color</Label>
+                <Label>{t("Color")}</Label>
                 <Input
                   type="color"
                   value={ratingForm.color}
@@ -759,7 +759,7 @@ export default function BIAMethodologyPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t("Description")}</Label>
               <Input
                 value={ratingForm.description}
                 onChange={(e) => setRatingForm({ ...ratingForm, description: e.target.value })}
@@ -770,14 +770,14 @@ export default function BIAMethodologyPage() {
                 checked={ratingForm.isActive}
                 onCheckedChange={(checked) => setRatingForm({ ...ratingForm, isActive: checked })}
               />
-              <Label>Active</Label>
+              <Label>{t("Active")}</Label>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsEditRatingOpen(false); setEditingRating(null); resetRatingForm(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditRating}>Save Changes</Button>
+            <Button onClick={handleEditRating}>{t("Save Changes")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -786,14 +786,14 @@ export default function BIAMethodologyPage() {
       <Dialog open={isDeleteRatingOpen} onOpenChange={setIsDeleteRatingOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this rating? This action cannot be undone.
+              {t("Are you sure you want to delete this rating? This action cannot be undone.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setIsDeleteRatingOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteRating}>Delete</Button>
+            <Button variant="outline" onClick={() => setIsDeleteRatingOpen(false)}>{t("Cancel")}</Button>
+            <Button variant="destructive" onClick={handleDeleteRating}>{t("Delete")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -802,19 +802,19 @@ export default function BIAMethodologyPage() {
       <Dialog open={isAddRangeOpen} onOpenChange={(open) => { setIsAddRangeOpen(open); if (!open) resetRangeForm(); }}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Scoring Range</DialogTitle>
-            <DialogDescription>Define a criticality level based on score range</DialogDescription>
+            <DialogTitle>{t("Add Scoring Range")}</DialogTitle>
+            <DialogDescription>{t("Define a criticality level based on score range")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Criticality Label *</Label>
+              <Label>{t("Criticality Label")} *</Label>
               <Input
                 value={rangeForm.label}
                 onChange={(e) => {
                   setRangeForm({ ...rangeForm, label: e.target.value });
                   if (rangeFormErrors.label) setRangeFormErrors({ ...rangeFormErrors, label: undefined });
                 }}
-                placeholder="e.g., Critical, High, Medium, Low"
+                placeholder={t("e.g., Critical, High, Medium, Low")}
                 className={rangeFormErrors.label ? "border-red-500" : ""}
               />
               {rangeFormErrors.label && (
@@ -823,7 +823,7 @@ export default function BIAMethodologyPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Min Score *</Label>
+                <Label>{t("Min Score")} *</Label>
                 <Input
                   type="number"
                   min="0"
@@ -841,7 +841,7 @@ export default function BIAMethodologyPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Max Score *</Label>
+                <Label>{t("Max Score")} *</Label>
                 <Input
                   type="number"
                   min="0"
@@ -865,7 +865,7 @@ export default function BIAMethodologyPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label>Color</Label>
+              <Label>{t("Color")}</Label>
               <Input
                 type="color"
                 value={rangeForm.color}
@@ -875,9 +875,9 @@ export default function BIAMethodologyPage() {
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsAddRangeOpen(false); resetRangeForm(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddRange}>Save</Button>
+            <Button onClick={handleAddRange}>{t("Save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -886,11 +886,11 @@ export default function BIAMethodologyPage() {
       <Dialog open={isEditRangeOpen} onOpenChange={(open) => { setIsEditRangeOpen(open); if (!open) { setEditingRange(null); resetRangeForm(); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Scoring Range</DialogTitle>
+            <DialogTitle>{t("Edit Scoring Range")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Criticality Label *</Label>
+              <Label>{t("Criticality Label")} *</Label>
               <Input
                 value={rangeForm.label}
                 onChange={(e) => {
@@ -905,7 +905,7 @@ export default function BIAMethodologyPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Min Score *</Label>
+                <Label>{t("Min Score")} *</Label>
                 <Input
                   type="number"
                   min="0"
@@ -923,7 +923,7 @@ export default function BIAMethodologyPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Max Score *</Label>
+                <Label>{t("Max Score")} *</Label>
                 <Input
                   type="number"
                   min="0"
@@ -947,7 +947,7 @@ export default function BIAMethodologyPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label>Color</Label>
+              <Label>{t("Color")}</Label>
               <Input
                 type="color"
                 value={rangeForm.color}
@@ -957,9 +957,9 @@ export default function BIAMethodologyPage() {
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsEditRangeOpen(false); setEditingRange(null); resetRangeForm(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditRange}>Save Changes</Button>
+            <Button onClick={handleEditRange}>{t("Save Changes")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -968,14 +968,14 @@ export default function BIAMethodologyPage() {
       <Dialog open={isDeleteRangeOpen} onOpenChange={setIsDeleteRangeOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this scoring range? This action cannot be undone.
+              {t("Are you sure you want to delete this scoring range? This action cannot be undone.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setIsDeleteRangeOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteRange}>Delete</Button>
+            <Button variant="outline" onClick={() => setIsDeleteRangeOpen(false)}>{t("Cancel")}</Button>
+            <Button variant="destructive" onClick={handleDeleteRange}>{t("Delete")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

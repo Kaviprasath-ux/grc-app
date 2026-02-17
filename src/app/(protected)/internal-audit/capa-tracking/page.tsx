@@ -452,7 +452,7 @@ export default function CAPATrackingPage() {
     };
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[severity.toLowerCase()] || "bg-slate-100 text-slate-600"}`}>
-        {severity}
+        {t(severity)}
       </span>
     );
   };
@@ -467,7 +467,7 @@ export default function CAPATrackingPage() {
     };
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${styles[status.toLowerCase()] || "bg-slate-100 text-slate-600"}`}>
-        {status}
+        {t(status)}
       </span>
     );
   };

@@ -180,33 +180,33 @@ export default function BIACategoriesPage() {
   const columns: ColumnDef<BIACategory>[] = [
     {
       accessorKey: "name",
-      header: "Category Name",
+      header: t("Category Name"),
       cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("Description"),
       cell: ({ row }) => (
         <span className="text-muted-foreground">{row.getValue("description") || "-"}</span>
       ),
     },
     {
       accessorKey: "sortOrder",
-      header: "Order",
+      header: t("Order"),
       cell: ({ row }) => row.getValue("sortOrder"),
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("isActive") ? "default" : "secondary"}>
-          {row.getValue("isActive") ? "Active" : "Inactive"}
+          {row.getValue("isActive") ? t("Active") : t("Inactive")}
         </Badge>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
@@ -285,7 +285,7 @@ export default function BIACategoriesPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search categories..."
+            placeholder={t("Search categories...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-full sm:w-[250px] bg-slate-50"
@@ -293,24 +293,24 @@ export default function BIACategoriesPage() {
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Category
+          {t("Add Category")}
         </Button>
       </div>
 
-      <DataGrid columns={columns} data={filteredData} searchPlaceholder="Search..." />
+      <DataGrid columns={columns} data={filteredData} searchPlaceholder={t("Search...")} />
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add BIA Category</DialogTitle>
+            <DialogTitle>{t("Add BIA Category")}</DialogTitle>
             <DialogDescription>
-              Add a new impact category for Business Impact Analysis
+              {t("Add a new impact category for Business Impact Analysis")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Category Name *</Label>
+              <Label htmlFor="name">{t("Category Name")} *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -318,7 +318,7 @@ export default function BIACategoriesPage() {
                   setFormData({ ...formData, name: e.target.value });
                   if (formErrors.name) setFormErrors((prev) => { const { name, ...rest } = prev; return rest; });
                 }}
-                placeholder="e.g., Financial, Reputational"
+                placeholder={t("e.g., Financial, Reputational")}
                 className={formErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
               />
               {formErrors.name && (
@@ -326,16 +326,16 @@ export default function BIACategoriesPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("Description")}</Label>
               <Input
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sortOrder">Sort Order</Label>
+              <Label htmlFor="sortOrder">{t("Sort Order")}</Label>
               <Input
                 id="sortOrder"
                 type="number"
@@ -349,14 +349,14 @@ export default function BIACategoriesPage() {
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label htmlFor="isActive">Active</Label>
+              <Label htmlFor="isActive">{t("Active")}</Label>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsAddOpen(false); resetForm(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAdd}>Save</Button>
+            <Button onClick={handleAdd}>{t("Save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -365,11 +365,11 @@ export default function BIACategoriesPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit BIA Category</DialogTitle>
+            <DialogTitle>{t("Edit BIA Category")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="editName">Category Name *</Label>
+              <Label htmlFor="editName">{t("Category Name")} *</Label>
               <Input
                 id="editName"
                 value={formData.name}
@@ -384,7 +384,7 @@ export default function BIACategoriesPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editDescription">Description</Label>
+              <Label htmlFor="editDescription">{t("Description")}</Label>
               <Input
                 id="editDescription"
                 value={formData.description}
@@ -392,7 +392,7 @@ export default function BIACategoriesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editSortOrder">Sort Order</Label>
+              <Label htmlFor="editSortOrder">{t("Sort Order")}</Label>
               <Input
                 id="editSortOrder"
                 type="number"
@@ -406,14 +406,14 @@ export default function BIACategoriesPage() {
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label htmlFor="editIsActive">Active</Label>
+              <Label htmlFor="editIsActive">{t("Active")}</Label>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingItem(null); resetForm(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEdit}>Save Changes</Button>
+            <Button onClick={handleEdit}>{t("Save Changes")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -422,17 +422,17 @@ export default function BIACategoriesPage() {
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this category? This action cannot be undone.
+              {t("Are you sure you want to delete this category? This action cannot be undone.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete
+              {t("Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

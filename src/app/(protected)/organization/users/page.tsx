@@ -327,7 +327,7 @@ export default function UsersPage() {
         setIsAddUserOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create user", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create user"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding user:", error);
@@ -409,24 +409,24 @@ export default function UsersPage() {
 
       if (res.ok) {
         toast({
-          title: "Success",
-          description: "Password changed successfully",
+          title: t("Success"),
+          description: t("Password changed successfully"),
         });
         setIsChangePasswordOpen(false);
         setChangePasswordForm({ newPassword: "", confirmPassword: "" });
       } else {
         const error = await res.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to change password",
+          title: t("Error"),
+          description: error.error || t("Failed to change password"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error changing password:", error);
       toast({
-        title: "Error",
-        description: "Failed to change password",
+        title: t("Error"),
+        description: t("Failed to change password"),
         variant: "destructive",
       });
     } finally {
@@ -616,7 +616,7 @@ export default function UsersPage() {
         }
       }
 
-      toast({ title: "Success", description: `Import completed: ${successCount} users imported, ${errorCount} errors` });
+      toast({ title: t("Success"), description: `${t("Import completed")}: ${successCount} ${t("users imported")}, ${errorCount} ${t("errors")}` });
       setShowImportDialog(false);
       setImportFile(null);
       if (fileInputRef.current) {
@@ -625,7 +625,7 @@ export default function UsersPage() {
       fetchData();
     } catch (error) {
       console.error("Error importing users:", error);
-      toast({ title: "Error", description: "Failed to import users. Please check the file format.", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to import users. Please check the file format."), variant: "destructive" });
     } finally {
       setImporting(false);
     }

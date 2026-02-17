@@ -317,7 +317,7 @@ export function EditProfileWizard({
         {/* Fixed Header */}
         <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Profile</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Profile")}</DialogTitle>
           </DialogHeader>
 
           {/* Step Indicator */}
@@ -366,7 +366,7 @@ export function EditProfileWizard({
             <div className="space-y-5">
               {/* Logo */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Logo</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Logo")}</Label>
                 <div className="flex items-center gap-4 mt-1.5">
                   <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
                     {formData.logo ? (
@@ -376,17 +376,17 @@ export function EditProfileWizard({
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-slate-500 mb-2">PNG or JPG, max 2MB</p>
+                    <p className="text-xs text-slate-500 mb-2">{t("PNG or JPG, max 2MB")}</p>
                     <div className="flex gap-2">
                       <label>
                         <Input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "logo")} />
                         <Button type="button" variant="outline" size="sm" className="h-7 text-xs" asChild>
-                          <span>Upload</span>
+                          <span>{t("Upload")}</span>
                         </Button>
                       </label>
                       {formData.logo && (
                         <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-slate-400 hover:text-error" onClick={() => setFormData({ ...formData, logo: "" })}>
-                          Remove
+                          {t("Remove")}
                         </Button>
                       )}
                     </div>
@@ -412,13 +412,13 @@ export function EditProfileWizard({
               {/* Email & Phone */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Email</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Email")}</Label>
                   <Input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="mt-1.5"
-                    placeholder="contact@company.com"
+                    placeholder={t("contact@company.com")}
                   />
                 </div>
                 <div>
@@ -439,7 +439,7 @@ export function EditProfileWizard({
               {/* Website & Established */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Website</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Website")}</Label>
                   <Input
                     value={formData.website}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
@@ -448,12 +448,12 @@ export function EditProfileWizard({
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Established</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Established")}</Label>
                   <div className="mt-1.5">
                     <DatePicker
                       value={formData.establishedDate}
                       onChange={(date) => setFormData({ ...formData, establishedDate: date ? date.toISOString().split("T")[0] : "" })}
-                      placeholder="Select date"
+                      placeholder={t("Select date")}
                     />
                   </div>
                 </div>
@@ -461,47 +461,47 @@ export function EditProfileWizard({
 
               {/* Employee Count */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Employee Count</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Employee Count")}</Label>
                 <Input
                   type="number"
                   value={formData.employeeCount}
                   onChange={(e) => setFormData({ ...formData, employeeCount: parseInt(e.target.value) || 0 })}
                   className="mt-1.5"
-                  placeholder="Enter employee count"
+                  placeholder={t("Enter employee count")}
                 />
               </div>
 
               {/* About */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">About</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("About")}</Label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="mt-1.5"
                   rows={3}
-                  placeholder="Brief description of your organization..."
+                  placeholder={t("Brief description of your organization...")}
                 />
               </div>
 
               {/* Head Office */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <Label className="text-sm font-medium text-slate-700">Head Office</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Head Office")}</Label>
                   <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-primary-600" onClick={addBranch}>
                     <Plus className="h-3 w-3 mr-1" />
-                    Add Branch
+                    {t("Add Branch")}
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Input
                     value={formData.headOfficeLocation}
                     onChange={(e) => setFormData({ ...formData, headOfficeLocation: e.target.value })}
-                    placeholder="City, Country"
+                    placeholder={t("City, Country")}
                   />
                   <Input
                     value={formData.headOfficeAddress}
                     onChange={(e) => setFormData({ ...formData, headOfficeAddress: e.target.value })}
-                    placeholder="Full address"
+                    placeholder={t("Full address")}
                   />
                 </div>
               </div>
@@ -510,14 +510,14 @@ export function EditProfileWizard({
               {formData.branches.map((branch, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-2">
-                    <Label className="text-xs font-medium text-slate-500">Branch {index + 1}</Label>
+                    <Label className="text-xs font-medium text-slate-500">{t("Branch")} {index + 1}</Label>
                     <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-semantic-error" onClick={() => removeBranch(index)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <Input value={branch.location} onChange={(e) => updateBranch(index, "location", e.target.value)} placeholder="City, Country" />
-                    <Input value={branch.address} onChange={(e) => updateBranch(index, "address", e.target.value)} placeholder="Full address" />
+                    <Input value={branch.location} onChange={(e) => updateBranch(index, "location", e.target.value)} placeholder={t("City, Country")} />
+                    <Input value={branch.address} onChange={(e) => updateBranch(index, "address", e.target.value)} placeholder={t("Full address")} />
                   </div>
                 </div>
               ))}
@@ -525,14 +525,14 @@ export function EditProfileWizard({
               {/* Data Centers */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <Label className="text-sm font-medium text-slate-700">Data Centers</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Data Centers")}</Label>
                   <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-primary-600" onClick={addDataCenter}>
                     <Plus className="h-3 w-3 mr-1" />
-                    Add
+                    {t("Add")}
                   </Button>
                 </div>
                 {formData.dataCenters.length === 0 ? (
-                  <p className="text-xs text-slate-400">No data centers added</p>
+                  <p className="text-xs text-slate-400">{t("No data centers added")}</p>
                 ) : (
                   <div className="space-y-2">
                     {formData.dataCenters.map((dc, index) => (
@@ -549,7 +549,7 @@ export function EditProfileWizard({
                         <Input
                           value={dc.locationType === "Outsourced" ? dc.vendor || "" : dc.address || ""}
                           onChange={(e) => updateDataCenter(index, dc.locationType === "Outsourced" ? "vendor" : "address", e.target.value)}
-                          placeholder={dc.locationType === "Outsourced" ? "Vendor" : "Address"}
+                          placeholder={dc.locationType === "Outsourced" ? t("Vendor") : t("Address")}
                           className="flex-1 h-9"
                         />
                         <Button type="button" variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-400 hover:text-semantic-error" onClick={() => removeDataCenter(index)}>
@@ -564,22 +564,22 @@ export function EditProfileWizard({
               {/* Cloud Providers */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <Label className="text-sm font-medium text-slate-700">Cloud Providers</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Cloud Providers")}</Label>
                   <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-primary-600" onClick={addCloudProvider}>
                     <Plus className="h-3 w-3 mr-1" />
-                    Add
+                    {t("Add")}
                   </Button>
                 </div>
                 {formData.cloudProviders.length === 0 ? (
-                  <p className="text-xs text-slate-400">No cloud providers added</p>
+                  <p className="text-xs text-slate-400">{t("No cloud providers added")}</p>
                 ) : (
                   <div className="space-y-2">
                     {formData.cloudProviders.map((cp, index) => (
                       <div key={index} className="flex items-center gap-2">
-                        <Input value={cp.name} onChange={(e) => updateCloudProvider(index, "name", e.target.value)} placeholder="Provider name" className="flex-1 h-9" />
+                        <Input value={cp.name} onChange={(e) => updateCloudProvider(index, "name", e.target.value)} placeholder={t("Provider name")} className="flex-1 h-9" />
                         <Select value={cp.serviceType} onValueChange={(value) => updateCloudProvider(index, "serviceType", value)}>
                           <SelectTrigger className="w-24 h-9">
-                            <SelectValue placeholder="Type" />
+                            <SelectValue placeholder={t("Type")} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Iaas">IaaS</SelectItem>
@@ -598,7 +598,7 @@ export function EditProfileWizard({
 
               {/* Social Media */}
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-3 block">Social Media</Label>
+                <Label className="text-sm font-medium text-slate-700 mb-3 block">{t("Social Media")}</Label>
                 <div className="grid grid-cols-2 gap-3">
                   <Input value={formData.facebook} onChange={(e) => setFormData({ ...formData, facebook: e.target.value })} placeholder="Facebook URL" />
                   <Input value={formData.linkedin} onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })} placeholder="LinkedIn URL" />
@@ -609,19 +609,19 @@ export function EditProfileWizard({
 
               {/* Brochure */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Brochure</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Brochure")}</Label>
                 <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
                   {formData.brochure ? (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-600">{formData.brochure.split("/").pop()}</span>
                       <Button type="button" variant="ghost" size="sm" className="text-slate-400 hover:text-semantic-error" onClick={() => setFormData({ ...formData, brochure: "" })}>
-                        Remove
+                        {t("Remove")}
                       </Button>
                     </div>
                   ) : (
                     <label className="flex flex-col items-center cursor-pointer py-2">
                       <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                      <span className="text-sm text-slate-500">Click to upload</span>
+                      <span className="text-sm text-slate-500">{t("Click to upload")}</span>
                       <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, "brochure")} />
                     </label>
                   )}
@@ -634,35 +634,35 @@ export function EditProfileWizard({
           {currentStep === 2 && (
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Vision</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Vision")}</Label>
                 <Textarea
                   value={formData.vision}
                   onChange={(e) => setFormData({ ...formData, vision: e.target.value })}
                   className="mt-1.5"
                   rows={5}
-                  placeholder="Where do you see your organization in the future?"
+                  placeholder={t("Where do you see your organization in the future?")}
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Mission</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Mission")}</Label>
                 <Textarea
                   value={formData.mission}
                   onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
                   className="mt-1.5"
                   rows={5}
-                  placeholder="What is your organization's purpose?"
+                  placeholder={t("What is your organization's purpose?")}
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Core Values</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Core Values")}</Label>
                 <Textarea
                   value={formData.value}
                   onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                   className="mt-1.5"
                   rows={5}
-                  placeholder="What principles guide your organization?"
+                  placeholder={t("What principles guide your organization?")}
                 />
               </div>
             </div>
@@ -671,13 +671,13 @@ export function EditProfileWizard({
           {/* Step 3: CEO Message */}
           {currentStep === 3 && (
             <div>
-              <Label className="text-sm font-medium text-slate-700">CEO Message</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("CEO Message")}</Label>
               <Textarea
                 value={formData.ceoMessage}
                 onChange={(e) => setFormData({ ...formData, ceoMessage: e.target.value })}
                 className="mt-1.5"
                 rows={14}
-                placeholder="Share a message from your CEO..."
+                placeholder={t("Share a message from your CEO...")}
               />
             </div>
           )}
@@ -687,30 +687,30 @@ export function EditProfileWizard({
             <div className="space-y-4">
               {/* Organization Info */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Organization</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t("Organization")}</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm text-slate-500">Name</span>
+                    <span className="text-sm text-slate-500">{t("Name")}</span>
                     <span className="text-sm font-medium text-slate-800">{formData.name || "-"}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm text-slate-500">Email</span>
+                    <span className="text-sm text-slate-500">{t("Email")}</span>
                     <span className="text-sm text-slate-700">{formData.email || "-"}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm text-slate-500">Phone</span>
+                    <span className="text-sm text-slate-500">{t("Phone")}</span>
                     <span className="text-sm text-slate-700">{formData.phone || "-"}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm text-slate-500">Website</span>
+                    <span className="text-sm text-slate-500">{t("Website")}</span>
                     <span className="text-sm text-primary-600">{formData.website || "-"}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm text-slate-500">Established</span>
+                    <span className="text-sm text-slate-500">{t("Established")}</span>
                     <span className="text-sm text-slate-700">{formData.establishedDate || "-"}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm text-slate-500">Employees</span>
+                    <span className="text-sm text-slate-500">{t("Employees")}</span>
                     <span className="text-sm text-slate-700">{formData.employeeCount || "-"}</span>
                   </div>
                 </div>
@@ -718,14 +718,14 @@ export function EditProfileWizard({
 
               {/* Locations */}
               <div className="space-y-2 pt-2">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Locations</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t("Locations")}</p>
                 <div className="flex justify-between py-2 border-b border-slate-100">
-                  <span className="text-sm text-slate-500">Head Office</span>
+                  <span className="text-sm text-slate-500">{t("Head Office")}</span>
                   <span className="text-sm text-slate-700">{formData.headOfficeLocation || "-"}</span>
                 </div>
                 {formData.branches.map((branch, index) => (
                   <div key={index} className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-sm text-slate-500">Branch {index + 1}</span>
+                    <span className="text-sm text-slate-500">{t("Branch")} {index + 1}</span>
                     <span className="text-sm text-slate-700">{branch.location || "-"}</span>
                   </div>
                 ))}
@@ -734,16 +734,16 @@ export function EditProfileWizard({
               {/* Infrastructure */}
               {(formData.dataCenters.length > 0 || formData.cloudProviders.length > 0) && (
                 <div className="space-y-2 pt-2">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Infrastructure</p>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t("Infrastructure")}</p>
                   {formData.dataCenters.map((dc, index) => (
                     <div key={index} className="flex justify-between py-2 border-b border-slate-100">
-                      <span className="text-sm text-slate-500">Data Center</span>
+                      <span className="text-sm text-slate-500">{t("Data Center")}</span>
                       <span className="text-sm text-slate-700">{dc.locationType}</span>
                     </div>
                   ))}
                   {formData.cloudProviders.map((cp, index) => (
                     <div key={index} className="flex justify-between py-2 border-b border-slate-100">
-                      <span className="text-sm text-slate-500">Cloud</span>
+                      <span className="text-sm text-slate-500">{t("Cloud")}</span>
                       <span className="text-sm text-slate-700">{cp.name} ({cp.serviceType})</span>
                     </div>
                   ))}
@@ -753,22 +753,22 @@ export function EditProfileWizard({
               {/* Vision, Mission, Values */}
               {(formData.vision || formData.mission || formData.value) && (
                 <div className="space-y-3 pt-2">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Vision, Mission & Values</p>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t("Vision, Mission & Values")}</p>
                   {formData.vision && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Vision</p>
+                      <p className="text-xs text-slate-400 mb-1">{t("Vision")}</p>
                       <p className="text-sm text-slate-700">{formData.vision}</p>
                     </div>
                   )}
                   {formData.mission && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Mission</p>
+                      <p className="text-xs text-slate-400 mb-1">{t("Mission")}</p>
                       <p className="text-sm text-slate-700">{formData.mission}</p>
                     </div>
                   )}
                   {formData.value && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Values</p>
+                      <p className="text-xs text-slate-400 mb-1">{t("Values")}</p>
                       <p className="text-sm text-slate-700">{formData.value}</p>
                     </div>
                   )}
@@ -778,7 +778,7 @@ export function EditProfileWizard({
               {/* CEO Message */}
               {formData.ceoMessage && (
                 <div className="space-y-2 pt-2">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">CEO Message</p>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t("CEO Message")}</p>
                   <p className="text-sm text-slate-700">{formData.ceoMessage}</p>
                 </div>
               )}
@@ -789,7 +789,7 @@ export function EditProfileWizard({
         {/* Fixed Footer */}
         <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
           <span className="text-xs font-medium text-slate-400 me-auto">
-            Step {currentStep} of 4
+            {t("Step")} {currentStep} {t("of")} 4
           </span>
           <Button
             variant="outline"
@@ -802,16 +802,16 @@ export function EditProfileWizard({
             }}
           >
             {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
-            {currentStep === 1 ? "Cancel" : "Previous"}
+            {currentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           {currentStep < 4 ? (
             <Button onClick={handleNext}>
-              Next
+              {t("Next")}
               <ChevronRight className="h-4 w-4 ms-1" />
             </Button>
           ) : (
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           )}
         </div>
