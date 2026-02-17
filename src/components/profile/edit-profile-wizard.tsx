@@ -287,13 +287,27 @@ export function EditProfileWizard({
     setFormData({ ...formData, cloudProviders: updated });
   };
 
-  // File upload handler (placeholder - implement actual upload)
+  // File upload handler - converts to base64 data URL for logos (works on Vercel serverless)
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "logo" | "brochure"
   ) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    if (field === "logo") {
+      // Logo: convert to base64 data URL (small images, stored directly in DB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Logo file must be under 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFormData({ ...formData, logo: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Brochure: upload to server
       const formDataUpload = new FormData();
       formDataUpload.append("file", file);
       try {
