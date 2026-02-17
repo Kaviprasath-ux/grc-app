@@ -27,9 +27,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     let fileBuffer: Buffer | null = null;
 
-    // 1. Try fileData from DB first (works on Vercel serverless)
-    if (document.fileData) {
-      fileBuffer = Buffer.from(document.fileData);
+    // 1. Try fileData from DB via raw SQL (bypasses Prisma client cache on Vercel)
+    try {
+      const rows = await prisma.$queryRaw<Array<{ fileData: Buffer | null }>>`
+        SELECT "fileData" FROM "InternalAuditDocument" WHERE "id" = ${id}
+      `;
+      if (rows[0]?.fileData) {
+        fileBuffer = Buffer.from(rows[0].fileData);
+      }
+    } catch {
+      // raw SQL failed, will try disk fallback
     }
 
     // 2. Fall back to disk read (local dev or old documents without fileData)

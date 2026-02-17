@@ -96,10 +96,17 @@ export const POST = withAuth(
       for (const doc of documents) {
         let buf: Buffer | null = null;
 
-        // 1. Try fileData from DB first (works on Vercel serverless)
-        if (doc.fileData) {
-          buf = Buffer.from(doc.fileData);
-          console.log('[Document Ingest] Using fileData from DB for: ' + doc.fileName);
+        // 1. Try fileData from DB via raw SQL (bypasses Prisma client cache on Vercel)
+        try {
+          const rows = await prisma.$queryRaw<Array<{ fileData: Buffer | null }>>`
+            SELECT "fileData" FROM "InternalAuditDocument" WHERE "id" = ${doc.id}
+          `;
+          if (rows[0]?.fileData) {
+            buf = Buffer.from(rows[0].fileData);
+            console.log('[Document Ingest] Using fileData from DB for: ' + doc.fileName);
+          }
+        } catch (rawErr) {
+          console.warn('[Document Ingest] Raw SQL fileData read failed:', rawErr);
         }
 
         // 2. Fall back to disk read (local dev or old documents without fileData)

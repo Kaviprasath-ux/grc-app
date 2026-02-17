@@ -145,7 +145,7 @@ export const POST = withAuth(
       }
       const documentCode = `DOC-${String(nextNum).padStart(4, "0")}`;
 
-      // Create document record in database (store binary for Vercel serverless compatibility)
+      // Create document record in database
       const document = await prisma.internalAuditDocument.create({
         data: {
           documentCode,
@@ -156,16 +156,16 @@ export const POST = withAuth(
           fileType: ext.replace(".", "").toLowerCase(),
           fileSize: buffer.length,
           filePath: urlPath,
-          fileData: Buffer.from(buffer),
           uploadedAt: new Date(),
           ...(customerAccountId ? { customerAccountId } : {}),
           ...(auditHeadId ? { auditHeadId } : {}),
         },
       });
 
-      // Return document without fileData binary
-      const { fileData: _, ...docResponse } = document;
-      return NextResponse.json(docResponse, { status: 201 });
+      // Store file binary via raw SQL (bypasses Prisma client cache on Vercel)
+      await prisma.$executeRaw`UPDATE "InternalAuditDocument" SET "fileData" = ${Buffer.from(buffer)} WHERE "id" = ${document.id}`;
+
+      return NextResponse.json(document, { status: 201 });
     } catch (error) {
       console.error("Error uploading document:", error);
       return NextResponse.json(
