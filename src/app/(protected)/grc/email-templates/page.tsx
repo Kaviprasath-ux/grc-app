@@ -793,6 +793,10 @@ export default function EmailTemplatesPage() {
           <span>{t("GRC")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <span>{t("Email")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{t("Email Templates")}</span>
       </nav>
 
