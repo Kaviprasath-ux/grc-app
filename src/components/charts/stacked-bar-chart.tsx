@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface StackedBarChartProps {
   title: string;
@@ -34,6 +35,7 @@ export function StackedBarChart({
   className,
   onClick,
 }: StackedBarChartProps) {
+  const { isRTL } = useLanguage();
   const isVertical = layout === "vertical";
 
   // Dynamic height based on number of items (minimum 200px)
@@ -77,12 +79,15 @@ export function StackedBarChart({
           No data available
         </div>
       ) : (
-      <div style={{ height: `${chartHeight}px` }}>
+      <div style={{ height: `${chartHeight}px`, direction: "ltr" }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             layout={isVertical ? "vertical" : "horizontal"}
             data={data}
-            margin={{ top: 5, right: 10, left: isVertical ? 0 : -5, bottom: 5 }}
+            margin={isRTL
+              ? { top: 5, right: isVertical ? 10 : -5, left: 10, bottom: 5 }
+              : { top: 5, right: 10, left: isVertical ? 0 : -5, bottom: 5 }
+            }
             barCategoryGap="25%"
           >
             <CartesianGrid
@@ -99,14 +104,16 @@ export function StackedBarChart({
                   axisLine={false}
                   tickLine={false}
                   tickCount={5}
+                  reversed={isRTL}
                 />
                 <YAxis
                   dataKey={yAxisDataKey}
                   type="category"
-                  width={60}
+                  width={isRTL ? 120 : 60}
                   tick={{ fontSize: 10, fill: "#475569", fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}
+                  orientation={isRTL ? "right" : "left"}
                 />
               </>
             ) : (
@@ -116,6 +123,7 @@ export function StackedBarChart({
                   tick={{ fontSize: 11, fill: "#475569", fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}
+                  reversed={isRTL}
                 />
                 <YAxis
                   width={25}
@@ -123,6 +131,7 @@ export function StackedBarChart({
                   axisLine={false}
                   tickLine={false}
                   tickCount={5}
+                  orientation={isRTL ? "right" : "left"}
                 />
               </>
             )}

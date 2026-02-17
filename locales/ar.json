@@ -545,6 +545,7 @@
   "Issue By Category": "القضايا حسب الفئة",
   "Issue By Department": "القضايا حسب القسم",
   "Issue By Domain": "القضايا حسب المجال",
+  "item": "عنصر",
   "items": "عناصر",
   "Evidence KPI": "مؤشرات أداء الأدلة",
   "Process KPI": "مؤشرات أداء العمليات",
@@ -1123,5 +1124,8 @@
   "Waiting to start processing...": "في انتظار بدء المعالجة...",
   "What is your organization's purpose?": "ما هو هدف منظمتك؟",
   "What principles guide your organization?": "ما هي المبادئ التي توجه منظمتك؟",
-  "Where do you see your organization in the future?": "أين ترى منظمتك في المستقبل؟"
+  "Where do you see your organization in the future?": "أين ترى منظمتك في المستقبل؟",
+  "Uncategorized": "غير مصنف",
+  "View All": "عرض الكل",
+  "Show Less": "عرض أقل"
 }

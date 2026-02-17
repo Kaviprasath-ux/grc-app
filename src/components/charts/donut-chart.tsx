@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DonutChartData {
   name: string;
@@ -44,6 +45,7 @@ function calculatePercentages(data: DonutChartData[], total: number): number[] {
 }
 
 export function DonutChart({ title, data, centerLabel, centerSubLabel, className, onClick }: DonutChartProps) {
+  const { t } = useLanguage();
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const percentages = calculatePercentages(data, total);
 
@@ -61,7 +63,7 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
           <span className="text-xs text-slate-400">
-            {data.length} {data.length === 1 ? 'item' : 'items'}
+            {data.length} {data.length === 1 ? t('item') : t('items')}
           </span>
         </div>
       )}

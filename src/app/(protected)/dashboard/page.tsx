@@ -201,7 +201,7 @@ export default function DashboardPage() {
         />
         <HorizontalBarChart
           title={t("Risk Assessment Overview")}
-          data={riskAssessmentData}
+          data={riskAssessmentData.map(item => ({ ...item, category: t(item.category) }))}
           yAxisDataKey="category"
           bars={[
             { dataKey: "closed", fill: "#10B981", name: t("Closed") },
@@ -215,28 +215,28 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <DonutChart
           title={t("Issue By Category")}
-          data={issueByCategoryData}
+          data={issueByCategoryData.map(item => ({ ...item, name: t(item.name) }))}
           centerLabel={issueCategoryTotal}
           centerSubLabel={t("Total")}
           onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
           title={t("Issue By Department")}
-          data={issueByDepartmentData}
+          data={issueByDepartmentData.map(item => ({ ...item, name: t(item.name) }))}
           centerLabel={issueDepartmentTotal}
           centerSubLabel={t("Total")}
           onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
           title={t("Issue By Domain")}
-          data={issueByDomainData}
+          data={issueByDomainData.map(item => ({ ...item, name: t(item.name) }))}
           centerLabel={issueDomainTotal}
           centerSubLabel={t("Total")}
           onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
           title={t("Exceptions")}
-          data={exceptionByTypeData}
+          data={exceptionByTypeData.map(item => ({ ...item, name: t(item.name) }))}
           centerLabel={exceptionTotal}
           centerSubLabel={t("Total")}
           onClick={() => router.push("/compliance/exceptions?from=dashboard")}
@@ -275,7 +275,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <StackedBarChart
           title={t("Governance Status")}
-          data={governanceStatusData}
+          data={governanceStatusData.map(item => ({ ...item, type: t(item.type) }))}
           yAxisDataKey="type"
           bars={[
             { dataKey: "notUploaded", fill: "#EF4444", name: t("Not Uploaded") },
@@ -289,7 +289,7 @@ export default function DashboardPage() {
         />
         <HorizontalBarChart
           title={t("Exception Status")}
-          data={exceptionStatusData}
+          data={exceptionStatusData.map(item => ({ ...item, type: t(item.type) }))}
           yAxisDataKey="type"
           bars={[
             { dataKey: "approved", fill: "#10B981", name: t("Approved") },
