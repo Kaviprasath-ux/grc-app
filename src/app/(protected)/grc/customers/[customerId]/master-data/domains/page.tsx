@@ -133,7 +133,7 @@ export default function CustomerMasterDataDomainsPage() {
   };
 
   const breadcrumb = (
-    <nav className="flex items-center gap-1.5 text-sm flex-wrap">
+    <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
       <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
         <Home className="h-4 w-4" />
         <span>{t("GRC")}</span>

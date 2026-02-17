@@ -126,7 +126,7 @@ export default function AuditUniversePage() {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
@@ -163,7 +163,7 @@ export default function AuditUniversePage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
@@ -186,7 +186,7 @@ export default function AuditUniversePage() {
       </div>
 
       {/* Summary Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-xl border border-slate-200 px-3 sm:px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">

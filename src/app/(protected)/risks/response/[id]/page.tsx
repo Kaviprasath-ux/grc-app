@@ -394,7 +394,7 @@ export default function RiskViewPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
@@ -757,7 +757,7 @@ export default function RiskViewPage() {
       {/* Success Dialog */}
       <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+          <AlertDialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500">
               {currentStatus === "Completed" && t("Risk Approved Successfully!")}
@@ -766,7 +766,7 @@ export default function RiskViewPage() {
               {!["Completed", "Awaiting Approval", "Sent Back"].includes(currentStatus) && t("Action completed successfully!")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
               {t("OK")}
             </AlertDialogAction>

@@ -297,7 +297,7 @@ function ViewFindingContent() {
   if (loading || !formData) {
     return (
       <div className="p-3 sm:p-6">
-        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
           <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
@@ -328,7 +328,7 @@ function ViewFindingContent() {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
         <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
@@ -343,7 +343,7 @@ function ViewFindingContent() {
 
       {/* Breadcrumb Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -717,7 +717,7 @@ function ViewFindingContent() {
 
           {/* Action Buttons */}
           {isEditing && (
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
+            <div className="flex flex-row justify-end gap-3 pt-6 border-t">
               <Button
                 variant="outline"
                 onClick={() => {

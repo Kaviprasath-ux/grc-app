@@ -351,7 +351,7 @@ export default function RiskResponsePage() {
     return (
       <div className="space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
@@ -381,7 +381,7 @@ export default function RiskResponsePage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
@@ -406,7 +406,7 @@ export default function RiskResponsePage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-800">{t("Risk Response Strategy")}</h3>
             <Select value={strategyFilter} onValueChange={setStrategyFilter}>
-              <SelectTrigger className="w-32 h-8 text-xs border-slate-200">
+              <SelectTrigger className="w-full sm:w-32 h-8 text-xs border-slate-200">
                 <SelectValue placeholder={t("Strategy")} />
               </SelectTrigger>
               <SelectContent>
@@ -473,7 +473,7 @@ export default function RiskResponsePage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-800">{t("Risk Response Progress")}</h3>
             <Select value={progressFilter} onValueChange={setProgressFilter}>
-              <SelectTrigger className="w-40 h-8 text-xs border-slate-200">
+              <SelectTrigger className="w-full sm:w-40 h-8 text-xs border-slate-200">
                 <SelectValue placeholder={t("Status")} />
               </SelectTrigger>
               <SelectContent>
@@ -555,7 +555,7 @@ export default function RiskResponsePage() {
 
         {/* Column Headers */}
         <div className="overflow-x-auto">
-        <div className="grid grid-cols-[100px_1.5fr_120px_110px_110px_120px_110px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[780px]">
+        <div className="grid grid-cols-[80px_1.5fr_100px_90px_90px_100px_90px] gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[800px]">
           <span>{t("Risk ID")}</span>
           <span>{t("Risk Name")}</span>
           <span>{t("Risk Rating")}</span>
@@ -579,7 +579,7 @@ export default function RiskResponsePage() {
             paginatedRisks.map((risk) => (
               <div
                 key={risk.id}
-                className="grid grid-cols-[100px_1.5fr_120px_110px_110px_120px_110px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[780px]"
+                className="grid grid-cols-[80px_1.5fr_100px_90px_90px_100px_90px] gap-2 sm:gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[800px]"
               >
                 <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                 <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
@@ -626,13 +626,13 @@ export default function RiskResponsePage() {
       {/* Success Dialog */}
       <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
-          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+          <AlertDialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <AlertDialogTitle>{t("Information")}</AlertDialogTitle>
             <AlertDialogDescription>
               {successMessage}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
               {t("OK")}
             </AlertDialogAction>

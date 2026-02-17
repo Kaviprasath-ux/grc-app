@@ -360,7 +360,7 @@ function RiskRegisterContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
@@ -379,7 +379,7 @@ function RiskRegisterContent() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
@@ -453,8 +453,7 @@ function RiskRegisterContent() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        
+      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
@@ -470,7 +469,7 @@ function RiskRegisterContent() {
           {t("Activity Log")}
         </Button>
         <PermissionGate resource="risk.register" action="create">
-          <Button size="sm" onClick={handleNewRisk} className="bg-primary-600 hover:bg-primary-700">
+          <Button size="sm" className="bg-primary-600 hover:bg-primary-700" onClick={handleNewRisk}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("New Risk")}
           </Button>
@@ -543,7 +542,7 @@ function RiskRegisterContent() {
 
           {/* Column Headers + Rows */}
           <div className="overflow-x-auto">
-          <div className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]`}>
+          <div className={`grid ${canEdit || canDelete ? "grid-cols-[80px_1.5fr_1fr_100px_100px_90px_56px]" : "grid-cols-[80px_1.5fr_1fr_100px_100px_90px]"} gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]`}>
             <span>{t("Risk ID")}</span>
             <span>{t("Risk Name")}</span>
             <span>{t("Risk Description")}</span>
@@ -558,7 +557,7 @@ function RiskRegisterContent() {
             {paginatedRisks.map((risk) => (
               <div
                 key={risk.id}
-                className={`grid ${canEdit || canDelete ? "grid-cols-[100px_1.5fr_1fr_120px_120px_100px_72px]" : "grid-cols-[100px_1.5fr_1fr_120px_120px_100px]"} gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]`}
+                className={`grid ${canEdit || canDelete ? "grid-cols-[80px_1.5fr_1fr_100px_100px_90px_56px]" : "grid-cols-[80px_1.5fr_1fr_100px_100px_90px]"} gap-2 sm:gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]`}
               >
                 <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                 <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
@@ -637,7 +636,7 @@ function RiskRegisterContent() {
               {t("Are you sure you want to delete this risk?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
@@ -785,7 +784,7 @@ function RiskRegisterContent() {
             </div>
           </div>
           {selectedFile && (
-            <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <div className="flex-shrink-0 flex flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => setSelectedFile(null)}

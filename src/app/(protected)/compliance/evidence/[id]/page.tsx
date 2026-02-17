@@ -1525,7 +1525,7 @@ export default function EvidenceDetailPage() {
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Breadcrumb */}
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href={fromFramework ? "/roles/customer-administrator/compliance" : ""} className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -2422,7 +2422,7 @@ export default function EvidenceDetailPage() {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+                    <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                       <Button
                         onClick={handleLinkControls}
                         disabled={selectedControlIds.length === 0}
@@ -2589,7 +2589,7 @@ export default function EvidenceDetailPage() {
               {t("Are you sure you want to delete this evidence? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
@@ -2680,7 +2680,7 @@ export default function EvidenceDetailPage() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button
                 onClick={handleUploadAttachment}
                 disabled={!selectedFile || uploading}
@@ -2717,7 +2717,7 @@ export default function EvidenceDetailPage() {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Close")}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2830,7 +2830,7 @@ export default function EvidenceDetailPage() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               className="rounded-lg"
@@ -2912,7 +2912,7 @@ export default function EvidenceDetailPage() {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-end gap-2">
+            <div className="flex flex-row justify-end gap-2">
               <Button variant="outline" onClick={() => setSendBackDialogOpen(false)} className="w-full sm:w-auto">
                 {t("Cancel")}
               </Button>
@@ -2982,7 +2982,7 @@ export default function EvidenceDetailPage() {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-end gap-2">
+            <div className="flex flex-row justify-end gap-2">
               <Button variant="outline" onClick={() => setResubmitDialogOpen(false)} className="w-full sm:w-auto">
                 {t("Cancel")}
               </Button>

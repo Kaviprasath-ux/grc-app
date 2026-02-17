@@ -261,7 +261,7 @@ export default function RiskAssessmentPage() {
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
@@ -293,7 +293,7 @@ export default function RiskAssessmentPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
@@ -383,7 +383,7 @@ export default function RiskAssessmentPage() {
 
         {/* Column Headers */}
         <div className="overflow-x-auto">
-        <div className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[800px]">
+        <div className="grid grid-cols-[80px_1.5fr_1fr_90px_1fr_90px_90px_90px] gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[800px]">
           <span>{t("Risk ID")}</span>
           <span>{t("Risk Name")}</span>
           <span>{t("Description")}</span>
@@ -410,7 +410,7 @@ export default function RiskAssessmentPage() {
               return (
                 <div
                   key={risk.id}
-                  className="grid grid-cols-[100px_1.5fr_1fr_110px_1fr_110px_100px_100px] gap-4 px-3 sm:px-5 py-3 items-center hover:bg-slate-50/50 transition-colors min-w-[800px]"
+                  className="grid grid-cols-[80px_1.5fr_1fr_90px_1fr_90px_90px_90px] gap-2 sm:gap-4 px-3 sm:px-5 py-3 items-center hover:bg-slate-50/50 transition-colors min-w-[800px]"
                 >
                   <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                   <span className="text-sm text-slate-700 truncate">{risk.name}</span>

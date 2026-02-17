@@ -124,9 +124,9 @@ export function RiskDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" showCloseButton={false}>
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" showCloseButton={false}>
         {/* Fixed Header */}
-        <div className="flex-shrink-0 px-6 pt-5 pb-0">
+        <div className="flex-shrink-0 px-4 sm:px-6 pt-5 pb-0">
           <DialogHeader>
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
@@ -146,7 +146,7 @@ export function RiskDetailDialog({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex-shrink-0 px-6 border-b border-slate-200">
+        <div className="flex-shrink-0 px-4 sm:px-6 border-b border-slate-200">
           <div className="flex items-center gap-1 overflow-x-auto -mb-px">
             {sections.map((section, index) => {
               const Icon = section.icon;
@@ -170,11 +170,11 @@ export function RiskDetailDialog({
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
           {/* Risk Overview Section */}
           {activeSection === 0 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk ID</p>
                   <p className="font-semibold text-slate-800 mt-1">{risk.riskId}</p>
@@ -184,7 +184,7 @@ export function RiskDetailDialog({
                   <RiskStatusBadge status={risk.status} className="mt-1" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Rating</p>
                   <RiskRatingBadge rating={risk.riskRating} className="mt-1" />
@@ -194,7 +194,7 @@ export function RiskDetailDialog({
                   <p className="font-bold text-lg text-slate-800 mt-0.5">{risk.riskScore}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Department</p>
                   <p className="font-medium text-slate-800 mt-1">{risk.department?.name || "-"}</p>
@@ -207,7 +207,7 @@ export function RiskDetailDialog({
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Created</p>
                   <p className="font-medium text-slate-800 mt-1">
@@ -235,7 +235,7 @@ export function RiskDetailDialog({
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Risk Sources</p>
                 <p className="text-sm text-slate-700">{risk.riskSources || "No sources specified"}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Category</p>
                   <p className="font-medium text-slate-800 mt-1">{risk.category?.name || "-"}</p>
@@ -319,7 +319,7 @@ export function RiskDetailDialog({
           {activeSection === 2 && (
             <div className="space-y-4">
               {/* Likelihood / Impact / Score */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Likelihood</p>
                   <p className="text-3xl font-bold text-slate-800 mt-1">{risk.likelihood}</p>
@@ -443,7 +443,7 @@ export function RiskDetailDialog({
           {/* Risk Response Section */}
           {activeSection === 4 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Response Strategy</p>
                   <p className="font-semibold text-slate-800 mt-1">
@@ -551,7 +551,7 @@ export function RiskDetailDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex items-center justify-center px-6 py-3 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+        <div className="flex-shrink-0 flex items-center justify-center px-4 sm:px-6 py-3 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
           <p className="text-xs font-medium text-slate-400">
             {sections[activeSection].label} &middot; {activeSection + 1} of {sections.length}
           </p>

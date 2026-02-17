@@ -778,7 +778,7 @@ export default function GovernancePage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -813,7 +813,7 @@ export default function GovernancePage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                 <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
                 <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
                 <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
@@ -827,7 +827,7 @@ export default function GovernancePage() {
           {["Policy", "Standard", "Procedure"].map((docType) => (
             <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
               {/* Status Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                 <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
                 <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
                 <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
@@ -844,7 +844,7 @@ export default function GovernancePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+              <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={handleExport}>
                   <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Export")}
@@ -1160,7 +1160,7 @@ export default function GovernancePage() {
           {["Policy", "Standard", "Procedure"].map((docType) => (
             <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+              <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
                 <PermissionGate resource="compliance.governance" action="create">
                   <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
                     <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1417,7 +1417,7 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsLinkDialogOpen(false)} className="w-full sm:w-auto">
               {t("Cancel")}
             </Button>
@@ -1723,7 +1723,7 @@ export default function GovernancePage() {
             )}
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1766,7 +1766,7 @@ export default function GovernancePage() {
               {t("Are you sure you want to delete")} &quot;{policyToDelete?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel onClick={() => setPolicyToDelete(null)}>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeletePolicy} className="bg-red-600 hover:bg-red-700">
               {t("Delete")}
@@ -1784,7 +1784,7 @@ export default function GovernancePage() {
               {t("Are you sure you want to delete all")} {t(activeDocType).toLowerCase()}s? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
               {t("Delete All")}
@@ -1859,7 +1859,7 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
@@ -1975,7 +1975,7 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => {
               setIsEditDialogOpen(false);
               setEditingPolicy(null);

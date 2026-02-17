@@ -92,7 +92,7 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-5">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-400">
           <Home className="h-4 w-4" />
           <span>{t("Home")}</span>

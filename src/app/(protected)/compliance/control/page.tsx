@@ -673,7 +673,7 @@ function ControlListPageContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -688,7 +688,7 @@ function ControlListPageContent() {
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-xl p-3 sm:p-5 border border-slate-200">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
@@ -872,7 +872,7 @@ function ControlListPageContent() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Export")}
@@ -884,13 +884,13 @@ function ControlListPageContent() {
               </Button>
             </PermissionGate>
             {isCustomerAdmin ? (
-              <Button size="sm" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
+              <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("New Control")}
               </Button>
             ) : (
               <PermissionGate resource="compliance.controls" action="create">
-                <Button size="sm" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
+                <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => { setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); setCreateStep(1); setIsCreateDialogOpen(true); }}>
                   <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("New Control")}
                 </Button>
@@ -1350,7 +1350,7 @@ function ControlListPageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <span className="text-xs font-medium text-slate-400 me-auto">
               {t("Step")} {createStep} {t("of")} 3
             </span>
@@ -1449,7 +1449,7 @@ function ControlListPageContent() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               {t("Download Template")}
@@ -1482,7 +1482,7 @@ function ControlListPageContent() {
               {t("Are you sure you want to delete all controls? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAll}
@@ -1545,7 +1545,7 @@ function ControlListPageContent() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsCreateDomainDialogOpen(false);
               setNewDomain({ code: "", name: "" });

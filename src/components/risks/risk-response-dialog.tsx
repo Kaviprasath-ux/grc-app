@@ -323,11 +323,11 @@ export function RiskResponseDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0"
+          className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0"
           showCloseButton={false}
         >
           {/* Fixed Header */}
-          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-200">
+          <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-200">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-lg font-semibold text-slate-800 truncate pe-2">
@@ -396,7 +396,7 @@ export function RiskResponseDialog({
                 {currentStatus === "Sent Back" &&
                   risk.activityLogs &&
                   risk.activityLogs.length > 0 && (
-                    <div className="mx-6 mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
+                    <div className="mx-4 sm:mx-6 mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
                       <h4 className="text-sm font-semibold text-red-800 mb-2">
                         {t("Reviewer Comments")}
                       </h4>
@@ -424,7 +424,7 @@ export function RiskResponseDialog({
                   )}
 
                 {/* Quick Stats Strip */}
-                <div className="grid grid-cols-4 border-b border-slate-200">
+                <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-slate-200">
                   <div className="px-4 py-4 text-center border-r border-slate-100">
                     <div className="flex items-center justify-center gap-1.5 mb-1">
                       <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
@@ -462,7 +462,7 @@ export function RiskResponseDialog({
                 </div>
 
                 {/* Risk Details Section */}
-                <div className="px-6 py-5 border-b border-slate-200">
+                <div className="px-4 sm:px-6 py-5 border-b border-slate-200">
                   <h4 className="text-sm font-semibold text-slate-800 mb-3">
                     {t("Risk Details")}
                   </h4>
@@ -471,7 +471,7 @@ export function RiskResponseDialog({
                       {risk.description}
                     </p>
                   )}
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
                     <div className="flex justify-between py-2.5 border-b border-slate-100">
                       <span className="text-sm text-slate-500">{t("Risk Owner")}</span>
                       <span className="text-sm font-medium text-slate-800">{risk.owner?.fullName || "-"}</span>
@@ -504,7 +504,7 @@ export function RiskResponseDialog({
                 </div>
 
                 {/* Existing Controls Section */}
-                <div className="px-6 py-5 border-b border-slate-200">
+                <div className="px-4 sm:px-6 py-5 border-b border-slate-200">
                   <h4 className="text-sm font-semibold text-slate-800 mb-3">
                     {t("Existing Controls")}
                   </h4>
@@ -550,7 +550,7 @@ export function RiskResponseDialog({
                 </div>
 
                 {/* Planned Controls Section */}
-                <div className="px-6 py-5">
+                <div className="px-4 sm:px-6 py-5">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-sm font-semibold text-slate-800">
                       {t("Planned Controls")}
@@ -639,7 +639,7 @@ export function RiskResponseDialog({
 
           {/* Sticky Footer with Action Buttons */}
           {risk && renderActionButtons() && (
-            <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-end gap-2">
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-end gap-2">
               {renderActionButtons()}
             </div>
           )}
@@ -672,7 +672,7 @@ export function RiskResponseDialog({
           if (!o) setSendBackComment("");
         }}
       >
-        <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px]" showCloseButton={false}>
           <DialogHeader className="border-b border-slate-100 pb-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -710,7 +710,7 @@ export function RiskResponseDialog({
               onChange={(e) => setSendBackComment(e.target.value)}
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+          <div className="flex flex-row justify-end gap-2 pt-4 border-t border-slate-100">
             <Button
               variant="outline"
               onClick={() => setShowSendBackDialog(false)}

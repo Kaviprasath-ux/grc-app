@@ -611,7 +611,7 @@ export default function InternalAuditDashboard() {
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-slate-50/50 rounded-xl border border-slate-200 p-5">
                 <div className="text-2xl font-bold text-slate-800">{auditDetail.findingsCount || 0}</div>
                 <div className="text-sm font-medium text-slate-500 mt-1">{t("Findings")}</div>
@@ -663,7 +663,7 @@ export default function InternalAuditDashboard() {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
@@ -677,7 +677,7 @@ export default function InternalAuditDashboard() {
           <p className="text-sm text-slate-500 mt-1">{t("Track your evidence requests and corrective actions")}</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <Link href="/internal-audit/fieldwork" className="block">
             <div className="relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white">
               <div className="flex items-start justify-between mb-3">
@@ -741,7 +741,7 @@ export default function InternalAuditDashboard() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
@@ -772,7 +772,7 @@ export default function InternalAuditDashboard() {
       </Dialog>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <div
           className={`relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white ${canDrillDown ? "cursor-pointer" : ""}`}
           onClick={() => handleRiskCardClick('all', t('All Risks'))}

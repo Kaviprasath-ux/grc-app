@@ -198,13 +198,13 @@ export function ChooseControlDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
           <DialogTitle className="text-lg font-semibold text-slate-800">Select Governance</DialogTitle>
         </DialogHeader>
 
         {/* Filters */}
-        <div className="flex-shrink-0 grid grid-cols-2 gap-4 px-6 py-4 border-b border-slate-100">
+        <div className="flex-shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4 sm:px-6 py-4 border-b border-slate-100">
           <Select value={domain} onValueChange={setDomain}>
             <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="Domain" />
@@ -235,7 +235,7 @@ export function ChooseControlDialog({
         </div>
 
         {/* Search and List */}
-        <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
+        <div className="flex-1 overflow-hidden flex flex-col px-4 sm:px-6 py-4">
           {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -301,7 +301,7 @@ export function ChooseControlDialog({
         </div>
 
         {/* Actions */}
-        <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+        <div className="flex-shrink-0 flex flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>

@@ -597,7 +597,7 @@ export default function EvidencesMasterDataPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -792,12 +792,12 @@ export default function EvidencesMasterDataPage() {
                 }`}>
                   {step < newStep ? <Check className="h-4 w-4" /> : step}
                 </div>
-                <span className={`ltr:ml-2 rtl:mr-2 text-sm ${
+                <span className={`hidden sm:inline ltr:ml-2 rtl:mr-2 text-sm ${
                   step === newStep ? "text-slate-800 font-medium" : "text-slate-500"
                 }`}>
                   {step === 1 ? t("Evidence Details") : step === 2 ? t("Controls") : t("Review")}
                 </span>
-                {step < 3 && <div className="w-12 h-0.5 bg-slate-200 mx-3" />}
+                {step < 3 && <div className="w-6 sm:w-12 h-0.5 bg-slate-200 mx-1.5 sm:mx-3" />}
               </div>
             ))}
           </div>

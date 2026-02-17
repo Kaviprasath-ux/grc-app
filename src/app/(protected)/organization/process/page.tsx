@@ -1655,7 +1655,7 @@ export default function ProcessPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -1683,7 +1683,7 @@ export default function ProcessPage() {
         {/* Repository Tab */}
         <TabsContent value="repository" className="mt-6">
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-4">
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 mb-4">
             <Button variant="outline" size="sm" onClick={handleExportRepository}>
               <Upload className="h-4 w-4 me-2" />
               {t("Export")}
@@ -1695,7 +1695,7 @@ export default function ProcessPage() {
               </Button>
             )}
             {canAddProcess && (
-              <Button size="sm" onClick={() => setIsAddProcessOpen(true)}>
+              <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => setIsAddProcessOpen(true)}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("Add Process")}
               </Button>
@@ -2026,18 +2026,18 @@ export default function ProcessPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete this process? This action cannot be undone.")}
             </p>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2236,7 +2236,7 @@ export default function ProcessPage() {
               </div>
             )}
           </div>
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2374,7 +2374,7 @@ export default function ProcessPage() {
                         value={item.rating}
                         onValueChange={(value) => handleBiaRatingChange(index, value)}
                       >
-                        <SelectTrigger className="w-[140px] bg-white">
+                        <SelectTrigger className="w-full sm:w-[140px] bg-white">
                           <SelectValue placeholder={t("Select")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
@@ -2484,7 +2484,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsBIAFormOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2843,7 +2843,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddProcessOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3281,7 +3281,7 @@ export default function ProcessPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditProcessOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3500,7 +3500,7 @@ export default function ProcessPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setKpiErrors({}); setIsKPIModalOpen(false); }}>
               {t("Close")}
             </Button>
@@ -3557,7 +3557,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex flex-col sm:flex-row justify-between gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               {t("Download Template")}

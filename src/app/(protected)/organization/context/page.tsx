@@ -2079,7 +2079,7 @@ export default function ContextPage() {
       {/* Add Domain Dialog */}
         <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Domain")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -2087,7 +2087,7 @@ export default function ContextPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <Label className="text-sm font-medium text-slate-700">{t("Domain Name")} <span className="text-error">*</span></Label>
               <Input
                 value={newDomain}
@@ -2101,7 +2101,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2115,7 +2115,7 @@ export default function ContextPage() {
         {/* Add Category Dialog */}
         <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Category")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -2123,7 +2123,7 @@ export default function ContextPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <Label className="text-sm font-medium text-slate-700">{t("Category Name")} <span className="text-error">*</span></Label>
               <Input
                 value={newCategory}
@@ -2137,7 +2137,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2151,7 +2151,7 @@ export default function ContextPage() {
         {/* Add Issue Type Dialog */}
         <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Issue Type")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -2159,7 +2159,7 @@ export default function ContextPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <Label className="text-sm font-medium text-slate-700">{t("Issue Type Name")} <span className="text-error">*</span></Label>
               <Input
                 value={newType}
@@ -2173,7 +2173,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2249,7 +2249,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setShowProcessDialog(false)}>
                 {t("Cancel")}
               </Button>
@@ -2264,7 +2264,7 @@ export default function ContextPage() {
         <Dialog open={showAddNeedDialog} onOpenChange={setShowAddNeedDialog}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Need/Expectation")}</DialogTitle>
                 <DialogDescription>
@@ -2273,7 +2273,7 @@ export default function ContextPage() {
               </DialogHeader>
             </div>
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
               <div>
                 <Label htmlFor="newNeedExpectation" className="text-sm font-medium text-slate-700">{t("Need/Expectation")} *</Label>
                 <Input
@@ -2286,7 +2286,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddNeedDialog(false); setNewNeedExpectation(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2864,7 +2864,7 @@ export default function ContextPage() {
       {/* Add Domain Dialog */}
         <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Domain")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -2872,7 +2872,7 @@ export default function ContextPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <Label className="text-sm font-medium text-slate-700">{t("Domain Name")} <span className="text-error">*</span></Label>
               <Input
                 id="editNewDomain"
@@ -2887,7 +2887,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2910,7 +2910,7 @@ export default function ContextPage() {
         {/* Add Category Dialog */}
         <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Category")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -2918,7 +2918,7 @@ export default function ContextPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <Label className="text-sm font-medium text-slate-700">{t("Category Name")} <span className="text-error">*</span></Label>
               <Input
                 id="editNewCategory"
@@ -2933,7 +2933,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2956,7 +2956,7 @@ export default function ContextPage() {
         {/* Add Issue Type Dialog */}
         <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Issue Type")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -2964,7 +2964,7 @@ export default function ContextPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <Label className="text-sm font-medium text-slate-700">{t("Issue Type Name")} <span className="text-error">*</span></Label>
               <Input
                 id="editNewType"
@@ -2979,7 +2979,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -3064,7 +3064,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setShowEditProcessDialog(false)}>
                 {t("Cancel")}
               </Button>
@@ -3079,7 +3079,7 @@ export default function ContextPage() {
         <Dialog open={showAddNeedDialog} onOpenChange={setShowAddNeedDialog}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Need/Expectation")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -3088,7 +3088,7 @@ export default function ContextPage() {
               </DialogHeader>
             </div>
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
               <div>
                 <Label htmlFor="editNewNeedExpectation" className="text-sm font-medium text-slate-700">{t("Need/Expectation")} *</Label>
                 <Input
@@ -3101,7 +3101,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddNeedDialog(false); setNewNeedExpectation(""); }}>
                 {t("Cancel")}
               </Button>
@@ -3267,7 +3267,7 @@ export default function ContextPage() {
           {/* Stakeholder Tab */}
           <TabsContent value="stakeholder" className="mt-4 sm:mt-6">
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-4">
+            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 mb-4">
               <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportStakeholders}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
@@ -3279,7 +3279,7 @@ export default function ContextPage() {
                 </Button>
               )}
               {!isReadOnlyRole && (
-                <Button size="sm" className="w-full sm:w-auto" onClick={() => { setStakeholderErrors({}); setNewStakeholder({ name: "", type: "Internal", status: "Active", departmentId: "" }); setShowAddStakeholder(true); }}>
+                <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => { setStakeholderErrors({}); setNewStakeholder({ name: "", type: "Internal", status: "Active", departmentId: "" }); setShowAddStakeholder(true); }}>
                   <Plus className="h-4 w-4 me-2" />
                   {t("New Stakeholder")}
                 </Button>
@@ -3424,7 +3424,7 @@ export default function ContextPage() {
           {/* Issue List Tab */}
           <TabsContent value="issuelist" className="mt-4 sm:mt-6">
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-4">
+            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 mb-4">
               <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportIssues}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
@@ -3436,7 +3436,7 @@ export default function ContextPage() {
                 </Button>
               )}
               {!isReadOnlyRole && (
-                <Button size="sm" className="w-full sm:w-auto" onClick={() => { setIssueErrors({}); setStep4Errors({}); setShowAddIssue(true); }}>
+                <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => { setIssueErrors({}); setStep4Errors({}); setShowAddIssue(true); }}>
                   <Plus className="h-4 w-4 me-2" />
                   {t("Add Issue")}
                 </Button>
@@ -3734,7 +3734,7 @@ export default function ContextPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setStakeholderErrors({}); setShowAddStakeholder(false); }}>
               {t("Cancel")}
             </Button>
@@ -3827,7 +3827,7 @@ export default function ContextPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowEditStakeholder(false)}>
               {t("Cancel")}
             </Button>
@@ -3840,7 +3840,7 @@ export default function ContextPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -3849,7 +3849,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3864,7 +3864,7 @@ export default function ContextPage() {
       <Dialog open={showAddDomainDialog} onOpenChange={(open) => { if (!open) { setShowAddDomainDialog(false); setDomainError(""); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Domain")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -3873,7 +3873,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <Label className="text-sm font-medium text-slate-700">{t("Domain Name")} <span className="text-error">*</span></Label>
             <Input
               value={newDomain}
@@ -3888,7 +3888,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
               {t("Cancel")}
             </Button>
@@ -3903,7 +3903,7 @@ export default function ContextPage() {
       <Dialog open={showAddCategoryDialog} onOpenChange={(open) => { if (!open) { setShowAddCategoryDialog(false); setCategoryError(""); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Category")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -3912,7 +3912,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <Label className="text-sm font-medium text-slate-700">{t("Category Name")} <span className="text-error">*</span></Label>
             <Input
               value={newCategory}
@@ -3927,7 +3927,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
               {t("Cancel")}
             </Button>
@@ -3942,7 +3942,7 @@ export default function ContextPage() {
       <Dialog open={showAddTypeDialog} onOpenChange={(open) => { if (!open) { setShowAddTypeDialog(false); setTypeError(""); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Issue Type")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -3951,7 +3951,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <Label className="text-sm font-medium text-slate-700">{t("Issue Type Name")} <span className="text-error">*</span></Label>
             <Input
               value={newType}
@@ -3966,7 +3966,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
               {t("Cancel")}
             </Button>
@@ -4096,7 +4096,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowCreateActionDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4288,7 +4288,7 @@ export default function ContextPage() {
             />
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowViewActionsDialog(false)}>
               {t("Close")}
             </Button>
@@ -4399,7 +4399,7 @@ export default function ContextPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => setShowActionReviewDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4430,7 +4430,7 @@ export default function ContextPage() {
       }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Send Back Action")}</DialogTitle>
               <DialogDescription>
@@ -4439,7 +4439,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label htmlFor="resendComment" className="text-sm font-medium text-slate-700">{t("Comment")} *</Label>
               <textarea
@@ -4452,7 +4452,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowResendDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4496,7 +4496,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowActionCommentsDialog(false)}>
               {t("Close")}
             </Button>
@@ -4514,7 +4514,7 @@ export default function ContextPage() {
       }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Action")}</DialogTitle>
               <DialogDescription>
@@ -4523,7 +4523,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label htmlFor="editActionType" className="text-sm font-medium text-slate-700">{t("Action Type")} *</Label>
               <Select
@@ -4573,7 +4573,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setShowEditActionDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4594,7 +4594,7 @@ export default function ContextPage() {
       }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 {activeTab === "stakeholder" ? t("Import Stakeholders") : t("Import Issues")}
@@ -4607,7 +4607,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <div className="flex gap-2 mt-1.5">
@@ -4627,7 +4627,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex flex-col sm:flex-row justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               {t("Download Template")}

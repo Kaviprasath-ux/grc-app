@@ -663,8 +663,8 @@ export function NewRiskWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <div className="flex-shrink-0 px-4 sm:px-6 pt-6 pb-4 border-b border-slate-100">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-slate-800">{isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}</DialogTitle>
           </DialogHeader>
@@ -708,14 +708,14 @@ export function NewRiskWizard({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
 
           {/* Step Content */}
           <div className="min-h-[400px]">
             {/* Step 1: Risk Details */}
             {currentStep === 1 && (
               <div className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="riskId">Risk ID</Label>
                     <Input
@@ -751,7 +751,7 @@ export function NewRiskWizard({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="department">Department *</Label>
                     <Select
@@ -803,7 +803,7 @@ export function NewRiskWizard({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="riskSources">Risk Sources *</Label>
                     <Input
@@ -850,7 +850,7 @@ export function NewRiskWizard({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="riskType">Risk Type *</Label>
                     <Select
@@ -924,7 +924,7 @@ export function NewRiskWizard({
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label>Potential Threats *</Label>
                     <div className="flex gap-2">
@@ -1128,11 +1128,11 @@ export function NewRiskWizard({
 
                 {/* Link Control Dialog */}
                 <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
-                  <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-                    <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+                  <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                    <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
                       <DialogTitle className="text-lg font-semibold text-slate-800">Link Controls</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
+                    <div className="flex-1 overflow-hidden flex flex-col px-4 sm:px-6 py-4">
                       <div className="relative mb-4">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
@@ -1182,7 +1182,7 @@ export function NewRiskWizard({
                         </table>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+                    <div className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                       <span className="text-sm text-slate-500">
                         {formData.selectedControls.length} control(s) selected
                       </span>
@@ -1199,7 +1199,7 @@ export function NewRiskWizard({
 
         {/* Create Cause Dialog */}
         <Dialog open={createCauseDialogOpen} onOpenChange={setCreateCauseDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Cause</DialogTitle>
             </DialogHeader>
@@ -1224,7 +1224,7 @@ export function NewRiskWizard({
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-row justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1244,7 +1244,7 @@ export function NewRiskWizard({
 
         {/* Create Category Dialog */}
         <Dialog open={createCategoryDialogOpen} onOpenChange={setCreateCategoryDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Category</DialogTitle>
             </DialogHeader>
@@ -1269,7 +1269,7 @@ export function NewRiskWizard({
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-row justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1289,7 +1289,7 @@ export function NewRiskWizard({
 
         {/* Create Threat Dialog */}
         <Dialog open={createThreatDialogOpen} onOpenChange={setCreateThreatDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Threat</DialogTitle>
             </DialogHeader>
@@ -1314,7 +1314,7 @@ export function NewRiskWizard({
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-row justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1334,7 +1334,7 @@ export function NewRiskWizard({
 
         {/* Create Vulnerability Dialog */}
         <Dialog open={createVulnerabilityDialogOpen} onOpenChange={setCreateVulnerabilityDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Vulnerability</DialogTitle>
             </DialogHeader>
@@ -1359,7 +1359,7 @@ export function NewRiskWizard({
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-row justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1378,7 +1378,7 @@ export function NewRiskWizard({
         </Dialog>
 
         {/* Navigation Buttons */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+        <div className="flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
           <span className="text-xs font-medium text-slate-400 me-auto">
             Step {currentStep} of {steps.length}
           </span>

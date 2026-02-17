@@ -271,7 +271,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
   if (loading) {
     return (
       <div className="p-3 sm:p-6">
-        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
           <Link href="/internal-audit/report" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
@@ -304,7 +304,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
         <Link href="/internal-audit/report" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
@@ -671,7 +671,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
       </div>
 
       {/* Footer with Action Buttons */}
-      <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 pt-4 border-t border-slate-200">
+      <div className="flex flex-row flex-wrap justify-end items-center gap-3 pt-4 border-t border-slate-200">
         <Button
           className="bg-primary-600 hover:bg-primary-700"
           onClick={handleDownloadReport}

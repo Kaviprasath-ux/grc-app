@@ -929,7 +929,7 @@ export default function AssetInventoryPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
@@ -944,7 +944,7 @@ export default function AssetInventoryPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="relative flex flex-col p-3 sm:p-5 rounded-xl border border-slate-200 bg-white">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
@@ -1000,7 +1000,7 @@ export default function AssetInventoryPage() {
       </div>
 
       {/* Action Buttons - Above Card */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
@@ -1011,9 +1011,9 @@ export default function AssetInventoryPage() {
             {t("Import")}
           </Button>
         </PermissionGate>
-        
+
         <PermissionGate resource="asset.inventory" action="create">
-          <Button size="sm" onClick={() => {
+          <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => {
             setNewAsset({ ...newAsset, assetId: generateAssetId() });
             setIsAddAssetOpen(true);
           }}>
@@ -1203,7 +1203,7 @@ export default function AssetInventoryPage() {
       <Dialog open={isAddAssetOpen} onOpenChange={setIsAddAssetOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Add New Asset")}</DialogTitle>
             </DialogHeader>
@@ -1545,7 +1545,7 @@ export default function AssetInventoryPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               resetForm();
               setIsAddAssetOpen(false);
@@ -1561,7 +1561,7 @@ export default function AssetInventoryPage() {
       <Dialog open={isEditAssetOpen} onOpenChange={setIsEditAssetOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Asset")}</DialogTitle>
             </DialogHeader>
@@ -1901,7 +1901,7 @@ export default function AssetInventoryPage() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsEditAssetOpen(false);
               setEditingAsset(null);
@@ -1917,17 +1917,17 @@ export default function AssetInventoryPage() {
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <p className="text-sm text-slate-600">
               {t("Are you sure you want to delete this asset? This action cannot be undone.")}
             </p>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1941,12 +1941,12 @@ export default function AssetInventoryPage() {
       {/* Inline Add Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Category")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <Label className="text-sm font-medium text-slate-700">{t("Category Name")}</Label>
             <Input
               value={newCategoryName}
@@ -1955,7 +1955,7 @@ export default function AssetInventoryPage() {
               className="mt-1.5"
             />
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewCategoryName("");
               setIsAddCategoryOpen(false);
@@ -1970,12 +1970,12 @@ export default function AssetInventoryPage() {
       {/* Inline Add Sub Category Dialog */}
       <Dialog open={isAddSubCategoryOpen} onOpenChange={setIsAddSubCategoryOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Sub Category")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <Label className="text-sm font-medium text-slate-700">{t("Sub Category Name")}</Label>
             <Input
               value={newSubCategoryName}
@@ -1984,7 +1984,7 @@ export default function AssetInventoryPage() {
               className="mt-1.5"
             />
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewSubCategoryName("");
               setIsAddSubCategoryOpen(false);
@@ -1999,12 +1999,12 @@ export default function AssetInventoryPage() {
       {/* Inline Add Group Dialog */}
       <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Group")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <Label className="text-sm font-medium text-slate-700">{t("Group Name")}</Label>
             <Input
               value={newGroupName}
@@ -2013,7 +2013,7 @@ export default function AssetInventoryPage() {
               className="mt-1.5"
             />
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewGroupName("");
               setIsAddGroupOpen(false);
@@ -2028,12 +2028,12 @@ export default function AssetInventoryPage() {
       {/* Inline Add Lifecycle Status Dialog */}
       <Dialog open={isAddLifecycleOpen} onOpenChange={setIsAddLifecycleOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <Label className="text-sm font-medium text-slate-700">{t("Status Name")}</Label>
             <Input
               value={newLifecycleName}
@@ -2042,7 +2042,7 @@ export default function AssetInventoryPage() {
               className="mt-1.5"
             />
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewLifecycleName("");
               setIsAddLifecycleOpen(false);
@@ -2111,7 +2111,7 @@ export default function AssetInventoryPage() {
             </div>
           </div>
 
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}

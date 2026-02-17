@@ -267,16 +267,16 @@ export function AddControlDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Control")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Step Progress */}
-          <div className="flex-shrink-0 flex items-start justify-center py-5 px-6 border-b border-slate-100">
+          <div className="flex-shrink-0 flex items-start justify-center py-5 px-4 sm:px-6 border-b border-slate-100">
             {[
               { id: 1, name: t("Information") },
               { id: 2, name: t("Assignment") },
@@ -318,13 +318,13 @@ export function AddControlDialog({
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
             <div className="space-y-5">
               {/* Step 1: Control Information */}
               {step === 1 && (
                 <div className="space-y-5">
                   <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Control Information")}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Control Domain")} <span className="text-error">*</span></Label>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -417,7 +417,7 @@ export function AddControlDialog({
               {step === 2 && (
                 <div className="space-y-5">
                   <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Assignment Details")}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Department")} <span className="text-error">*</span></Label>
                       <Select value={newControl.departmentId} onValueChange={(v) => { setNewControl({ ...newControl, departmentId: v, assigneeId: "" }); if (controlErrors.departmentId) setControlErrors((prev) => { const { departmentId, ...rest } = prev; return rest; }); }}>
@@ -514,7 +514,7 @@ export function AddControlDialog({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <span className="text-xs font-medium text-slate-400 me-auto">
               {t("Step")} {step} {t("of")} 3
             </span>
@@ -554,14 +554,14 @@ export function AddControlDialog({
 
       {/* Create Domain Dialog */}
       <Dialog open={isCreateDomainDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateDomainDialogOpen(false); setNewDomain({ code: "", name: "" }); setDomainErrors({}); } else { setIsCreateDomainDialogOpen(true); } }}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-4 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Create New Domain")}</DialogTitle>
             </DialogHeader>
           </div>
 
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 sm:px-6 py-5 space-y-4">
             <div>
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                 {t("Domain Code")} <span className="text-red-500">*</span>
@@ -602,7 +602,7 @@ export function AddControlDialog({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsCreateDomainDialogOpen(false);
               setNewDomain({ code: "", name: "" });

@@ -42,6 +42,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
+  FileCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -598,7 +599,7 @@ export default function EvidencesMasterDataPage() {
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -621,7 +622,7 @@ export default function EvidencesMasterDataPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -638,25 +639,26 @@ export default function EvidencesMasterDataPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Import")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
         <Button
           variant="outline"
           size="sm"
+          className="col-span-2 sm:col-span-1"
           onClick={() => setDeleteAllDialogOpen(true)}
           disabled={evidences.length === 0}
         >
           <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Delete All")}
         </Button>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Export")}
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Import")}
-        </Button>
-        <Button size="sm" onClick={() => { resetNewForm(); setIsNewDialogOpen(true); }}>
+        <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => { resetNewForm(); setIsNewDialogOpen(true); }}>
           <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("New Evidence")}
         </Button>
@@ -685,8 +687,16 @@ export default function EvidencesMasterDataPage() {
           <TableBody>
             {paginatedEvidences.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12">
-                  <p className="text-slate-500">{t("No evidences found")}</p>
+                <TableCell colSpan={4} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                      <FileCheck className="h-6 w-6 text-primary-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">{t("No evidences found")}</p>
+                    <p className="text-xs text-slate-400">
+                      {searchTerm ? t("Try adjusting your search") : t("Create a new evidence to get started")}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -764,11 +774,11 @@ export default function EvidencesMasterDataPage() {
                   }`}>
                   {step < newStep ? <Check className="h-4 w-4" /> : step}
                 </div>
-                <span className={`ltr:ml-2 rtl:mr-2 text-sm ${step === newStep ? "text-slate-800 font-medium" : "text-slate-500"
+                <span className={`hidden sm:inline ltr:ml-2 rtl:mr-2 text-sm ${step === newStep ? "text-slate-800 font-medium" : "text-slate-500"
                   }`}>
                   {step === 1 ? t("Evidence Details") : step === 2 ? t("Controls") : t("Review")}
                 </span>
-                {step < 3 && <div className="w-12 h-0.5 bg-slate-200 mx-3" />}
+                {step < 3 && <div className="w-6 sm:w-12 h-0.5 bg-slate-200 mx-1.5 sm:mx-3" />}
               </div>
             ))}
           </div>
@@ -1517,7 +1527,7 @@ export default function EvidencesMasterDataPage() {
               />
             </div>
           </div>
-          <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}

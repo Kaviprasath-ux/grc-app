@@ -223,7 +223,7 @@ export default function AddFindingPage() {
   if (loading) {
     return (
       <div className="p-3 sm:p-6">
-        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
           <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
@@ -254,7 +254,7 @@ export default function AddFindingPage() {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
         <Link href="/internal-audit/fieldwork" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
@@ -495,7 +495,7 @@ export default function AddFindingPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6">
+          <div className="flex flex-row justify-end gap-3 pt-6">
             <Button
               variant="outline"
               onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}`)}

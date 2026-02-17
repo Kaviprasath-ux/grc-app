@@ -605,7 +605,7 @@ function ProfilePageContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -1344,7 +1344,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddDepartmentOpen(false); setDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
@@ -1382,7 +1382,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsEditDepartmentOpen(false); setEditDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
@@ -1529,7 +1529,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddServiceOpen(false); setServiceErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -1663,7 +1663,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsEditServiceOpen(false); setEditServiceErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -1842,7 +1842,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddRegulationOpen(false); setRegulationErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -2041,7 +2041,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsEditRegulationOpen(false); setEditRegulationErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -2077,7 +2077,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddCategoryOpen(false); setCategoryNameError(""); }}>
               {t("Cancel")}
             </Button>
@@ -2113,7 +2113,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setIsAddItemOpen(false); setItemNameError(""); }}>
               {t("Cancel")}
             </Button>

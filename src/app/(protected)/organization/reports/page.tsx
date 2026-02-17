@@ -242,7 +242,7 @@ export default function OrganizationReportsPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -400,7 +400,7 @@ export default function OrganizationReportsPage() {
 
           {/* Fixed Footer with Pagination */}
           {totalItems > 0 && (
-            <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <span className="text-xs text-slate-500">
                 {startItem} {t("to")} {endItem} {t("of")} {totalItems}
               </span>
@@ -482,7 +482,7 @@ export default function OrganizationReportsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsManagementDialogOpen(false)}>
               {t("Cancel")}
             </Button>

@@ -818,7 +818,7 @@ export default function EvidencePage() {
   if (permissionsLoading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -844,7 +844,7 @@ export default function EvidencePage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -872,7 +872,7 @@ export default function EvidencePage() {
         {/* Evidence Request List Tab */}
         <TabsContent value="evidence-request" className="mt-6 space-y-6">
           {/* Status Tile Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             {statusCounts.map((statusItem) => {
               const statusIcons: Record<string, React.ReactNode> = {
                 "Not Uploaded": <CloudOff className="h-5 w-5" />,
@@ -919,7 +919,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Action Buttons - Above Card */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Export")}
@@ -931,19 +931,19 @@ export default function EvidencePage() {
               </Button>
             </PermissionGate>
             <PermissionGate resource="compliance.evidence" action="delete">
-              <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+              <Button variant="outline" size="sm" className="col-span-2 sm:col-span-1 text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
                 <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Delete All")}
               </Button>
             </PermissionGate>
             {isCustomerAdmin ? (
-              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+              <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => setCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("New Evidence")}
               </Button>
             ) : (
               <PermissionGate resource="compliance.evidence" action="create">
-                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => setCreateDialogOpen(true)}>
                   <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("New Evidence")}
                 </Button>
@@ -1505,7 +1505,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1549,7 +1549,7 @@ export default function EvidencePage() {
               {t("Are you sure you want to delete all evidence records? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
               {t("Delete All")}
@@ -1623,7 +1623,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
@@ -1707,7 +1707,7 @@ export default function EvidencePage() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setLinkEvidenceDialogOpen(false)}>
               {t("Cancel")}
             </Button>

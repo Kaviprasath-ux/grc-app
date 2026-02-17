@@ -10,22 +10,29 @@ import { navigation, filterNavigationByPermissionsAndRole, type NavItem } from "
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-interface NavItemProps {
-  item: NavItem;
-  depth?: number;
+interface SidebarProps {
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+  onNavigate?: () => void;
 }
 
-function NavItemComponent({ item, depth = 0 }: NavItemProps) {
+interface NavItemComponentProps {
+  item: NavItem;
+  depth?: number;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+  onExpand?: () => void;
+}
+
+function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onExpand }: NavItemComponentProps) {
   const pathname = usePathname();
   const { t, isRTL } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Check if any child is active
   const hasActiveChild = item.children?.some(
     (child) => child.href && pathname.startsWith(child.href)
   );
 
-  // Auto-expand if has active child
   useEffect(() => {
     if (hasActiveChild) {
       setIsOpen(true);
@@ -35,9 +42,62 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
   const isActive = item.href === pathname;
   const hasChildren = item.children && item.children.length > 0;
   const Icon = item.icon;
-
-  // Translate the item name
   const translatedName = t(item.name);
+
+  // ===== COLLAPSED MODE (desktop, top-level only) =====
+  if (collapsed && depth === 0) {
+    if (item.name === "Log Out") {
+      return (
+        <div className="flex justify-center mb-1 px-2">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            title={translatedName}
+            className="flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+          </button>
+        </div>
+      );
+    }
+
+    if (hasChildren) {
+      return (
+        <div className="flex justify-center mb-1 px-2">
+          <button
+            onClick={() => onExpand?.()}
+            title={translatedName}
+            className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-lg",
+              hasActiveChild
+                ? "bg-primary-100 text-primary-600"
+                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+            )}
+          >
+            {Icon && <Icon className="h-[18px] w-[18px]" />}
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex justify-center mb-1 px-2">
+        <Link
+          href={item.href || "#"}
+          title={translatedName}
+          className={cn(
+            "flex items-center justify-center w-10 h-10 rounded-lg",
+            isActive
+              ? "bg-primary-100 text-primary-600"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+          )}
+        >
+          {Icon && <Icon className="h-[18px] w-[18px]" />}
+        </Link>
+      </div>
+    );
+  }
+
+  // ===== EXPANDED MODE =====
 
   if (hasChildren) {
     return (
@@ -71,7 +131,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
         )}>
           <div className="mt-1 ms-[22px] ps-4 border-s-2 border-slate-200">
             {item.children?.map((child) => (
-              <NavItemComponent key={child.name} item={child} depth={depth + 1} />
+              <NavItemComponent key={child.name} item={child} depth={depth + 1} onNavigate={onNavigate} />
             ))}
           </div>
         </div>
@@ -79,7 +139,6 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
     );
   }
 
-  // Handle Log Out specially
   if (item.name === "Log Out") {
     return (
       <div className="px-3 mb-1">
@@ -105,6 +164,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
     return (
       <Link
         href={item.href || "#"}
+        onClick={() => onNavigate?.()}
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200 my-0.5",
           "text-slate-500 hover:text-slate-900 hover:bg-slate-100",
@@ -123,6 +183,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
     <div className="px-3 mb-1">
       <Link
         href={item.href || "#"}
+        onClick={() => onNavigate?.()}
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
           "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
@@ -144,11 +205,10 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: SidebarProps) {
   const { data: session, status } = useSession();
   const { t } = useLanguage();
 
-  // Filter navigation based on user permissions and transform paths for role
   const filteredNavigation = useMemo(() => {
     if (!session?.user?.permissions || !session?.user?.roles) {
       return [];
@@ -162,41 +222,63 @@ export function Sidebar() {
   }, [session?.user?.permissions, session?.user?.roles]);
 
   return (
-    <aside className="fixed top-0 z-40 h-screen w-[260px] bg-white ltr:left-0 ltr:border-r rtl:right-0 rtl:border-l border-slate-200">
+    <aside
+      className={cn(
+        "fixed top-0 z-40 h-screen bg-white ltr:left-0 ltr:border-r rtl:right-0 rtl:border-l border-slate-200 overflow-hidden",
+        collapsed ? "w-[72px]" : "w-[260px]"
+      )}
+    >
       {/* Logo area */}
-      <div className="relative flex h-16 items-center gap-3 border-b border-slate-200 px-5">
+      <div
+        className={cn(
+          "relative flex h-16 items-center border-b border-slate-200",
+          collapsed ? "justify-center px-2" : "gap-3 px-5"
+        )}
+      >
         <Link
           href={session?.user?.roles?.includes("GRCAdministrator") ? "/grc" : "/dashboard"}
-          className="flex items-center gap-3 group"
+          className="flex items-center gap-3 group shrink-0"
         >
-          <img src="/logo 3.png" alt="GRC Platform" className="h-6 w-6 object-contain" />
-          <span className="text-base font-semibold text-slate-800 tracking-tight">{t("GRC Platform")}</span>
+          <img src="/logo 3.png" alt="GRC Platform" className="h-6 w-6 object-contain shrink-0" />
+          {!collapsed && (
+            <span className="text-base font-semibold text-slate-800 tracking-tight whitespace-nowrap">
+              {t("GRC Platform")}
+            </span>
+          )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="relative h-[calc(100vh-120px)] pt-2">
+      <ScrollArea className={collapsed ? "h-[calc(100vh-64px)] pt-2" : "h-[calc(100vh-120px)] pt-2"}>
         <nav className="pb-4">
           {status === "loading" ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent"></div>
-              <span className="text-xs text-slate-400">{t("Loading...")}</span>
+              {!collapsed && <span className="text-xs text-slate-400">{t("Loading...")}</span>}
             </div>
           ) : (
             filteredNavigation.map((item) => (
-              <NavItemComponent key={item.name} item={item} />
+              <NavItemComponent
+                key={item.name}
+                item={item}
+                collapsed={collapsed}
+                onNavigate={onNavigate}
+                onExpand={onToggleCollapse}
+              />
             ))
           )}
         </nav>
       </ScrollArea>
 
-      {/* Footer */}
-      <div className="absolute bottom-0 inset-x-0 p-4 border-t border-slate-200 bg-white">
-        <div className="flex items-center justify-between text-[10px] text-slate-400">
-          <span>© 2025 {t("GRC Platform")}</span>
-          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{t("v2.0")}</span>
+      {/* Footer — hidden when collapsed */}
+      {!collapsed && (
+        <div className="absolute bottom-0 inset-x-0 p-4 border-t border-slate-200 bg-white">
+          <div className="flex items-center justify-between text-[10px] text-slate-400">
+            <span>© 2025 {t("GRC Platform")}</span>
+            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{t("v2.0")}</span>
+          </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 }

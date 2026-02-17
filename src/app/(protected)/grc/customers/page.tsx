@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Image, Trash2, Upload, Home, ChevronRight, Users } from "lucide-react";
+import { Pencil, Image, Trash2, Upload, Home, ChevronRight, Users, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -325,7 +325,7 @@ export default function CustomersPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -348,7 +348,7 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -372,7 +372,7 @@ export default function CustomersPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("UserName")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Compliance Percentage")}</TableHead>
-              {!isGRCAdmin && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>}
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -414,39 +414,50 @@ export default function CustomersPage() {
                       <span className="text-sm text-slate-600">{customer.compliancePercentage.toFixed(2)}%</span>
                     </div>
                   </TableCell>
-                  {!isGRCAdmin && (
-                    <TableCell className="py-3 pr-5">
-                      <div className="flex items-center gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                          onClick={() => openEditDialog(customer)}
-                          title={t("Edit")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                          onClick={() => openLogoDialog(customer)}
-                          title={t("View Logo")}
-                        >
-                          <Image className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                          onClick={() => openDeleteDialog(customer)}
-                          title={t("Delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
+                  <TableCell className="py-3 pr-5">
+                    <div className="flex items-center gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-primary-600"
+                        onClick={() => handleRowDoubleClick(customer)}
+                        title={t("View")}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {!isGRCAdmin && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={() => openEditDialog(customer)}
+                            title={t("Edit")}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={() => openLogoDialog(customer)}
+                            title={t("View Logo")}
+                          >
+                            <Image className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                            onClick={() => openDeleteDialog(customer)}
+                            title={t("Delete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}

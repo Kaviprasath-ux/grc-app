@@ -331,7 +331,7 @@ export default function AddRiskPage() {
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
           <Link href="/internal-audit/risk-register" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
@@ -369,7 +369,7 @@ export default function AddRiskPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
         <Link href="/internal-audit/risk-register" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
@@ -805,7 +805,7 @@ export default function AddRiskPage() {
           </div>
 
           {/* Form Actions */}
-          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-slate-100">
+          <div className="flex flex-row justify-end gap-2 pt-4 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"

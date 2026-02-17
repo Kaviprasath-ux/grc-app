@@ -1272,7 +1272,7 @@ export default function GovernanceDetailPage() {
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Breadcrumb */}
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href={fromFramework ? "/roles/customer-administrator/compliance" : ""} className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -1516,7 +1516,7 @@ export default function GovernanceDetailPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+              <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                 <Button
                   variant="outline"
                   onClick={() => setEditDialogOpen(false)}
@@ -1650,10 +1650,10 @@ export default function GovernanceDetailPage() {
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="p-0 gap-0 overflow-hidden">
-                      <DialogHeader className="px-6 py-4 border-b border-slate-100">
+                      <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100">
                         <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Assignee")}</DialogTitle>
                       </DialogHeader>
-                      <div className="px-6 py-5">
+                      <div className="px-4 sm:px-6 py-4 sm:py-5">
                         <div className="space-y-1.5">
                           <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Assignee")}</Label>
                           <p className="text-xs text-slate-400 mb-2">
@@ -1677,7 +1677,7 @@ export default function GovernanceDetailPage() {
                           </Select>
                         </div>
                       </div>
-                      <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+                      <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                         <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
                           {t("Cancel")}
                         </Button>
@@ -1702,10 +1702,10 @@ export default function GovernanceDetailPage() {
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="p-0 gap-0 overflow-hidden">
-                      <DialogHeader className="px-6 py-4 border-b border-slate-100">
+                      <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100">
                         <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Approver")}</DialogTitle>
                       </DialogHeader>
-                      <div className="px-6 py-5">
+                      <div className="px-4 sm:px-6 py-4 sm:py-5">
                         <div className="space-y-1.5">
                           <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Select Approver")}</Label>
                           <p className="text-xs text-slate-400 mb-2">
@@ -1729,7 +1729,7 @@ export default function GovernanceDetailPage() {
                           </Select>
                         </div>
                       </div>
-                      <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+                      <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                         <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
                           {t("Cancel")}
                         </Button>
@@ -2091,7 +2091,7 @@ export default function GovernanceDetailPage() {
               {t("This will revert the status from Published to Approved. The document will need to be published again after any changes.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleUnpublish} className="bg-orange-600 hover:bg-orange-700">
               {t("Unpublish")}
@@ -2207,7 +2207,7 @@ export default function GovernanceDetailPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+                    <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -2410,7 +2410,7 @@ export default function GovernanceDetailPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+                        <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                           <Button variant="outline" onClick={() => {
                             setGeneratePolicyDialogOpen(false);
                             setSelectedTemplateId("");
@@ -2558,7 +2558,7 @@ export default function GovernanceDetailPage() {
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+                    <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -2839,7 +2839,7 @@ export default function GovernanceDetailPage() {
               </span>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setSignatureDialogOpen(false);
               clearSignature();
@@ -3018,7 +3018,7 @@ export default function GovernanceDetailPage() {
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+                  <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                     <Button
                       onClick={handleLinkControl}
                       disabled={selectedControlIds.length === 0}
@@ -3135,7 +3135,7 @@ export default function GovernanceDetailPage() {
                       </Select>
                     </div>
                   </div>
-                  <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+                  <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                     <Button variant="outline" onClick={() => setLinkExceptionDialogOpen(false)}>
                       {t("Cancel")}
                     </Button>

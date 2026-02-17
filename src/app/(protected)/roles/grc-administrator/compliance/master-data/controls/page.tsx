@@ -558,7 +558,7 @@ export default function ControlsMasterDataPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -592,7 +592,7 @@ export default function ControlsMasterDataPage() {
             className="pl-10 w-full sm:w-[300px] bg-white border-slate-200"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
           <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Import")}
@@ -643,7 +643,7 @@ export default function ControlsMasterDataPage() {
                       {step < wizardStep ? <Check className="h-4 w-4" /> : step}
                     </div>
                     <span
-                      className={`ltr:ml-2 rtl:mr-2 text-sm ${
+                      className={`hidden sm:inline ltr:ml-2 rtl:mr-2 text-sm ${
                         step === wizardStep
                           ? "font-semibold text-slate-800"
                           : "text-slate-500"
@@ -656,7 +656,7 @@ export default function ControlsMasterDataPage() {
                           : t("Review")}
                     </span>
                     {step < 3 && (
-                      <div className="w-12 h-0.5 bg-slate-200 mx-3" />
+                      <div className="w-6 sm:w-12 h-0.5 bg-slate-200 mx-1.5 sm:mx-3" />
                     )}
                   </div>
                 ))}

@@ -742,7 +742,7 @@ export default function MyAssetInventoryPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
@@ -757,7 +757,7 @@ export default function MyAssetInventoryPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
           <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">{t("Total Assets")}</p>
           <p className="text-2xl sm:text-3xl font-bold text-slate-800">{stats.total}</p>
@@ -818,7 +818,7 @@ export default function MyAssetInventoryPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
           <PermissionGate resource="asset.my-inventory" action="create">
             <label>
               <input
@@ -840,7 +840,7 @@ export default function MyAssetInventoryPage() {
             {t("Export")}
           </Button>
           <PermissionGate resource="asset.my-inventory" action="create">
-            <Button size="sm" onClick={() => {
+            <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => {
               setNewAsset({
                 ...newAsset,
                 assetId: generateAssetId(),
@@ -1345,7 +1345,7 @@ export default function MyAssetInventoryPage() {
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -1353,7 +1353,7 @@ export default function MyAssetInventoryPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4">
+          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>{t("Cancel")}</Button>
             <Button variant="destructive" onClick={handleDeleteAsset}>{t("Delete")}</Button>
           </div>
@@ -1363,12 +1363,12 @@ export default function MyAssetInventoryPage() {
       {/* Inline Add Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Category")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Category Name")} <span className="text-semantic-error">*</span></Label>
               <Input
@@ -1389,12 +1389,12 @@ export default function MyAssetInventoryPage() {
       {/* Inline Add Sub Category Dialog */}
       <Dialog open={isAddSubCategoryOpen} onOpenChange={setIsAddSubCategoryOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Sub Category")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Sub Category Name")} <span className="text-semantic-error">*</span></Label>
               <Input
@@ -1415,12 +1415,12 @@ export default function MyAssetInventoryPage() {
       {/* Inline Add Group Dialog */}
       <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Group")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Group Name")} <span className="text-semantic-error">*</span></Label>
               <Input
@@ -1441,12 +1441,12 @@ export default function MyAssetInventoryPage() {
       {/* Inline Add Lifecycle Status Dialog */}
       <Dialog open={isAddLifecycleOpen} onOpenChange={setIsAddLifecycleOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Status Name")} <span className="text-semantic-error">*</span></Label>
               <Input

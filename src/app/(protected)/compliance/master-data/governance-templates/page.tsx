@@ -48,6 +48,7 @@ import {
   ChevronRight,
   Upload,
   Home,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -317,7 +318,7 @@ export default function GovernanceTemplatesPage() {
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500 ">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -340,7 +341,7 @@ export default function GovernanceTemplatesPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -357,7 +358,7 @@ export default function GovernanceTemplatesPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
 
       {/* Action Buttons above card */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
@@ -530,10 +531,13 @@ export default function GovernanceTemplatesPage() {
           <TableBody>
             {paginatedTemplates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-2">
-                    <p className="text-slate-500">{t("No templates found")}</p>
-                    <p className="text-sm text-slate-400">
+                <TableCell colSpan={5} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                      <FileText className="h-6 w-6 text-primary-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">{t("No templates found")}</p>
+                    <p className="text-xs text-slate-400">
                       {searchTerm
                         ? t("Try adjusting your search")
                         : t("Add your first governance template")}

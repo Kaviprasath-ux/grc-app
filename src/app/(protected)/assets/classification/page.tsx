@@ -811,7 +811,7 @@ export default function AssetClassificationPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
@@ -828,7 +828,7 @@ export default function AssetClassificationPage() {
       </div>
 
       {/* Action Buttons - Above the card */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
@@ -1424,7 +1424,7 @@ export default function AssetClassificationPage() {
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
@@ -1432,7 +1432,7 @@ export default function AssetClassificationPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>{t("Cancel")}</Button>
             <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
           </div>
@@ -1442,12 +1442,12 @@ export default function AssetClassificationPage() {
       {/* Add Asset Sensitivity Dialog - inline add */}
       <Dialog open={isAddSensitivityOpen} onOpenChange={setIsAddSensitivityOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Asset Sensitivity")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
               <Input
@@ -1458,7 +1458,7 @@ export default function AssetClassificationPage() {
               />
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewSensitivityName("");
               setIsAddSensitivityOpen(false);
@@ -1471,12 +1471,12 @@ export default function AssetClassificationPage() {
       {/* Add CIA Rating Dialog - inline add */}
       <Dialog open={isAddCIARatingOpen} onOpenChange={setIsAddCIARatingOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Add")} {t(newCIARatingType)}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-semantic-error">*</span></Label>
               <Input
@@ -1497,7 +1497,7 @@ export default function AssetClassificationPage() {
               />
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewCIARatingLabel("");
               setNewCIARatingValue(0);

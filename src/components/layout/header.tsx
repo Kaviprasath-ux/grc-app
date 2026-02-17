@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw } from "lucide-react";
+import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +23,8 @@ import { useNotifications, getNotificationStyle, Notification } from "@/hooks/us
 
 interface HeaderProps {
   onMenuClick?: () => void;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 // Helper function to get icon component based on notification type
@@ -49,7 +51,7 @@ function NotificationIcon({ type }: { type: string }) {
   }
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: HeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const { locale, setLocale, t, locales, localeNames, localeFlags } = useLanguage();
@@ -112,26 +114,42 @@ export function Header({ onMenuClick }: HeaderProps) {
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6">
       {/* Left side */}
       <div className="flex items-center gap-3">
-        {/* Mobile menu button */}
+        {/* Mobile / Tablet menu button — below xl */}
         <Button
           variant="ghost"
           size="icon"
           onClick={onMenuClick}
-          className="lg:hidden text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+          className="xl:hidden text-slate-500 hover:text-slate-700 hover:bg-slate-100"
         >
           <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Logo - visible on mobile */}
+        {/* Desktop sidebar toggle — xl+ only */}
+        {onToggleSidebar && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSidebar}
+            className="hidden xl:flex text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="h-5 w-5 rtl:scale-x-[-1]" />
+            ) : (
+              <PanelLeftClose className="h-5 w-5 rtl:scale-x-[-1]" />
+            )}
+          </Button>
+        )}
+
+        {/* Logo — visible below xl */}
         <Link
           href={session?.user?.roles?.includes("GRCAdministrator") ? "/grc" : "/dashboard"}
-          className="flex items-center gap-2 lg:hidden"
+          className="flex items-center gap-2 xl:hidden"
         >
           <img src="/logo 3.png" alt="GRC Platform" className="h-8 w-8 object-contain" />
         </Link>
 
         {/* Date and Time */}
-        <div className="hidden md:flex items-center gap-6 ms-2">
+        <div className="hidden lg:flex items-center gap-3 ms-2">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
             <Calendar className="h-4 w-4 text-primary-500" />
             <div className="flex items-center gap-1.5">
@@ -280,7 +298,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         </DropdownMenu>
 
         {/* Divider */}
-        <div className="hidden lg:block h-8 w-px bg-slate-200 mx-2" />
+        <div className="hidden xl:block h-8 w-px bg-slate-200 mx-2" />
 
         {/* User section */}
         <DropdownMenu>
@@ -294,7 +312,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                   {session?.user?.name ? getInitials(session.user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden lg:flex flex-col items-start">
+              <div className="hidden xl:flex flex-col items-start">
                 <span className="text-sm font-semibold text-slate-800">
                   {session?.user?.name || t("User")}
                 </span>
@@ -302,7 +320,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                   {session?.user?.roles?.[0]?.replace(/([A-Z])/g, ' $1').trim() || t("User")}
                 </span>
               </div>
-              <ChevronDown className="hidden lg:block h-4 w-4 text-slate-400" />
+              <ChevronDown className="hidden xl:block h-4 w-4 text-slate-400" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

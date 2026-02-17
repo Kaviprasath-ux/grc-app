@@ -1084,7 +1084,7 @@ export default function RiskRegisterPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
@@ -1104,15 +1104,19 @@ export default function RiskRegisterPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={openAIAuditSelection}
-            className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+            className="col-span-2 sm:col-span-1 bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
           >
             <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("AI Audit")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Export")}
           </Button>
           {!isReadOnlyRole && (
             <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
@@ -1120,12 +1124,8 @@ export default function RiskRegisterPage() {
               {t("Import")}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Export")}
-          </Button>
           {!isReadOnlyRole && (
-            <Button size="sm" onClick={openAddRiskModal}>
+            <Button size="sm" className="col-span-2 sm:col-span-1" onClick={openAddRiskModal}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Add Risk")}
             </Button>
@@ -1261,7 +1261,7 @@ export default function RiskRegisterPage() {
               {t("Are you sure you want to delete this risk? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
@@ -1323,7 +1323,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1476,7 +1476,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setAiDialogOpen(false)}>
               {t("Close")}
             </Button>
@@ -1604,7 +1604,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
             <Button
               variant="outline"
               onClick={() => setAiAuditSelectionOpen(false)}
@@ -1699,7 +1699,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setFieldworkPlanDialogOpen(false)}>
               {t("Close")}
             </Button>
@@ -2115,7 +2115,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeAddRiskModal}>
               {t("Cancel")}
             </Button>
@@ -2547,7 +2547,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeEditRiskModal}>
               {t("Cancel")}
             </Button>
@@ -2735,7 +2735,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeViewRiskModal}>
               {t("Close")}
             </Button>

@@ -321,7 +321,7 @@ export default function RiskDetailPage() {
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
@@ -354,7 +354,7 @@ export default function RiskDetailPage() {
   if (!risk) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
@@ -389,7 +389,7 @@ export default function RiskDetailPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
@@ -408,7 +408,7 @@ export default function RiskDetailPage() {
 
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{risk.riskId}</h1>
           <Badge variant="outline" className={riskRatingColors[risk.riskRating || "Low"]}>
             {risk.riskRating || "Low"}
@@ -621,7 +621,7 @@ export default function RiskDetailPage() {
                   </div>
                 </div>
               </div>
-              <DialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+              <DialogFooter className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                   {t("Cancel")}
                 </Button>
@@ -643,7 +643,7 @@ export default function RiskDetailPage() {
             <h3 className="text-sm font-semibold text-slate-800">{t("Inherent Risk Assessment")}</h3>
           </div>
           <div className="p-5">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="text-center p-3 bg-slate-50 rounded-lg">
                 <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Likelihood")}</p>
                 <p className="text-2xl font-bold text-slate-800 mt-1">{risk.likelihood}</p>
@@ -679,7 +679,7 @@ export default function RiskDetailPage() {
           </div>
           <div className="p-5">
             {risk.residualLikelihood && risk.residualImpact ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="text-center p-3 bg-slate-50 rounded-lg">
                   <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Likelihood")}</p>
                   <p className="text-2xl font-bold text-slate-800 mt-1">{risk.residualLikelihood}</p>
@@ -854,7 +854,7 @@ export default function RiskDetailPage() {
                 <DialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
                   <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Control to Risk")}</DialogTitle>
                 </DialogHeader>
-                <div className="px-6 py-5">
+                <div className="px-4 sm:px-6 py-4 sm:py-5">
                   <div className="space-y-1.5">
                     <Label className="text-sm text-slate-600">{t("Select Control")}</Label>
                     <Select value={selectedControlId} onValueChange={setSelectedControlId}>
@@ -873,7 +873,7 @@ export default function RiskDetailPage() {
                     </Select>
                   </div>
                 </div>
-                <DialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+                <DialogFooter className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
                   <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
                     {t("Cancel")}
                   </Button>
@@ -898,7 +898,7 @@ export default function RiskDetailPage() {
           <>
             {/* Controls Table Header */}
             <div className="overflow-x-auto">
-            <div className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-4 px-3 sm:px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider min-w-[550px]">
+            <div className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-2 sm:gap-4 px-3 sm:px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider min-w-[500px]">
               <span>{t("Control ID")}</span>
               <span>{t("Name")}</span>
               <span>{t("Domain")}</span>
@@ -910,7 +910,7 @@ export default function RiskDetailPage() {
               {linkedControls.map((cr) => (
                 <div
                   key={cr.id}
-                  className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-4 px-3 sm:px-5 py-3 items-center hover:bg-slate-50/60 transition-colors min-w-[550px]"
+                  className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-2 sm:gap-4 px-3 sm:px-5 py-3 items-center hover:bg-slate-50/60 transition-colors min-w-[500px]"
                 >
                   <span className="text-sm font-medium text-slate-800">{cr.control.controlId}</span>
                   <span className="text-sm text-slate-600 truncate">{cr.control.name}</span>

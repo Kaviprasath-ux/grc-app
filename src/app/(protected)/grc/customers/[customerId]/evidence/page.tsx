@@ -366,7 +366,7 @@ export default function CustomerEvidencePage() {
 
   // Reusable status cards renderer
   const renderStatusCards = () => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
       {evStatusCardData.map(({ label, icon }) => (
         <div
           key={label}
@@ -392,7 +392,7 @@ export default function CustomerEvidencePage() {
   if (loading && evidences.length === 0) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link
             href="/grc"
             className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors"
@@ -422,7 +422,7 @@ export default function CustomerEvidencePage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link
           href="/grc"
           className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors"

@@ -859,16 +859,16 @@ export default function UsersPage() {
         <TabsContent value="account-overview" className="mt-4 sm:mt-6">
           <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExport}>
+            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowImportDialog(true)}>
+              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
-              <Button size="sm" className="w-full sm:w-auto" onClick={handleNewAccountClick}>
+              <Button size="sm" className="col-span-2 sm:col-span-1" onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New User")}
               </Button>
@@ -1011,16 +1011,16 @@ export default function UsersPage() {
         <TabsContent value="user-management" className="mt-4 sm:mt-6">
           <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExport}>
+            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowImportDialog(true)}>
+              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
-              <Button size="sm" className="w-full sm:w-auto" onClick={handleNewAccountClick}>
+              <Button size="sm" className="col-span-2 sm:col-span-1" onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New User")}
               </Button>
@@ -1866,7 +1866,7 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 me-2" />
               {t("Download Template")}

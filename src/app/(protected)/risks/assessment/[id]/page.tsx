@@ -635,7 +635,7 @@ export default function RiskAssessmentWizardPage() {
   if (!risk) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="/risks/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
@@ -657,7 +657,7 @@ export default function RiskAssessmentWizardPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/risks/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
@@ -876,7 +876,7 @@ export default function RiskAssessmentWizardPage() {
               <p className="text-sm text-muted-foreground">{t("Risk Tolerance")} = 10</p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
               {riskRanges.map((range) => (
                 <div
                   key={range.id}

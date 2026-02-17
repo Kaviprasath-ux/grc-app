@@ -272,7 +272,7 @@ export default function DomainMasterDataPage() {
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -295,7 +295,7 @@ export default function DomainMasterDataPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -314,7 +314,7 @@ export default function DomainMasterDataPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Domain")}</h1>
 
       {/* Action Buttons - Above Card */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
         <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setImportDialogOpen(true)}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}

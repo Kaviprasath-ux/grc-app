@@ -375,7 +375,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm flex-wrap">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href={fromFramework ? "/roles/customer-administrator/compliance" : "/dashboard"} className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -1114,7 +1114,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">
               {t("Cancel")}
             </Button>
@@ -1154,7 +1154,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-slate-400">{t("No risks available")}</p>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsRiskDialogOpen(false)} className="w-full sm:w-auto">
               {t("Cancel")}
             </Button>

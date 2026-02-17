@@ -855,7 +855,7 @@ export default function CustomerAdminFrameworkPage() {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
           <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -879,7 +879,7 @@ export default function CustomerAdminFrameworkPage() {
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -892,12 +892,12 @@ export default function CustomerAdminFrameworkPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
         {isCustomerAdmin && (
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={openAICreateDialog}
               variant="outline"
               size="sm"
-              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200 w-full sm:w-auto"
+              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
             >
               <Sparkles className="h-4 w-4 me-2" />
               {t("New Framework (AI)")}
@@ -905,7 +905,6 @@ export default function CustomerAdminFrameworkPage() {
             <Button
               onClick={openCreateDialog}
               size="sm"
-              className="w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 me-2" />
               {t("New Framework")}
@@ -928,10 +927,10 @@ export default function CustomerAdminFrameworkPage() {
               className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto sm:ms-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto sm:ms-auto">
             {isCustomerAdmin && (
               <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
-                <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                   <SelectValue placeholder={t("Subscription")} />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -942,7 +941,7 @@ export default function CustomerAdminFrameworkPage() {
               </Select>
             )}
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                 <SelectValue placeholder={t("All Types")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -1610,15 +1609,15 @@ export default function CustomerAdminFrameworkPage() {
       {/* Subscription Error Dialog */}
       <Dialog open={showSubscriptionErrorDialog} onOpenChange={setShowSubscriptionErrorDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-red-600">{t("Error")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <p className="text-slate-600">{subscriptionErrorMessage}</p>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
             <Button size="sm" onClick={() => setShowSubscriptionErrorDialog(false)}>
               {t("OK")}
             </Button>

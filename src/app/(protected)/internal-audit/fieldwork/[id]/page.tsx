@@ -1720,7 +1720,7 @@ export default function FieldworkDetailsPage() {
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
@@ -1748,7 +1748,7 @@ export default function FieldworkDetailsPage() {
   if (!engagement) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
@@ -1779,7 +1779,7 @@ export default function FieldworkDetailsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
@@ -2861,7 +2861,7 @@ export default function FieldworkDetailsPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setCommentsDialogOpen(false)}>
               {t("Close")}
             </Button>
@@ -2945,7 +2945,7 @@ export default function FieldworkDetailsPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3023,7 +3023,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setAddFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3237,7 +3237,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setAddFullFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3320,7 +3320,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setAddEvidenceDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3342,7 +3342,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3478,7 +3478,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -3519,7 +3519,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3560,7 +3560,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3646,7 +3646,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -3686,7 +3686,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3792,7 +3792,7 @@ export default function FieldworkDetailsPage() {
               </div>
             )}
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -3923,7 +3923,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -4216,7 +4216,7 @@ export default function FieldworkDetailsPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -4324,7 +4324,7 @@ export default function FieldworkDetailsPage() {
               </div>
             </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4387,7 +4387,7 @@ export default function FieldworkDetailsPage() {
               </p>
             </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4455,7 +4455,7 @@ export default function FieldworkDetailsPage() {
               </div>
             </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4492,7 +4492,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -4549,7 +4549,7 @@ export default function FieldworkDetailsPage() {
               </div>
             )}
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4625,7 +4625,7 @@ export default function FieldworkDetailsPage() {
               )}
             </div>
           </div>
-          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"

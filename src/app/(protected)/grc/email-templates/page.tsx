@@ -755,7 +755,7 @@ export default function EmailTemplatesPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -787,7 +787,7 @@ export default function EmailTemplatesPage() {
       />
 
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -799,35 +799,12 @@ export default function EmailTemplatesPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Email Templates")}</h1>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSeedTemplates}
-            disabled={seeding}
-            title={t("Seed default email templates")}
-            className="flex-1 sm:flex-none"
-          >
-            <RefreshCw className={`h-4 w-4 ltr:mr-2 rtl:ml-2 ${seeding ? 'animate-spin' : ''}`} />
-            {seeding ? t("Seeding...") : t("Seed Defaults")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDeleteAllDialog(true)}
-            disabled={templates.length === 0}
-            title={t("Delete all email templates")}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
-          >
-            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Delete All")}
-          </Button>
+        <div className="w-full sm:w-auto grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             title={t("Import templates from XML file")}
-            className="flex-1 sm:flex-none"
           >
             <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Import")}
@@ -838,12 +815,32 @@ export default function EmailTemplatesPage() {
             onClick={handleExport}
             disabled={templates.length === 0}
             title={t("Export templates to XML file")}
-            className="flex-1 sm:flex-none"
           >
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Button onClick={openAddDialog} size="sm" className="w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSeedTemplates}
+            disabled={seeding}
+            title={t("Seed default email templates")}
+          >
+            <RefreshCw className={`h-4 w-4 ltr:mr-2 rtl:ml-2 ${seeding ? 'animate-spin' : ''}`} />
+            {seeding ? t("Seeding...") : t("Seed Defaults")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteAllDialog(true)}
+            disabled={templates.length === 0}
+            title={t("Delete all email templates")}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
+          </Button>
+          <Button onClick={openAddDialog} size="sm" className="col-span-2 sm:col-span-1">
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Add Template")}
           </Button>

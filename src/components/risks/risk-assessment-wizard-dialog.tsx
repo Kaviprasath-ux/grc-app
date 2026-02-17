@@ -627,9 +627,9 @@ export function RiskAssessmentWizardDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" showCloseButton={false}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" showCloseButton={false}>
           {/* Fixed Header */}
-          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-lg font-semibold text-slate-800 mb-2">
@@ -653,10 +653,11 @@ export function RiskAssessmentWizardDialog({
 
             {/* Step Indicator */}
             {!loading && risk && (
-              <div className="flex items-start justify-center pt-5">
+              <div className="overflow-x-auto pt-5 -mx-4 sm:-mx-6 px-4 sm:px-6">
+                <div className="flex items-start justify-center min-w-max">
                 {assessmentSteps.map((step, index) => (
                   <div key={step.id} className="flex items-start">
-                    <div className="flex flex-col items-center w-[72px]">
+                    <div className="flex flex-col items-center w-[60px] sm:w-[72px]">
                       <div
                         className={cn(
                           "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
@@ -688,12 +689,13 @@ export function RiskAssessmentWizardDialog({
                     )}
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </DialogHeader>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="relative h-8 w-8">
@@ -722,7 +724,7 @@ export function RiskAssessmentWizardDialog({
                 {currentStep === 1 && (
                   <div className="space-y-4">
                     <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Context</p>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0">
                       <div className="flex justify-between py-2.5 border-b border-slate-100">
                         <span className="text-sm text-slate-500">Category</span>
                         <span className="text-sm font-medium text-slate-800">{risk.category?.name || "-"}</span>
@@ -894,7 +896,7 @@ export function RiskAssessmentWizardDialog({
                     </div>
 
                     {/* Risk Ranges */}
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {riskRanges.map((range) => (
                         <div
                           key={range.id}
@@ -992,7 +994,7 @@ export function RiskAssessmentWizardDialog({
                     </div>
 
                     {/* Ratings Summary Cards */}
-                    <div className="grid grid-cols-3 gap-4 pb-5 border-b border-slate-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-5 border-b border-slate-200">
                       <div className="p-4 text-center rounded-lg border border-slate-200">
                         <p className="text-xs text-slate-500 uppercase mb-2">Inherent Risk</p>
                         <span className={cn(
@@ -1031,7 +1033,7 @@ export function RiskAssessmentWizardDialog({
                     {/* Assessment Details */}
                     <div>
                       <h4 className="font-semibold text-slate-800 mb-3">Assessment Details</h4>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <p className="text-xs text-slate-500 uppercase mb-0.5">Risk ID</p>
                           <p className="text-sm font-medium text-slate-800">{risk.riskId}</p>
@@ -1066,7 +1068,7 @@ export function RiskAssessmentWizardDialog({
 
           {/* Fixed Footer */}
           {!loading && risk && (
-            <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <span className="text-xs font-medium text-slate-400 me-auto">
                 Step {currentStep} of {assessmentSteps.length}
               </span>
@@ -1102,7 +1104,7 @@ export function RiskAssessmentWizardDialog({
 
       {/* Risk Response Strategy Dialog */}
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
-        <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px]" showCloseButton={false}>
           <DialogHeader className="border-b border-slate-100 pb-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -1173,7 +1175,7 @@ export function RiskAssessmentWizardDialog({
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-row">
             <Button variant="outline" onClick={handleCancelResponse}>
               Cancel
             </Button>

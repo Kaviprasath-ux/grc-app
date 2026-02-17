@@ -454,7 +454,7 @@ export default function GRCAdminEvidencePage() {
   if (permissionsLoading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -482,7 +482,7 @@ export default function GRCAdminEvidencePage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs sm:text-sm">
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -504,7 +504,7 @@ export default function GRCAdminEvidencePage() {
             </span>
           )} */}
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
           <PermissionGate resource="compliance.evidence" action="delete">
             <Button variant="outline" size="sm" className="w-full sm:w-auto text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
               <Trash2 className="h-4 w-4 me-2" />
@@ -518,7 +518,7 @@ export default function GRCAdminEvidencePage() {
             </Button>
           </PermissionGate>
           <PermissionGate resource="compliance.evidence" action="create">
-            <Button size="sm" className="w-full sm:w-auto" onClick={() => setCreateDialogOpen(true)}>
+            <Button size="sm" className="col-span-2 sm:col-span-1 w-full sm:w-auto" onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 me-2" />
               {t("New Evidence")}
             </Button>

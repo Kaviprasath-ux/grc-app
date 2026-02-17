@@ -291,7 +291,7 @@ export default function DomainMasterDataPage() {
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -314,7 +314,7 @@ export default function DomainMasterDataPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -331,24 +331,24 @@ export default function DomainMasterDataPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Domain")}</h1>
 
       {/* Action Buttons - Above Card */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
-        {isCustomerAdmin && (
-          <Button variant="outline" size="sm" onClick={handleDeleteAll}>
-            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Delete All")}
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Export")}
-        </Button>
+      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
           <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}
         </Button>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
+        </Button>
+        {isCustomerAdmin && (
+          <Button variant="outline" size="sm" className="col-span-2 sm:col-span-1" onClick={handleDeleteAll}>
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
+          </Button>
+        )}
         <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); setDomainErrors({}); } else { setCreateDialogOpen(true); } }}>
           <DialogTrigger asChild>
-            <Button size="sm" onClick={() => setDomainErrors({})}>
+            <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => setDomainErrors({})}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Domain")}
             </Button>
@@ -582,13 +582,13 @@ export default function DomainMasterDataPage() {
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <AlertDialogHeader className="px-6 py-4">
+          <AlertDialogHeader className="px-4 sm:px-6 py-4">
             <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete Domain")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete")} &quot;{selectedDomain?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
@@ -603,13 +603,13 @@ export default function DomainMasterDataPage() {
       {/* Delete All Confirmation */}
       <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
         <AlertDialogContent className="p-0 gap-0 overflow-hidden">
-          <AlertDialogHeader className="px-6 py-4">
+          <AlertDialogHeader className="px-4 sm:px-6 py-4">
             <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete All Domains")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete all domains? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteAll}
@@ -658,7 +658,7 @@ export default function DomainMasterDataPage() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={handleDownloadTemplate}

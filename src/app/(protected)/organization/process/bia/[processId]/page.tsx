@@ -608,7 +608,7 @@ export default function BIAPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm mb-6">
+        <nav className="flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap">
           <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Organization")}</span>
@@ -630,7 +630,7 @@ export default function BIAPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm mb-6">
+      <nav className="flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap">
         <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -657,7 +657,7 @@ export default function BIAPage() {
       </div>
 
       {/* Top controls row */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4">
+      <div className="flex flex-row items-center justify-end gap-3 sm:gap-4">
         <span className={`font-medium text-center sm:text-left ${
           status === "Open" ? "text-info" :
           status === "Pending Approval" ? "text-warning" :
@@ -809,7 +809,7 @@ export default function BIAPage() {
         </div>
 
         {/* Recovery metrics row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-primary-600">{t("RTO")}</label>
             <Input

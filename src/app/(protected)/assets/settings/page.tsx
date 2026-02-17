@@ -1803,7 +1803,7 @@ export default function AssetSettingsPage() {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm flex-wrap">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
@@ -1826,7 +1826,7 @@ export default function AssetSettingsPage() {
         </div>
 
         {/* Action Buttons - ABOVE the card */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
           <label>
             <input
               type="file"
@@ -1845,7 +1845,7 @@ export default function AssetSettingsPage() {
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Button size="sm" onClick={() => {
+          <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => {
             if (entitySubTab === "categories") {
               setCategoryForm({ name: "", description: "", status: "Active" });
             } else if (entitySubTab === "subcategories") {
@@ -2099,7 +2099,7 @@ export default function AssetSettingsPage() {
         {/* Add Dialog for Entity List */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">
                   {t("Add")} {entitySubTab === "categories" ? t("Category") :
@@ -2113,7 +2113,7 @@ export default function AssetSettingsPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto max-h-[60vh]">
               {entitySubTab === "asset-list" && (
                 <>
                   {/* 1. Name */}
@@ -2668,7 +2668,7 @@ export default function AssetSettingsPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2694,7 +2694,7 @@ export default function AssetSettingsPage() {
         {/* Edit Dialog for Entity List */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">
                   {t("Edit")} {entitySubTab === "categories" ? t("Category") :
@@ -2709,7 +2709,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
               {entitySubTab === "categories" && (
                 <>
                   <div>
@@ -2908,7 +2908,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2933,7 +2933,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
                 <DialogDescription>
@@ -2943,7 +2943,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -2972,7 +2972,7 @@ export default function AssetSettingsPage() {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
@@ -3032,7 +3032,7 @@ export default function AssetSettingsPage() {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
@@ -3051,7 +3051,7 @@ export default function AssetSettingsPage() {
         </div>
 
         {/* Action Buttons - ABOVE the card */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
           <label>
             <input
               type="file"
@@ -3070,7 +3070,7 @@ export default function AssetSettingsPage() {
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Button size="sm" onClick={() => {
+          <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => {
             setLifecycleForm({ name: "", description: "", order: lifecycleStatuses.length });
             setIsAddOpen(true);
           }}>
@@ -3163,7 +3163,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
@@ -3173,7 +3173,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
@@ -3194,7 +3194,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3209,7 +3209,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
@@ -3219,7 +3219,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
@@ -3239,7 +3239,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3254,7 +3254,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Delete Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
@@ -3264,7 +3264,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3283,7 +3283,7 @@ export default function AssetSettingsPage() {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex flex-wrap items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
             <span>{t("Asset Management")}</span>
@@ -3383,7 +3383,7 @@ export default function AssetSettingsPage() {
                   : t("Define low and high range values for each criticality rating")}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
               <Select value={scoringCalculationType} onValueChange={handleCalculationTypeChange}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue />
@@ -3505,7 +3505,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isScoringEditOpen} onOpenChange={setIsScoringEditOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
@@ -3515,7 +3515,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Criticality Level")} <span className="text-semantic-error">*</span></Label>
                 <Input
@@ -3605,7 +3605,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isScoringAddOpen} onOpenChange={setIsScoringAddOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
@@ -3615,7 +3615,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Rating")} <span className="text-semantic-error">*</span></Label>
                 <Input
@@ -3705,7 +3705,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isScoringDeleteOpen} onOpenChange={setIsScoringDeleteOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Delete Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
@@ -3715,7 +3715,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringDeleteOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3728,7 +3728,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("New")} {t(ciaRatingType)}</DialogTitle>
                 <DialogDescription>
@@ -3738,7 +3738,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-semantic-error">*</span></Label>
                 <Input
@@ -3777,7 +3777,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3790,7 +3790,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Rating")}</DialogTitle>
                 <DialogDescription>
@@ -3800,7 +3800,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-semantic-error">*</span></Label>
                 <Input
@@ -3837,7 +3837,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3850,7 +3850,7 @@ export default function AssetSettingsPage() {
         <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
                 <DialogDescription>
@@ -3860,7 +3860,7 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
                 {t("Cancel")}
               </Button>
@@ -3874,17 +3874,17 @@ export default function AssetSettingsPage() {
         {/* CIA Warning Dialog */}
         <Dialog open={isCiaWarningOpen} onOpenChange={setIsCiaWarningOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</DialogTitle>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <p className="text-sm text-slate-600">
                 {t("Please Add the CIA Values")}
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button onClick={() => setIsCiaWarningOpen(false)}>{t("OK")}</Button>
             </div>
           </DialogContent>
@@ -3893,17 +3893,17 @@ export default function AssetSettingsPage() {
         {/* CIA Range Warning Dialog */}
         <Dialog open={isCiaRangeWarningOpen} onOpenChange={setIsCiaRangeWarningOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</DialogTitle>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <p className="text-sm text-slate-600">
                 {t("Value is not in CIA Range..")}
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button onClick={() => setIsCiaRangeWarningOpen(false)}>{t("OK")}</Button>
             </div>
           </DialogContent>
@@ -3912,17 +3912,17 @@ export default function AssetSettingsPage() {
         {/* Scoring Error Dialog */}
         <Dialog open={!!scoringErrorMessage} onOpenChange={() => setScoringErrorMessage("")}>
           <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <div className="px-6 py-5 border-b border-slate-100">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">{t("Error")}</DialogTitle>
               </DialogHeader>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
               <p className="text-sm text-slate-600">
                 {scoringErrorMessage}
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button onClick={() => setScoringErrorMessage("")}>{t("OK")}</Button>
             </div>
           </DialogContent>
@@ -3935,7 +3935,7 @@ export default function AssetSettingsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("Asset Management")}</span>
@@ -4554,7 +4554,7 @@ export default function AssetSettingsPage() {
       <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("New")} {t(ciaRatingType)}</DialogTitle>
               <DialogDescription>
@@ -4564,7 +4564,7 @@ export default function AssetSettingsPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
               <Input
@@ -4587,7 +4587,7 @@ export default function AssetSettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -4600,7 +4600,7 @@ export default function AssetSettingsPage() {
       <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit Rating")}</DialogTitle>
               <DialogDescription>
@@ -4610,7 +4610,7 @@ export default function AssetSettingsPage() {
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
               <Input
@@ -4631,7 +4631,7 @@ export default function AssetSettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -4644,7 +4644,7 @@ export default function AssetSettingsPage() {
       <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription>
@@ -4654,7 +4654,7 @@ export default function AssetSettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
               {t("Cancel")}
             </Button>

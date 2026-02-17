@@ -256,7 +256,7 @@ export default function CustomerPoliciesPage() {
   if (loading && policies.length === 0) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
@@ -280,7 +280,7 @@ export default function CustomerPoliciesPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
@@ -315,7 +315,7 @@ export default function CustomerPoliciesPage() {
 
         <TabsContent value={policySubTab} className="mt-6 space-y-5">
         {/* Status Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           {statusCardData.map(({ label, icon: Icon }) => (
             <div key={label} className="bg-white rounded-xl p-3 sm:p-5 border border-slate-200">
               <div className="flex items-start justify-between mb-3">

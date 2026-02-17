@@ -518,7 +518,7 @@ export default function NewRiskPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <Link href="/risks/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
@@ -901,7 +901,7 @@ export default function NewRiskPage() {
                     <Select
                       onValueChange={(value) => addToSelection("selectedCauses", value)}
                     >
-                      <SelectTrigger className="flex-1 max-w-md">
+                      <SelectTrigger className="flex-1 sm:max-w-md">
                         <SelectValue placeholder={t("selectCause")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
@@ -1093,7 +1093,7 @@ export default function NewRiskPage() {
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-row justify-end gap-2">
                 <Button variant="outline" onClick={() => setCreateCauseDialogOpen(false)}>
                   {t("cancel")}
                 </Button>

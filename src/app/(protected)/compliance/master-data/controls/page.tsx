@@ -52,6 +52,7 @@ import {
   ChevronRight,
   Check,
   Home,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -579,7 +580,7 @@ export default function ControlsMasterDataPage() {
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
@@ -602,7 +603,7 @@ export default function ControlsMasterDataPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
@@ -619,13 +620,7 @@ export default function ControlsMasterDataPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Controls")}</h1>
 
       {/* Action Buttons above the card */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
-        {isCustomerAdmin && (
-          <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Delete All")}
-          </Button>
-        )}
+      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
           <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}
@@ -634,6 +629,12 @@ export default function ControlsMasterDataPage() {
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
         </Button>
+        {isCustomerAdmin && (
+          <Button variant="outline" size="sm" className="col-span-2 sm:col-span-1" onClick={() => setDeleteAllDialogOpen(true)}>
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
+          </Button>
+        )}
         <Dialog
           open={createDialogOpen}
           onOpenChange={(open) => {
@@ -645,7 +646,7 @@ export default function ControlsMasterDataPage() {
           }}
         >
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button size="sm" className="col-span-2 sm:col-span-1">
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Control")}
             </Button>
@@ -676,7 +677,7 @@ export default function ControlsMasterDataPage() {
                     {step < wizardStep ? <Check className="h-4 w-4" /> : step}
                   </div>
                   <span
-                    className={`ltr:ml-2 rtl:mr-2 text-sm ${
+                    className={`hidden sm:inline ltr:ml-2 rtl:mr-2 text-sm ${
                       step === wizardStep
                         ? "font-semibold text-slate-800"
                         : "text-slate-500"
@@ -689,7 +690,7 @@ export default function ControlsMasterDataPage() {
                         : t("Review")}
                   </span>
                   {step < 3 && (
-                    <div className="w-12 h-0.5 bg-slate-200 mx-3" />
+                    <div className="w-6 sm:w-12 h-0.5 bg-slate-200 mx-1.5 sm:mx-3" />
                   )}
                 </div>
               ))}
@@ -1075,8 +1076,16 @@ export default function ControlsMasterDataPage() {
           <TableBody>
             {controls.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
-                  <p className="text-slate-500">{t("No controls found")}</p>
+                <TableCell colSpan={7} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                      <ShieldCheck className="h-6 w-6 text-primary-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls found")}</p>
+                    <p className="text-xs text-slate-400">
+                      {searchTerm ? t("Try adjusting your search") : t("Create a new control to get started")}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -1546,7 +1555,7 @@ export default function ControlsMasterDataPage() {
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="p-0 gap-0 overflow-hidden">
-          <AlertDialogHeader className="px-6 py-4">
+          <AlertDialogHeader className="px-4 sm:px-6 py-4">
             <AlertDialogTitle className="text-base font-semibold text-slate-800">
               {t("Delete Control")}
             </AlertDialogTitle>
@@ -1555,7 +1564,7 @@ export default function ControlsMasterDataPage() {
               {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
@@ -1570,13 +1579,13 @@ export default function ControlsMasterDataPage() {
       {/* Delete All Confirmation */}
       <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
         <AlertDialogContent className="p-0 gap-0 overflow-hidden">
-          <AlertDialogHeader className="px-6 py-4">
+          <AlertDialogHeader className="px-4 sm:px-6 py-4">
             <AlertDialogTitle className="text-base font-semibold text-slate-800">{t("Delete All Controls")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               {t("Are you sure you want to delete all controls? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteAll}
@@ -1645,7 +1654,7 @@ export default function ControlsMasterDataPage() {
             </div>
           </div>
 
-          <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Download Template")}
