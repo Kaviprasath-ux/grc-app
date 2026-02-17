@@ -1972,7 +1972,7 @@ export default function AssetSettingsPage() {
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                     <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
-                      <Badge variant={item.status === "Active" ? "default" : "secondary"}>{item.status}</Badge>
+                      <Badge variant={item.status === "Active" ? "default" : "secondary"}>{t(item.status)}</Badge>
                     </TableCell>
                     <TableCell className="py-3 pr-5">
                       <div className="flex items-center gap-1">
@@ -2001,7 +2001,7 @@ export default function AssetSettingsPage() {
                     <TableCell className="py-3 text-sm text-slate-700">{item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.description || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
-                      <Badge variant={item.status === "Active" ? "default" : "secondary"}>{item.status}</Badge>
+                      <Badge variant={item.status === "Active" ? "default" : "secondary"}>{t(item.status)}</Badge>
                     </TableCell>
                     <TableCell className="py-3 pr-5">
                       <div className="flex items-center gap-1">
@@ -2029,7 +2029,7 @@ export default function AssetSettingsPage() {
                     <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.description || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
-                      <Badge variant={(item as any).status === "Active" ? "default" : "secondary"}>{(item as any).status || "Active"}</Badge>
+                      <Badge variant={(item as any).status === "Active" ? "default" : "secondary"}>{t((item as any).status || "Active")}</Badge>
                     </TableCell>
                     <TableCell className="py-3 pr-5">
                       <div className="flex items-center gap-1">

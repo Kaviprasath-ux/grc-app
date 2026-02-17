@@ -740,10 +740,12 @@ export default function GovernancePage() {
   }) => {
     return (
       <div
-        className={`bg-white rounded-xl p-4 cursor-pointer transition-all ${
+        className={`bg-white rounded-xl p-4 transition-all ${
+          onClick ? "cursor-pointer" : ""
+        } ${
           isSelected
             ? "border-2 border-primary-500"
-            : "border border-slate-200 hover:border-slate-300"
+            : `border border-slate-200 ${onClick ? "hover:border-slate-300" : ""}`
         }`}
         onClick={onClick}
       >
@@ -814,11 +816,11 @@ export default function GovernancePage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
-                <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
-                <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
-                <StatusCard icon={ArrowUpFromLine} count={statusCounts.published} label={t("Published")} status="Published" onClick={() => handleStatusCardClick("Published")} isSelected={statusFilter === "Published"} />
-                <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" onClick={() => handleStatusCardClick("Needs Review")} isSelected={statusFilter === "Needs Review"} />
+                <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" />
+                <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" />
+                <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" />
+                <StatusCard icon={ArrowUpFromLine} count={statusCounts.published} label={t("Published")} status="Published" />
+                <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" />
               </div>
             )}
           </TabsContent>

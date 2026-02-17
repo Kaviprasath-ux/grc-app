@@ -1820,7 +1820,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                                   rc.control.status === "Partial Compliant" ? "bg-amber-50 text-amber-600" :
                                                   "bg-red-50 text-red-600"
                                                 }`}>
-                                                  {rc.control.status}
+                                                  {t(rc.control.status)}
                                                 </span>
                                                 <Button
                                                   variant="ghost"
@@ -1991,7 +1991,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                     : "bg-red-50 text-red-700"
                                 }`}
                               >
-                                {req.controlCompliance || "Non Compliant"}
+                                {t(req.controlCompliance || "Non Compliant")}
                               </span>
                             </div>
                           </div>

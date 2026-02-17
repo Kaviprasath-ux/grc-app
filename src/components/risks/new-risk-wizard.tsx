@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Category {
   id: string;
@@ -119,6 +120,7 @@ export function NewRiskWizard({
   departments,
   editData,
 }: NewRiskWizardProps) {
+  const { t } = useLanguage();
   const isEditMode = !!editData;
   const [currentStep, setCurrentStep] = useState(1);
   const [users, setUsers] = useState<User[]>([]);
@@ -666,7 +668,7 @@ export function NewRiskWizard({
       <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="flex-shrink-0 px-4 sm:px-6 pt-6 pb-4 border-b border-slate-100">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">{isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{isEditMode ? `${t("Edit Risk")} - ${editData?.riskId}` : t("New Risk")}</DialogTitle>
           </DialogHeader>
 
           {/* Step Indicator */}
@@ -717,7 +719,7 @@ export function NewRiskWizard({
               <div className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="riskId">Risk ID</Label>
+                    <Label htmlFor="riskId">{t("Risk ID")}</Label>
                     <Input
                       id="riskId"
                       value={generatedRiskId}
@@ -726,12 +728,12 @@ export function NewRiskWizard({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="name">Risk Name *</Label>
+                    <Label htmlFor="name">{t("Risk Name")} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
-                      placeholder="Enter Risk Name"
+                      placeholder={t("Enter Risk Name")}
                       className={validationErrors.name ? "border-red-500" : ""}
                     />
                     {validationErrors.name && (
@@ -741,25 +743,25 @@ export function NewRiskWizard({
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="description">Risk Description</Label>
+                  <Label htmlFor="description">{t("Risk Description")}</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleInputChange("description", e.target.value)}
-                    placeholder="Enter Description"
+                    placeholder={t("Enter Description")}
                     rows={3}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="department">Department *</Label>
+                    <Label htmlFor="department">{t("Department")} *</Label>
                     <Select
                       value={formData.departmentId}
                       onValueChange={(value) => handleInputChange("departmentId", value)}
                     >
                       <SelectTrigger className={cn("w-full", validationErrors.departmentId && "border-red-500")}>
-                        <SelectValue placeholder="Select Department" />
+                        <SelectValue placeholder={t("Select Department")} />
                       </SelectTrigger>
                       <SelectContent>
                         {departments.map((dept) => (
@@ -774,19 +776,19 @@ export function NewRiskWizard({
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="owner">Risk Owner *</Label>
+                    <Label htmlFor="owner">{t("Risk Owner")} *</Label>
                     <Select
                       value={formData.ownerId}
                       onValueChange={(value) => handleInputChange("ownerId", value)}
                       disabled={!formData.departmentId}
                     >
                       <SelectTrigger className={cn("w-full", validationErrors.ownerId && "border-red-500")}>
-                        <SelectValue placeholder={formData.departmentId ? "Select Owner" : "Select Department first"} />
+                        <SelectValue placeholder={formData.departmentId ? t("Select Owner") : t("Select Department first")} />
                       </SelectTrigger>
                       <SelectContent>
                         {users.length === 0 ? (
                           <div className="py-2 px-3 text-sm text-muted-foreground">
-                            No Department Reviewers found
+                            {t("No Department Reviewers found")}
                           </div>
                         ) : (
                           users.map((user) => (
@@ -805,12 +807,12 @@ export function NewRiskWizard({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="riskSources">Risk Sources *</Label>
+                    <Label htmlFor="riskSources">{t("Risk Sources")} *</Label>
                     <Input
                       id="riskSources"
                       value={formData.riskSources}
                       onChange={(e) => handleInputChange("riskSources", e.target.value)}
-                      placeholder="Enter risk sources"
+                      placeholder={t("Enter risk sources")}
                       className={validationErrors.riskSources ? "border-red-500" : ""}
                     />
                     {validationErrors.riskSources && (
@@ -818,14 +820,14 @@ export function NewRiskWizard({
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="category">Risk Category *</Label>
+                    <Label htmlFor="category">{t("Risk Category")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => handleInputChange("categoryId", value)}
                       >
                         <SelectTrigger className={cn("flex-1", validationErrors.categoryId && "border-red-500")}>
-                          <SelectValue placeholder="Select Category" />
+                          <SelectValue placeholder={t("Select Category")} />
                         </SelectTrigger>
                         <SelectContent>
                           {localCategories.map((cat) => (
@@ -852,13 +854,13 @@ export function NewRiskWizard({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="riskType">Risk Type *</Label>
+                    <Label htmlFor="riskType">{t("Risk Type")} *</Label>
                     <Select
                       value={formData.typeId}
                       onValueChange={(value) => handleInputChange("typeId", value)}
                     >
                       <SelectTrigger className={cn("w-full", validationErrors.typeId && "border-red-500")}>
-                        <SelectValue placeholder="Select Risk Type" />
+                        <SelectValue placeholder={t("Select Risk Type")} />
                       </SelectTrigger>
                       <SelectContent>
                         {riskTypes.map((type) => (
@@ -874,13 +876,13 @@ export function NewRiskWizard({
                   </div>
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
                     <div className="space-y-1.5">
-                      <Label>Impacted Asset</Label>
+                      <Label>{t("Impacted Asset")}</Label>
                       <Select
                         value={formData.impactedAssetId}
                         onValueChange={(value) => handleInputChange("impactedAssetId", value)}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select impacted asset" />
+                          <SelectValue placeholder={t("Select impacted asset")} />
                         </SelectTrigger>
                         <SelectContent>
                           {assets.map((asset) => (
@@ -894,13 +896,13 @@ export function NewRiskWizard({
                   )}
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
                     <div className="space-y-1.5">
-                      <Label>Impacted Process</Label>
+                      <Label>{t("Impacted Process")}</Label>
                       <Select
                         value={formData.impactedProcessId}
                         onValueChange={(value) => handleInputChange("impactedProcessId", value)}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select impacted process" />
+                          <SelectValue placeholder={t("Select impacted process")} />
                         </SelectTrigger>
                         <SelectContent>
                           {processes.map((process) => (
@@ -914,10 +916,10 @@ export function NewRiskWizard({
                   )}
                   {!formData.typeId && (
                     <div className="space-y-1.5">
-                      <Label className="text-muted-foreground">Impacted Asset/Process</Label>
+                      <Label className="text-muted-foreground">{t("Impacted Asset/Process")}</Label>
                       <Select disabled>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select Risk Type first" />
+                          <SelectValue placeholder={t("Select Risk Type first")} />
                         </SelectTrigger>
                       </Select>
                     </div>
@@ -926,13 +928,13 @@ export function NewRiskWizard({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label>Potential Threats *</Label>
+                    <Label>{t("Potential Threats")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         onValueChange={(value) => addToSelection("selectedThreats", value)}
                       >
                         <SelectTrigger className={cn("flex-1", validationErrors.selectedThreats && "border-red-500")}>
-                          <SelectValue placeholder="Select threats" />
+                          <SelectValue placeholder={t("Select threats")} />
                         </SelectTrigger>
                         <SelectContent>
                           {threats.map((threat) => (
@@ -973,7 +975,7 @@ export function NewRiskWizard({
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Associated Vulnerabilities *</Label>
+                    <Label>{t("Associated Vulnerabilities")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         onValueChange={(value) =>
@@ -981,7 +983,7 @@ export function NewRiskWizard({
                         }
                       >
                         <SelectTrigger className={cn("flex-1", validationErrors.selectedVulnerabilities && "border-red-500")}>
-                          <SelectValue placeholder="Select vulnerabilities" />
+                          <SelectValue placeholder={t("Select vulnerabilities")} />
                         </SelectTrigger>
                         <SelectContent>
                           {vulnerabilities.map((vuln) => (
@@ -1024,13 +1026,13 @@ export function NewRiskWizard({
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Cause</Label>
+                  <Label>{t("Cause")}</Label>
                   <div className="flex gap-2">
                     <Select
                       onValueChange={(value) => addToSelection("selectedCauses", value)}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select cause" />
+                        <SelectValue placeholder={t("Select cause")} />
                       </SelectTrigger>
                       <SelectContent>
                         {causes.map((cause) => (
@@ -1074,10 +1076,10 @@ export function NewRiskWizard({
             {currentStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <h3 className="text-lg font-semibold text-slate-800">Controls</h3>
+                  <h3 className="text-lg font-semibold text-slate-800">{t("Controls")}</h3>
                   <Button variant="outline" onClick={() => setLinkControlDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Link Control
+                    {t("Link Control")}
                   </Button>
                 </div>
 
@@ -1086,10 +1088,10 @@ export function NewRiskWizard({
                     <table className="w-full">
                       <thead className="bg-slate-50">
                         <tr className="h-12">
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">Control Code</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">Name</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">Domain</th>
-                          <th className="text-right px-4 text-sm font-medium text-slate-700">Action</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Control Code")}</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Name")}</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Domain")}</th>
+                          <th className="text-right px-4 text-sm font-medium text-slate-700">{t("Action")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -1119,9 +1121,9 @@ export function NewRiskWizard({
                   </div>
                 ) : (
                   <div className="border border-slate-200 rounded-lg p-12 text-center text-slate-500">
-                    <p>No controls linked yet.</p>
+                    <p>{t("No controls linked yet.")}</p>
                     <p className="text-sm mt-2">
-                      Click &quot;Link Control&quot; to associate controls with this risk.
+                      {t("Click \"Link Control\" to associate controls with this risk.")}
                     </p>
                   </div>
                 )}
@@ -1130,13 +1132,13 @@ export function NewRiskWizard({
                 <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
                   <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
-                      <DialogTitle className="text-lg font-semibold text-slate-800">Link Controls</DialogTitle>
+                      <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Controls")}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-hidden flex flex-col px-4 sm:px-6 py-4">
                       <div className="relative mb-4">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
-                          placeholder="Search controls..."
+                          placeholder={t("Search controls...")}
                           value={controlSearch}
                           onChange={(e) => setControlSearch(e.target.value)}
                           className="pl-9"
@@ -1147,9 +1149,9 @@ export function NewRiskWizard({
                           <thead className="bg-slate-50 sticky top-0">
                             <tr className="h-12">
                               <th className="w-10 px-3"></th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">Control Code</th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">Name</th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">Domain</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("Control Code")}</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("Name")}</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("Domain")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -1187,7 +1189,7 @@ export function NewRiskWizard({
                         {formData.selectedControls.length} control(s) selected
                       </span>
                       <Button onClick={() => setLinkControlDialogOpen(false)}>
-                        Done
+                        {t("Done")}
                       </Button>
                     </div>
                   </DialogContent>
@@ -1201,25 +1203,25 @@ export function NewRiskWizard({
         <Dialog open={createCauseDialogOpen} onOpenChange={setCreateCauseDialogOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Create New Cause</DialogTitle>
+              <DialogTitle>{t("Create New Cause")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="newCauseName">Name *</Label>
+                <Label htmlFor="newCauseName">{t("Name")} *</Label>
                 <Input
                   id="newCauseName"
                   value={newCauseName}
                   onChange={(e) => setNewCauseName(e.target.value)}
-                  placeholder="Enter cause name"
+                  placeholder={t("Enter cause name")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="newCauseDescription">Description</Label>
+                <Label htmlFor="newCauseDescription">{t("Description")}</Label>
                 <Textarea
                   id="newCauseDescription"
                   value={newCauseDescription}
                   onChange={(e) => setNewCauseDescription(e.target.value)}
-                  placeholder="Enter cause description (optional)"
+                  placeholder={t("Enter cause description (optional)")}
                   rows={3}
                 />
               </div>
@@ -1233,10 +1235,10 @@ export function NewRiskWizard({
                   setNewCauseDescription("");
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={handleCreateCause} disabled={creatingCause}>
-                {creatingCause ? "Creating..." : "Create"}
+                {creatingCause ? t("Creating...") : t("Create")}
               </Button>
             </div>
           </DialogContent>
@@ -1246,25 +1248,25 @@ export function NewRiskWizard({
         <Dialog open={createCategoryDialogOpen} onOpenChange={setCreateCategoryDialogOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Create New Category</DialogTitle>
+              <DialogTitle>{t("Create New Category")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="newCategoryName">Name *</Label>
+                <Label htmlFor="newCategoryName">{t("Name")} *</Label>
                 <Input
                   id="newCategoryName"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Enter category name"
+                  placeholder={t("Enter category name")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="newCategoryDescription">Description</Label>
+                <Label htmlFor="newCategoryDescription">{t("Description")}</Label>
                 <Textarea
                   id="newCategoryDescription"
                   value={newCategoryDescription}
                   onChange={(e) => setNewCategoryDescription(e.target.value)}
-                  placeholder="Enter category description (optional)"
+                  placeholder={t("Enter category description (optional)")}
                   rows={3}
                 />
               </div>
@@ -1278,10 +1280,10 @@ export function NewRiskWizard({
                   setNewCategoryDescription("");
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={handleCreateCategory} disabled={creatingCategory}>
-                {creatingCategory ? "Creating..." : "Create"}
+                {creatingCategory ? t("Creating...") : t("Create")}
               </Button>
             </div>
           </DialogContent>
@@ -1291,25 +1293,25 @@ export function NewRiskWizard({
         <Dialog open={createThreatDialogOpen} onOpenChange={setCreateThreatDialogOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Create New Threat</DialogTitle>
+              <DialogTitle>{t("Create New Threat")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="newThreatName">Name *</Label>
+                <Label htmlFor="newThreatName">{t("Name")} *</Label>
                 <Input
                   id="newThreatName"
                   value={newThreatName}
                   onChange={(e) => setNewThreatName(e.target.value)}
-                  placeholder="Enter threat name"
+                  placeholder={t("Enter threat name")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="newThreatDescription">Description</Label>
+                <Label htmlFor="newThreatDescription">{t("Description")}</Label>
                 <Textarea
                   id="newThreatDescription"
                   value={newThreatDescription}
                   onChange={(e) => setNewThreatDescription(e.target.value)}
-                  placeholder="Enter threat description (optional)"
+                  placeholder={t("Enter threat description (optional)")}
                   rows={3}
                 />
               </div>
@@ -1323,10 +1325,10 @@ export function NewRiskWizard({
                   setNewThreatDescription("");
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={handleCreateThreat} disabled={creatingThreat}>
-                {creatingThreat ? "Creating..." : "Create"}
+                {creatingThreat ? t("Creating...") : t("Create")}
               </Button>
             </div>
           </DialogContent>
@@ -1336,25 +1338,25 @@ export function NewRiskWizard({
         <Dialog open={createVulnerabilityDialogOpen} onOpenChange={setCreateVulnerabilityDialogOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Create New Vulnerability</DialogTitle>
+              <DialogTitle>{t("Create New Vulnerability")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="newVulnerabilityName">Name *</Label>
+                <Label htmlFor="newVulnerabilityName">{t("Name")} *</Label>
                 <Input
                   id="newVulnerabilityName"
                   value={newVulnerabilityName}
                   onChange={(e) => setNewVulnerabilityName(e.target.value)}
-                  placeholder="Enter vulnerability name"
+                  placeholder={t("Enter vulnerability name")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="newVulnerabilityDescription">Description</Label>
+                <Label htmlFor="newVulnerabilityDescription">{t("Description")}</Label>
                 <Textarea
                   id="newVulnerabilityDescription"
                   value={newVulnerabilityDescription}
                   onChange={(e) => setNewVulnerabilityDescription(e.target.value)}
-                  placeholder="Enter vulnerability description (optional)"
+                  placeholder={t("Enter vulnerability description (optional)")}
                   rows={3}
                 />
               </div>
@@ -1368,10 +1370,10 @@ export function NewRiskWizard({
                   setNewVulnerabilityDescription("");
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={handleCreateVulnerability} disabled={creatingVulnerability}>
-                {creatingVulnerability ? "Creating..." : "Create"}
+                {creatingVulnerability ? t("Creating...") : t("Create")}
               </Button>
             </div>
           </DialogContent>
@@ -1380,23 +1382,23 @@ export function NewRiskWizard({
         {/* Navigation Buttons */}
         <div className="flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
           <span className="text-xs font-medium text-slate-400 me-auto">
-            Step {currentStep} of {steps.length}
+            {t("Step")} {currentStep} {t("of")} {steps.length}
           </span>
           <Button
             variant="outline"
             onClick={currentStep === 1 ? handleClose : handlePrevious}
           >
             {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
-            {currentStep === 1 ? "Cancel" : "Previous"}
+            {currentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           {currentStep < steps.length ? (
             <Button onClick={handleNext}>
-              Next
+              {t("Next")}
               <ChevronRight className="h-4 w-4 ms-1" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={loading}>
-              {loading ? "Saving..." : (isEditMode ? "Update Risk" : "Save Risk")}
+              {loading ? t("Saving...") : (isEditMode ? t("Update Risk") : t("Save Risk"))}
             </Button>
           )}
         </div>

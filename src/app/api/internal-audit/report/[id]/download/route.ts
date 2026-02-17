@@ -29,6 +29,7 @@ export const GET = withAuth(
               id: true,
               auditId: true,
               engagementTitle: true,
+              auditType: true,
               engagementObjective: true,
               engagementScope: true,
               plannedStartDate: true,
@@ -198,6 +199,7 @@ export const GET = withAuth(
           : '');
 
       addMetaRow('Audit Title:', report.title, true);
+      addMetaRow('Audit Type:', report.engagement.auditType || '', true);
       addMetaRow('Report Number:', report.reportCode, true);
       addMetaRow('Report Date:', reportDate, true);
       addMetaRow('Fieldwork Period:', fieldworkPeriod, true);

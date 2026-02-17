@@ -1061,7 +1061,7 @@ export default function ControlsMasterDataPage() {
                         "bg-slate-100 text-slate-600"
                       }
                     >
-                      {control.status}
+                      {t(control.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-3 text-sm pr-4">

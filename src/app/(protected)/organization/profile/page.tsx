@@ -648,6 +648,19 @@ function ProfilePageContent() {
               </div>
 
               <div className="space-y-4 sm:space-y-5">
+                {/* Organization Logo & Name Header */}
+                {organization.logo && (
+                  <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex items-center gap-4">
+                    <img src={organization.logo} alt={organization.name} className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-800">{organization.name}</h3>
+                      {organization.website && (
+                        <p className="text-sm text-primary-600">{organization.website}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* General Information Section */}
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                   <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">

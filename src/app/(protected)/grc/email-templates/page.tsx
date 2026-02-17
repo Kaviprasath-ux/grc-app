@@ -1026,7 +1026,7 @@ export default function EmailTemplatesPage() {
                     <Input
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Evidence Assigned"
+                      placeholder={t("Evidence Assigned")}
                     />
                   </div>
                 </div>
@@ -1045,7 +1045,7 @@ export default function EmailTemplatesPage() {
                   <Input
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    placeholder="Evidence Assigned: {entityName}"
+                    placeholder={t("Evidence Assigned: {entityName}")}
                   />
                   <p className="text-xs text-slate-500">{t("Use {placeholder} for dynamic content")}</p>
                 </div>

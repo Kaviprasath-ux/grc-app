@@ -8,12 +8,20 @@ import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis'
 import { AI_ENDPOINTS } from '@/lib/ai-endpoints';
 
 /**
- * Resolve stored filePath (e.g. /uploads/documents/file.pdf) to absolute disk path.
+ * Resolve stored filePath to absolute disk path.
+ * Tries multiple locations for backward compatibility (local dev + Vercel /tmp).
  */
-function resolveDiskPath(filePath: string): string {
-  const p = (filePath || '').replace(/^\/+/, '');
-  if (path.isAbsolute(p)) return p;
-  return path.join(process.cwd(), p || 'uploads');
+function resolveDiskPath(filePath: string): string | null {
+  const relative = (filePath || '').replace(/^\/+/, '');
+  // Candidates: process.cwd() based, /tmp based (Vercel serverless)
+  const candidates = [
+    path.join(process.cwd(), relative || 'uploads'),
+    path.join('/tmp', relative || 'uploads'),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  return null;
 }
 
 /**
@@ -54,7 +62,7 @@ export const POST = withAuth(
         );
       }
 
-      // Fetch documents with tenant isolation
+      // Fetch documents with tenant isolation (include fileData for serverless compatibility)
       const documents = await prisma.internalAuditDocument.findMany({
         where: {
           id: { in: documentIds },
@@ -86,14 +94,35 @@ export const POST = withAuth(
       const processedDocs: { id: string; fileName: string }[] = [];
 
       for (const doc of documents) {
-        const diskPath = resolveDiskPath(doc.filePath);
-        if (!existsSync(diskPath)) {
-          missing.push(diskPath);
-          console.warn('[Document Ingest] File not found, skipping: ' + diskPath);
-          continue;
+        let buf: Buffer | null = null;
+
+        // 1. Try fileData from DB via raw SQL (bypasses Prisma client cache on Vercel)
+        try {
+          const rows = await prisma.$queryRaw<Array<{ fileData: Buffer | null }>>`
+            SELECT "fileData" FROM "InternalAuditDocument" WHERE "id" = ${doc.id}
+          `;
+          if (rows[0]?.fileData) {
+            buf = Buffer.from(rows[0].fileData);
+            console.log('[Document Ingest] Using fileData from DB for: ' + doc.fileName);
+          }
+        } catch (rawErr) {
+          console.warn('[Document Ingest] Raw SQL fileData read failed:', rawErr);
         }
-        const buf = await readFile(diskPath);
-        form.append('files', new Blob([buf]), doc.fileName || `file-${doc.id}`);
+
+        // 2. Fall back to disk read (local dev or old documents without fileData)
+        if (!buf) {
+          const diskPath = resolveDiskPath(doc.filePath);
+          if (diskPath) {
+            buf = await readFile(diskPath);
+            console.log('[Document Ingest] Using disk file for: ' + doc.fileName + ' at ' + diskPath);
+          } else {
+            missing.push(doc.filePath);
+            console.warn('[Document Ingest] File not found (DB or disk), skipping: ' + doc.fileName);
+            continue;
+          }
+        }
+
+        form.append('files', new Blob([new Uint8Array(buf)]), doc.fileName || `file-${doc.id}`);
         processedDocs.push({ id: doc.id, fileName: doc.fileName });
         appended++;
       }

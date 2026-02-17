@@ -1191,30 +1191,80 @@ export default function ProcessPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Export BIA processes to CSV
+  // Export BIA processes to CSV with all available BIA data
   const handleExportBIA = () => {
-    const biaProcesses = filteredProcesses.filter((p) => p.biaCompleted);
+    // Export all processes shown in the BIA tab
+    const biaProcesses = filteredProcesses;
     if (biaProcesses.length === 0) {
-      toast({ title: t("No Data"), description: t("No BIA processes to export"), variant: "destructive" });
+      toast({ title: t("No Data"), description: t("No processes to export"), variant: "destructive" });
       return;
     }
 
-    const headers = ["Reference ID", "Name", "Department", "Process Owner", "Process Criticality"];
-    const csvRows = [headers.join(",")];
+    // Collect all unique category names across all BIA assessments
+    const allCategoryNames = new Set<string>();
+    biaProcesses.forEach((process) => {
+      const biaStatus = getBIAStatus(process.id);
+      biaStatus?.categoryRatings?.forEach((cr) => {
+        if (cr.categoryName) allCategoryNames.add(cr.categoryName);
+      });
+    });
+    const categoryNames = Array.from(allCategoryNames);
+
+    // Build headers: basic fields + category rating columns + metrics
+    const headers = [
+      "Reference ID",
+      "Name",
+      "Description",
+      "Department",
+      "Process Owner",
+      "Process Frequency",
+      "Nature Of Implementation",
+      ...categoryNames.flatMap((cat) => [`${cat} - Rating`, `${cat} - Description`]),
+      "Impact Rating",
+      "Process Criticality",
+      "RTO (Hours)",
+      "RPO (Hours)",
+      "Low",
+      "Medium",
+      "High",
+      "Critical",
+      "BIA Status",
+      "Approver",
+    ];
+    const csvRows = [headers.map(h => `"${h}"`).join(",")];
 
     biaProcesses.forEach((process) => {
+      const biaStatus = getBIAStatus(process.id);
+      const categoryValues = categoryNames.flatMap((catName) => {
+        const cr = biaStatus?.categoryRatings?.find((r) => r.categoryName === catName);
+        return [cr?.rating || "", cr?.description || ""];
+      });
+
       const row = [
         process.processCode || "",
         process.name || "",
+        process.description || "",
         process.department?.name || "",
         process.owner?.fullName || "",
-        process.processCriticality || "",
-      ].map(val => `"${val}"`);
+        process.processFrequency || process.frequency || "",
+        process.natureOfImplementation || "",
+        ...categoryValues,
+        biaStatus?.impactRating?.toString() || "",
+        biaStatus?.processCriticality || process.processCriticality || "",
+        biaStatus?.rtoHours?.toString() || "",
+        biaStatus?.rpoHours?.toString() || "",
+        biaStatus?.lowValue?.toString() || "",
+        biaStatus?.mediumValue?.toString() || "",
+        biaStatus?.highValue?.toString() || "",
+        biaStatus?.criticalValue?.toString() || "",
+        biaStatus?.status || "",
+        biaStatus?.approverName || "",
+      ].map(val => `"${String(val).replace(/"/g, '""')}"`);
       csvRows.push(row.join(","));
     });
 
     const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;

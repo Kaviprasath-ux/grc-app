@@ -165,7 +165,8 @@ export default function RiskControlMatrixPage() {
         setCurrentPage(1);
         fetchEntries();
       } else {
-        const error = await response.json();
+        const text = await response.text();
+        const error = text ? JSON.parse(text) : {};
         toast({
           title: t("Import failed"),
           description: error.error || t("Failed to import risks."),

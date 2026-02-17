@@ -78,6 +78,7 @@ interface AuditReportData {
     id: string;
     auditId: string;
     engagementTitle: string;
+    auditType: string | null;
     engagementObjective: string | null;
     engagementScope: string | null;
     plannedStartDate: string | null;
@@ -677,6 +678,10 @@ export default function ReportsPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center">
                     <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Audit Title")}:</span>
                     <span className="text-primary-600">{report.title}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Audit Type")}:</span>
+                    <span className="text-primary-600">{report.engagement.auditType || "-"}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center">
                     <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Report Number")}:</span>

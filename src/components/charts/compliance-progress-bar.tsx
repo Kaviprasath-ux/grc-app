@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ComplianceItem {
   frameworkId?: string;
@@ -20,6 +21,7 @@ interface ComplianceProgressBarProps {
 }
 
 export function ComplianceProgressBar({ title, data, className, maxItems = 5, onFrameworkClick }: ComplianceProgressBarProps) {
+  const { t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
 
   // Calculate compliance percentage for each framework
@@ -68,7 +70,7 @@ export function ComplianceProgressBar({ title, data, className, maxItems = 5, on
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
         <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-50">
-          <span className="text-xs text-slate-500">Overall:</span>
+          <span className="text-xs text-slate-500">{t("Overall:")}</span>
           <span className={cn("text-sm font-bold", getTextColor(overallPercentage))}>
             {overallPercentage}%
           </span>
@@ -129,11 +131,11 @@ export function ComplianceProgressBar({ title, data, className, maxItems = 5, on
         >
           {showAll ? (
             <>
-              Show Less <ChevronUp className="h-3.5 w-3.5" />
+              {t("Show Less")} <ChevronUp className="h-3.5 w-3.5" />
             </>
           ) : (
             <>
-              View All ({sortedData.length}) <ChevronDown className="h-3.5 w-3.5" />
+              {t("View All")} ({sortedData.length}) <ChevronDown className="h-3.5 w-3.5" />
             </>
           )}
         </button>

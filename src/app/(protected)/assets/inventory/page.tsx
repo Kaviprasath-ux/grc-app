@@ -453,7 +453,7 @@ export default function AssetInventoryPage() {
         setIsAddAssetOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create asset", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create asset"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding asset:", error);
@@ -539,7 +539,7 @@ export default function AssetInventoryPage() {
         setEditingAsset(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update asset", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update asset"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating asset:", error);
@@ -791,7 +791,7 @@ export default function AssetInventoryPage() {
       const rows = await parseFileToRows(importFile);
 
       if (rows.length < 2) {
-        toast({ title: "Error", description: "Invalid file: No data rows found", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Invalid file: No data rows found"), variant: "destructive" });
         setImporting(false);
         return;
       }
@@ -877,8 +877,8 @@ export default function AssetInventoryPage() {
       }
 
       toast({
-        title: "Success",
-        description: `Import completed: ${successCount} assets imported, ${errorCount} errors`,
+        title: t("Success"),
+        description: `${t("Import completed")}: ${successCount} ${t("assets imported")}, ${errorCount} ${t("errors")}`,
       });
       setIsImportDialogOpen(false);
       setImportFile(null);
@@ -889,8 +889,8 @@ export default function AssetInventoryPage() {
     } catch (error) {
       console.error("Error importing assets:", error);
       toast({
-        title: "Error",
-        description: "Failed to import assets. Please check the file format.",
+        title: t("Error"),
+        description: t("Failed to import assets. Please check the file format."),
         variant: "destructive",
       });
     } finally {

@@ -175,44 +175,44 @@ export default function BCPLabelsPage() {
   );
 
   const formatHours = (hours: number) => {
-    if (hours < 1) return `${hours * 60} minutes`;
-    if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""}`;
+    if (hours < 1) return `${hours * 60} ${t("minutes")}`;
+    if (hours < 24) return `${hours} ${hours !== 1 ? t("hours") : t("hour")}`;
     const days = Math.floor(hours / 24);
     const remainingHours = hours % 24;
-    if (remainingHours === 0) return `${days} day${days !== 1 ? "s" : ""}`;
-    return `${days} day${days !== 1 ? "s" : ""} ${remainingHours} hour${remainingHours !== 1 ? "s" : ""}`;
+    if (remainingHours === 0) return `${days} ${days !== 1 ? t("days") : t("day")}`;
+    return `${days} ${days !== 1 ? t("days") : t("day")} ${remainingHours} ${remainingHours !== 1 ? t("hours") : t("hour")}`;
   };
 
   const columns: ColumnDef<BCPLabel>[] = [
     {
       accessorKey: "name",
-      header: "Label Name",
+      header: t("Label Name"),
       cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "hours",
-      header: "Time Value",
+      header: t("Time Value"),
       cell: ({ row }) => formatHours(row.getValue("hours")),
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("Description"),
       cell: ({ row }) => (
         <span className="text-muted-foreground">{row.getValue("description") || "-"}</span>
       ),
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("isActive") ? "default" : "secondary"}>
-          {row.getValue("isActive") ? "Active" : "Inactive"}
+          {row.getValue("isActive") ? t("Active") : t("Inactive")}
         </Badge>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
@@ -269,20 +269,19 @@ export default function BCPLabelsPage() {
         <TabsList className="w-full sm:w-auto flex-wrap">
           <TabsTrigger value="rto" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            RTO Labels
+            {t("RTO Labels")}
           </TabsTrigger>
           <TabsTrigger value="rpo" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
-            RPO Labels
+            {t("RPO Labels")}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="rto" className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4">
-            <h3 className="font-medium text-blue-900">Recovery Time Objective (RTO)</h3>
+            <h3 className="font-medium text-blue-900">{t("Recovery Time Objective (RTO)")}</h3>
             <p className="text-sm text-blue-700">
-              RTO defines the maximum acceptable time to restore a process after a disruption.
-              Configure labels to standardize RTO options across your organization.
+              {t("RTO defines the maximum acceptable time to restore a process after a disruption. Configure labels to standardize RTO options across your organization.")}
             </p>
           </div>
 
@@ -290,7 +289,7 @@ export default function BCPLabelsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search labels..."
+                placeholder={t("Search labels...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-full sm:w-[250px]"
@@ -298,25 +297,24 @@ export default function BCPLabelsPage() {
             </div>
             <Button onClick={() => { resetForm(); setIsAddOpen(true); }}>
               <Plus className="h-4 w-4 mr-2" />
-              Add RTO Label
+              {t("Add RTO Label")}
             </Button>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center h-32">
-              <p className="text-muted-foreground">Loading...</p>
+              <p className="text-muted-foreground">{t("Loading...")}</p>
             </div>
           ) : (
-            <DataGrid columns={columns} data={filteredData} searchPlaceholder="Search..." />
+            <DataGrid columns={columns} data={filteredData} searchPlaceholder={t("Search...")} />
           )}
         </TabsContent>
 
         <TabsContent value="rpo" className="space-y-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 mb-4">
-            <h3 className="font-medium text-green-900">Recovery Point Objective (RPO)</h3>
+            <h3 className="font-medium text-green-900">{t("Recovery Point Objective (RPO)")}</h3>
             <p className="text-sm text-green-700">
-              RPO defines the maximum acceptable data loss measured in time.
-              Configure labels to standardize RPO options across your organization.
+              {t("RPO defines the maximum acceptable data loss measured in time. Configure labels to standardize RPO options across your organization.")}
             </p>
           </div>
 
@@ -324,7 +322,7 @@ export default function BCPLabelsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search labels..."
+                placeholder={t("Search labels...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-full sm:w-[250px]"
@@ -332,16 +330,16 @@ export default function BCPLabelsPage() {
             </div>
             <Button onClick={() => { resetForm(); setIsAddOpen(true); }}>
               <Plus className="h-4 w-4 mr-2" />
-              Add RPO Label
+              {t("Add RPO Label")}
             </Button>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center h-32">
-              <p className="text-muted-foreground">Loading...</p>
+              <p className="text-muted-foreground">{t("Loading...")}</p>
             </div>
           ) : (
-            <DataGrid columns={columns} data={filteredData} searchPlaceholder="Search..." />
+            <DataGrid columns={columns} data={filteredData} searchPlaceholder={t("Search...")} />
           )}
         </TabsContent>
       </Tabs>
@@ -350,23 +348,23 @@ export default function BCPLabelsPage() {
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add {activeTab.toUpperCase()} Label</DialogTitle>
+            <DialogTitle>{t("Add")} {activeTab.toUpperCase()} {t("Label")}</DialogTitle>
             <DialogDescription>
-              Create a new {activeTab === "rto" ? "Recovery Time Objective" : "Recovery Point Objective"} label
+              {activeTab === "rto" ? t("Create a new Recovery Time Objective label") : t("Create a new Recovery Point Objective label")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Label Name *</Label>
+              <Label htmlFor="name">{t("Label Name")} *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Immediate, 4 Hours, 24 Hours"
+                placeholder={t("e.g., Immediate, 4 Hours, 24 Hours")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hours">Time Value (in hours) *</Label>
+              <Label htmlFor="hours">{t("Time Value (in hours)")} *</Label>
               <Input
                 id="hours"
                 type="number"
@@ -376,20 +374,20 @@ export default function BCPLabelsPage() {
                 onChange={(e) => setFormData({ ...formData, hours: parseFloat(e.target.value) || 0 })}
               />
               <p className="text-xs text-muted-foreground">
-                Enter value in hours. Use 0.5 for 30 minutes, 0.25 for 15 minutes, etc.
+                {t("Enter value in hours. Use 0.5 for 30 minutes, 0.25 for 15 minutes, etc.")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("Description")}</Label>
               <Input
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sortOrder">Sort Order</Label>
+              <Label htmlFor="sortOrder">{t("Sort Order")}</Label>
               <Input
                 id="sortOrder"
                 type="number"
@@ -403,14 +401,14 @@ export default function BCPLabelsPage() {
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label htmlFor="isActive">Active</Label>
+              <Label htmlFor="isActive">{t("Active")}</Label>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsAddOpen(false); resetForm(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAdd}>Save</Button>
+            <Button onClick={handleAdd}>{t("Save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -419,18 +417,18 @@ export default function BCPLabelsPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit {formData.type} Label</DialogTitle>
+            <DialogTitle>{t("Edit")} {formData.type} {t("Label")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Label Name *</Label>
+              <Label>{t("Label Name")} *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Time Value (in hours) *</Label>
+              <Label>{t("Time Value (in hours)")} *</Label>
               <Input
                 type="number"
                 min="0"
@@ -440,14 +438,14 @@ export default function BCPLabelsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t("Description")}</Label>
               <Input
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Sort Order</Label>
+              <Label>{t("Sort Order")}</Label>
               <Input
                 type="number"
                 value={formData.sortOrder}
@@ -459,14 +457,14 @@ export default function BCPLabelsPage() {
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label>Active</Label>
+              <Label>{t("Active")}</Label>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingItem(null); resetForm(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEdit}>Save Changes</Button>
+            <Button onClick={handleEdit}>{t("Save Changes")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -475,17 +473,17 @@ export default function BCPLabelsPage() {
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this label? This action cannot be undone.
+              {t("Are you sure you want to delete this label? This action cannot be undone.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete
+              {t("Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

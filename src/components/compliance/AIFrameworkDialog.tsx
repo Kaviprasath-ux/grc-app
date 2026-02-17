@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertCircle, CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import { useFrameworkPolling, formatElapsedTime, formatRemainingTime } from "@/hooks/useFrameworkPolling";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AIFrameworkDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface AIFrameworkDialogProps {
 }
 
 export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AIFrameworkDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const {
     startPolling,
@@ -168,7 +170,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Generate Framework with AI</DialogTitle>
+          <DialogTitle>{t("Generate Framework with AI")}</DialogTitle>
         </DialogHeader>
 
         {/* POLLING STATE: Show progress instead of form */}
@@ -176,7 +178,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
           <div className="space-y-6 py-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Framework Generation in Progress</h3>
+                <h3 className="font-semibold text-gray-900">{t("Framework Generation in Progress")}</h3>
                 <span className="text-sm text-gray-500">{progress.toFixed(0)}%</span>
               </div>
 
@@ -195,8 +197,8 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                 <>
                   <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
                   <div>
-                    <p className="font-semibold text-blue-900">Queued</p>
-                    <p className="text-sm text-blue-700">Waiting to start processing...</p>
+                    <p className="font-semibold text-blue-900">{t("Queued")}</p>
+                    <p className="text-sm text-blue-700">{t("Waiting to start processing...")}</p>
                   </div>
                 </>
               )}
@@ -205,8 +207,8 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                 <>
                   <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
                   <div>
-                    <p className="font-semibold text-amber-900">Processing</p>
-                    <p className="text-sm text-amber-700">AI is generating your framework...</p>
+                    <p className="font-semibold text-amber-900">{t("Processing")}</p>
+                    <p className="text-sm text-amber-700">{t("AI is generating your framework...")}</p>
                   </div>
                 </>
               )}
@@ -215,8 +217,8 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                 <>
                   <Loader2 className="h-5 w-5 text-green-600 animate-spin" />
                   <div>
-                    <p className="font-semibold text-green-900">Saving to Database</p>
-                    <p className="text-sm text-green-700">Framework is being persisted...</p>
+                    <p className="font-semibold text-green-900">{t("Saving to Database")}</p>
+                    <p className="text-sm text-green-700">{t("Framework is being persisted...")}</p>
                   </div>
                 </>
               )}
@@ -225,8 +227,8 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                 <>
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                   <div>
-                    <p className="font-semibold text-green-900">Complete!</p>
-                    <p className="text-sm text-green-700">Framework is ready. Closing...</p>
+                    <p className="font-semibold text-green-900">{t("Complete!")}</p>
+                    <p className="text-sm text-green-700">{t("Framework is ready. Closing...")}</p>
                   </div>
                 </>
               )}
@@ -235,13 +237,13 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
             {/* Timing Information */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 rounded-lg bg-gray-50">
-                <p className="text-sm text-gray-600">Elapsed</p>
+                <p className="text-sm text-gray-600">{t("Elapsed")}</p>
                 <p className="font-mono font-semibold text-gray-900">
                   {formatElapsedTime(timeElapsed)}
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-gray-50">
-                <p className="text-sm text-gray-600">Est. Remaining</p>
+                <p className="text-sm text-gray-600">{t("Est. Remaining")}</p>
                 <p className="font-mono font-semibold text-gray-900">
                   {formatRemainingTime(estimatedTimeRemaining)}
                 </p>
@@ -250,7 +252,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
 
             {/* Job ID */}
             <div className="p-3 rounded-lg bg-gray-50">
-              <p className="text-sm text-gray-600">Job ID</p>
+              <p className="text-sm text-gray-600">{t("Job ID")}</p>
               <p className="font-mono text-sm text-gray-900">{jobId}</p>
             </div>
 
@@ -275,7 +277,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                   onOpenChange(false);
                 }}
               >
-                Close and Check Later
+                {t("Close and Check Later")}
               </Button>
             </div>
           </div>
@@ -287,7 +289,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
             <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
               <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-red-900">Generation Failed</p>
+                <p className="font-semibold text-red-900">{t("Generation Failed")}</p>
                 <p className="text-sm text-red-700 mt-1">{error}</p>
               </div>
             </div>
@@ -301,7 +303,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                   onOpenChange(false);
                 }}
               >
-                Close
+                {t("Close")}
               </Button>
               <Button
                 onClick={() => {
@@ -309,7 +311,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                   resetPolling();
                 }}
               >
-                Try Again
+                {t("Try Again")}
               </Button>
             </div>
           </div>
@@ -320,7 +322,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
           <form onSubmit={handleSubmit} className="space-y-6 py-6">
             {/* Framework Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">Framework Name *</Label>
+              <Label htmlFor="name">{t("Framework Name")} *</Label>
               <Input
                 id="name"
                 placeholder="e.g., ISO/IEC 27001:2022"
@@ -329,13 +331,13 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                 disabled={isSubmitting}
               />
               <p className="text-xs text-gray-500">
-                The name of the framework to generate (e.g., ISO 27001, NIST CSF, etc.)
+                {t("The name of the framework to generate (e.g., ISO 27001, NIST CSF, etc.)")}
               </p>
             </div>
 
             {/* Framework Code */}
             <div className="space-y-2">
-              <Label htmlFor="code">Framework Code (Optional)</Label>
+              <Label htmlFor="code">{t("Framework Code (Optional)")}</Label>
               <Input
                 id="code"
                 placeholder="e.g., ISO27001"
@@ -343,12 +345,12 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-gray-500">Auto-generated if not provided</p>
+              <p className="text-xs text-gray-500">{t("Auto-generated if not provided")}</p>
             </div>
 
             {/* Type */}
             <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
+              <Label htmlFor="type">{t("Type")}</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -368,7 +370,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
             {/* Country & Industry Grid */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="country">Country (Optional)</Label>
+                <Label htmlFor="country">{t("Country (Optional)")}</Label>
                 <Input
                   id="country"
                   placeholder="e.g., India"
@@ -378,7 +380,7 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="industry">Industry (Optional)</Label>
+                <Label htmlFor="industry">{t("Industry (Optional)")}</Label>
                 <Input
                   id="industry"
                   placeholder="e.g., Finance"
@@ -391,10 +393,10 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">{t("Description (Optional)")}</Label>
               <textarea
                 id="description"
-                placeholder="Additional details about the framework..."
+                placeholder={t("Additional details about the framework...")}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 disabled={isSubmitting}
@@ -407,23 +409,23 @@ export function AIFrameworkDialog({ open, onOpenChange, onFrameworkCreated }: AI
             <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
               <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-amber-700">
-                Framework generation can take 15-120 minutes. You'll receive a notification when ready.
+                {t("Framework generation can take 15-120 minutes. You'll receive a notification when ready.")}
               </p>
             </div>
 
             {/* Buttons */}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
+                    {t("Submitting...")}
                   </>
                 ) : (
-                  "Generate Framework"
+                  t("Generate Framework")
                 )}
               </Button>
             </div>

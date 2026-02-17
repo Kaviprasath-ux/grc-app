@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface HorizontalBarChartProps {
   title: string;
@@ -32,6 +33,7 @@ export function HorizontalBarChart({
   className,
   onClick,
 }: HorizontalBarChartProps) {
+  const { isRTL } = useLanguage();
   // Dynamic height based on number of items (minimum 200px)
   const minBarHeight = 45; // Space per bar category
   const chartHeight = Math.max(200, data.length * minBarHeight);
@@ -75,12 +77,12 @@ export function HorizontalBarChart({
           No data available
         </div>
       ) : (
-        <div style={{ height: `${chartHeight}px` }}>
+        <div style={{ height: `${chartHeight}px`, direction: "ltr" }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               layout="vertical"
               data={data}
-              margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+              margin={isRTL ? { top: 5, right: 10, left: 10, bottom: 5 } : { top: 5, right: 10, left: 0, bottom: 5 }}
               barCategoryGap="20%"
               barGap={2}
             >
@@ -96,14 +98,16 @@ export function HorizontalBarChart({
                 axisLine={false}
                 tickLine={false}
                 tickCount={5}
+                reversed={isRTL}
               />
               <YAxis
                 dataKey={yAxisDataKey}
                 type="category"
-                width={60}
+                width={isRTL ? 120 : 60}
                 tick={{ fontSize: 10, fill: "#475569", fontWeight: 500 }}
                 axisLine={false}
                 tickLine={false}
+                orientation={isRTL ? "right" : "left"}
               />
               <Tooltip
                 contentStyle={{
@@ -124,7 +128,7 @@ export function HorizontalBarChart({
                   fill={bar.fill}
                   name={bar.name}
                   barSize={18}
-                  radius={[0, 4, 4, 0]}
+                  radius={isRTL ? [4, 0, 0, 4] : [0, 4, 4, 0]}
                 />
               ))}
             </BarChart>

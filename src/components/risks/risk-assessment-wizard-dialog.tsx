@@ -24,6 +24,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
 import { Check, ChevronLeft, ChevronRight, X, FileText, Target, Zap, Shield, BarChart3, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Risk {
   id: string;
@@ -114,6 +115,7 @@ export function RiskAssessmentWizardDialog({
   riskId,
   onAssessmentComplete,
 }: RiskAssessmentWizardDialogProps) {
+  const { t } = useLanguage();
   const { canView, canCreate, canEdit } = usePermissions('risk.assessment');
 
   const [risk, setRisk] = useState<Risk | null>(null);
@@ -633,7 +635,7 @@ export function RiskAssessmentWizardDialog({
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-lg font-semibold text-slate-800 mb-2">
-                  Risk Assessment
+                  {t("Risk Assessment")}
                 </DialogTitle>
                 {risk && (
                   <p className="text-sm text-slate-500">
@@ -705,7 +707,7 @@ export function RiskAssessmentWizardDialog({
               </div>
             ) : !risk ? (
               <div className="flex items-center justify-center h-full">
-                <p className="text-slate-500">Risk not found</p>
+                <p className="text-slate-500">{t("Risk not found")}</p>
               </div>
             ) : (
               <div className="space-y-5">
@@ -723,27 +725,27 @@ export function RiskAssessmentWizardDialog({
                 {/* Step 1: Risk Context */}
                 {currentStep === 1 && (
                   <div className="space-y-4">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Risk Context</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t("Risk Context")}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0">
                       <div className="flex justify-between py-2.5 border-b border-slate-100">
-                        <span className="text-sm text-slate-500">Category</span>
+                        <span className="text-sm text-slate-500">{t("Category")}</span>
                         <span className="text-sm font-medium text-slate-800">{risk.category?.name || "-"}</span>
                       </div>
                       <div className="flex justify-between py-2.5 border-b border-slate-100">
-                        <span className="text-sm text-slate-500">Type</span>
+                        <span className="text-sm text-slate-500">{t("Type")}</span>
                         <span className="text-sm font-medium text-slate-800">{risk.type?.name || "-"}</span>
                       </div>
                       <div className="flex justify-between py-2.5 border-b border-slate-100">
-                        <span className="text-sm text-slate-500">Owner</span>
+                        <span className="text-sm text-slate-500">{t("Owner")}</span>
                         <span className="text-sm font-medium text-slate-800">{risk.owner?.fullName || "-"}</span>
                       </div>
                       <div className="flex justify-between py-2.5 border-b border-slate-100">
-                        <span className="text-sm text-slate-500">Department</span>
+                        <span className="text-sm text-slate-500">{t("Department")}</span>
                         <span className="text-sm font-medium text-slate-800">{risk.category?.name || "-"}</span>
                       </div>
                     </div>
                     <div className="flex justify-between py-2.5 border-b border-slate-100">
-                      <span className="text-sm text-slate-500">Risk Sources</span>
+                      <span className="text-sm text-slate-500">{t("Risk Sources")}</span>
                       <span className="text-sm font-medium text-slate-800 text-right max-w-[60%]">{risk.riskSources || "-"}</span>
                     </div>
                   </div>
@@ -781,8 +783,8 @@ export function RiskAssessmentWizardDialog({
                         <h4 className="font-semibold text-slate-800 mb-4">{threat.name}</h4>
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-4 text-sm font-medium text-slate-600 pb-2 border-b border-slate-200">
-                            <span>Impact Category</span>
-                            <span>Rating</span>
+                            <span>{t("Impact Category")}</span>
+                            <span>{t("Rating")}</span>
                           </div>
                           {impactCategories.map((category) => (
                             <div key={category.id} className="grid grid-cols-2 gap-4 items-center">
@@ -795,7 +797,7 @@ export function RiskAssessmentWizardDialog({
                                 }))}
                               >
                                 <SelectTrigger className="w-full bg-white">
-                                  <SelectValue placeholder="Select rating" />
+                                  <SelectValue placeholder={t("Select rating")} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {impactRatings.map((rating) => (
@@ -810,9 +812,9 @@ export function RiskAssessmentWizardDialog({
                         </div>
                         <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
                           <p className="text-sm text-slate-600">
-                            <span className="font-medium">Impact Rating:</span> {Math.max(...Object.values(threatImpacts[threat.id] || { default: 0 }), 0)}
+                            <span className="font-medium">{t("Impact Rating")}:</span> {Math.max(...Object.values(threatImpacts[threat.id] || { default: 0 }), 0)}
                           </p>
-                          <p className="text-xs text-slate-400">Highest rating is taken</p>
+                          <p className="text-xs text-slate-400">{t("Highest rating is taken")}</p>
                         </div>
                       </div>
                     ))}
@@ -848,7 +850,7 @@ export function RiskAssessmentWizardDialog({
                   <div className="space-y-5">
                     {/* Risk Calculation */}
                     <div className="pb-5 border-b border-slate-200">
-                      <h4 className="font-semibold text-slate-800 mb-4">Inherent Risk Calculation</h4>
+                      <h4 className="font-semibold text-slate-800 mb-4">{t("Inherent Risk Calculation")}</h4>
                       <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-2 items-center text-center">
                         <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-0">
                           <p className="text-[10px] text-slate-500 uppercase truncate">Likelihood</p>
@@ -876,7 +878,7 @@ export function RiskAssessmentWizardDialog({
                     <div className="pb-5 border-b border-slate-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-slate-500 mb-1">Inherent Risk Rating</p>
+                          <p className="text-sm text-slate-500 mb-1">{t("Inherent Risk Rating")}</p>
                           <span className={cn(
                             "inline-block px-4 py-2 rounded-lg text-sm font-semibold",
                             calculatedRating === "Critical" || calculatedRating === "Catastrophic" ? "bg-red-100 text-red-800" : "",
@@ -889,8 +891,8 @@ export function RiskAssessmentWizardDialog({
                           </span>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-slate-400">Risk Score = Likelihood × Impact × Vulnerability</p>
-                          <p className="text-xs text-slate-400">Risk Tolerance = 10</p>
+                          <p className="text-xs text-slate-400">{t("Risk Score = Likelihood × Impact × Vulnerability")}</p>
+                          <p className="text-xs text-slate-400">{t("Risk Tolerance = 10")}</p>
                         </div>
                       </div>
                     </div>
@@ -919,7 +921,7 @@ export function RiskAssessmentWizardDialog({
                   <div className="space-y-5">
                     {/* Speedometer Chart */}
                     <div className="pb-5 border-b border-slate-200">
-                      <h4 className="font-semibold text-slate-800 mb-3 text-center">Inherent Risk Score</h4>
+                      <h4 className="font-semibold text-slate-800 mb-3 text-center">{t("Inherent Risk Score")}</h4>
                       <div className="flex justify-center">
                         <div className="flex flex-col items-center">
                           <svg viewBox="0 0 200 130" className="w-52 h-auto">
@@ -996,7 +998,7 @@ export function RiskAssessmentWizardDialog({
                     {/* Ratings Summary Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-5 border-b border-slate-200">
                       <div className="p-4 text-center rounded-lg border border-slate-200">
-                        <p className="text-xs text-slate-500 uppercase mb-2">Inherent Risk</p>
+                        <p className="text-xs text-slate-500 uppercase mb-2">{t("Inherent Risk")}</p>
                         <span className={cn(
                           "inline-block px-3 py-1.5 rounded-lg text-sm font-semibold",
                           calculatedRating === "Critical" || calculatedRating === "Catastrophic" ? "bg-red-100 text-red-800" : "",
@@ -1010,12 +1012,12 @@ export function RiskAssessmentWizardDialog({
                         <p className="text-xs text-slate-400 mt-1.5">Score: {riskScore.toFixed(2)}</p>
                       </div>
                       <div className="p-4 text-center rounded-lg border border-slate-200">
-                        <p className="text-xs text-slate-500 uppercase mb-2">Control Rating</p>
+                        <p className="text-xs text-slate-500 uppercase mb-2">{t("Control Rating")}</p>
                         <p className="text-lg font-semibold text-slate-800">-</p>
-                        <p className="text-xs text-slate-400 mt-1.5">No controls linked</p>
+                        <p className="text-xs text-slate-400 mt-1.5">{t("No controls linked")}</p>
                       </div>
                       <div className="p-4 text-center rounded-lg border border-slate-200">
-                        <p className="text-xs text-slate-500 uppercase mb-2">Residual Risk</p>
+                        <p className="text-xs text-slate-500 uppercase mb-2">{t("Residual Risk")}</p>
                         <span className={cn(
                           "inline-block px-3 py-1.5 rounded-lg text-sm font-semibold",
                           calculatedRating === "Critical" || calculatedRating === "Catastrophic" ? "bg-red-100 text-red-800" : "",
@@ -1032,31 +1034,31 @@ export function RiskAssessmentWizardDialog({
 
                     {/* Assessment Details */}
                     <div>
-                      <h4 className="font-semibold text-slate-800 mb-3">Assessment Details</h4>
+                      <h4 className="font-semibold text-slate-800 mb-3">{t("Assessment Details")}</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-0.5">Risk ID</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">{t("Risk ID")}</p>
                           <p className="text-sm font-medium text-slate-800">{risk.riskId}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-0.5">Risk Name</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">{t("Risk Name")}</p>
                           <p className="text-sm font-medium text-slate-800">{risk.name}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-0.5">Likelihood Score</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">{t("Likelihood Score")}</p>
                           <p className="text-sm font-medium text-slate-800">{calcLikelihood}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-0.5">Impact Score</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">{t("Impact Score")}</p>
                           <p className="text-sm font-medium text-slate-800">{calcImpact}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-0.5">Vulnerability Score</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">{t("Vulnerability Score")}</p>
                           <p className="text-sm font-medium text-slate-800">{calcVulnerability}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-0.5">Existing Controls</p>
-                          <p className="text-sm font-medium text-slate-500">No controls linked</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">{t("Existing Controls")}</p>
+                          <p className="text-sm font-medium text-slate-500">{t("No controls linked")}</p>
                         </div>
                       </div>
                     </div>
@@ -1070,7 +1072,7 @@ export function RiskAssessmentWizardDialog({
           {!loading && risk && (
             <div className="flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <span className="text-xs font-medium text-slate-400 me-auto">
-                Step {currentStep} of {assessmentSteps.length}
+                {t("Step")} {currentStep} {t("of")} {assessmentSteps.length}
               </span>
               <Button
                 variant="outline"
@@ -1083,17 +1085,17 @@ export function RiskAssessmentWizardDialog({
                 }}
               >
                 {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
-                {currentStep === 1 ? "Cancel" : "Previous"}
+                {currentStep === 1 ? t("Cancel") : t("Previous")}
               </Button>
               {currentStep < assessmentSteps.length ? (
                 <Button onClick={handleNext}>
-                  Next
+                  {t("Next")}
                   <ChevronRight className="h-4 w-4 ms-1" />
                 </Button>
               ) : (
                 (canCreate || canEdit) && (
                   <Button onClick={handleSave}>
-                    Save
+                    {t("Save")}
                   </Button>
                 )
               )}
@@ -1108,9 +1110,9 @@ export function RiskAssessmentWizardDialog({
           <DialogHeader className="border-b border-slate-100 pb-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <DialogTitle className="text-lg font-semibold text-slate-800">Risk Response Strategy</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Risk Response Strategy")}</DialogTitle>
                 <DialogDescription className="text-slate-500 mt-1">
-                  The risk rating is not Low. Please select a response strategy and provide an explanation.
+                  {t("The risk rating is not Low. Please select a response strategy and provide an explanation.")}
                 </DialogDescription>
               </div>
               <Button
@@ -1125,7 +1127,7 @@ export function RiskAssessmentWizardDialog({
           </DialogHeader>
           <div className="space-y-5 py-4">
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-700">Select Strategy</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Select Strategy")}</Label>
               <RadioGroup
                 value={selectedStrategy}
                 onValueChange={setSelectedStrategy}
@@ -1134,29 +1136,29 @@ export function RiskAssessmentWizardDialog({
                 <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                   <RadioGroupItem value="Transfer" id="transfer" />
                   <Label htmlFor="transfer" className="flex-1 cursor-pointer">
-                    <div className="font-medium text-slate-800">Transfer</div>
-                    <p className="text-sm text-slate-500">Transfer the risk to a third party (e.g., insurance, outsourcing)</p>
+                    <div className="font-medium text-slate-800">{t("Transfer")}</div>
+                    <p className="text-sm text-slate-500">{t("Transfer the risk to a third party (e.g., insurance, outsourcing)")}</p>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                   <RadioGroupItem value="Avoid" id="avoid" />
                   <Label htmlFor="avoid" className="flex-1 cursor-pointer">
-                    <div className="font-medium text-slate-800">Avoid</div>
-                    <p className="text-sm text-slate-500">Eliminate the risk by not engaging in the activity</p>
+                    <div className="font-medium text-slate-800">{t("Avoid")}</div>
+                    <p className="text-sm text-slate-500">{t("Eliminate the risk by not engaging in the activity")}</p>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                   <RadioGroupItem value="Accept" id="accept" />
                   <Label htmlFor="accept" className="flex-1 cursor-pointer">
-                    <div className="font-medium text-slate-800">Accept</div>
-                    <p className="text-sm text-slate-500">Accept the risk without taking any action</p>
+                    <div className="font-medium text-slate-800">{t("Accept")}</div>
+                    <p className="text-sm text-slate-500">{t("Accept the risk without taking any action")}</p>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                   <RadioGroupItem value="Treat" id="treat" />
                   <Label htmlFor="treat" className="flex-1 cursor-pointer">
-                    <div className="font-medium text-slate-800">Treat</div>
-                    <p className="text-sm text-slate-500">Implement controls to reduce the risk likelihood or impact</p>
+                    <div className="font-medium text-slate-800">{t("Treat")}</div>
+                    <p className="text-sm text-slate-500">{t("Implement controls to reduce the risk likelihood or impact")}</p>
                   </Label>
                 </div>
               </RadioGroup>
@@ -1164,11 +1166,11 @@ export function RiskAssessmentWizardDialog({
 
             <div className="space-y-1.5">
               <Label htmlFor="strategy-explanation" className="text-sm font-medium text-slate-700">
-                Risk Response Strategy Explanation
+                {t("Risk Response Strategy Explanation")}
               </Label>
               <Textarea
                 id="strategy-explanation"
-                placeholder="Explain how you plan to address this risk with the selected strategy..."
+                placeholder={t("Explain how you plan to address this risk with the selected strategy...")}
                 value={strategyExplanation}
                 onChange={(e) => setStrategyExplanation(e.target.value)}
                 className="min-h-[100px] bg-white"
@@ -1177,13 +1179,13 @@ export function RiskAssessmentWizardDialog({
           </div>
           <DialogFooter className="flex-row">
             <Button variant="outline" onClick={handleCancelResponse}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleSaveResponse}
               disabled={!selectedStrategy || savingResponse}
             >
-              {savingResponse ? "Saving..." : "Save"}
+              {savingResponse ? t("Saving...") : t("Save")}
             </Button>
           </DialogFooter>
         </DialogContent>
