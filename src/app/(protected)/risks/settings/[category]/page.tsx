@@ -311,7 +311,7 @@ export default function RiskSettingsCategoryPage() {
       setVulnCatError(t("Name is required"));
       return;
     } else if (!isValidName(vulnCatForm.name.trim())) {
-      setVulnCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setVulnCatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -341,7 +341,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(vulnCatForm.name.trim())) {
-      setVulnCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setVulnCatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -381,7 +381,7 @@ export default function RiskSettingsCategoryPage() {
       setThreatCatError(t("Name is required"));
       return;
     } else if (!isValidName(threatCatForm.name.trim())) {
-      setThreatCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setThreatCatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -411,7 +411,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(threatCatForm.name.trim())) {
-      setThreatCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setThreatCatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -451,7 +451,7 @@ export default function RiskSettingsCategoryPage() {
       setControlStrengthError(t("Name is required"));
       return;
     } else if (!isValidName(controlStrengthForm.name.trim())) {
-      setControlStrengthError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setControlStrengthError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
@@ -488,7 +488,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(controlStrengthForm.name.trim())) {
-      setControlStrengthError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setControlStrengthError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
@@ -535,7 +535,7 @@ export default function RiskSettingsCategoryPage() {
       setLikelihoodError(t("Title is required"));
       return;
     } else if (!isValidName(likelihoodForm.title.trim())) {
-      setLikelihoodError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setLikelihoodError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!isValidNumber(likelihoodForm.score)) {
@@ -577,7 +577,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(likelihoodForm.title.trim())) {
-      setLikelihoodError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setLikelihoodError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!isValidNumber(likelihoodForm.score)) {
@@ -629,7 +629,7 @@ export default function RiskSettingsCategoryPage() {
       setThreatError(t("Name is required"));
       return;
     } else if (!isValidName(threatForm.name.trim())) {
-      setThreatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setThreatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -659,7 +659,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(threatForm.name.trim())) {
-      setThreatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setThreatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -699,7 +699,7 @@ export default function RiskSettingsCategoryPage() {
       setVulnerabilityError(t("Name is required"));
       return;
     } else if (!isValidName(vulnerabilityForm.name.trim())) {
-      setVulnerabilityError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setVulnerabilityError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -729,7 +729,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(vulnerabilityForm.name.trim())) {
-      setVulnerabilityError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setVulnerabilityError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -769,7 +769,7 @@ export default function RiskSettingsCategoryPage() {
       setRiskCategoryError(t("Name is required"));
       return;
     } else if (!isValidName(riskCategoryForm.name.trim())) {
-      setRiskCategoryError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setRiskCategoryError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -799,7 +799,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(riskCategoryForm.name.trim())) {
-      setRiskCategoryError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setRiskCategoryError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -839,7 +839,7 @@ export default function RiskSettingsCategoryPage() {
       setImpactCatError(t("Name is required"));
       return;
     } else if (!isValidName(impactCatForm.name.trim())) {
-      setImpactCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setImpactCatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -869,7 +869,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(impactCatForm.name.trim())) {
-      setImpactCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setImpactCatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -909,7 +909,7 @@ export default function RiskSettingsCategoryPage() {
       setImpactRatingError(t("Name is required"));
       return;
     } else if (!isValidName(impactRatingForm.name.trim())) {
-      setImpactRatingError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setImpactRatingError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!isValidNumber(impactRatingForm.score)) {
@@ -943,7 +943,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(impactRatingForm.name.trim())) {
-      setImpactRatingError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setImpactRatingError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!isValidNumber(impactRatingForm.score)) {
@@ -987,7 +987,7 @@ export default function RiskSettingsCategoryPage() {
       setVulnRatingError(t("Label is required"));
       return;
     } else if (!isValidName(vulnRatingForm.label.trim())) {
-      setVulnRatingError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setVulnRatingError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!isValidNumber(vulnRatingForm.score)) {
@@ -1021,7 +1021,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(vulnRatingForm.label.trim())) {
-      setVulnRatingError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setVulnRatingError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!isValidNumber(vulnRatingForm.score)) {
@@ -1065,7 +1065,7 @@ export default function RiskSettingsCategoryPage() {
       setRiskSubCatError(t("Type is required"));
       return;
     } else if (!isValidName(riskSubCatForm.type.trim())) {
-      setRiskSubCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setRiskSubCatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -1095,7 +1095,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(riskSubCatForm.type.trim())) {
-      setRiskSubCatError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setRiskSubCatError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     try {
@@ -1135,7 +1135,7 @@ export default function RiskSettingsCategoryPage() {
       setRiskRangeError(t("Title is required"));
       return;
     } else if (!isValidName(riskRangeForm.title.trim())) {
-      setRiskRangeError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setRiskRangeError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
@@ -1187,7 +1187,7 @@ export default function RiskSettingsCategoryPage() {
       }
       return;
     } else if (!isValidName(riskRangeForm.title.trim())) {
-      setRiskRangeError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setRiskRangeError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!riskRangeForm.color || !riskRangeForm.color.trim()) {

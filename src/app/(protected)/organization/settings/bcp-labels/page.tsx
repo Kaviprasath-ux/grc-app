@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Home, Plus, Pencil, Trash2, Search, Clock, Database } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +87,10 @@ export default function BCPLabelsPage() {
 
   const handleAdd = async () => {
     if (!formData.name.trim()) return;
+    if (!isValidName(formData.name.trim())) {
+      alert(t("Only letters, spaces, and hyphens are allowed"));
+      return;
+    }
     try {
       const res = await fetch("/api/bia/bcp-labels", {
         method: "POST",
@@ -110,6 +115,10 @@ export default function BCPLabelsPage() {
 
   const handleEdit = async () => {
     if (!editingItem || !formData.name.trim()) return;
+    if (!isValidName(formData.name.trim())) {
+      alert(t("Only letters, spaces, and hyphens are allowed"));
+      return;
+    }
     try {
       const res = await fetch(`/api/bia/bcp-labels/${editingItem.id}`, {
         method: "PUT",

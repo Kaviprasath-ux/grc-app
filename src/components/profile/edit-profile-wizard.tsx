@@ -176,7 +176,7 @@ export function EditProfileWizard({
       if (!formData.name.trim()) {
         errors.name = t("Organization Name is required");
       } else if (!isValidName(formData.name.trim())) {
-        errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+        errors.name = t("Only letters, spaces, and hyphens are allowed");
       }
       if (formData.phone.trim() && !isNumericOnly(formData.phone.trim().replace(/[\s\-\+\(\)]/g, ""))) {
         errors.phone = t("Only numbers are allowed");
@@ -203,7 +203,7 @@ export function EditProfileWizard({
     if (!formData.name.trim()) {
       errors.name = t("Organization Name is required");
     } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (formData.phone.trim() && !isNumericOnly(formData.phone.trim().replace(/[\s\-\+\(\)]/g, ""))) {
       errors.phone = t("Only numbers are allowed");

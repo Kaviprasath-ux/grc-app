@@ -355,7 +355,7 @@ export default function NewRiskPage() {
         if (!formData.name.trim()) {
           errors.name = t("Please enter the Risk Name") || "Please enter the Risk Name";
         } else if (!isValidName(formData.name.trim())) {
-          errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+          errors.name = t("Only letters, spaces, and hyphens are allowed");
         }
         if (!formData.departmentId) {
           errors.departmentId = t("Please select the Department") || "Please select the Department";
@@ -465,7 +465,7 @@ export default function NewRiskPage() {
       toast.error(t("causeNameRequired") || "Cause name is required");
       return;
     } else if (!isValidName(newCauseName.trim())) {
-      toast.error(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      toast.error(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
 

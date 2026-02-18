@@ -380,7 +380,7 @@ export default function AssetInventoryPage() {
     if (!newAsset.name.trim()) {
       errors.name = t("Asset name is required");
     } else if (!isValidName(newAsset.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
 
     // Validation: Department
@@ -475,7 +475,7 @@ export default function AssetInventoryPage() {
     if (!editingAsset.name.trim()) {
       errors.name = t("Asset name is required");
     } else if (!isValidName(editingAsset.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
 
     // Validation: Department

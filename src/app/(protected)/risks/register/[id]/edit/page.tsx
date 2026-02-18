@@ -382,7 +382,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
         if (!formData.name.trim()) {
           errors.name = t("Please enter the Risk Name") || "Please enter the Risk Name";
         } else if (!isValidName(formData.name.trim())) {
-          errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+          errors.name = t("Only letters, spaces, and hyphens are allowed");
         }
 
         setValidationErrors(errors);
@@ -468,7 +468,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
       toast.error(t("causeNameRequired") || "Cause name is required");
       return;
     } else if (!isValidName(newCauseName.trim())) {
-      toast.error(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      toast.error(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
 

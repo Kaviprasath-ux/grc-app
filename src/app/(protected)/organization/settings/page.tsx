@@ -245,7 +245,7 @@ export default function OrganizationSettingsPage() {
       return;
     }
     if (!isValidName(newItem.name.trim())) {
-      setAddNameError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setAddNameError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     setAddNameError("");
@@ -289,7 +289,7 @@ export default function OrganizationSettingsPage() {
       return;
     }
     if (!isValidName(editingItem.name.trim())) {
-      setEditNameError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setEditNameError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     setEditNameError("");

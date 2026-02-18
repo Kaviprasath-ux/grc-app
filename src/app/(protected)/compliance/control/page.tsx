@@ -573,9 +573,9 @@ function ControlListPageContent() {
   const handleCreateDomain = async () => {
     const errors: Record<string, string> = {};
     if (!newDomain.code.trim()) errors.code = t("Please enter Domain Code");
-    else if (!isValidName(newDomain.code.trim())) errors.code = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(newDomain.code.trim())) errors.code = t("Only letters, spaces, and hyphens are allowed");
     if (!newDomain.name.trim()) errors.name = t("Please enter Domain name");
-    else if (!isValidName(newDomain.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(newDomain.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
     setDomainErrors({});
     setCreatingDomain(true);
@@ -1371,7 +1371,7 @@ function ControlListPageContent() {
                 const errors: Record<string, string> = {};
                 if (!newControl.domainId) errors.domainId = t("Please select the Control Domain");
                 if (!newControl.name.trim()) errors.name = t("Please enter name");
-                else if (!isValidName(newControl.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                else if (!isValidName(newControl.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
                 if (!newControl.controlQuestion?.trim()) errors.controlQuestion = t("Please enter the question");
                 if (!newControl.functionalGrouping) errors.functionalGrouping = t("Please select the Functional Grouping");
                 if (Object.keys(errors).length > 0) { setControlErrors(errors); return; }

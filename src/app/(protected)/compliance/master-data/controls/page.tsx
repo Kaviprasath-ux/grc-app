@@ -278,7 +278,7 @@ export default function ControlsMasterDataPage() {
     if (!formData.name.trim()) {
       editErrors.name = t("Please enter name");
     } else if (!isValidName(formData.name.trim())) {
-      editErrors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      editErrors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(editErrors).length > 0) {
       setControlErrors(editErrors);
@@ -1000,7 +1000,7 @@ export default function ControlsMasterDataPage() {
                       if (!formData.name.trim()) {
                         errors.name = t("Please enter name");
                       } else if (!isValidName(formData.name.trim())) {
-                        errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                        errors.name = t("Only letters, spaces, and hyphens are allowed");
                       }
                       if (!formData.controlQuestion?.trim()) errors.controlQuestion = t("Please enter the question");
                       if (!formData.functionalGrouping) errors.functionalGrouping = t("Please select the Functional Grouping");

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatLocalDate } from "@/lib/utils";
+import { isValidName } from "@/lib/validations";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -248,6 +249,7 @@ export default function EditProcessPage() {
   const validateStep1 = (): boolean => {
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = t("Process Name is required");
+    else if (!isValidName(formData.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!formData.ownerId) errors.ownerId = t("Process Owner is required");
     if (!formData.processFrequency) errors.processFrequency = t("Process Frequency is required");
     if (!formData.natureOfImplementation) errors.natureOfImplementation = t("Nature of Implementation is required");

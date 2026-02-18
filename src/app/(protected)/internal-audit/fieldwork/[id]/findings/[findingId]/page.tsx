@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { formatLocalDate } from "@/lib/utils";
+import { isValidName } from "@/lib/validations";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -252,6 +253,10 @@ function ViewFindingContent() {
 
     if (!formData.title || !formData.title.trim()) {
       toast.error(t("Finding title is required"));
+      return;
+    }
+    if (!isValidName(formData.title.trim())) {
+      toast.error(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
 

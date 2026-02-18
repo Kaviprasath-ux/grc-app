@@ -385,7 +385,7 @@ export default function CustomerAccountsPage() {
     }
 
     if (formData.customerName.trim() && !isValidName(formData.customerName.trim())) {
-      errors.customerName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.customerName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (formData.userName.trim() && !isAlphanumeric(formData.userName.trim())) {
       errors.userName = t("Only letters, numbers, and underscores are allowed");
@@ -477,7 +477,7 @@ export default function CustomerAccountsPage() {
     }
 
     if (formData.customerName.trim() && !isValidName(formData.customerName.trim())) {
-      errors.customerName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.customerName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (formData.userName.trim() && !isAlphanumeric(formData.userName.trim())) {
       errors.userName = t("Only letters, numbers, and underscores are allowed");

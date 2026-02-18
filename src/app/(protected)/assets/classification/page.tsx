@@ -423,7 +423,7 @@ export default function AssetClassificationPage() {
   const handleAddSensitivity = async () => {
     if (!newSensitivityName.trim()) return;
     if (!isValidName(newSensitivityName)) {
-      toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
+      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
       return;
     }
     try {
@@ -448,7 +448,7 @@ export default function AssetClassificationPage() {
   const handleAddCIARating = async () => {
     if (!newCIARatingLabel.trim()) return;
     if (!isValidName(newCIARatingLabel)) {
-      toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
+      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
       return;
     }
     if (!isValidNumber(newCIARatingValue)) {

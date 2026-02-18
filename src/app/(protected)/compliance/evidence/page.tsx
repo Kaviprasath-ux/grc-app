@@ -1522,7 +1522,7 @@ export default function EvidencePage() {
                   if (!createForm.name) {
                     errors.name = t("Please enter the evidence name");
                   } else if (!isValidName(createForm.name.trim())) {
-                    errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                    errors.name = t("Only letters, spaces, and hyphens are allowed");
                   }
                   if (!createForm.recurrence) errors.recurrence = t("Please select the recurrence");
                   if (!createForm.departmentId) errors.departmentId = t("Please select the Department");

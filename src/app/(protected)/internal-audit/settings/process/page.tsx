@@ -345,7 +345,7 @@ export default function ProcessPage() {
     if (!formData.name.trim()) {
       errors.name = t("Process Name is required");
     } else if (!isValidName(formData.name)) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!formData.ownerId) errors.ownerId = t("Process Owner is required");
     if (!formData.processFrequency) errors.processFrequency = t("Process Frequency is required");

@@ -1089,7 +1089,7 @@ export default function GovernanceMasterDataPage() {
                   if (wizardStep === 1) {
                     const errors: Record<string, string> = {};
                     if (!formData.name) errors.name = t("Please enter the policy name");
-                    else if (!isValidName(formData.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                    else if (!isValidName(formData.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
                     if (!formData.departmentId) errors.departmentId = t("Please select the Department");
                     if (!formData.documentType) errors.documentType = t("Please select the document type");
                     if (!formData.recurrence) errors.recurrence = t("Please select the recurrence");
@@ -1308,7 +1308,7 @@ export default function GovernanceMasterDataPage() {
               onClick={() => {
                 const errors: Record<string, string> = {};
                 if (!formData.name) errors.name = t("Please enter the policy name");
-                else if (!isValidName(formData.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                else if (!isValidName(formData.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
                 if (!formData.code) errors.code = t("Please enter the policy code");
                 if (Object.keys(errors).length > 0) { setPolicyErrors(errors); return; }
                 setPolicyErrors({});

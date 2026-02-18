@@ -212,7 +212,7 @@ export default function EmailTemplatesPage() {
     if (!isValidName(formData.name.trim())) {
       toast({
         title: t("Validation Error"),
-        description: t("Only letters, numbers, spaces, and hyphens are allowed"),
+        description: t("Only letters, spaces, and hyphens are allowed"),
         variant: "destructive",
       });
       return;

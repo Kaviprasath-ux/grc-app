@@ -147,7 +147,7 @@ export default function DomainPage() {
     if (!formData.name.trim()) {
       errors.name = t("Please enter Domain name");
     } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
     setDomainErrors({});

@@ -92,12 +92,12 @@ export default function DomainMasterDataPage() {
     if (!formData.code.trim()) {
       errors.code = t("Please enter Domain Code");
     } else if (!isValidName(formData.code.trim())) {
-      errors.code = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.code = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!formData.name.trim()) {
       errors.name = t("Please enter Domain name");
     } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
     setDomainErrors({});
@@ -125,12 +125,12 @@ export default function DomainMasterDataPage() {
     if (!formData.code.trim()) {
       errors.code = t("Please enter Domain Code");
     } else if (!isValidName(formData.code.trim())) {
-      errors.code = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.code = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!formData.name.trim()) {
       errors.name = t("Please enter Domain name");
     } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
     setDomainErrors({});

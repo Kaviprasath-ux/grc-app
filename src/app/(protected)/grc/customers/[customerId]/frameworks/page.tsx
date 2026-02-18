@@ -303,12 +303,12 @@ export default function CustomerFrameworkOverviewPage() {
     if (!formData.name.trim()) {
       newErrors.name = t("Framework name is required");
     } else if (!isValidName(formData.name.trim())) {
-      newErrors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      newErrors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!formData.code.trim()) {
       // code is optional, no error
     } else if (!isValidName(formData.code.trim())) {
-      newErrors.code = t("Only letters, numbers, spaces, and hyphens are allowed");
+      newErrors.code = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(newErrors).length > 0) {
       setFormErrors(newErrors);

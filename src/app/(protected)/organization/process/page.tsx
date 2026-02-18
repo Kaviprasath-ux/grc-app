@@ -884,7 +884,7 @@ export default function ProcessPage() {
     if (!processForm.name.trim()) {
       errors.name = t("Please enter the Process Name");
     } else if (!isValidName(processForm.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) {
       setProcessFormErrors(errors);
@@ -965,7 +965,7 @@ export default function ProcessPage() {
     if (!editingProcess.name.trim()) {
       errors.name = t("Please enter the Process Name");
     } else if (!isValidName(editingProcess.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) {
       setProcessFormErrors(errors);

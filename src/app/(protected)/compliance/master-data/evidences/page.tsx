@@ -313,7 +313,7 @@ export default function EvidencesMasterDataPage() {
     if (!newFormData.name) {
       errors.name = t("Please enter the evidence name");
     } else if (!isValidName(newFormData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!newFormData.recurrence) errors.recurrence = t("Please select the recurrence");
     if (!newFormData.departmentId) errors.departmentId = t("Please select the Department");
@@ -409,7 +409,7 @@ export default function EvidencesMasterDataPage() {
     if (!editingEvidence.name) {
       errors.name = t("Please enter the evidence name");
     } else if (!isValidName(editingEvidence.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     setEditFormErrors(errors);
     if (Object.keys(errors).length > 0) return;

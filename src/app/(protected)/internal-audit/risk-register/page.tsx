@@ -691,7 +691,7 @@ export default function RiskRegisterPage() {
     if (!formData.riskName.trim()) {
       errors.riskName = t("Risk name is required");
     } else if (!isValidName(formData.riskName.trim())) {
-      errors.riskName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.riskName = t("Only letters, spaces, and hyphens are allowed");
     }
 
     // Validation: Risk Description
@@ -790,7 +790,7 @@ export default function RiskRegisterPage() {
     if (!formData.riskName.trim()) {
       errors.riskName = t("Risk name is required");
     } else if (!isValidName(formData.riskName.trim())) {
-      errors.riskName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.riskName = t("Only letters, spaces, and hyphens are allowed");
     }
 
     // Validation: Risk Description

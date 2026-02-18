@@ -332,7 +332,7 @@ export default function ExceptionsPage() {
   const handleCreate = async () => {
     const errors: Record<string, string> = {};
     if (!createForm.name.trim()) errors.name = t("Please enter the exception name");
-    else if (!isValidName(createForm.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(createForm.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!createForm.category) errors.category = t("Please select a category");
     if (!createForm.description.trim()) errors.description = t("Please enter the reason for exception");
     if (!createForm.endDate) errors.endDate = t("Please select the enddate");
@@ -447,7 +447,7 @@ export default function ExceptionsPage() {
     if (!selectedException) return;
     const errors: Record<string, string> = {};
     if (!editForm.name.trim()) errors.name = t("Please enter the exception name");
-    else if (!isValidName(editForm.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(editForm.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) {
       setExceptionErrors(errors);
       return;

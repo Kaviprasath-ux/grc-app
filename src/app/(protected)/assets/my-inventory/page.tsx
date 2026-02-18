@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatLocalDate } from "@/lib/utils";
+import { isValidName } from "@/lib/validations";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { DataGrid } from "@/components/shared";
@@ -320,6 +321,10 @@ export default function MyAssetInventoryPage() {
   // Asset CRUD
   const handleAddAsset = async () => {
     if (!newAsset.assetId.trim() || !newAsset.name.trim()) return;
+    if (!isValidName(newAsset.name.trim())) {
+      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
+      return;
+    }
     try {
       const res = await fetch("/api/assets/my-assets", {
         method: "POST",
@@ -357,6 +362,10 @@ export default function MyAssetInventoryPage() {
 
   const handleEditAsset = async () => {
     if (!editingAsset) return;
+    if (editingAsset.name && !isValidName(editingAsset.name.trim())) {
+      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
+      return;
+    }
     try {
       const res = await fetch(`/api/assets/my-assets/${editingAsset.id}`, {
         method: "PUT",

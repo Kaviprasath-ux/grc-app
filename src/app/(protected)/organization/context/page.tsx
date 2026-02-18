@@ -351,7 +351,7 @@ export default function ContextPage() {
   // Handlers for adding new options
   const handleAddDomain = () => {
     if (!newDomain.trim()) { setDomainError(t("Please enter domain name")); return; }
-    if (!isValidName(newDomain.trim())) { setDomainError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newDomain.trim())) { setDomainError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setDomainError("");
     if (!domains.includes(newDomain.trim())) {
       setDomains([...domains, newDomain.trim()]);
@@ -363,7 +363,7 @@ export default function ContextPage() {
 
   const handleAddCategory = () => {
     if (!newCategory.trim()) { setCategoryError(t("Please enter category name")); return; }
-    if (!isValidName(newCategory.trim())) { setCategoryError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newCategory.trim())) { setCategoryError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setCategoryError("");
     if (!categories.includes(newCategory.trim())) {
       setCategories([...categories, newCategory.trim()]);
@@ -375,7 +375,7 @@ export default function ContextPage() {
 
   const handleAddType = () => {
     if (!newType.trim()) { setTypeError(t("Please enter issue type name")); return; }
-    if (!isValidName(newType.trim())) { setTypeError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newType.trim())) { setTypeError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setTypeError("");
     if (!issueTypes.includes(newType.trim())) {
       setIssueTypes([...issueTypes, newType.trim()]);
@@ -674,7 +674,7 @@ export default function ContextPage() {
     if (!newStakeholder.name.trim()) {
       errors.name = t("Please Enter Stakeholder Name");
     } else if (!isValidName(newStakeholder.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!newStakeholder.type) errors.type = t("Please Select Stakeholder Type");
     if (!newStakeholder.status) errors.status = t("Please Select Status");
@@ -738,7 +738,7 @@ export default function ContextPage() {
       return;
     }
     if (!isValidName(editingStakeholder.name.trim())) {
-      setStakeholderErrors({ name: t("Only letters, numbers, spaces, and hyphens are allowed") });
+      setStakeholderErrors({ name: t("Only letters, spaces, and hyphens are allowed") });
       return;
     }
     setStakeholderErrors({});
@@ -786,7 +786,7 @@ export default function ContextPage() {
     if (!isValidName(newIssue.title.trim())) {
       toast({
         title: t("Error"),
-        description: t("Only letters, numbers, spaces, and hyphens are allowed"),
+        description: t("Only letters, spaces, and hyphens are allowed"),
         variant: "destructive",
       });
       return;
@@ -935,7 +935,7 @@ export default function ContextPage() {
     if (!isValidName(editIssueForm.title.trim())) {
       toast({
         title: t("Error"),
-        description: t("Only letters, numbers, spaces, and hyphens are allowed"),
+        description: t("Only letters, spaces, and hyphens are allowed"),
         variant: "destructive",
       });
       return;
@@ -2024,7 +2024,7 @@ export default function ContextPage() {
                 if (!newIssue.title.trim()) {
                   errors.title = t("Title is required");
                 } else if (!isValidName(newIssue.title.trim())) {
-                  errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
+                  errors.title = t("Only letters, spaces, and hyphens are allowed");
                 }
                 if (!newIssue.domain) errors.domain = t("Please select Domain");
                 if (!newIssue.category) errors.category = t("Please select Category");
@@ -2848,7 +2848,7 @@ export default function ContextPage() {
                   return;
                 }
                 if (!isValidName(editIssueForm.title.trim())) {
-                  toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
+                  toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
                   return;
                 }
                 setEditCurrentStep(2);

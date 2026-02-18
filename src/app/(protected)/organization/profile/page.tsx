@@ -239,7 +239,7 @@ function ProfilePageContent() {
   // Department CRUD
   const handleAddDepartment = async () => {
     if (!newDepartmentName.trim()) { setDepartmentNameError(t("Please enter department name")); return; }
-    if (!isValidName(newDepartmentName.trim())) { setDepartmentNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newDepartmentName.trim())) { setDepartmentNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setDepartmentNameError("");
     try {
       const res = await fetch("/api/departments", {
@@ -278,7 +278,7 @@ function ProfilePageContent() {
 
   const handleEditDepartment = async () => {
     if (!editingDepartment || !editingDepartment.name.trim()) { setEditDepartmentNameError(t("Please enter department name")); return; }
-    if (!isValidName(editingDepartment.name.trim())) { setEditDepartmentNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(editingDepartment.name.trim())) { setEditDepartmentNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setEditDepartmentNameError("");
     try {
       const res = await fetch(`/api/departments/${editingDepartment.id}`, {
@@ -301,7 +301,7 @@ function ProfilePageContent() {
   const handleAddService = async () => {
     const errors: Record<string, string> = {};
     if (!newService.title.trim()) errors.title = t("Please enter the title");
-    else if (!isValidName(newService.title.trim())) errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(newService.title.trim())) errors.title = t("Only letters, spaces, and hyphens are allowed");
     if (!newService.serviceUser) errors.serviceUser = t("Please select service user");
     if (!newService.serviceCategory) errors.serviceCategory = t("Please select the category");
     if (!newService.serviceItem) errors.serviceItem = t("Please select the service title");
@@ -337,7 +337,7 @@ function ProfilePageContent() {
     if (!editingService) return;
     const errors: Record<string, string> = {};
     if (!editingService.title.trim()) errors.title = t("Please enter the title");
-    else if (!isValidName(editingService.title.trim())) errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(editingService.title.trim())) errors.title = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) { setEditServiceErrors(errors); return; }
     setEditServiceErrors({});
     try {
@@ -418,7 +418,7 @@ function ProfilePageContent() {
   const handleAddRegulation = async () => {
     const errors: Record<string, string> = {};
     if (!newRegulation.name.trim()) errors.name = t("Please enter the name");
-    else if (!isValidName(newRegulation.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(newRegulation.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!newRegulation.version.trim()) errors.version = t("Please enter the version");
     if (Object.keys(errors).length > 0) { setRegulationErrors(errors); return; }
     setRegulationErrors({});
@@ -470,7 +470,7 @@ function ProfilePageContent() {
     if (!editingRegulation) return;
     const errors: Record<string, string> = {};
     if (!editingRegulation.name.trim()) errors.name = t("Please enter the name");
-    else if (!isValidName(editingRegulation.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(editingRegulation.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!editingRegulation.version.trim()) errors.version = t("Please enter the version");
     if (Object.keys(errors).length > 0) { setEditRegulationErrors(errors); return; }
     setEditRegulationErrors({});
@@ -542,7 +542,7 @@ function ProfilePageContent() {
   // Add new service category
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) { setCategoryNameError(t("Please enter category name")); return; }
-    if (!isValidName(newCategoryName.trim())) { setCategoryNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newCategoryName.trim())) { setCategoryNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setCategoryNameError("");
     if (!serviceCategories.includes(newCategoryName)) {
       setServiceCategories([...serviceCategories, newCategoryName]);
@@ -555,7 +555,7 @@ function ProfilePageContent() {
   // Add new service item
   const handleAddItem = () => {
     if (!newItemName.trim()) { setItemNameError(t("Please enter item name")); return; }
-    if (!isValidName(newItemName.trim())) { setItemNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newItemName.trim())) { setItemNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setItemNameError("");
     if (!serviceItems.includes(newItemName)) {
       setServiceItems([...serviceItems, newItemName]);

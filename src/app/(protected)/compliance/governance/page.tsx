@@ -693,7 +693,7 @@ export default function GovernancePage() {
     if (!editingPolicy) return;
     const errors: Record<string, string> = {};
     if (!editData.name) errors.name = t("Please enter the policy name");
-    else if (!isValidName(editData.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(editData.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) { setEditErrors(errors); return; }
     setEditErrors({});
     try {
@@ -1741,7 +1741,7 @@ export default function GovernancePage() {
                 if (createStep === 1) {
                   const errors: Record<string, string> = {};
                   if (!newPolicy.name) errors.name = t("Please enter the policy name");
-                  else if (!isValidName(newPolicy.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                  else if (!isValidName(newPolicy.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
                   if (!newPolicy.departmentId) errors.departmentId = t("Please select the Department");
                   if (!newPolicy.documentType) errors.documentType = t("Please select the document type");
                   if (!newPolicy.recurrence) errors.recurrence = t("Please select the recurrence");

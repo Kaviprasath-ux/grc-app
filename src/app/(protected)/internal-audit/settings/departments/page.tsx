@@ -139,7 +139,7 @@ export default function DepartmentsPage() {
       return;
     }
     if (!isValidName(formData.name)) {
-      setFormError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setFormError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
 

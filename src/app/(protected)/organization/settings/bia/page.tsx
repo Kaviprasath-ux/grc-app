@@ -140,7 +140,7 @@ export default function BIASettingsPage() {
     const name = editingCategory ? editingCategory.name : newCategory.name;
     const errors: Record<string, string> = {};
     if (!name?.trim()) errors.categoryName = t("Please enter the name");
-    else if (!isValidName(name.trim())) errors.categoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(name.trim())) errors.categoryName = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -180,7 +180,7 @@ export default function BIASettingsPage() {
     const score = editingRating ? editingRating.score : newRating.score;
     const errors: Record<string, string> = {};
     if (!label?.trim()) errors.ratingLabel = t("Please enter the rating");
-    else if (!isValidName(label.trim())) errors.ratingLabel = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(label.trim())) errors.ratingLabel = t("Only letters, spaces, and hyphens are allowed");
     if (score === "" || score === undefined || score === null) errors.ratingScore = t("Please enter the score");
     else if (!isValidNumber(score)) errors.ratingScore = t("Please enter a valid number");
     if (Object.keys(errors).length > 0) {
@@ -223,7 +223,7 @@ export default function BIASettingsPage() {
     const lowValue = editingRange ? editingRange.lowValue : newRange.lowValue;
     const errors: Record<string, string> = {};
     if (!rangeLabel?.trim()) errors.rangeLabel = t("Please enter the rating");
-    else if (!isValidName(rangeLabel.trim())) errors.rangeLabel = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(rangeLabel.trim())) errors.rangeLabel = t("Only letters, spaces, and hyphens are allowed");
     if (highValue === "" || highValue === null || highValue === undefined) errors.rangeHigh = t("Please enter the high range");
     else if (!isValidNumber(highValue)) errors.rangeHigh = t("Please enter a valid number");
     if (lowValue === "" || lowValue === undefined) errors.rangeLow = t("Please enter the low range");
@@ -284,7 +284,7 @@ export default function BIASettingsPage() {
     const bcpName = editingBcp ? editingBcp.name : newBcp.name;
     const errors: Record<string, string> = {};
     if (!bcpName?.trim()) errors.bcpName = t("Please enter the name");
-    else if (!isValidName(bcpName.trim())) errors.bcpName = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(bcpName.trim())) errors.bcpName = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
