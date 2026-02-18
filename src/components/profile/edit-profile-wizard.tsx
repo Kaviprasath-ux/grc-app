@@ -357,7 +357,7 @@ export function EditProfileWizard({
                       currentStep >= step.id ? "text-slate-700" : "text-slate-400"
                     )}
                   >
-                    {step.name}
+                    {t(step.name)}
                   </span>
                 </div>
                 {index < steps.length - 1 && (

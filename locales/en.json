@@ -161,6 +161,8 @@
   "Add Department": "Add Department",
   "Department Name": "Department Name",
   "Services": "Services",
+  "Service Name": "Service Name",
+  "Search services...": "Search services...",
   "Add Service": "Add Service",
   "Service Title": "Service Title",
   "Service User": "Service User",
@@ -846,5 +848,13 @@
   "No email address was provided by the sign-in provider.": "No email address was provided by the sign-in provider.",
   "An error occurred during sign-in. Please try again.": "An error occurred during sign-in. Please try again.",
   "This email is already associated with another sign-in method.": "This email is already associated with another sign-in method.",
-  "SSO provider is not configured. Please contact your administrator.": "SSO provider is not configured. Please contact your administrator."
+  "SSO provider is not configured. Please contact your administrator.": "SSO provider is not configured. Please contact your administrator.",
+  "General Information": "General Information",
+  "Location & Contact": "Location & Contact",
+  "Documents": "Documents",
+  "Certificates": "Certificates",
+  "Click to upload documents": "Click to upload documents",
+  "Click to upload certificates": "Click to upload certificates",
+  "VMW": "VMW",
+  "Preview & Save": "Preview & Save"
 }

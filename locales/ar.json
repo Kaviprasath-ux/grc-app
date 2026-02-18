@@ -161,6 +161,8 @@
   "Add Department": "إضافة قسم",
   "Department Name": "اسم القسم",
   "Services": "الخدمات",
+  "Service Name": "اسم الخدمة",
+  "Search services...": "...البحث في الخدمات",
   "Add Service": "إضافة خدمة",
   "Service Title": "عنوان الخدمة",
   "Service User": "مستخدم الخدمة",
@@ -1127,5 +1129,13 @@
   "Where do you see your organization in the future?": "أين ترى منظمتك في المستقبل؟",
   "Uncategorized": "غير مصنف",
   "View All": "عرض الكل",
-  "Show Less": "عرض أقل"
+  "Show Less": "عرض أقل",
+  "General Information": "المعلومات العامة",
+  "Location & Contact": "الموقع والتواصل",
+  "Documents": "المستندات",
+  "Certificates": "الشهادات",
+  "Click to upload documents": "انقر لتحميل المستندات",
+  "Click to upload certificates": "انقر لتحميل الشهادات",
+  "VMW": "الرؤية والرسالة والقيم",
+  "Preview & Save": "معاينة وحفظ"
 }

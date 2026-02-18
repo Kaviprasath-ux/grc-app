@@ -161,6 +161,8 @@
   "Add Department": "Pievienot nodaļu",
   "Department Name": "Nodaļas nosaukums",
   "Services": "Pakalpojumi",
+  "Service Name": "Pakalpojuma nosaukums",
+  "Search services...": "Meklēt pakalpojumus...",
   "Add Service": "Pievienot pakalpojumu",
   "Service Title": "Pakalpojuma nosaukums",
   "Service User": "Pakalpojuma lietotājs",
@@ -846,5 +848,13 @@
   "No email address was provided by the sign-in provider.": "Pierakstīšanās pakalpojuma sniedzējs nesniedza e-pasta adresi.",
   "An error occurred during sign-in. Please try again.": "Pierakstīšanās laikā radās kļūda. Lūdzu, mēģiniet vēlreiz.",
   "This email is already associated with another sign-in method.": "Šis e-pasts jau ir saistīts ar citu pierakstīšanās metodi.",
-  "SSO provider is not configured. Please contact your administrator.": "SSO pakalpojuma sniedzējs nav konfigurēts. Lūdzu, sazinieties ar administratoru."
+  "SSO provider is not configured. Please contact your administrator.": "SSO pakalpojuma sniedzējs nav konfigurēts. Lūdzu, sazinieties ar administratoru.",
+  "General Information": "Vispārīga informācija",
+  "Location & Contact": "Atrašanās vieta un kontakti",
+  "Documents": "Dokumenti",
+  "Certificates": "Sertifikāti",
+  "Click to upload documents": "Noklikšķiniet, lai augšupielādētu dokumentus",
+  "Click to upload certificates": "Noklikšķiniet, lai augšupielādētu sertifikātus",
+  "VMW": "VMW",
+  "Preview & Save": "Priekšskatījums un saglabāšana"
 }

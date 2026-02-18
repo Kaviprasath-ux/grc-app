@@ -42,12 +42,12 @@ interface TreeNode extends UserNode {
 }
 
 // Single org chart node with design system colors
-function OrgChartNode({ node, isRoot = false, showDepartment = true }: { node: TreeNode; isRoot?: boolean; showDepartment?: boolean }) {
+function OrgChartNode({ node, isRoot = false, showDepartment = true, mirrored = false }: { node: TreeNode; isRoot?: boolean; showDepartment?: boolean; mirrored?: boolean }) {
   const roleName = node.userRoles?.[0]?.role?.name || node.role;
   const headerColor = isRoot ? ROOT_COLOR : NODE_COLOR;
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center" style={mirrored ? { transform: 'scaleX(-1)' } : undefined}>
       <div
         className={cn(
           "rounded-lg border overflow-hidden transition-shadow",
@@ -109,7 +109,7 @@ function getSubtreeWidth(node: TreeNode): number {
 }
 
 // Recursive tree rendering with proper connected lines
-function OrgChartTree({ nodes, level = 0, showDepartment = true }: { nodes: TreeNode[]; level?: number; showDepartment?: boolean }) {
+function OrgChartTree({ nodes, level = 0, showDepartment = true, mirrored = false }: { nodes: TreeNode[]; level?: number; showDepartment?: boolean; mirrored?: boolean }) {
   if (nodes.length === 0) return null;
 
   return (
@@ -134,7 +134,7 @@ function OrgChartTree({ nodes, level = 0, showDepartment = true }: { nodes: Tree
 
           return (
             <div key={node.id} className="flex flex-col items-center">
-              <OrgChartNode node={node} isRoot={level === 0} showDepartment={showDepartment} />
+              <OrgChartNode node={node} isRoot={level === 0} showDepartment={showDepartment} mirrored={mirrored} />
 
               {/* Connector lines to children */}
               {childCount > 0 && (
@@ -197,7 +197,7 @@ function OrgChartTree({ nodes, level = 0, showDepartment = true }: { nodes: Tree
                         className="flex flex-col items-center"
                         style={{ width: `${childWidths[idx]}px` }}
                       >
-                        <OrgChartTree nodes={[child]} level={level + 1} showDepartment={showDepartment} />
+                        <OrgChartTree nodes={[child]} level={level + 1} showDepartment={showDepartment} mirrored={mirrored} />
                       </div>
                     ))}
                   </div>
@@ -214,7 +214,7 @@ function OrgChartTree({ nodes, level = 0, showDepartment = true }: { nodes: Tree
 type ViewMode = "role" | "department";
 
 export function OrgChart() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [users, setUsers] = useState<UserNode[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -476,7 +476,7 @@ export function OrgChart() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" style={isRTL ? { direction: 'rtl' } : undefined}>
       {/* View Mode Controls - section header style */}
       <div className="flex items-center gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100">
         <div className="flex items-center gap-2">
@@ -523,9 +523,9 @@ export function OrgChart() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <div className="min-w-max px-6 py-6">
-            <OrgChartTree nodes={tree} showDepartment={viewMode === "role"} />
+        <div className="overflow-x-auto" style={isRTL ? { direction: 'rtl' } : undefined}>
+          <div className="min-w-max px-6 py-6" style={isRTL ? { transform: 'scaleX(-1)' } : undefined}>
+            <OrgChartTree nodes={tree} showDepartment={viewMode === "role"} mirrored={isRTL} />
           </div>
         </div>
       )}
