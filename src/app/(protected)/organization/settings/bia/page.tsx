@@ -69,7 +69,7 @@ interface BCPLabel {
 export default function BIASettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState("category");
   const [loading, setLoading] = useState(true);
 
@@ -570,38 +570,40 @@ export default function BIASettingsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-slate-500">
+      <nav className={`flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/organization/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Settings")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("BIA")}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="w-full" style={isRTL ? { direction: 'rtl' } : undefined}>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("BIA Settings")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full sm:w-auto flex-wrap">
+        <div className={`overflow-x-auto -mx-1 px-1 ${isRTL ? "flex justify-end" : ""}`}>
+        <TabsList className={`w-full sm:w-auto flex-wrap ${isRTL ? "flex-row-reverse" : ""}`}>
           <TabsTrigger value="category">{t("Category")}</TabsTrigger>
           <TabsTrigger value="methodology">{t("BIA Methodology")}</TabsTrigger>
           <TabsTrigger value="bcp">{t("BCP Labels")}</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Category Tab */}
         <TabsContent value="category" className="mt-4 sm:mt-6 space-y-4">
-          <div className="flex items-center justify-end">
+          <div className={`flex items-center ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button
               size="sm"
               onClick={() => {
@@ -622,8 +624,8 @@ export default function BIASettingsPage() {
         <TabsContent value="methodology" className="mt-4 sm:mt-6 space-y-6 sm:space-y-8">
           {/* BIA Rating Section */}
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
+              <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
                 <h3 className="text-base font-semibold text-slate-800">{t("BIA Rating")}</h3>
               </div>
               <Button
@@ -644,8 +646,8 @@ export default function BIASettingsPage() {
 
           {/* BIA Calculation Section */}
           <div className="border-t border-slate-200 pt-6 sm:pt-8 space-y-4">
-            <h3 className="text-base font-semibold text-slate-800">{t("BIA Calculation")}</h3>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <h3 className={`text-base font-semibold text-slate-800 ${isRTL ? "text-right" : ""}`}>{t("BIA Calculation")}</h3>
+            <div className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
               <Label className="text-sm font-medium text-slate-700">{t("Calculation Type")}</Label>
               <Select value={calculationType} onValueChange={handleCalculationTypeChange}>
                 <SelectTrigger className="w-full sm:w-[200px] bg-white">
@@ -662,8 +664,8 @@ export default function BIASettingsPage() {
             {/* Scoring Calculation Grid - Only show for Addition/Product */}
             {calculationType !== "High of all" && (
               <div className="space-y-4 pt-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
+                  <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
                     <h4 className="text-sm font-semibold text-slate-800">{t("Scoring Calculation")}</h4>
                   </div>
                   <Button
@@ -691,7 +693,7 @@ export default function BIASettingsPage() {
 
         {/* BCP Labels Tab */}
         <TabsContent value="bcp" className="mt-4 sm:mt-6 space-y-4">
-          <div className="flex items-center justify-end">
+          <div className={`flex items-center ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button
               size="sm"
               onClick={() => {
@@ -711,7 +713,7 @@ export default function BIASettingsPage() {
 
       {/* Category Dialog */}
       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -773,7 +775,7 @@ export default function BIASettingsPage() {
 
       {/* Rating Dialog */}
       <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -857,7 +859,7 @@ export default function BIASettingsPage() {
 
       {/* Scoring Range Dialog */}
       <Dialog open={isRangeDialogOpen} onOpenChange={setIsRangeDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -960,7 +962,7 @@ export default function BIASettingsPage() {
 
       {/* BCP Label Dialog */}
       <Dialog open={isBcpDialogOpen} onOpenChange={setIsBcpDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1055,7 +1057,7 @@ export default function BIASettingsPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Item")}</DialogTitle>
@@ -1075,7 +1077,7 @@ export default function BIASettingsPage() {
 
       {/* BIA Rating Warning Dialog */}
       <Dialog open={isRatingWarningOpen} onOpenChange={setIsRatingWarningOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Warning")}</DialogTitle>

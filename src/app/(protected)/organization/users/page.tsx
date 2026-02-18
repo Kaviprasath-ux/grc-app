@@ -115,7 +115,7 @@ const allUserRoles = [
 export default function UsersPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState("account-overview");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -831,61 +831,63 @@ export default function UsersPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto">
-        <div className="flex items-center gap-1.5 text-slate-500 whitespace-nowrap">
+      <nav className={`flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4 flex-shrink-0" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180 flex-shrink-0" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 flex-shrink-0 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors whitespace-nowrap">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180 flex-shrink-0" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 flex-shrink-0 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium whitespace-nowrap">{t("Users")}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className={`flex flex-col gap-1 ${isRTL ? "items-end" : ""}`}>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Users")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full sm:w-auto">
+        <div className={`overflow-x-auto -mx-1 px-1 ${isRTL ? "flex justify-end" : ""}`}>
+        <TabsList className={`w-full sm:w-auto inline-flex ${isRTL ? "flex-row-reverse" : ""}`}>
           <TabsTrigger value="account-overview" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("Account Overview")}</TabsTrigger>
           <TabsTrigger value="user-management" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("User Management")}</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Account Overview Tab */}
         <TabsContent value="account-overview" className="mt-4 sm:mt-6">
           <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
+            <div className={`grid grid-cols-2 sm:flex sm:items-center gap-2 ${isRTL ? "sm:justify-start" : "sm:justify-end"}`}>
+              <Button variant="outline" size="sm" onClick={handleExport} className={isRTL ? "flex-row-reverse" : ""}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
-              <Button size="sm" className="col-span-2 sm:col-span-1" onClick={handleNewAccountClick}>
+              <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New User")}
               </Button>
             </div>
 
             {/* Card Container */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
               {/* Search Toolbar */}
               <div className="flex items-center px-3 sm:px-5 py-3 border-b border-slate-100">
                 <div className="relative w-full sm:max-w-xs">
-                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     placeholder={t("Search by Department Name")}
                     value={departmentSearchTerm}
                     onChange={(e) => setDepartmentSearchTerm(e.target.value)}
-                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>
@@ -899,7 +901,7 @@ export default function UsersPage() {
                     className="border-b border-slate-100 last:border-0 px-2 sm:px-4"
                   >
                   <AccordionTrigger className="hover:no-underline py-3 sm:py-4 focus-visible:ring-0 focus-visible:border-transparent">
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className={`flex items-center gap-2 sm:gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
                       <span className="text-xs sm:text-sm font-semibold text-slate-800">{dept.name}</span>
                       <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                         {dept.users.length}
@@ -923,12 +925,12 @@ export default function UsersPage() {
                           <tbody>
                             {dept.users.map((user) => (
                               <tr key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                                <td className="py-3.5 ps-5 text-sm font-medium text-slate-800">{user.fullName}</td>
-                                <td className="py-3.5 text-sm text-slate-600">{user.designation || "-"}</td>
-                                <td className="py-3.5 text-sm text-slate-600">{user.reportingManager?.fullName || "-"}</td>
-                                <td className="py-3.5 text-sm text-slate-600">{user.email}</td>
-                                <td className="py-3.5 text-sm text-slate-600">-</td>
-                                <td className="py-3.5 pe-5">
+                                <td className="text-start py-3.5 ps-5 text-sm font-medium text-slate-800">{user.fullName}</td>
+                                <td className="text-start py-3.5 text-sm text-slate-600">{user.designation || "-"}</td>
+                                <td className="text-start py-3.5 text-sm text-slate-600">{user.reportingManager?.fullName || "-"}</td>
+                                <td className="text-start py-3.5 text-sm text-slate-600">{user.email}</td>
+                                <td className="text-start py-3.5 text-sm text-slate-600">-</td>
+                                <td className="text-end py-3.5 pe-5">
                                   <div className="flex items-center justify-end gap-0.5">
                                     <Button
                                       variant="ghost"
@@ -974,7 +976,7 @@ export default function UsersPage() {
                           </tbody>
                         </table>
                         {/* Pagination */}
-                        <div className="flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3 border-t border-slate-100 bg-slate-50/50">
+                        <div className={`flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3 border-t border-slate-100 bg-slate-50/50 ${isRTL ? "flex-row-reverse" : ""}`}>
                           <span className="text-xs text-slate-500">
                             1 {t("to")} {dept.users.length} {t("of")} {dept.users.length}
                           </span>
@@ -1011,22 +1013,22 @@ export default function UsersPage() {
         <TabsContent value="user-management" className="mt-4 sm:mt-6">
           <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
+            <div className={`grid grid-cols-2 sm:flex sm:items-center gap-2 ${isRTL ? "sm:justify-start" : "sm:justify-end"}`}>
+              <Button variant="outline" size="sm" onClick={handleExport} className={isRTL ? "flex-row-reverse" : ""}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
-              <Button size="sm" className="col-span-2 sm:col-span-1" onClick={handleNewAccountClick}>
+              <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={handleNewAccountClick}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("New User")}
               </Button>
             </div>
             {/* Table Card with Integrated Filters */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
               {/* Search & Filters */}
               <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                 <div className="relative w-full sm:max-w-xs">
@@ -1039,7 +1041,7 @@ export default function UsersPage() {
                     className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto sm:ms-auto">
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
                   <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Role")} />
@@ -1101,7 +1103,7 @@ export default function UsersPage() {
           });
         }
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1431,7 +1433,7 @@ export default function UsersPage() {
             <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Status")}</h4>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                <div className="flex items-center space-x-2">
+                <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                   <Checkbox
                     id="active"
                     checked={userForm.isActive}
@@ -1443,7 +1445,7 @@ export default function UsersPage() {
                     {t("Active")}
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                   <Checkbox
                     id="blocked"
                     checked={userForm.isBlocked}
@@ -1491,7 +1493,7 @@ export default function UsersPage() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1572,7 +1574,7 @@ export default function UsersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end">{t("Is local user")}</Label>
                 <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                     <input
                       type="radio"
                       id="localUserYes"
@@ -1583,7 +1585,7 @@ export default function UsersPage() {
                     />
                     <Label htmlFor="localUserYes" className="font-normal">{t("Yes")}</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                     <input
                       type="radio"
                       id="localUserNo"
@@ -1748,7 +1750,7 @@ export default function UsersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end">{t("Blocked")}</Label>
                 <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                     <input
                       type="radio"
                       id="blockedYes"
@@ -1759,7 +1761,7 @@ export default function UsersPage() {
                     />
                     <Label htmlFor="blockedYes" className="font-normal">{t("Yes")}</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                     <input
                       type="radio"
                       id="blockedNo"
@@ -1777,7 +1779,7 @@ export default function UsersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end">{t("Active")}</Label>
                 <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                     <input
                       type="radio"
                       id="activeYes"
@@ -1788,7 +1790,7 @@ export default function UsersPage() {
                     />
                     <Label htmlFor="activeYes" className="font-normal">{t("Yes")}</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
                     <input
                       type="radio"
                       id="activeNo"
@@ -1835,7 +1837,7 @@ export default function UsersPage() {
           }
         }
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1902,7 +1904,7 @@ export default function UsersPage() {
         setIsViewUserOpen(open);
         if (!open) setViewingUser(null);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2043,7 +2045,7 @@ export default function UsersPage() {
           }
         }}
       >
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2109,7 +2111,7 @@ export default function UsersPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent style={isRTL ? { direction: 'rtl' } : undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Delete User")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -2132,7 +2134,7 @@ export default function UsersPage() {
 
       {/* Subscription Error Dialog */}
       <Dialog open={showSubscriptionErrorDialog} onOpenChange={setShowSubscriptionErrorDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>

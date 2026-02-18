@@ -47,7 +47,7 @@ interface ReportData {
 
 export default function OrganizationReportsPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [selectedReport, setSelectedReport] = useState<typeof reportTypes[0] | null>(null);
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -242,26 +242,29 @@ export default function OrganizationReportsPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-slate-500">
+      <nav className={`flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Reports")}</h1>
+      <div style={isRTL ? { direction: 'rtl' } : undefined}>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Reports")}</h1>
+      </div>
 
       {/* Management Report - Featured Card */}
       <button
         onClick={() => setIsManagementDialogOpen(true)}
-        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
+        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-start transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
+        style={isRTL ? { direction: 'rtl' } : undefined}
       >
         <div className="p-2.5 bg-primary-100/80 rounded-lg flex-shrink-0">
           <FileBarChart className="h-5 w-5 text-primary-600" />
@@ -270,15 +273,15 @@ export default function OrganizationReportsPage() {
           <h3 className="text-sm font-semibold text-primary-900">{t("Management Report")}</h3>
           <p className="text-xs text-primary-600/70 mt-0.5">{t("Generate a comprehensive report with charts across processes, KPIs, and risks")}</p>
         </div>
-        <ChevronRight className="h-4 w-4 text-primary-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500" />
+        <ChevronRight className={`h-4 w-4 text-primary-300 flex-shrink-0 transition-transform group-hover:text-primary-500 ${isRTL ? "rotate-180 group-hover:-translate-x-0.5" : "group-hover:translate-x-0.5"}`} />
       </button>
 
       {/* Reports Card */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
         {/* Toolbar: Tabs + Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3 sm:px-5 py-3 border-b border-slate-100 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
           {/* Category Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto">
+          <div className={`flex items-center gap-1 overflow-x-auto ${isRTL ? "flex-row-reverse" : ""}`}>
             {categoryTabs.map((tab) => {
               const count = tab.id === "all"
                 ? reportTypes.length
@@ -293,7 +296,7 @@ export default function OrganizationReportsPage() {
                       : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  {t(tab.label)} <span className="ml-1 text-[10px] opacity-60">{count}</span>
+                  {t(tab.label)} <span className="ms-1 text-[10px] opacity-60">{count}</span>
                 </button>
               );
             })}
@@ -301,13 +304,13 @@ export default function OrganizationReportsPage() {
 
           {/* Search */}
           <div className="relative w-full sm:w-56">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
               placeholder={t("Search reports...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full ps-8 pe-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
             />
           </div>
         </div>
@@ -319,13 +322,13 @@ export default function OrganizationReportsPage() {
               <button
                 key={report.id}
                 onClick={() => handleReportClick(report)}
-                className="group w-full flex items-center justify-between px-3 sm:px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+                className="group w-full flex items-center justify-between px-3 sm:px-5 py-3.5 text-start hover:bg-slate-50/60 transition-colors cursor-pointer"
               >
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-medium text-slate-800">{t(report.title)}</h4>
                   <p className="text-xs text-slate-500 mt-0.5">{t(report.description)}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500" />
+                <ChevronRight className={`h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:text-primary-500 ${isRTL ? "rotate-180 group-hover:-translate-x-0.5" : "group-hover:translate-x-0.5"}`} />
               </button>
             ))
           ) : (
@@ -339,11 +342,11 @@ export default function OrganizationReportsPage() {
 
       {/* Report Detail Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pr-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pe-8">
                 <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{selectedReport ? t(selectedReport.title) : ""}</DialogTitle>
                 <Button variant="outline" size="sm" onClick={handleExport} className="self-start sm:self-auto">
                   <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -367,8 +370,8 @@ export default function OrganizationReportsPage() {
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50">
                       {selectedReport?.columns.map((col, idx, arr) => (
-                        <th key={col} className={`text-left py-3 text-xs font-medium text-slate-500 uppercase tracking-wider ${idx === 0 ? "pl-5" : ""} ${idx === arr.length - 1 ? "pr-5" : ""}`}>
-                          {col}
+                        <th key={col} className={`text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider ${idx === 0 ? "ps-5" : ""} ${idx === arr.length - 1 ? "pe-5" : ""}`}>
+                          {t(col)}
                         </th>
                       ))}
                     </tr>
@@ -384,7 +387,7 @@ export default function OrganizationReportsPage() {
                       paginatedData.map((row, idx) => (
                         <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                           {selectedReport?.columns.map((col, colIdx, arr) => (
-                            <td key={col} className={`py-3 text-sm text-slate-700 ${colIdx === 0 ? "pl-5" : ""} ${colIdx === arr.length - 1 ? "pr-5" : ""}`}>
+                            <td key={col} className={`py-3 text-sm text-slate-700 text-start ${colIdx === 0 ? "ps-5" : ""} ${colIdx === arr.length - 1 ? "pe-5" : ""}`}>
                               {String(row[col] || "")}
                             </td>
                           ))}
@@ -400,7 +403,7 @@ export default function OrganizationReportsPage() {
 
           {/* Fixed Footer with Pagination */}
           {totalItems > 0 && (
-            <div className="flex-shrink-0 flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex-shrink-0 flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "flex-row-reverse" : ""}`}>
               <span className="text-xs text-slate-500">
                 {startItem} {t("to")} {endItem} {t("of")} {totalItems}
               </span>
@@ -452,7 +455,7 @@ export default function OrganizationReportsPage() {
 
       {/* Management Report Parameters Dialog */}
       <Dialog open={isManagementDialogOpen} onOpenChange={setIsManagementDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -464,7 +467,7 @@ export default function OrganizationReportsPage() {
           <div className="px-4 sm:px-6 py-4 sm:py-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {managementOptions.map((option) => (
-                <div key={option.id} className="flex items-center space-x-2">
+                <div key={option.id} className="flex items-center gap-2">
                   <Checkbox
                     id={option.id}
                     checked={option.checked}
