@@ -151,7 +151,7 @@ export default function GovernancePage() {
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -778,14 +778,14 @@ export default function GovernancePage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6" style={isRTL ? { direction: 'rtl' } : undefined}>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("Governance")}</span>
       </nav>
 
@@ -796,7 +796,7 @@ export default function GovernancePage() {
 
       {/* Tabs - Only show for Customer Administrator */}
       {isCustomerAdmin ? (
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <Tabs value={activeTab} onValueChange={handleTabChange} dir={isRTL ? "rtl" : "ltr"}>
           <TabsList>
             <TabsTrigger value="Dashboard">{t("Dashboard")}</TabsTrigger>
             <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
@@ -848,14 +848,14 @@ export default function GovernancePage() {
               {/* Action Buttons */}
               <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={handleExport}>
-                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  <Upload className="h-4 w-4 me-2" />
                   {t("Export")}
                 </Button>
                 <Button size="sm" onClick={() => {
                   setNewPolicy({ ...newPolicy, documentType: activeDocType });
                   setIsCreateDialogOpen(true);
                 }}>
-                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   {t("New Governance")}
                 </Button>
               </div>
@@ -865,17 +865,17 @@ export default function GovernancePage() {
                 {/* Toolbar */}
                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                   <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder={t("Search by code, name, department...")}
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-4 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto sm:ms-auto">
                     <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
                       <SelectTrigger className="w-full sm:w-[200px] h-9 text-sm bg-slate-50 border-slate-200">
                         <SelectValue placeholder={t("Integrated Framework")} />
@@ -1152,7 +1152,7 @@ export default function GovernancePage() {
         </Tabs>
       ) : (
         // Non-Customer Admin view - original tabs
-        <Tabs value={activeDocType} onValueChange={handleTabChange}>
+        <Tabs value={activeDocType} onValueChange={handleTabChange} dir={isRTL ? "rtl" : "ltr"}>
           <TabsList>
             <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
             <TabsTrigger value="Standard">{t("Standards")}</TabsTrigger>
@@ -1165,7 +1165,7 @@ export default function GovernancePage() {
               <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
                 <PermissionGate resource="compliance.governance" action="create">
                   <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    <Upload className="h-4 w-4 me-2" />
                     {t("Import")}
                   </Button>
                 </PermissionGate>
@@ -1174,7 +1174,7 @@ export default function GovernancePage() {
                     setNewPolicy({ ...newPolicy, documentType: activeDocType });
                     setIsCreateDialogOpen(true);
                   }}>
-                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     {t("New Governance")}
                   </Button>
                 </PermissionGate>
@@ -1185,17 +1185,17 @@ export default function GovernancePage() {
                 {/* Toolbar */}
                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                   <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder={t(`Search by ${docType.toLowerCase()} name or code...`)}
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto sm:ms-auto">
                     <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
                       <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                         <SelectValue placeholder={t("Integrated Framework")} />
@@ -1333,7 +1333,7 @@ export default function GovernancePage() {
 
       {/* Link Governance Dialog */}
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" showCloseButton={false}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" showCloseButton={false} style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Governance Documents")}</DialogTitle>
             <Button variant="ghost" size="icon" onClick={() => setIsLinkDialogOpen(false)} className="h-8 w-8 text-slate-400 hover:text-slate-600">
@@ -1371,7 +1371,7 @@ export default function GovernancePage() {
             )}
 
             {/* Governance List */}
-            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[350px] overflow-y-auto pe-1">
               {filteredGovernanceForLink.map((gov) => (
                 <div
                   key={gov.id}
@@ -1435,7 +1435,7 @@ export default function GovernancePage() {
         if (!open) resetCreateDialog();
         setIsCreateDialogOpen(open);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("New Governance")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
@@ -1626,7 +1626,7 @@ export default function GovernancePage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                        <TableHead className="w-[50px] py-4 pl-4"></TableHead>
+                        <TableHead className="w-[50px] py-4 ps-4"></TableHead>
                         <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Code")}</TableHead>
                         <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Name")}</TableHead>
                         <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
@@ -1636,7 +1636,7 @@ export default function GovernancePage() {
                     <TableBody>
                       {filteredControls.map((control) => (
                         <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                          <TableCell className="py-3 pl-4">
+                          <TableCell className="py-3 ps-4">
                             <Checkbox
                               checked={selectedControlIds.includes(control.id)}
                               onCheckedChange={(checked) => {
@@ -1761,7 +1761,7 @@ export default function GovernancePage() {
 
       {/* Delete Single Policy Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent style={isRTL ? { direction: 'rtl' } : undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Delete")} {t(policyToDelete?.documentType || "Policy")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1779,7 +1779,7 @@ export default function GovernancePage() {
 
       {/* Delete All Dialog */}
       <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent style={isRTL ? { direction: 'rtl' } : undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Delete All")} {t(activeDocType)}s</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1797,7 +1797,7 @@ export default function GovernancePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
@@ -1882,7 +1882,7 @@ export default function GovernancePage() {
         }
         setIsEditDialogOpen(open);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Edit")} {t(editingPolicy?.documentType || "Governance")}</DialogTitle>
