@@ -2315,6 +2315,24 @@ CREATE TABLE "EmailTemplate" (
 );
 
 -- CreateTable
+CREATE TABLE "DynamicTranslation" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "modelName" TEXT NOT NULL,
+    "recordId" TEXT NOT NULL,
+    "fieldName" TEXT NOT NULL,
+    "locale" TEXT NOT NULL,
+    "translatedText" TEXT NOT NULL,
+    "sourceHash" TEXT,
+    "isStale" BOOLEAN NOT NULL DEFAULT false,
+    "translatedBy" TEXT NOT NULL DEFAULT 'azure',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DynamicTranslation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_EngagementTeamMembers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
@@ -2991,6 +3009,18 @@ CREATE UNIQUE INDEX "EmailTemplate_code_key" ON "EmailTemplate"("code");
 
 -- CreateIndex
 CREATE INDEX "EmailTemplate_code_idx" ON "EmailTemplate"("code");
+
+-- CreateIndex
+CREATE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId");
+
+-- CreateIndex
+CREATE INDEX "DynamicTranslation_customerAccountId_modelName_locale_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "locale");
+
+-- CreateIndex
+CREATE INDEX "DynamicTranslation_isStale_idx" ON "DynamicTranslation"("isStale");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_fie_key" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId", "fieldName", "locale");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
@@ -3791,8 +3821,21 @@ ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_cust
 ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "DynamicTranslation" ADD CONSTRAINT "DynamicTranslation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+┌─────────────────────────────────────────────────────────┐
+│  Update available 5.22.0 -> 7.4.0                       │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘

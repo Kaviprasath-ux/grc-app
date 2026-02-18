@@ -112,6 +112,7 @@ model CustomerAccount {
   biaScoringConfigs          BIAScoringConfig[]
   biaScoringRanges           BIAScoringRange[]
   bcpLabels                  BCPLabel[]
+  dynamicTranslations        DynamicTranslation[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -3193,4 +3194,30 @@ model EmailTemplate {
   updatedAt         DateTime         @updatedAt
 
   @@index([code])
+}
+
+// ==================== DYNAMIC DATA TRANSLATIONS ====================
+
+// DynamicTranslation stores auto-translated versions of user-entered data
+// (risk names, policy descriptions, audit findings, etc.) for non-English locales.
+// A single generic table — no schema changes needed per model.
+model DynamicTranslation {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  modelName         String          // "Risk", "Control", "Framework", etc.
+  recordId          String          // ID of the source record
+  fieldName         String          // "name", "description", etc.
+  locale            String          // "ar", "lv" (never "en")
+  translatedText    String          @db.Text
+  sourceHash        String?         // Hash of original text for staleness detection
+  isStale           Boolean         @default(false)
+  translatedBy      String          @default("azure") // "azure", "manual"
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, modelName, recordId, fieldName, locale])
+  @@index([customerAccountId, modelName, recordId])
+  @@index([customerAccountId, modelName, locale])
+  @@index([isStale])
 }

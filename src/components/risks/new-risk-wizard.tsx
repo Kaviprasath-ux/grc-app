@@ -24,6 +24,7 @@ import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Check } from "lucid
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Category {
   id: string;
@@ -461,6 +462,17 @@ export function NewRiskWizard({
       });
 
       if (response.ok) {
+        const responseData = await response.json().catch(() => null);
+        const riskId = isEditMode ? editData!.id : responseData?.id;
+
+        // Trigger dynamic data translation (fire-and-forget)
+        if (riskId) {
+          triggerTranslation('Risk', riskId, {
+            name: formData.name,
+            description: formData.description || null,
+          });
+        }
+
         toast.success(isEditMode ? "Risk updated successfully" : "Risk created successfully");
         resetForm();
         onSuccess();

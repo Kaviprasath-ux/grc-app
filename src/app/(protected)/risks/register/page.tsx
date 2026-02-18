@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Risk {
   id: string;
@@ -328,6 +329,21 @@ function RiskRegisterContent() {
     }
   };
 
+  // Filter risks for department-scoped roles
+  const displayRisks = isDepartmentRole && userDepartmentId
+    ? risks.filter(r => r.department?.id === userDepartmentId)
+    : risks;
+
+  // Translate dynamic data (name, description) for non-English locales
+  const { data: translatedRisks } = useTranslatedData(displayRisks, { modelName: 'Risk' });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(translatedRisks.length / ITEMS_PER_PAGE);
+  const paginatedRisks = translatedRisks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
@@ -344,18 +360,6 @@ function RiskRegisterContent() {
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access Risk Register.")} />;
   }
-
-  // Filter risks for department-scoped roles
-  const displayRisks = isDepartmentRole && userDepartmentId
-    ? risks.filter(r => r.department?.id === userDepartmentId)
-    : risks;
-
-  // Calculate pagination
-  const totalPages = Math.ceil(displayRisks.length / ITEMS_PER_PAGE);
-  const paginatedRisks = displayRisks.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -600,7 +604,7 @@ function RiskRegisterContent() {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={displayRisks.length}
+            totalItems={translatedRisks.length}
             itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
           />
