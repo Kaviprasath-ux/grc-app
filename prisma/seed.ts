@@ -2303,18 +2303,18 @@ async function main() {
   // Status: Awaiting Approval, Pending Assessment, Open, In Progress, Closed
   // Strategy: Treat, Transfer, Avoid, Accept
   const risks = [
-    { riskId: "RISK-0001", name: "Data Breach Risk", description: "Risk of unauthorized access to sensitive customer and business data", category: "IT/Cyber", department: "IT Operations", likelihood: 4, impact: 5, status: "Open", responseStrategy: "Treat" },
-    { riskId: "RISK-0002", name: "Regulatory Non-Compliance", description: "Failure to comply with GDPR, PCI-DSS, and other regulations", category: "Compliance", department: "Compliance", likelihood: 3, impact: 4, status: "In Progress", responseStrategy: "Treat" },
-    { riskId: "RISK-0003", name: "Vendor Dependency", description: "Over-reliance on critical third-party vendors", category: "Operational", department: "Procurement", likelihood: 3, impact: 3, status: "Pending Assessment", responseStrategy: "Transfer" },
-    { riskId: "RISK-0004", name: "Market Competition", description: "Increased competition affecting market share", category: "Strategic", department: "Revenue", likelihood: 4, impact: 3, status: "Open", responseStrategy: "Accept" },
-    { riskId: "RISK-0005", name: "Talent Retention", description: "Difficulty retaining key technical talent", category: "Operational", department: "Human Resources", likelihood: 3, impact: 3, status: "In Progress", responseStrategy: "Treat" },
-    { riskId: "RISK-0006", name: "System Failure", description: "Critical system downtime affecting operations", category: "IT/Cyber", department: "IT Operations", likelihood: 3, impact: 5, status: "In Progress", responseStrategy: "Treat" },
-    { riskId: "RISK-0007", name: "Financial Loss", description: "Unexpected financial losses from operations", category: "Financial", department: "Revenue", likelihood: 2, impact: 4, status: "Awaiting Approval", responseStrategy: null },
-    { riskId: "RISK-0008", name: "Reputation Damage", description: "Negative publicity affecting brand value", category: "Reputational", department: "Operations", likelihood: 2, impact: 5, status: "Pending Assessment", responseStrategy: null },
-    { riskId: "RISK-0009", name: "Supply Chain Disruption", description: "Interruption in supply chain operations", category: "Operational", department: "Procurement", likelihood: 3, impact: 3, status: "Open", responseStrategy: "Avoid" },
-    { riskId: "RISK-0010", name: "Insider Threat", description: "Malicious or negligent actions by employees", category: "IT/Cyber", department: "IT Operations", likelihood: 2, impact: 4, status: "Closed", responseStrategy: "Treat" },
-    { riskId: "RISK-0011", name: "Cloud Security", description: "Security vulnerabilities in cloud infrastructure", category: "IT/Cyber", department: "IT Operations", likelihood: 3, impact: 4, status: "In Progress", responseStrategy: "Treat" },
-    { riskId: "RISK-0012", name: "Business Continuity", description: "Inability to recover from major disruptions", category: "Operational", department: "Operations", likelihood: 2, impact: 5, status: "Awaiting Approval", responseStrategy: null },
+    { riskId: "RID001", name: "Data Breach Risk", description: "Risk of unauthorized access to sensitive customer and business data", category: "IT/Cyber", department: "IT Operations", likelihood: 4, impact: 5, status: "Open", responseStrategy: "Treat" },
+    { riskId: "RID002", name: "Regulatory Non-Compliance", description: "Failure to comply with GDPR, PCI-DSS, and other regulations", category: "Compliance", department: "Compliance", likelihood: 3, impact: 4, status: "In Progress", responseStrategy: "Treat" },
+    { riskId: "RID003", name: "Vendor Dependency", description: "Over-reliance on critical third-party vendors", category: "Operational", department: "Procurement", likelihood: 3, impact: 3, status: "Pending Assessment", responseStrategy: "Transfer" },
+    { riskId: "RID004", name: "Market Competition", description: "Increased competition affecting market share", category: "Strategic", department: "Revenue", likelihood: 4, impact: 3, status: "Open", responseStrategy: "Accept" },
+    { riskId: "RID005", name: "Talent Retention", description: "Difficulty retaining key technical talent", category: "Operational", department: "Human Resources", likelihood: 3, impact: 3, status: "In Progress", responseStrategy: "Treat" },
+    { riskId: "RID006", name: "System Failure", description: "Critical system downtime affecting operations", category: "IT/Cyber", department: "IT Operations", likelihood: 3, impact: 5, status: "In Progress", responseStrategy: "Treat" },
+    { riskId: "RID007", name: "Financial Loss", description: "Unexpected financial losses from operations", category: "Financial", department: "Revenue", likelihood: 2, impact: 4, status: "Awaiting Approval", responseStrategy: null },
+    { riskId: "RID008", name: "Reputation Damage", description: "Negative publicity affecting brand value", category: "Reputational", department: "Operations", likelihood: 2, impact: 5, status: "Pending Assessment", responseStrategy: null },
+    { riskId: "RID009", name: "Supply Chain Disruption", description: "Interruption in supply chain operations", category: "Operational", department: "Procurement", likelihood: 3, impact: 3, status: "Open", responseStrategy: "Avoid" },
+    { riskId: "RID010", name: "Insider Threat", description: "Malicious or negligent actions by employees", category: "IT/Cyber", department: "IT Operations", likelihood: 2, impact: 4, status: "Closed", responseStrategy: "Treat" },
+    { riskId: "RID011", name: "Cloud Security", description: "Security vulnerabilities in cloud infrastructure", category: "IT/Cyber", department: "IT Operations", likelihood: 3, impact: 4, status: "In Progress", responseStrategy: "Treat" },
+    { riskId: "RID012", name: "Business Continuity", description: "Inability to recover from major disruptions", category: "Operational", department: "Operations", likelihood: 2, impact: 5, status: "Awaiting Approval", responseStrategy: null },
   ];
 
   const createdRisks: { [key: string]: string } = {};
@@ -2365,10 +2365,10 @@ async function main() {
 
   // Create Risk-Threat mappings
   const riskThreatMappings = [
-    { riskId: "RISK-0001", threats: ["Cyber Attack", "Data Theft", "Malware", "Phishing"] },
-    { riskId: "RISK-0006", threats: ["System Failure", "Natural Disaster"] },
-    { riskId: "RISK-0010", threats: ["Insider Threat", "Data Theft"] },
-    { riskId: "RISK-0011", threats: ["Cyber Attack", "Malware", "Misconfiguration"] },
+    { riskId: "RID001", threats: ["Cyber Attack", "Data Theft", "Malware", "Phishing"] },
+    { riskId: "RID006", threats: ["System Failure", "Natural Disaster"] },
+    { riskId: "RID010", threats: ["Insider Threat", "Data Theft"] },
+    { riskId: "RID011", threats: ["Cyber Attack", "Malware", "Misconfiguration"] },
   ];
 
   for (const mapping of riskThreatMappings) {
@@ -2387,10 +2387,10 @@ async function main() {
 
   // Create Risk-Vulnerability mappings
   const riskVulnMappings = [
-    { riskId: "RISK-0001", vulns: ["Weak Authentication", "Poor Access Controls", "Lack of Encryption"] },
-    { riskId: "RISK-0006", vulns: ["Unpatched Systems", "Legacy Systems", "Missing Backups"] },
-    { riskId: "RISK-0010", vulns: ["Poor Access Controls", "Inadequate Logging", "Untrained Staff"] },
-    { riskId: "RISK-0011", vulns: ["Misconfiguration", "Unpatched Systems", "Shadow IT"] },
+    { riskId: "RID001", vulns: ["Weak Authentication", "Poor Access Controls", "Lack of Encryption"] },
+    { riskId: "RID006", vulns: ["Unpatched Systems", "Legacy Systems", "Missing Backups"] },
+    { riskId: "RID010", vulns: ["Poor Access Controls", "Inadequate Logging", "Untrained Staff"] },
+    { riskId: "RID011", vulns: ["Misconfiguration", "Unpatched Systems", "Shadow IT"] },
   ];
 
   for (const mapping of riskVulnMappings) {
@@ -2409,9 +2409,9 @@ async function main() {
 
   // Create Risk Assessments
   const assessments = [
-    { assessmentId: "RA-0001", riskId: "RISK-0001", likelihood: 4, impact: 5, status: "Approved", date: "2025-01-15" },
-    { assessmentId: "RA-0002", riskId: "RISK-0006", likelihood: 3, impact: 5, status: "Approved", date: "2025-01-10" },
-    { assessmentId: "RA-0003", riskId: "RISK-0002", likelihood: 3, impact: 4, status: "Submitted", date: "2025-01-20" },
+    { assessmentId: "RA-0001", riskId: "RID001", likelihood: 4, impact: 5, status: "Approved", date: "2025-01-15" },
+    { assessmentId: "RA-0002", riskId: "RID006", likelihood: 3, impact: 5, status: "Approved", date: "2025-01-10" },
+    { assessmentId: "RA-0003", riskId: "RID002", likelihood: 3, impact: 4, status: "Submitted", date: "2025-01-20" },
   ];
 
   for (const assessment of assessments) {
@@ -2450,10 +2450,10 @@ async function main() {
   // Create Risk Responses
   // Response Type: Treat, Transfer, Avoid, Accept (matching website)
   const responses = [
-    { responseId: "RR-0001", riskId: "RISK-0001", responseType: "Treat", actionTitle: "Implement Multi-Factor Authentication", status: "In Progress", dueDate: "2025-03-01" },
-    { responseId: "RR-0002", riskId: "RISK-0001", responseType: "Treat", actionTitle: "Deploy Data Loss Prevention", status: "Open", dueDate: "2025-04-01" },
-    { responseId: "RR-0003", riskId: "RISK-0006", responseType: "Treat", actionTitle: "Implement High Availability", status: "In Progress", dueDate: "2025-02-15" },
-    { responseId: "RR-0004", riskId: "RISK-0010", responseType: "Treat", actionTitle: "Enhanced Access Monitoring", status: "Completed", dueDate: "2025-01-15" },
+    { responseId: "RR-0001", riskId: "RID001", responseType: "Treat", actionTitle: "Implement Multi-Factor Authentication", status: "In Progress", dueDate: "2025-03-01" },
+    { responseId: "RR-0002", riskId: "RID001", responseType: "Treat", actionTitle: "Deploy Data Loss Prevention", status: "Open", dueDate: "2025-04-01" },
+    { responseId: "RR-0003", riskId: "RID006", responseType: "Treat", actionTitle: "Implement High Availability", status: "In Progress", dueDate: "2025-02-15" },
+    { responseId: "RR-0004", riskId: "RID010", responseType: "Treat", actionTitle: "Enhanced Access Monitoring", status: "Completed", dueDate: "2025-01-15" },
   ];
 
   for (const response of responses) {
