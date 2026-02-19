@@ -280,7 +280,7 @@ export default function ReportsPage() {
       {/* Management Report - Featured Card */}
       <button
         onClick={() => setIsManagementReportOpen(true)}
-        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
+        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 ltr:text-left rtl:text-right transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
       >
         <div className="p-2.5 bg-primary-100/80 rounded-lg flex-shrink-0">
           <FileBarChart className="h-5 w-5 text-primary-600" />
@@ -289,7 +289,7 @@ export default function ReportsPage() {
           <h3 className="text-sm font-semibold text-primary-900">{t("Management Report")}</h3>
           <p className="text-xs text-primary-600/70 mt-0.5">{t("Generate a comprehensive compliance report with charts across frameworks, controls, and governance")}</p>
         </div>
-        <ChevronRight className="h-4 w-4 text-primary-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className="h-4 w-4 text-primary-300 flex-shrink-0 transition-transform ltr:group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
       </button>
 
       {/* Reports Card */}
@@ -312,7 +312,7 @@ export default function ReportsPage() {
                       : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  {t(tab.label)} <span className="ml-1 text-[10px] opacity-60">{count}</span>
+                  {t(tab.label)} <span className="ltr:ml-1 rtl:mr-1 text-[10px] opacity-60">{count}</span>
                 </button>
               );
             })}
@@ -341,13 +341,13 @@ export default function ReportsPage() {
                   setSelectedReport(report.id);
                   setIsGenerateDialogOpen(true);
                 }}
-                className="group w-full flex items-center justify-between px-3 sm:px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+                className="group w-full flex items-center justify-between px-3 sm:px-5 py-3.5 ltr:text-left rtl:text-right hover:bg-slate-50/60 transition-colors cursor-pointer"
               >
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-medium text-slate-800">{t(report.title)}</h4>
                   <p className="text-xs text-slate-500 mt-0.5">{t(report.description)}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
+                <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 transition-transform ltr:group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
               </button>
             ))
           ) : (
@@ -441,7 +441,7 @@ export default function ReportsPage() {
             {/* Checkbox grid - 2 columns, 5 rows matching UAT layout */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
               {/* Row 1 */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="overallCompliance"
                   checked={overallCompliance}
@@ -456,7 +456,7 @@ export default function ReportsPage() {
                   {t("Overall Compliance")}
                 </label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="frameworkCompliance"
                   checked={frameworkCompliance}
@@ -473,7 +473,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Row 2 */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="controlRequirementsByFramework"
                   checked={controlRequirementsByFramework}
@@ -488,7 +488,7 @@ export default function ReportsPage() {
                   {t("Control Requirements by Framework")}
                 </label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="controlImplementationsByFramework"
                   checked={controlImplementationsByFramework}
@@ -505,7 +505,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Row 3 */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="complianceRequirementsExceptions"
                   checked={complianceRequirementsExceptions}
@@ -520,7 +520,7 @@ export default function ReportsPage() {
                   {t("Compliance Requirements Exceptions")}
                 </label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="controlExceptions"
                   checked={controlExceptions}
@@ -537,7 +537,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Row 4 */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="frameworkWithGovernanceData"
                   checked={frameworkWithGovernanceData}
@@ -552,7 +552,7 @@ export default function ReportsPage() {
                   {t("Framework along with Governance Data")}
                 </label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="complianceIssues"
                   checked={complianceIssues}
@@ -569,7 +569,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Row 5 */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <Checkbox
                   id="domainBasedProgressCompliance"
                   checked={domainBasedProgressCompliance}

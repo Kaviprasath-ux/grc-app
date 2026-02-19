@@ -957,7 +957,7 @@ export default function EvidencesMasterDataPage() {
                       <SelectItem value="_all">{t("All Groupings")}</SelectItem>
                       {functionalGroupings.map((grouping) => (
                         <SelectItem key={grouping} value={grouping!}>
-                          {grouping}
+                          {t(grouping!)}
                         </SelectItem>
                       ))}
                     </SelectContent>

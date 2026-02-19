@@ -810,7 +810,7 @@ export default function ControlsMasterDataPage() {
                         <SelectItem value="none">{t("Select grouping")}</SelectItem>
                         {functionalGroupings.map((g) => (
                           <SelectItem key={g} value={g}>
-                            {g}
+                            {t(g)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -943,7 +943,7 @@ export default function ControlsMasterDataPage() {
                         {t("Functional Grouping")}
                       </p>
                       <p className="text-sm text-slate-800">
-                        {formData.functionalGrouping}
+                        {formData.functionalGrouping ? t(formData.functionalGrouping) : "-"}
                       </p>
                     </div>
                   </div>
@@ -1104,7 +1104,7 @@ export default function ControlsMasterDataPage() {
                     {control.description || "-"}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
-                    {control.functionalGrouping || "-"}
+                    {control.functionalGrouping ? t(control.functionalGrouping) : "-"}
                   </TableCell>
                   <TableCell className="py-3 text-sm">
                     <Badge
@@ -1281,7 +1281,7 @@ export default function ControlsMasterDataPage() {
                     <SelectItem value="none">{t("None")}</SelectItem>
                     {functionalGroupings.map((g) => (
                       <SelectItem key={g} value={g}>
-                        {g}
+                        {t(g)}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -651,7 +651,7 @@ export default function GovernanceMasterDataPage() {
                   <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{policy.name}</TableCell>
                   <TableCell className="py-3 text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[policy.status] || "bg-slate-100 text-slate-600"}`}>
-                      {policy.status}
+                      {t(policy.status)}
                     </span>
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
@@ -660,9 +660,9 @@ export default function GovernanceMasterDataPage() {
                   <TableCell className="py-3 text-sm text-slate-600 max-w-[150px] truncate">
                     {policy.content || "-"}
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-600">{policy.recurrence || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.recurrence ? t(policy.recurrence) : "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{policy.code}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-600">{policy.documentType}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{t(policy.documentType)}</TableCell>
                   <TableCell className="py-3 text-sm pe-5">
                     <div className="flex gap-0.5">
                       <Button
@@ -827,7 +827,7 @@ export default function GovernanceMasterDataPage() {
                       <SelectItem value="none">{t("Select document type")}</SelectItem>
                       {documentTypes.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type}
+                          {t(type)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -856,7 +856,7 @@ export default function GovernanceMasterDataPage() {
                       <SelectItem value="none">{t("Select recurrence")}</SelectItem>
                       {recurrenceOptions.map((option) => (
                         <SelectItem key={option} value={option}>
-                          {option}
+                          {t(option)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -949,7 +949,7 @@ export default function GovernanceMasterDataPage() {
                       <SelectItem value="all">{t("All Groupings")}</SelectItem>
                       {functionalGroupings.map((fg) => (
                         <SelectItem key={fg} value={fg}>
-                          {fg}
+                          {t(fg)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1027,11 +1027,11 @@ export default function GovernanceMasterDataPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Document Type")}</Label>
-                    <p className="text-sm text-slate-800 mt-1">{formData.documentType}</p>
+                    <p className="text-sm text-slate-800 mt-1">{formData.documentType ? t(formData.documentType) : "-"}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Recurrence")}</Label>
-                    <p className="text-sm text-slate-800 mt-1">{formData.recurrence}</p>
+                    <p className="text-sm text-slate-800 mt-1">{formData.recurrence ? t(formData.recurrence) : "-"}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
@@ -1152,7 +1152,7 @@ export default function GovernanceMasterDataPage() {
                     <SelectItem value="none">{t("None")}</SelectItem>
                     {documentTypes.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {type}
+                        {t(type)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1218,7 +1218,7 @@ export default function GovernanceMasterDataPage() {
                     <SelectItem value="none">{t("None")}</SelectItem>
                     {recurrenceOptions.map((option) => (
                       <SelectItem key={option} value={option}>
-                        {option}
+                        {t(option)}
                       </SelectItem>
                     ))}
                   </SelectContent>
