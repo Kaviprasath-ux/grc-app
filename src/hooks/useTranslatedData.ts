@@ -95,7 +95,7 @@ export function clearTranslationCache(): void {
  * Returns the original array with translated fields overlaid when locale != "en".
  * Zero API calls when locale is "en".
  */
-export function useTranslatedData<T extends Record<string, unknown>>(
+export function useTranslatedData<T extends object>(
   data: T[] | undefined | null,
   options: TranslatedDataOptions
 ): TranslatedDataResult<T[]> {
@@ -121,7 +121,7 @@ export function useTranslatedData<T extends Record<string, unknown>>(
     }
 
     const recordIds = data
-      .map((item) => item[idField] as string)
+      .map((item) => (item as Record<string, unknown>)[idField] as string)
       .filter(Boolean);
 
     if (recordIds.length === 0) {
@@ -186,7 +186,7 @@ export function useTranslatedData<T extends Record<string, unknown>>(
  * Returns the original record with translated fields overlaid when locale != "en".
  * Returns null if input is null/undefined.
  */
-export function useTranslatedRecord<T extends Record<string, unknown>>(
+export function useTranslatedRecord<T extends object>(
   record: T | null | undefined,
   options: TranslatedDataOptions
 ): TranslatedDataResult<T | null> {
@@ -210,7 +210,7 @@ export function useTranslatedRecord<T extends Record<string, unknown>>(
       return;
     }
 
-    const recordId = record[idField] as string;
+    const recordId = (record as Record<string, unknown>)[idField] as string;
     if (!recordId) {
       setTranslatedRecord(record);
       setIsLoading(false);
@@ -312,7 +312,7 @@ export function triggerTranslation(
  * Overlay translated fields onto an array of records.
  * Only replaces fields that have translations — other fields stay as-is.
  */
-function overlayTranslations<T extends Record<string, unknown>>(
+function overlayTranslations<T extends object>(
   data: T[],
   translations: Record<string, Record<string, string>>,
   idField: string
@@ -320,7 +320,7 @@ function overlayTranslations<T extends Record<string, unknown>>(
   if (!translations || Object.keys(translations).length === 0) return data;
 
   return data.map((item) => {
-    const recordId = item[idField] as string;
+    const recordId = (item as Record<string, unknown>)[idField] as string;
     const recordTranslations = translations[recordId];
     if (!recordTranslations) return item;
     return overlaySingleRecord(item, recordTranslations);
@@ -330,7 +330,7 @@ function overlayTranslations<T extends Record<string, unknown>>(
 /**
  * Overlay translated fields onto a single record.
  */
-function overlaySingleRecord<T extends Record<string, unknown>>(
+function overlaySingleRecord<T extends object>(
   record: T,
   translations: Record<string, string>
 ): T {

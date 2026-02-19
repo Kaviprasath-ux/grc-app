@@ -61,7 +61,7 @@ export const POST = withAuth(
         try {
           // Dynamically query the model to get records
           const modelLower = model.modelName.charAt(0).toLowerCase() + model.modelName.slice(1);
-          const prismaModel = (prisma as Record<string, unknown>)[modelLower] as {
+          const prismaModel = (prisma as unknown as Record<string, unknown>)[modelLower] as {
             findMany: (args: Record<string, unknown>) => Promise<Array<Record<string, unknown>>>;
           } | undefined;
 

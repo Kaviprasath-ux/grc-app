@@ -241,6 +241,18 @@ export async function saveFrameworkFromAIResult(
       existingControls.map((c) => [c.name.trim().toLowerCase(), c.id])
     );
 
+    // Fetch existing policies for this customer (match by code and name)
+    const existingPolicies = await tx.policy.findMany({
+      where: { customerAccountId },
+      select: { id: true, code: true, name: true },
+    });
+    const existingPolicyByCode = new Map<string, string>(
+      existingPolicies.map((p) => [p.code, p.id])
+    );
+    const existingPolicyByName = new Map<string, { id: string; code: string }>(
+      existingPolicies.map((p) => [p.name.trim().toLowerCase(), { id: p.id, code: p.code }])
+    );
+
     const normalizeName = (s: string) => (s || "").trim().toLowerCase();
 
     if (normalized.requirements) {
@@ -300,8 +312,10 @@ export async function saveFrameworkFromAIResult(
     // STEP 4b: Create Policies and Evidences from AI result
     // ═══════════════════════════════════════════════════════════════
     let policyCount = 0;
+    let linkedPolicyCount = 0;
     let evidenceCount = 0;
     const policyCodeUsed = new Set<string>();
+    const policyControlLinks = new Set<string>(); // Track policy-control links to avoid duplicates
     const evidenceSeq = { n: 0 };
 
     if (normalized.requirements) {
@@ -312,27 +326,53 @@ export async function saveFrameworkFromAIResult(
           if (!controlDbId) continue;
 
           for (const pp of ctrl.policy_procedures || []) {
-            const baseCode = generatePolicyCode(pp.policy_procedure_name);
-            let code = baseCode;
-            let suffix = 0;
-            while (policyCodeUsed.has(code)) {
-              code = `${baseCode}-${++suffix}`;
+            const policyName = pp.policy_procedure_name;
+            const normalizedPolicyName = normalizeName(policyName);
+
+            let policyId: string;
+
+            // Check if policy with same name already exists
+            const existingByName = existingPolicyByName.get(normalizedPolicyName);
+            if (existingByName) {
+              // Link to existing policy instead of creating duplicate
+              policyId = existingByName.id;
+              linkedPolicyCount++;
+            } else {
+              // Generate unique code - check both local batch AND database
+              const baseCode = generatePolicyCode(policyName);
+              let code = baseCode;
+              let suffix = 0;
+              while (policyCodeUsed.has(code) || existingPolicyByCode.has(code)) {
+                code = `${baseCode}-${++suffix}`;
+              }
+              policyCodeUsed.add(code);
+              existingPolicyByCode.set(code, 'pending'); // Mark as used for subsequent iterations
+
+              const policy = await tx.policy.create({
+                data: {
+                  customerAccountId,
+                  code,
+                  name: policyName,
+                  version: "1.0",
+                  documentType: mapDocType(pp.policy_procedure_type),
+                  status: "Not Uploaded",
+                },
+              });
+              policyId = policy.id;
+              policyCount++;
+
+              // Add to existing maps for subsequent iterations
+              existingPolicyByName.set(normalizedPolicyName, { id: policyId, code });
             }
-            policyCodeUsed.add(code);
-            const policy = await tx.policy.create({
-              data: {
-                customerAccountId,
-                code,
-                name: pp.policy_procedure_name,
-                version: "1.0",
-                documentType: mapDocType(pp.policy_procedure_type),
-                status: "Not Uploaded",
-              },
-            });
-            await tx.policyControl.create({
-              data: { policyId: policy.id, controlId: controlDbId },
-            });
-            policyCount++;
+
+            // Create PolicyControl link (check for duplicates)
+            const policyControlKey = `${policyId}|${controlDbId}`;
+            if (!policyControlLinks.has(policyControlKey)) {
+              policyControlLinks.add(policyControlKey);
+              await tx.policyControl.create({
+                data: { policyId, controlId: controlDbId },
+              });
+            }
           }
 
           for (const ev of ctrl.evidences || []) {
@@ -357,8 +397,13 @@ export async function saveFrameworkFromAIResult(
       }
     }
 
-    if (policyCount > 0 || evidenceCount > 0) {
-      console.log(`  ✅ ${policyCount} policies created`);
+    if (linkedPolicyCount > 0) {
+      console.log(`  ✅ ${linkedPolicyCount} policies linked to existing records`);
+    }
+    if (policyCount > 0) {
+      console.log(`  ✅ ${policyCount} new policies created`);
+    }
+    if (evidenceCount > 0) {
       console.log(`  ✅ ${evidenceCount} evidences created`);
     }
 
