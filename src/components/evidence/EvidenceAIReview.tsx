@@ -9,6 +9,7 @@ import { Brain, Loader2, CheckCircle, XCircle, AlertTriangle, RefreshCw, Trash2 
 import { toast } from "sonner";
 import { useEvidenceAIStatus } from "@/hooks/useEvidenceAIStatus";
 import { AIStatusBadge } from "./AIStatusBadge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface EvidenceAIReviewProps {
   evidenceId: string;
@@ -52,11 +53,12 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
   const [triggering, setTriggering] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const { t } = useLanguage();
 
   // Trigger AI Ingest
   const handleTriggerIngest = async () => {
     if (!hasAttachments) {
-      toast.error("Please upload evidence files first");
+      toast.error(t("Please upload evidence files first"));
       return;
     }
 
@@ -70,11 +72,11 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to trigger AI ingest");
+        throw new Error(errorData.error || t("Failed to trigger AI ingest"));
       }
 
       const data = await response.json();
-      toast.success("AI ingest started successfully");
+      toast.success(t("AI ingest started successfully"));
 
       // Start polling for status
       startPolling();
@@ -83,7 +85,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
       await refresh();
     } catch (err) {
       console.error("Error triggering ingest:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to trigger AI ingest");
+      toast.error(err instanceof Error ? err.message : t("Failed to trigger AI ingest"));
     } finally {
       setTriggering(false);
     }
@@ -101,17 +103,17 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to trigger AI review");
+        throw new Error(errorData.error || t("Failed to trigger AI review"));
       }
 
       const data = await response.json();
-      toast.success("AI review completed successfully");
+      toast.success(t("AI review completed successfully"));
 
       // Refresh status to show results
       await refresh();
     } catch (err) {
       console.error("Error triggering review:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to trigger AI review");
+      toast.error(err instanceof Error ? err.message : t("Failed to trigger AI review"));
     } finally {
       setReviewing(false);
     }
@@ -129,18 +131,18 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to clear AI review");
+        throw new Error(errorData.error || t("Failed to clear AI review"));
       }
 
       const data = await response.json();
       console.log("[Clear AI Review] Cleanup completed:", data);
-      toast.success("AI review cleared successfully");
+      toast.success(t("AI review cleared successfully"));
 
       // Refresh status
       await refresh();
     } catch (err) {
       console.error("Error clearing AI review:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to clear AI review");
+      toast.error(err instanceof Error ? err.message : t("Failed to clear AI review"));
     } finally {
       setClearing(false);
     }
@@ -184,7 +186,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Brain className={`h-5 w-5 ${reviewStatus === "COMPLETED" ? "text-green-600" : "text-slate-400"}`} />
-            <span className="font-medium">AI Review</span>
+            <span className="font-medium">{t("AI Review")}</span>
           </div>
           <div className="flex items-center gap-2">
             {ingestStatus !== "NOT_STARTED" && <AIStatusBadge status={ingestStatus} size="sm" />}
@@ -199,7 +201,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
                 onClick={handleClearAIReview}
                 disabled={clearing || isProcessing}
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                title="Clear AI Review"
+                title={t("Clear AI Review")}
               >
                 {clearing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -216,7 +218,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
         {ingestStatus === "NOT_STARTED" && (
           <div className="space-y-2">
             <p className="text-sm text-slate-600">
-              Upload evidence files and trigger AI processing to extract and analyze content.
+              {t("Upload evidence files and trigger AI processing to extract and analyze content.")}
             </p>
             <Button
               onClick={handleTriggerIngest}
@@ -226,18 +228,18 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
             >
               {triggering ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Starting AI Processing...
+                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                  {t("Starting AI Processing...")}
                 </>
               ) : (
                 <>
-                  <Brain className="h-4 w-4 mr-2" />
-                  Start AI Processing
+                  <Brain className="h-4 w-4 me-2" />
+                  {t("Start AI Processing")}
                 </>
               )}
             </Button>
             {!hasAttachments && (
-              <p className="text-xs text-amber-600">Upload evidence files first</p>
+              <p className="text-xs text-amber-600">{t("Upload evidence files first")}</p>
             )}
           </div>
         )}
@@ -246,7 +248,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
           <Alert className="bg-blue-50 border-blue-200">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
             <AlertDescription className="text-blue-800">
-              AI is processing your evidence files. This may take a few minutes...
+              {t("AI is processing your evidence files. This may take a few minutes...")}
             </AlertDescription>
           </Alert>
         )}
@@ -255,7 +257,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
           <Alert variant="destructive">
             <XCircle className="h-4 w-4" />
             <AlertDescription>
-              AI processing failed: {status.ingest.latestJob.error}
+              {t("AI processing failed:")} {status.ingest.latestJob.error}
             </AlertDescription>
           </Alert>
         )}
@@ -267,10 +269,10 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
               <CheckCircle className="h-4 w-4 text-green-600" />
               <p className="text-sm text-slate-600">
                 {reviewStatus === "COMPLETED"
-                  ? "AI review completed"
+                  ? t("AI review completed")
                   : reviewStatus === "IN_PROGRESS"
-                    ? "AI review in progress..."
-                    : "Evidence processed and ready for AI review"}
+                    ? t("AI review in progress...")
+                    : t("Evidence processed and ready for AI review")}
               </p>
             </div>
 
@@ -282,13 +284,13 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
               >
                 {reviewing || reviewStatus === "IN_PROGRESS" ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Reviewing...
+                    <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                    {t("Reviewing...")}
                   </>
                 ) : (
                   <>
-                    <Brain className="h-4 w-4 mr-2" />
-                    Start AI Review
+                    <Brain className="h-4 w-4 me-2" />
+                    {t("Start AI Review")}
                   </>
                 )}
               </Button>
@@ -301,13 +303,13 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
           <div className="mt-4 space-y-3 border-t pt-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              <h4 className="font-semibold text-slate-800">AI Review Results</h4>
+              <h4 className="font-semibold text-slate-800">{t("AI Review Results")}</h4>
             </div>
 
             {/* Compliance Status */}
             {latestReview.critique && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600">Status:</span>
+                <span className="text-sm text-slate-600">{t("Status")}:</span>
                 <Badge variant={latestReview.critique === "compliant" ? "default" : "destructive"}>
                   {latestReview.critique}
                 </Badge>
@@ -316,7 +318,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
 
             {latestReview.complianceScore !== null && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600">Compliance Score:</span>
+                <span className="text-sm text-slate-600">{t("Compliance Score")}:</span>
                 <Badge variant={latestReview.complianceScore >= 80 ? "default" : "destructive"}>
                   {latestReview.complianceScore.toFixed(1)}%
                 </Badge>
@@ -325,7 +327,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
 
             {latestReview.complianceSummary && (
               <div className="bg-slate-50 rounded-lg p-3">
-                <h5 className="text-sm font-medium text-slate-700 mb-2">AI Analysis</h5>
+                <h5 className="text-sm font-medium text-slate-700 mb-2">{t("AI Analysis")}</h5>
                 <p className="text-sm text-slate-600 whitespace-pre-wrap">
                   {latestReview.complianceSummary}
                 </p>
@@ -336,7 +338,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
               <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
                 <h5 className="text-sm font-medium text-amber-900 mb-2 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  Identified Issues
+                  {t("Identified Issues")}
                 </h5>
                 <div className="space-y-2">
                   {latestReview.gaps.map((gap: GapItem | string, idx: number) => (
@@ -346,10 +348,10 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
                       ) : (
                         <>
                           {gap.issue && <p className="font-medium">{gap.issue}</p>}
-                          {gap.risk && <p className="text-amber-700 mt-1">Risk: {gap.risk}</p>}
+                          {gap.risk && <p className="text-amber-700 mt-1">{t("Risk")}: {gap.risk}</p>}
                           {gap.severity && (
                             <Badge variant="outline" className="mt-1 text-xs">
-                              Severity: {gap.severity}
+                              {t("Severity")}: {gap.severity}
                             </Badge>
                           )}
                         </>
@@ -362,7 +364,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
 
             {latestReview.suggestions && latestReview.suggestions.length > 0 && (
               <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                <h5 className="text-sm font-medium text-blue-900 mb-2">Risk Assessment</h5>
+                <h5 className="text-sm font-medium text-blue-900 mb-2">{t("Risk Assessment")}</h5>
                 <div className="space-y-2">
                   {latestReview.suggestions.map((suggestion: SuggestionItem | string, idx: number) => (
                     <div key={idx} className="text-sm text-blue-800 border-b border-blue-200 pb-2 last:border-0 last:pb-0">
@@ -373,7 +375,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
                           {suggestion.risk && <p>{suggestion.risk}</p>}
                           {suggestion.severity && (
                             <Badge variant="outline" className="mt-1 text-xs">
-                              Severity: {suggestion.severity}
+                              {t("Severity")}: {suggestion.severity}
                             </Badge>
                           )}
                         </>
@@ -387,12 +389,12 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
             {/* Raw Response Details - show detailed items if available */}
             {latestReview.rawResponse && Array.isArray(latestReview.rawResponse) && latestReview.rawResponse.length > 0 && (
               <div className="bg-slate-50 rounded-lg p-3">
-                <h5 className="text-sm font-medium text-slate-700 mb-2">Control Assessment Details</h5>
+                <h5 className="text-sm font-medium text-slate-700 mb-2">{t("Control Assessment Details")}</h5>
                 <div className="space-y-3">
                   {latestReview.rawResponse.map((item: RawResponseItem, idx: number) => (
                     <div key={idx} className="border-b border-slate-200 pb-2 last:border-0 last:pb-0">
                       {item.control_code && (
-                        <p className="text-xs font-medium text-slate-500">Control: {item.control_code}</p>
+                        <p className="text-xs font-medium text-slate-500">{t("Control")}: {item.control_code}</p>
                       )}
                       {item.answer && (
                         <p className="text-sm text-slate-600 mt-1">{item.answer}</p>
@@ -416,7 +418,7 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
             )}
 
             <p className="text-xs text-slate-400">
-              Reviewed: {new Date(latestReview.createdAt).toLocaleString()}
+              {t("Reviewed")}: {new Date(latestReview.createdAt).toLocaleString()}
             </p>
           </div>
         )}
