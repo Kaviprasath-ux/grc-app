@@ -845,7 +845,7 @@ export default function UsersPage() {
       </nav>
 
       {/* Page Header */}
-      <div className={`flex flex-col gap-1 ${isRTL ? "items-end" : ""}`}>
+      <div className="flex flex-col gap-1">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Users")}</h1>
       </div>
 
