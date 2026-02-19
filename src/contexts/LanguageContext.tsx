@@ -46,8 +46,20 @@ import {
   localeFlags,
 } from "@/i18n/config";
 
+// Direct imports - works with HMR/Turbopack for instant updates
+import enMessages from "@/../locales/en.json";
+import arMessages from "@/../locales/ar.json";
+import lvMessages from "@/../locales/lv.json";
+
 // Type for messages (phrase-based keys)
 type Messages = Record<string, string>;
+
+// Pre-loaded message map
+const allMessages: Record<Locale, Messages> = {
+  en: enMessages as Messages,
+  ar: arMessages as Messages,
+  lv: lvMessages as Messages,
+};
 
 interface LanguageContextType {
   locale: Locale;
@@ -63,31 +75,11 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-// Cache for loaded messages
-const messagesCache: Partial<Record<Locale, Messages>> = {};
-
 /**
- * Load messages for a locale from generated JSON files
+ * Get messages for a locale from pre-loaded imports
  */
-async function loadMessages(locale: Locale): Promise<Messages> {
-  // Return from cache if available
-  if (messagesCache[locale]) {
-    return messagesCache[locale]!;
-  }
-
-  try {
-    // Dynamic import of locale file
-    const messages = await import(`../../locales/${locale}.json`);
-    messagesCache[locale] = messages.default || messages;
-    return messagesCache[locale]!;
-  } catch (error) {
-    console.error(`Failed to load messages for locale: ${locale}`, error);
-    // Fall back to English
-    if (locale !== "en") {
-      return loadMessages("en");
-    }
-    return {};
-  }
+function getMessages(locale: Locale): Messages {
+  return allMessages[locale] || allMessages.en;
 }
 
 /**
@@ -122,8 +114,8 @@ interface LanguageProviderProps {
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const { data: session } = useSession();
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
-  const [messages, setMessages] = useState<Messages>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [messages, setMessages] = useState<Messages>(allMessages[defaultLocale]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize locale on mount
@@ -146,24 +138,11 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     }
   }, [session]);
 
-  // Load messages when locale changes
+  // Load messages when locale changes (synchronous from imports)
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      const loadedMessages = await loadMessages(locale);
-      if (!cancelled) {
-        setMessages(loadedMessages);
-        setIsLoading(false);
-      }
-    }
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
+    const loadedMessages = getMessages(locale);
+    setMessages(loadedMessages);
+    setIsLoading(false);
   }, [locale]);
 
   // Update document direction and lang when locale changes
@@ -310,6 +289,6 @@ export function useLanguageSafe(): LanguageContextType {
  * @returns The translated phrase
  */
 export async function serverTranslate(phrase: string, locale: Locale = "en"): Promise<string> {
-  const messages = await loadMessages(locale);
+  const messages = getMessages(locale);
   return messages[phrase] || phrase;
 }

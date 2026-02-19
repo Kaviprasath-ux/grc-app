@@ -91,6 +91,7 @@ export default function RiskDashboardPage() {
     name: t(item.name),
   }));
 
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
@@ -99,7 +100,7 @@ export default function RiskDashboardPage() {
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Risk Dashboard")}</span>
       </nav>
 

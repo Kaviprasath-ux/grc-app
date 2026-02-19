@@ -89,8 +89,8 @@ interface Control {
 }
 
 const getSteps = (t: (key: string) => string) => [
-  { id: 1, name: t("riskDetails"), description: t("basicRiskInformation") },
-  { id: 2, name: t("riskMapping"), description: t("linkControlsToRisk") },
+  { id: 1, name: t("Risk Details"), description: t("Basic risk information") },
+  { id: 2, name: t("Risk Mapping"), description: t("Link controls to risk") },
 ];
 
 export default function NewRiskPage() {
@@ -435,15 +435,15 @@ export default function NewRiskPage() {
       });
 
       if (response.ok) {
-        toast.success("Risk created successfully");
+        toast.success(t("Risk created successfully"));
         router.push("/risks/register");
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || "Failed to create risk");
+        toast.error(errorData.error || t("Failed to create risk"));
       }
     } catch (error) {
       console.error("Failed to create risk:", error);
-      toast.error("Failed to create risk");
+      toast.error(t("Failed to create risk"));
     } finally {
       setLoading(false);
     }
@@ -469,7 +469,7 @@ export default function NewRiskPage() {
 
   const handleCreateCause = async () => {
     if (!newCauseName.trim()) {
-      toast.error(t("causeNameRequired") || "Cause name is required");
+      toast.error(t("Cause name is required"));
       return;
     } else if (!isValidName(newCauseName.trim())) {
       toast.error(t("Only letters, spaces, and hyphens are allowed"));
@@ -494,14 +494,14 @@ export default function NewRiskPage() {
         setCreateCauseDialogOpen(false);
         setNewCauseName("");
         setNewCauseDescription("");
-        toast.success(t("causeCreatedSuccessfully") || "Cause created successfully");
+        toast.success(t("Cause created successfully"));
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || "Failed to create cause");
+        toast.error(errorData.error || t("Failed to create cause"));
       }
     } catch (error) {
       console.error("Failed to create cause:", error);
-      toast.error("Failed to create cause");
+      toast.error(t("Failed to create cause"));
     } finally {
       setCreatingCause(false);
     }
@@ -519,7 +519,7 @@ export default function NewRiskPage() {
   }
 
   if (!canCreate) {
-    return <Unauthorized description={t("noPermissionToCreateRisks")} />;
+    return <Unauthorized description={t("You don't have permission to create risks")} />;
   }
 
   return (
@@ -540,7 +540,7 @@ export default function NewRiskPage() {
 
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("newRisk")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("New Risk")}</h1>
       </div>
 
       <Card>
@@ -603,11 +603,11 @@ export default function NewRiskPage() {
             {/* Step 1: Risk Details */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">{t("riskDetails")}</h3>
+                <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">{t("Risk Details")}</h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <Label htmlFor="riskId">{t("riskId")}</Label>
+                    <Label htmlFor="riskId">{t("Risk ID")}</Label>
                     <Input
                       id="riskId"
                       value={generatedRiskId}
@@ -616,12 +616,12 @@ export default function NewRiskPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="name">{t("riskName")} *</Label>
+                    <Label htmlFor="name">{t("Risk Name")} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
-                      placeholder={t("enterRiskName")}
+                      placeholder={t("Enter Risk Name")}
                       className={validationErrors.name ? "border-red-500" : ""}
                     />
                     {validationErrors.name && (
@@ -631,26 +631,26 @@ export default function NewRiskPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="description">{t("riskDescription")}</Label>
+                  <Label htmlFor="description">{t("Risk Description")}</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleInputChange("description", e.target.value)}
-                    placeholder={t("enterDescription")}
+                    placeholder={t("Enter description")}
                     rows={4}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <Label htmlFor="department">{t("department")} *</Label>
+                    <Label htmlFor="department">{t("Department")} *</Label>
                     <Select
                       value={formData.departmentId}
                       onValueChange={(value) => handleInputChange("departmentId", value)}
                       disabled={isDepartmentRole}
                     >
                       <SelectTrigger className={validationErrors.departmentId ? "border-red-500" : ""}>
-                        <SelectValue placeholder={t("selectDepartment")} />
+                        <SelectValue placeholder={t("Select Department")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
                         {departments.map((dept) => (
@@ -665,19 +665,19 @@ export default function NewRiskPage() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="owner">{t("riskOwner")} *</Label>
+                    <Label htmlFor="owner">{t("Risk Owner")} *</Label>
                     <Select
                       value={formData.ownerId}
                       onValueChange={(value) => handleInputChange("ownerId", value)}
                       disabled={!formData.departmentId}
                     >
                       <SelectTrigger className={validationErrors.ownerId ? "border-red-500" : ""}>
-                        <SelectValue placeholder={formData.departmentId ? t("selectOwner") : t("selectDepartmentFirst")} />
+                        <SelectValue placeholder={formData.departmentId ? t("Select Owner") : t("Select department first")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
                         {users.length === 0 ? (
                           <div className="py-2 px-3 text-sm text-muted-foreground">
-                            {t("noDepartmentReviewersFound")}
+                            {t("No department reviewers found")}
                           </div>
                         ) : (
                           users.map((user) => (
@@ -696,12 +696,12 @@ export default function NewRiskPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <Label htmlFor="riskSources">{t("riskSources")} *</Label>
+                    <Label htmlFor="riskSources">{t("Risk Sources")} *</Label>
                     <Input
                       id="riskSources"
                       value={formData.riskSources}
                       onChange={(e) => handleInputChange("riskSources", e.target.value)}
-                      placeholder={t("enterRiskSources")}
+                      placeholder={t("Enter risk sources")}
                       className={validationErrors.riskSources ? "border-red-500" : ""}
                     />
                     {validationErrors.riskSources && (
@@ -709,14 +709,14 @@ export default function NewRiskPage() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="category">{t("riskCategory")} *</Label>
+                    <Label htmlFor="category">{t("Risk Category")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => handleInputChange("categoryId", value)}
                       >
                         <SelectTrigger className={cn("flex-1", validationErrors.categoryId && "border-red-500")}>
-                          <SelectValue placeholder={t("selectCategory")} />
+                          <SelectValue placeholder={t("Select Category")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {translatedCategories.map((cat) => (
@@ -738,13 +738,13 @@ export default function NewRiskPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <Label htmlFor="riskType">{t("riskType")} *</Label>
+                    <Label htmlFor="riskType">{t("Risk Type")} *</Label>
                     <Select
                       value={formData.typeId}
                       onValueChange={(value) => handleInputChange("typeId", value)}
                     >
                       <SelectTrigger className={validationErrors.typeId ? "border-red-500" : ""}>
-                        <SelectValue placeholder={t("riskType")} />
+                        <SelectValue placeholder={t("Select Risk Type")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
                         {translatedRiskTypes.map((type) => (
@@ -760,13 +760,13 @@ export default function NewRiskPage() {
                   </div>
                   {riskTypes.find(rt => rt.id === formData.typeId)?.name === "Asset Risk" && (
                     <div>
-                      <Label>{t("impactedAsset")}</Label>
+                      <Label>{t("Impacted Asset")}</Label>
                       <Select
                         value={formData.impactedAssetId}
                         onValueChange={(value) => handleInputChange("impactedAssetId", value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t("selectImpactedAsset")} />
+                          <SelectValue placeholder={t("Select Impacted Asset")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {assets.map((asset) => (
@@ -780,13 +780,13 @@ export default function NewRiskPage() {
                   )}
                   {riskTypes.find(rt => rt.id === formData.typeId)?.name === "Process Risk" && (
                     <div>
-                      <Label>{t("impactedProcess")}</Label>
+                      <Label>{t("Impacted Process")}</Label>
                       <Select
                         value={formData.impactedProcessId}
                         onValueChange={(value) => handleInputChange("impactedProcessId", value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t("selectImpactedProcess")} />
+                          <SelectValue placeholder={t("Select Impacted Process")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {processes.map((process) => (
@@ -800,13 +800,13 @@ export default function NewRiskPage() {
                   )}
                   {!formData.typeId && (
                     <div>
-                      <Label className="text-muted-foreground">{t("impactedAssetProcess")}</Label>
+                      <Label className="text-muted-foreground">{t("Impacted Asset/Process")}</Label>
                       <Select disabled>
                         <SelectTrigger>
-                          <SelectValue placeholder={t("selectRiskTypeFirst")} />
+                          <SelectValue placeholder={t("Select Risk Type first")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          <SelectItem value="none">{t("selectRiskTypeFirst")}</SelectItem>
+                          <SelectItem value="none">{t("Select Risk Type first")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -815,13 +815,13 @@ export default function NewRiskPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <Label>{t("potentialThreats")} *</Label>
+                    <Label>{t("Potential Threats")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         onValueChange={(value) => addToSelection("selectedThreats", value)}
                       >
                         <SelectTrigger className={cn("flex-1", validationErrors.selectedThreats && "border-red-500")}>
-                          <SelectValue placeholder={t("selectThreats")} />
+                          <SelectValue placeholder={t("Select threats")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {translatedThreats.map((threat) => (
@@ -857,7 +857,7 @@ export default function NewRiskPage() {
                     )}
                   </div>
                   <div>
-                    <Label>{t("associatedVulnerabilities")} *</Label>
+                    <Label>{t("Associated Vulnerabilities")} *</Label>
                     <div className="flex gap-2">
                       <Select
                         onValueChange={(value) =>
@@ -865,7 +865,7 @@ export default function NewRiskPage() {
                         }
                       >
                         <SelectTrigger className={cn("flex-1", validationErrors.selectedVulnerabilities && "border-red-500")}>
-                          <SelectValue placeholder={t("selectVulnerabilities")} />
+                          <SelectValue placeholder={t("Select vulnerabilities")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {translatedVulnerabilities.map((vuln) => (
@@ -903,13 +903,13 @@ export default function NewRiskPage() {
                 </div>
 
                 <div>
-                  <Label>{t("cause")}</Label>
+                  <Label>{t("Cause")}</Label>
                   <div className="flex gap-2">
                     <Select
                       onValueChange={(value) => addToSelection("selectedCauses", value)}
                     >
                       <SelectTrigger className="flex-1 sm:max-w-md">
-                        <SelectValue placeholder={t("selectCause")} />
+                        <SelectValue placeholder={t("Select cause")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
                         {translatedCauses.map((cause) => (
@@ -948,10 +948,10 @@ export default function NewRiskPage() {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <h3 className="text-lg font-semibold text-slate-800">{t("controls")}</h3>
+                  <h3 className="text-lg font-semibold text-slate-800">{t("Controls")}</h3>
                   <Button variant="outline" onClick={() => setLinkControlDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    {t("linkControl")}
+                    {t("Link Control")}
                   </Button>
                 </div>
 
@@ -960,10 +960,10 @@ export default function NewRiskPage() {
                     <table className="w-full min-w-[500px]">
                       <thead className="bg-slate-50">
                         <tr className="h-12">
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("controlCode")}</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("name")}</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("domain")}</th>
-                          <th className="text-right px-4 text-sm font-medium text-slate-700">{t("action")}</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Control Code")}</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Name")}</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Domain")}</th>
+                          <th className="text-right px-4 text-sm font-medium text-slate-700">{t("Action")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -997,8 +997,8 @@ export default function NewRiskPage() {
                       <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                         <Link2 className="h-6 w-6 text-primary-400" />
                       </div>
-                      <p className="text-sm font-medium text-slate-600 mb-1">{t("noControlsLinkedYet")}</p>
-                      <p className="text-xs text-slate-400">{t("clickLinkControlToAssociate")}</p>
+                      <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked yet")}</p>
+                      <p className="text-xs text-slate-400">{t("Click Link Control to associate controls")}</p>
                     </div>
                   </div>
                 )}
@@ -1007,13 +1007,13 @@ export default function NewRiskPage() {
                 <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
                   <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
-                      <DialogTitle className="text-lg font-semibold text-slate-800">{t("linkControls")}</DialogTitle>
+                      <DialogTitle className="text-lg font-semibold text-slate-800">{t("Link Controls")}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-hidden flex flex-col px-4 sm:px-6 py-4">
                       <div className="relative mb-4">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
-                          placeholder={t("searchControls")}
+                          placeholder={t("Search controls")}
                           value={controlSearch}
                           onChange={(e) => setControlSearch(e.target.value)}
                           className="pl-9"
@@ -1024,9 +1024,9 @@ export default function NewRiskPage() {
                           <thead className="bg-slate-50 sticky top-0">
                             <tr className="h-12">
                               <th className="w-10 px-2 sm:px-3"></th>
-                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("controlCode")}</th>
-                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("name")}</th>
-                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("domain")}</th>
+                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("Control Code")}</th>
+                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("Name")}</th>
+                              <th className="text-left px-2 sm:px-3 text-sm font-medium text-slate-700">{t("Domain")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -1061,10 +1061,10 @@ export default function NewRiskPage() {
                     </div>
                     <div className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                       <span className="text-sm text-slate-500">
-                        {formData.selectedControls.length} {t("controlsSelected")}
+                        {formData.selectedControls.length} {t("controls selected")}
                       </span>
                       <Button onClick={() => setLinkControlDialogOpen(false)}>
-                        {t("done")}
+                        {t("Done")}
                       </Button>
                     </div>
                   </DialogContent>
@@ -1077,35 +1077,35 @@ export default function NewRiskPage() {
           <Dialog open={createCauseDialogOpen} onOpenChange={setCreateCauseDialogOpen}>
             <DialogContent className="max-w-[95vw] sm:max-w-[425px]" onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
-                <DialogTitle>{t("createNewCause") || "Create New Cause"}</DialogTitle>
+                <DialogTitle>{t("Create New Cause")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="causeName">{t("name")} *</Label>
+                  <Label htmlFor="causeName">{t("Name")} *</Label>
                   <Input
                     id="causeName"
                     value={newCauseName}
                     onChange={(e) => setNewCauseName(e.target.value)}
-                    placeholder={t("enterCauseName") || "Enter cause name"}
+                    placeholder={t("Enter cause name")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="causeDescription">{t("description")}</Label>
+                  <Label htmlFor="causeDescription">{t("Description")}</Label>
                   <Textarea
                     id="causeDescription"
                     value={newCauseDescription}
                     onChange={(e) => setNewCauseDescription(e.target.value)}
-                    placeholder={t("enterCauseDescription") || "Enter cause description (optional)"}
+                    placeholder={t("Enter cause description")}
                     rows={3}
                   />
                 </div>
               </div>
               <div className="flex flex-row justify-end gap-2">
                 <Button variant="outline" onClick={() => setCreateCauseDialogOpen(false)}>
-                  {t("cancel")}
+                  {t("Cancel")}
                 </Button>
                 <Button onClick={handleCreateCause} disabled={creatingCause || !newCauseName.trim()}>
-                  {creatingCause ? t("creating") || "Creating..." : t("create")}
+                  {creatingCause ? t("Creating...") : t("Create")}
                 </Button>
               </div>
             </DialogContent>
@@ -1121,16 +1121,16 @@ export default function NewRiskPage() {
               onClick={currentStep === 1 ? () => router.push("/risks/register") : handlePrevious}
             >
               {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
-              {currentStep === 1 ? t("cancel") : t("previous")}
+              {currentStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             {currentStep < steps.length ? (
               <Button onClick={handleNext}>
-                {t("next")}
+                {t("Next")}
                 <ChevronRight className="h-4 w-4 ms-1" />
               </Button>
             ) : (
               <Button onClick={handleSubmit} disabled={loading}>
-                {loading ? t("saving") : t("saveRisk")}
+                {loading ? t("Saving...") : t("Save Risk")}
               </Button>
             )}
           </div>
