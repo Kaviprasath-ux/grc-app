@@ -1404,7 +1404,7 @@ export default function GovernancePage() {
                     <span className="text-slate-400 mx-2">·</span>
                     <span className="text-sm text-slate-600 truncate">{gov.name}</span>
                   </div>
-                  <Badge variant="outline" className="text-xs shrink-0">{gov.documentType}</Badge>
+                  <Badge variant="outline" className="text-xs shrink-0">{t(gov.documentType)}</Badge>
                 </div>
               ))}
               {filteredGovernanceForLink.length === 0 && (

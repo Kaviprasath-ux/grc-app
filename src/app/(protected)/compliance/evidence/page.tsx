@@ -172,7 +172,7 @@ const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 export default function EvidencePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.evidence');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [evidences, setEvidences] = useState<Evidence[]>([]);
@@ -817,13 +817,13 @@ export default function EvidencePage() {
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" style={isRTL ? { direction: 'rtl' } : undefined}>
         <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <span className="text-primary-700 font-medium">{t("Evidence")}</span>
         </nav>
         <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
@@ -842,7 +842,7 @@ export default function EvidencePage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6" style={isRTL ? { direction: 'rtl' } : undefined}>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
@@ -859,7 +859,7 @@ export default function EvidencePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir={isRTL ? "rtl" : "ltr"}>
         <TabsList>
           <TabsTrigger value="evidence-request">
             {t("Evidence Request List")}
@@ -1223,7 +1223,7 @@ export default function EvidencePage() {
         if (!open) resetCreateForm();
         setCreateDialogOpen(open);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -1461,7 +1461,7 @@ export default function EvidencePage() {
                   </div>
                   <div>
                     <Label className="text-xs text-slate-500">{t("Recurrence")}</Label>
-                    <p className="font-medium text-slate-900">{createForm.recurrence}</p>
+                    <p className="font-medium text-slate-900">{createForm.recurrence ? t(createForm.recurrence) : "-"}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-slate-500">{t("Department")}</Label>
@@ -1542,7 +1542,7 @@ export default function EvidencePage() {
 
       {/* Delete All Dialog */}
       <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent style={isRTL ? { direction: 'rtl' } : undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Delete All Evidence")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1560,7 +1560,7 @@ export default function EvidencePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
@@ -1646,7 +1646,7 @@ export default function EvidencePage() {
         }
         setLinkEvidenceDialogOpen(open);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[80vh] flex flex-col" style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Header */}
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>

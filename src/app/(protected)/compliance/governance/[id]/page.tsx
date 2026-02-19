@@ -1455,7 +1455,7 @@ export default function GovernanceDetailPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {RECURRENCE_OPTIONS.map((r) => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                          <SelectItem key={r} value={r}>{t(r)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1763,12 +1763,12 @@ export default function GovernanceDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {RECURRENCE_OPTIONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                      <SelectItem key={r} value={r}>{t(r)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="text-sm text-slate-700">{policy.recurrence || "-"}</p>
+                <p className="text-sm text-slate-700">{policy.recurrence ? t(policy.recurrence) : "-"}</p>
               )}
             </div>
 
