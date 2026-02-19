@@ -198,6 +198,7 @@ export default function EvidencePage() {
   const artifactFileInputRef = useRef<HTMLInputElement>(null);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [artifactDragging, setArtifactDragging] = useState(false);
+  const [artifactUploading, setArtifactUploading] = useState(false);
   const [aiReviewLoading, setAiReviewLoading] = useState(false);
 
   // Link Evidence Dialog state
@@ -586,22 +587,49 @@ export default function EvidencePage() {
   };
 
   const handleArtifactUpload = async (files: FileList) => {
-    for (const file of Array.from(files)) {
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
+    setArtifactUploading(true);
+    let successCount = 0;
+    let failCount = 0;
+    try {
+      for (const file of Array.from(files)) {
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
 
-        const response = await fetch("/api/artifacts", {
-          method: "POST",
-          body: formData,
-        });
+          const response = await fetch("/api/artifacts", {
+            method: "POST",
+            body: formData,
+          });
 
-        if (response.ok) {
-          // Refresh artifacts list after upload
-          await fetchArtifacts();
+          if (response.ok) {
+            successCount++;
+          } else {
+            failCount++;
+            const errorData = await response.json().catch(() => ({}));
+            console.error("Artifact upload failed:", errorData.error || response.statusText);
+          }
+        } catch (error) {
+          failCount++;
+          console.error("Error uploading artifact:", error);
         }
-      } catch (error) {
-        console.error("Error uploading artifact:", error);
+      }
+
+      // Refresh artifacts list
+      await fetchArtifacts();
+
+      // Show feedback
+      if (successCount > 0 && failCount === 0) {
+        toast.success(t(successCount === 1 ? "Artifact uploaded successfully!" : "Artifacts uploaded successfully!"));
+      } else if (successCount > 0 && failCount > 0) {
+        toast.warning(`${successCount} ${t("uploaded")}, ${failCount} ${t("failed")}`);
+      } else {
+        toast.error(t("Failed to upload artifact"));
+      }
+    } finally {
+      setArtifactUploading(false);
+      // Reset file input so the same file can be re-uploaded
+      if (artifactFileInputRef.current) {
+        artifactFileInputRef.current.value = "";
       }
     }
   };
@@ -1122,9 +1150,11 @@ export default function EvidencePage() {
           {/* File Upload Area */}
           <div
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-              artifactDragging
-                ? "border-primary-500 bg-primary-50"
-                : "border-slate-200 hover:border-slate-300 bg-white"
+              artifactUploading
+                ? "border-primary-400 bg-primary-50/50 pointer-events-none opacity-70"
+                : artifactDragging
+                  ? "border-primary-500 bg-primary-50"
+                  : "border-slate-200 hover:border-slate-300 bg-white"
             }`}
             onDragOver={handleArtifactDragOver}
             onDragLeave={handleArtifactDragLeave}
@@ -1136,19 +1166,28 @@ export default function EvidencePage() {
               multiple
               className="hidden"
               onChange={handleArtifactFileChange}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
             />
             <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
-              <Upload className="h-6 w-6 text-primary-400" />
+              {artifactUploading ? (
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+              ) : (
+                <Upload className="h-6 w-6 text-primary-400" />
+              )}
             </div>
-            <p className="text-slate-600 mb-2">
-              {t("Drag and drop files here, or")}{" "}
-              <button
-                onClick={() => artifactFileInputRef.current?.click()}
-                className="text-primary-600 hover:text-primary-700 font-medium"
-              >
-                {t("click to upload")}
-              </button>
-            </p>
+            {artifactUploading ? (
+              <p className="text-slate-600 mb-2">{t("Uploading...")}</p>
+            ) : (
+              <p className="text-slate-600 mb-2">
+                {t("Drag and drop files here, or")}{" "}
+                <button
+                  onClick={() => artifactFileInputRef.current?.click()}
+                  className="text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  {t("click to upload")}
+                </button>
+              </p>
+            )}
             <p className="text-sm text-slate-400">
               {t("Supported formats: PDF, PNG, JPG, XLSX, DOC, DOCX")}
             </p>
@@ -1195,10 +1234,27 @@ export default function EvidencePage() {
                       >
                         <Link2 className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => window.open(`/api/artifacts/${artifact.id}/download`, "_blank")}
+                        title={t("View")}
+                      >
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => {
+                          const link = document.createElement("a");
+                          link.href = `/api/artifacts/${artifact.id}/download`;
+                          link.download = artifact.fileName;
+                          link.click();
+                        }}
+                        title={t("Download")}
+                      >
                         <Download className="h-3.5 w-3.5" />
                       </Button>
                       <Button

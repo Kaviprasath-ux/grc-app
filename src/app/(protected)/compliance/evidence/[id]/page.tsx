@@ -1974,7 +1974,16 @@ export default function EvidenceDetailPage() {
                       </p>
                       <p className="font-medium">{att.fileName}</p>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = `/api/evidences/${id}/attachments/${att.id}/download`;
+                        link.download = att.fileName;
+                        link.click();
+                      }}
+                    >
                       <Download className="h-4 w-4 mr-1" />
                       {t("Download")}
                     </Button>
@@ -2155,7 +2164,16 @@ export default function EvidenceDetailPage() {
                     <span className="text-sm">{att.fileName}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = `/api/evidences/${id}/attachments/${att.id}/download`;
+                        link.download = att.fileName;
+                        link.click();
+                      }}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                     {isCustomerAdmin && (
@@ -2187,10 +2205,23 @@ export default function EvidenceDetailPage() {
                     <Badge variant="outline" className="text-xs text-purple-600 border-purple-300">
                       {t("Linked")}
                     </Badge>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => window.open(`/api/artifacts/${la.artifact.id}/download`, "_blank")}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = `/api/artifacts/${la.artifact.id}/download`;
+                        link.download = la.artifact.fileName;
+                        link.click();
+                      }}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                     {isCustomerAdmin && (
@@ -2499,10 +2530,23 @@ export default function EvidenceDetailPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(`/api/artifacts/${la.artifact.id}/download`, "_blank")}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = `/api/artifacts/${la.artifact.id}/download`;
+                            link.download = la.artifact.fileName;
+                            link.click();
+                          }}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>

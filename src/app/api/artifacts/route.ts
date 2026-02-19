@@ -31,6 +31,7 @@ export const GET = withAuth(
         data: artifacts.map((a) => ({
           id: a.id,
           artifactCode: a.artifactCode,
+          name: a.name,
           fileName: a.fileName,
           fileType: a.fileType,
           filePath: a.filePath,

@@ -219,19 +219,8 @@ export default function RiskSettingsCategoryPage() {
   const [riskSubCatForm, setRiskSubCatForm] = useState({ type: "" });
   const [riskRangeForm, setRiskRangeForm] = useState({ title: "", color: "#000000", lowRange: 0, highRange: 0, timelineDays: 0, description: "" });
 
-  // Error states for inline validation
-  const [vulnCatError, setVulnCatError] = useState("");
-  const [threatCatError, setThreatCatError] = useState("");
-  const [controlStrengthError, setControlStrengthError] = useState("");
-  const [likelihoodError, setLikelihoodError] = useState("");
-  const [threatError, setThreatError] = useState("");
-  const [vulnerabilityError, setVulnerabilityError] = useState("");
-  const [riskCategoryError, setRiskCategoryError] = useState("");
-  const [impactCatError, setImpactCatError] = useState("");
-  const [impactRatingError, setImpactRatingError] = useState("");
-  const [vulnRatingError, setVulnRatingError] = useState("");
-  const [riskSubCatError, setRiskSubCatError] = useState("");
-  const [riskRangeError, setRiskRangeError] = useState("");
+  // Field validation errors (per-field inline errors)
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     fetchData();
@@ -308,13 +297,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Vulnerability Category
   const handleAddVulnCat = async () => {
+    const errors: { [key: string]: string } = {};
     if (!vulnCatForm.name.trim()) {
-      setVulnCatError(t("Name is required"));
-      return;
+      errors.vulnCatName = t("Name is required");
     } else if (!isValidName(vulnCatForm.name.trim())) {
-      setVulnCatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.vulnCatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/vulnerability-categories", {
         method: "POST",
@@ -336,15 +326,15 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditVulnCat = async () => {
-    if (!selectedItem || !vulnCatForm.name.trim()) {
-      if (!vulnCatForm.name.trim()) {
-        setVulnCatError(t("Name is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!vulnCatForm.name.trim()) {
+      errors.vulnCatName = t("Name is required");
     } else if (!isValidName(vulnCatForm.name.trim())) {
-      setVulnCatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.vulnCatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/vulnerability-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -378,13 +368,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Threat Category
   const handleAddThreatCat = async () => {
+    const errors: { [key: string]: string } = {};
     if (!threatCatForm.name.trim()) {
-      setThreatCatError(t("Name is required"));
-      return;
+      errors.threatCatName = t("Name is required");
     } else if (!isValidName(threatCatForm.name.trim())) {
-      setThreatCatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.threatCatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/threat-categories", {
         method: "POST",
@@ -406,15 +397,15 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditThreatCat = async () => {
-    if (!selectedItem || !threatCatForm.name.trim()) {
-      if (!threatCatForm.name.trim()) {
-        setThreatCatError(t("Name is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!threatCatForm.name.trim()) {
+      errors.threatCatName = t("Name is required");
     } else if (!isValidName(threatCatForm.name.trim())) {
-      setThreatCatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.threatCatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/threat-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -448,20 +439,19 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Control Strength
   const handleAddControlStrength = async () => {
+    const errors: { [key: string]: string } = {};
     if (!controlStrengthForm.name.trim()) {
-      setControlStrengthError(t("Name is required"));
-      return;
+      errors.csName = t("Name is required");
     } else if (!isValidName(controlStrengthForm.name.trim())) {
-      setControlStrengthError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.csName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
-      setControlStrengthError(t("Score is required"));
-      return;
+      errors.csScore = t("Score is required");
     } else if (!isValidNumber(controlStrengthForm.score)) {
-      setControlStrengthError(t("Please enter a valid number"));
-      return;
+      errors.csScore = t("Please enter a valid number");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/control-strengths", {
         method: "POST",
@@ -483,22 +473,20 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditControlStrength = async () => {
-    if (!selectedItem || !controlStrengthForm.name.trim()) {
-      if (!controlStrengthForm.name.trim()) {
-        setControlStrengthError(t("Name is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!controlStrengthForm.name.trim()) {
+      errors.csName = t("Name is required");
     } else if (!isValidName(controlStrengthForm.name.trim())) {
-      setControlStrengthError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.csName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (controlStrengthForm.score === 0 || controlStrengthForm.score === null || controlStrengthForm.score === undefined) {
-      setControlStrengthError(t("Score is required"));
-      return;
+      errors.csScore = t("Score is required");
     } else if (!isValidNumber(controlStrengthForm.score)) {
-      setControlStrengthError(t("Please enter a valid number"));
-      return;
+      errors.csScore = t("Please enter a valid number");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/control-strengths/${selectedItem.id}`, {
         method: "PUT",
@@ -532,25 +520,23 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Likelihood
   const handleAddLikelihood = async () => {
+    const errors: { [key: string]: string } = {};
     if (!likelihoodForm.title.trim()) {
-      setLikelihoodError(t("Title is required"));
-      return;
+      errors.lhTitle = t("Title is required");
     } else if (!isValidName(likelihoodForm.title.trim())) {
-      setLikelihoodError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.lhTitle = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!isValidNumber(likelihoodForm.score)) {
-      setLikelihoodError(t("Please enter a valid number"));
-      return;
+      errors.lhScore = t("Please enter a valid number");
     }
     if (!likelihoodForm.timeFrame || !likelihoodForm.timeFrame.trim()) {
-      setLikelihoodError(t("Time Frame is required"));
-      return;
+      errors.lhTimeFrame = t("Time Frame is required");
     }
     if (!likelihoodForm.probability || !likelihoodForm.probability.trim()) {
-      setLikelihoodError(t("Probability is required"));
-      return;
+      errors.lhProbability = t("Probability is required");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-likelihoods", {
         method: "POST",
@@ -572,27 +558,24 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditLikelihood = async () => {
-    if (!selectedItem || !likelihoodForm.title.trim()) {
-      if (!likelihoodForm.title.trim()) {
-        setLikelihoodError(t("Title is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!likelihoodForm.title.trim()) {
+      errors.lhTitle = t("Title is required");
     } else if (!isValidName(likelihoodForm.title.trim())) {
-      setLikelihoodError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.lhTitle = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!isValidNumber(likelihoodForm.score)) {
-      setLikelihoodError(t("Please enter a valid number"));
-      return;
+      errors.lhScore = t("Please enter a valid number");
     }
     if (!likelihoodForm.timeFrame || !likelihoodForm.timeFrame.trim()) {
-      setLikelihoodError(t("Time Frame is required"));
-      return;
+      errors.lhTimeFrame = t("Time Frame is required");
     }
     if (!likelihoodForm.probability || !likelihoodForm.probability.trim()) {
-      setLikelihoodError(t("Probability is required"));
-      return;
+      errors.lhProbability = t("Probability is required");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/risk-likelihoods/${selectedItem.id}`, {
         method: "PUT",
@@ -626,13 +609,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Threat
   const handleAddThreat = async () => {
+    const errors: { [key: string]: string } = {};
     if (!threatForm.name.trim()) {
-      setThreatError(t("Name is required"));
-      return;
+      errors.threatName = t("Name is required");
     } else if (!isValidName(threatForm.name.trim())) {
-      setThreatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.threatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-threats", {
         method: "POST",
@@ -654,15 +638,15 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditThreat = async () => {
-    if (!selectedItem || !threatForm.name.trim()) {
-      if (!threatForm.name.trim()) {
-        setThreatError(t("Name is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!threatForm.name.trim()) {
+      errors.threatName = t("Name is required");
     } else if (!isValidName(threatForm.name.trim())) {
-      setThreatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.threatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-threats", {
         method: "PUT",
@@ -696,13 +680,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Vulnerability
   const handleAddVulnerability = async () => {
+    const errors: { [key: string]: string } = {};
     if (!vulnerabilityForm.name.trim()) {
-      setVulnerabilityError(t("Name is required"));
-      return;
+      errors.vulnName = t("Name is required");
     } else if (!isValidName(vulnerabilityForm.name.trim())) {
-      setVulnerabilityError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.vulnName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-vulnerabilities", {
         method: "POST",
@@ -724,15 +709,15 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditVulnerability = async () => {
-    if (!selectedItem || !vulnerabilityForm.name.trim()) {
-      if (!vulnerabilityForm.name.trim()) {
-        setVulnerabilityError(t("Name is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!vulnerabilityForm.name.trim()) {
+      errors.vulnName = t("Name is required");
     } else if (!isValidName(vulnerabilityForm.name.trim())) {
-      setVulnerabilityError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.vulnName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-vulnerabilities", {
         method: "PUT",
@@ -766,13 +751,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Risk Category
   const handleAddRiskCategory = async () => {
+    const errors: { [key: string]: string } = {};
     if (!riskCategoryForm.name.trim()) {
-      setRiskCategoryError(t("Name is required"));
-      return;
+      errors.riskCatName = t("Name is required");
     } else if (!isValidName(riskCategoryForm.name.trim())) {
-      setRiskCategoryError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.riskCatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-categories", {
         method: "POST",
@@ -794,15 +780,15 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditRiskCategory = async () => {
-    if (!selectedItem || !riskCategoryForm.name.trim()) {
-      if (!riskCategoryForm.name.trim()) {
-        setRiskCategoryError(t("Name is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!riskCategoryForm.name.trim()) {
+      errors.riskCatName = t("Name is required");
     } else if (!isValidName(riskCategoryForm.name.trim())) {
-      setRiskCategoryError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.riskCatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-categories", {
         method: "PUT",
@@ -836,13 +822,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Impact Category
   const handleAddImpactCat = async () => {
+    const errors: { [key: string]: string } = {};
     if (!impactCatForm.name.trim()) {
-      setImpactCatError(t("Name is required"));
-      return;
+      errors.impactCatName = t("Name is required");
     } else if (!isValidName(impactCatForm.name.trim())) {
-      setImpactCatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.impactCatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/impact-categories", {
         method: "POST",
@@ -864,15 +851,15 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditImpactCat = async () => {
-    if (!selectedItem || !impactCatForm.name.trim()) {
-      if (!impactCatForm.name.trim()) {
-        setImpactCatError(t("Name is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!impactCatForm.name.trim()) {
+      errors.impactCatName = t("Name is required");
     } else if (!isValidName(impactCatForm.name.trim())) {
-      setImpactCatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.impactCatName = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/impact-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -906,17 +893,17 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Impact Rating
   const handleAddImpactRating = async () => {
+    const errors: { [key: string]: string } = {};
     if (!impactRatingForm.name.trim()) {
-      setImpactRatingError(t("Name is required"));
-      return;
+      errors.irName = t("Name is required");
     } else if (!isValidName(impactRatingForm.name.trim())) {
-      setImpactRatingError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.irName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!isValidNumber(impactRatingForm.score)) {
-      setImpactRatingError(t("Please enter a valid number"));
-      return;
+      errors.irScore = t("Please enter a valid number");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/impact-ratings", {
         method: "POST",
@@ -938,19 +925,18 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditImpactRating = async () => {
-    if (!selectedItem || !impactRatingForm.name.trim()) {
-      if (!impactRatingForm.name.trim()) {
-        setImpactRatingError(t("Name is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!impactRatingForm.name.trim()) {
+      errors.irName = t("Name is required");
     } else if (!isValidName(impactRatingForm.name.trim())) {
-      setImpactRatingError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.irName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!isValidNumber(impactRatingForm.score)) {
-      setImpactRatingError(t("Please enter a valid number"));
-      return;
+      errors.irScore = t("Please enter a valid number");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/impact-ratings/${selectedItem.id}`, {
         method: "PUT",
@@ -984,17 +970,17 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Vulnerability Rating
   const handleAddVulnRating = async () => {
+    const errors: { [key: string]: string } = {};
     if (!vulnRatingForm.label.trim()) {
-      setVulnRatingError(t("Label is required"));
-      return;
+      errors.vrLabel = t("Label is required");
     } else if (!isValidName(vulnRatingForm.label.trim())) {
-      setVulnRatingError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.vrLabel = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!isValidNumber(vulnRatingForm.score)) {
-      setVulnRatingError(t("Please enter a valid number"));
-      return;
+      errors.vrScore = t("Please enter a valid number");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/vulnerability-ratings", {
         method: "POST",
@@ -1016,19 +1002,18 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditVulnRating = async () => {
-    if (!selectedItem || !vulnRatingForm.label.trim()) {
-      if (!vulnRatingForm.label.trim()) {
-        setVulnRatingError(t("Label is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!vulnRatingForm.label.trim()) {
+      errors.vrLabel = t("Label is required");
     } else if (!isValidName(vulnRatingForm.label.trim())) {
-      setVulnRatingError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.vrLabel = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!isValidNumber(vulnRatingForm.score)) {
-      setVulnRatingError(t("Please enter a valid number"));
-      return;
+      errors.vrScore = t("Please enter a valid number");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/vulnerability-ratings/${selectedItem.id}`, {
         method: "PUT",
@@ -1062,13 +1047,14 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Risk Sub Category
   const handleAddRiskSubCat = async () => {
+    const errors: { [key: string]: string } = {};
     if (!riskSubCatForm.type.trim()) {
-      setRiskSubCatError(t("Type is required"));
-      return;
+      errors.riskSubCatType = t("Type is required");
     } else if (!isValidName(riskSubCatForm.type.trim())) {
-      setRiskSubCatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.riskSubCatType = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-sub-categories", {
         method: "POST",
@@ -1090,15 +1076,15 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditRiskSubCat = async () => {
-    if (!selectedItem || !riskSubCatForm.type.trim()) {
-      if (!riskSubCatForm.type.trim()) {
-        setRiskSubCatError(t("Type is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!riskSubCatForm.type.trim()) {
+      errors.riskSubCatType = t("Type is required");
     } else if (!isValidName(riskSubCatForm.type.trim())) {
-      setRiskSubCatError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.riskSubCatType = t("Only letters, spaces, and hyphens are allowed");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/risk-sub-categories/${selectedItem.id}`, {
         method: "PUT",
@@ -1132,35 +1118,30 @@ export default function RiskSettingsCategoryPage() {
 
   // CRUD Handlers for Risk Range
   const handleAddRiskRange = async () => {
+    const errors: { [key: string]: string } = {};
     if (!riskRangeForm.title.trim()) {
-      setRiskRangeError(t("Title is required"));
-      return;
+      errors.rrTitle = t("Title is required");
     } else if (!isValidName(riskRangeForm.title.trim())) {
-      setRiskRangeError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.rrTitle = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
-      setRiskRangeError(t("Color is required"));
-      return;
+      errors.rrColor = t("Color is required");
     }
     if (riskRangeForm.lowRange === null || riskRangeForm.lowRange === undefined) {
-      setRiskRangeError(t("Low Range is required"));
-      return;
+      errors.rrLowRange = t("Low Range is required");
     } else if (!isValidNumber(riskRangeForm.lowRange)) {
-      setRiskRangeError(t("Please enter a valid number"));
-      return;
+      errors.rrLowRange = t("Please enter a valid number");
     }
     if (riskRangeForm.highRange === null || riskRangeForm.highRange === undefined) {
-      setRiskRangeError(t("High Range is required"));
-      return;
+      errors.rrHighRange = t("High Range is required");
     } else if (!isValidNumber(riskRangeForm.highRange)) {
-      setRiskRangeError(t("Please enter a valid number"));
-      return;
+      errors.rrHighRange = t("Please enter a valid number");
     }
     if (!isValidNumber(riskRangeForm.timelineDays)) {
-      setRiskRangeError(t("Please enter a valid number"));
-      return;
+      errors.rrTimelineDays = t("Please enter a valid number");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch("/api/risk-ranges", {
         method: "POST",
@@ -1182,37 +1163,31 @@ export default function RiskSettingsCategoryPage() {
   };
 
   const handleEditRiskRange = async () => {
-    if (!selectedItem || !riskRangeForm.title.trim()) {
-      if (!riskRangeForm.title.trim()) {
-        setRiskRangeError(t("Title is required"));
-      }
-      return;
+    if (!selectedItem) return;
+    const errors: { [key: string]: string } = {};
+    if (!riskRangeForm.title.trim()) {
+      errors.rrTitle = t("Title is required");
     } else if (!isValidName(riskRangeForm.title.trim())) {
-      setRiskRangeError(t("Only letters, spaces, and hyphens are allowed"));
-      return;
+      errors.rrTitle = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!riskRangeForm.color || !riskRangeForm.color.trim()) {
-      setRiskRangeError(t("Color is required"));
-      return;
+      errors.rrColor = t("Color is required");
     }
     if (riskRangeForm.lowRange === null || riskRangeForm.lowRange === undefined) {
-      setRiskRangeError(t("Low Range is required"));
-      return;
+      errors.rrLowRange = t("Low Range is required");
     } else if (!isValidNumber(riskRangeForm.lowRange)) {
-      setRiskRangeError(t("Please enter a valid number"));
-      return;
+      errors.rrLowRange = t("Please enter a valid number");
     }
     if (riskRangeForm.highRange === null || riskRangeForm.highRange === undefined) {
-      setRiskRangeError(t("High Range is required"));
-      return;
+      errors.rrHighRange = t("High Range is required");
     } else if (!isValidNumber(riskRangeForm.highRange)) {
-      setRiskRangeError(t("Please enter a valid number"));
-      return;
+      errors.rrHighRange = t("Please enter a valid number");
     }
     if (!isValidNumber(riskRangeForm.timelineDays)) {
-      setRiskRangeError(t("Please enter a valid number"));
-      return;
+      errors.rrTimelineDays = t("Please enter a valid number");
     }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     try {
       const res = await fetch(`/api/risk-ranges/${selectedItem.id}`, {
         method: "PUT",
@@ -2484,18 +2459,7 @@ export default function RiskSettingsCategoryPage() {
       <Dialog open={isAddOpen} onOpenChange={(open) => {
         setIsAddOpen(open);
         if (!open) {
-          setVulnCatError("");
-          setThreatCatError("");
-          setControlStrengthError("");
-          setLikelihoodError("");
-          setThreatError("");
-          setVulnerabilityError("");
-          setRiskCategoryError("");
-          setImpactCatError("");
-          setImpactRatingError("");
-          setVulnRatingError("");
-          setRiskSubCatError("");
-          setRiskRangeError("");
+          setFieldErrors({});
         }
       }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -2525,12 +2489,12 @@ export default function RiskSettingsCategoryPage() {
                   value={vulnCatForm.name}
                   onChange={(e) => {
                     setVulnCatForm({ name: e.target.value });
-                    setVulnCatError("");
+                    if (fieldErrors.vulnCatName) setFieldErrors(prev => ({ ...prev, vulnCatName: "" }));
                   }}
                   placeholder={t("Enter vulnerability category")}
-                  className={vulnCatError ? "bg-white border-red-500" : "bg-white"}
+                  className={fieldErrors.vulnCatName ? "bg-white border-red-500" : "bg-white"}
                 />
-                {vulnCatError && <p className="text-sm text-red-500 mt-1">{vulnCatError}</p>}
+                {fieldErrors.vulnCatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.vulnCatName}</p>}
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
@@ -2540,12 +2504,12 @@ export default function RiskSettingsCategoryPage() {
                   value={threatCatForm.name}
                   onChange={(e) => {
                     setThreatCatForm({ name: e.target.value });
-                    setThreatCatError("");
+                    if (fieldErrors.threatCatName) setFieldErrors(prev => ({ ...prev, threatCatName: "" }));
                   }}
                   placeholder={t("Enter threat category")}
-                  className={threatCatError ? "bg-white border-red-500" : "bg-white"}
+                  className={fieldErrors.threatCatName ? "bg-white border-red-500" : "bg-white"}
                 />
-                {threatCatError && <p className="text-sm text-red-500 mt-1">{threatCatError}</p>}
+                {fieldErrors.threatCatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.threatCatName}</p>}
               </div>
             )}
             {category === "control-strength" && (
@@ -2556,11 +2520,12 @@ export default function RiskSettingsCategoryPage() {
                     value={controlStrengthForm.name}
                     onChange={(e) => {
                       setControlStrengthForm({ ...controlStrengthForm, name: e.target.value });
-                      setControlStrengthError("");
+                      if (fieldErrors.csName) setFieldErrors(prev => ({ ...prev, csName: "" }));
                     }}
                     placeholder={t("Enter name")}
-                    className={controlStrengthError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.csName ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.csName && <p className="text-sm text-red-500 mt-1">{fieldErrors.csName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
@@ -2569,13 +2534,13 @@ export default function RiskSettingsCategoryPage() {
                     value={controlStrengthForm.score}
                     onChange={(e) => {
                       setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 });
-                      setControlStrengthError("");
+                      if (fieldErrors.csScore) setFieldErrors(prev => ({ ...prev, csScore: "" }));
                     }}
                     placeholder={t("Enter score")}
-                    className={controlStrengthError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.csScore ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.csScore && <p className="text-sm text-red-500 mt-1">{fieldErrors.csScore}</p>}
                 </div>
-                {controlStrengthError && <p className="text-sm text-red-500 mt-1">{controlStrengthError}</p>}
               </>
             )}
             {category === "likelihood" && (
@@ -2586,10 +2551,11 @@ export default function RiskSettingsCategoryPage() {
                     value={likelihoodForm.title}
                     onChange={(e) => {
                       setLikelihoodForm({ ...likelihoodForm, title: e.target.value });
-                      setLikelihoodError("");
+                      if (fieldErrors.lhTitle) setFieldErrors(prev => ({ ...prev, lhTitle: "" }));
                     }}
-                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.lhTitle ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.lhTitle && <p className="text-sm text-red-500 mt-1">{fieldErrors.lhTitle}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
@@ -2598,10 +2564,11 @@ export default function RiskSettingsCategoryPage() {
                     value={likelihoodForm.score}
                     onChange={(e) => {
                       setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 });
-                      setLikelihoodError("");
+                      if (fieldErrors.lhScore) setFieldErrors(prev => ({ ...prev, lhScore: "" }));
                     }}
-                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.lhScore ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.lhScore && <p className="text-sm text-red-500 mt-1">{fieldErrors.lhScore}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Time Frame")} <span className="text-red-500">*</span></Label>
@@ -2609,10 +2576,11 @@ export default function RiskSettingsCategoryPage() {
                     value={likelihoodForm.timeFrame}
                     onChange={(e) => {
                       setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value });
-                      setLikelihoodError("");
+                      if (fieldErrors.lhTimeFrame) setFieldErrors(prev => ({ ...prev, lhTimeFrame: "" }));
                     }}
-                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.lhTimeFrame ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.lhTimeFrame && <p className="text-sm text-red-500 mt-1">{fieldErrors.lhTimeFrame}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Probability")} <span className="text-red-500">*</span></Label>
@@ -2620,12 +2588,12 @@ export default function RiskSettingsCategoryPage() {
                     value={likelihoodForm.probability}
                     onChange={(e) => {
                       setLikelihoodForm({ ...likelihoodForm, probability: e.target.value });
-                      setLikelihoodError("");
+                      if (fieldErrors.lhProbability) setFieldErrors(prev => ({ ...prev, lhProbability: "" }));
                     }}
-                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.lhProbability ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.lhProbability && <p className="text-sm text-red-500 mt-1">{fieldErrors.lhProbability}</p>}
                 </div>
-                {likelihoodError && <p className="text-sm text-red-500 mt-1">{likelihoodError}</p>}
               </>
             )}
             {category === "threat" && (
@@ -2636,11 +2604,11 @@ export default function RiskSettingsCategoryPage() {
                     value={threatForm.name}
                     onChange={(e) => {
                       setThreatForm({ ...threatForm, name: e.target.value });
-                      setThreatError("");
+                      if (fieldErrors.threatName) setFieldErrors(prev => ({ ...prev, threatName: "" }));
                     }}
-                    className={threatError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.threatName ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {threatError && <p className="text-sm text-red-500 mt-1">{threatError}</p>}
+                  {fieldErrors.threatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.threatName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2665,7 +2633,15 @@ export default function RiskSettingsCategoryPage() {
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
-                  <Input value={vulnerabilityForm.name} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value })} className="bg-white" />
+                  <Input
+                    value={vulnerabilityForm.name}
+                    onChange={(e) => {
+                      setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value });
+                      if (fieldErrors.vulnName) setFieldErrors(prev => ({ ...prev, vulnName: "" }));
+                    }}
+                    className={fieldErrors.vulnName ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {fieldErrors.vulnName && <p className="text-sm text-red-500 mt-1">{fieldErrors.vulnName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2694,10 +2670,11 @@ export default function RiskSettingsCategoryPage() {
                     value={riskRangeForm.title}
                     onChange={(e) => {
                       setRiskRangeForm({ ...riskRangeForm, title: e.target.value });
-                      setRiskRangeError("");
+                      if (fieldErrors.rrTitle) setFieldErrors(prev => ({ ...prev, rrTitle: "" }));
                     }}
-                    className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.rrTitle ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.rrTitle && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrTitle}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Color")} <span className="text-red-500">*</span></Label>
@@ -2706,10 +2683,11 @@ export default function RiskSettingsCategoryPage() {
                     value={riskRangeForm.color}
                     onChange={(e) => {
                       setRiskRangeForm({ ...riskRangeForm, color: e.target.value });
-                      setRiskRangeError("");
+                      if (fieldErrors.rrColor) setFieldErrors(prev => ({ ...prev, rrColor: "" }));
                     }}
-                    className={riskRangeError ? "bg-white h-10 border-red-500" : "bg-white h-10"}
+                    className={fieldErrors.rrColor ? "bg-white h-10 border-red-500" : "bg-white h-10"}
                   />
+                  {fieldErrors.rrColor && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrColor}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -2719,10 +2697,11 @@ export default function RiskSettingsCategoryPage() {
                       value={riskRangeForm.lowRange}
                       onChange={(e) => {
                         setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 });
-                        setRiskRangeError("");
+                        if (fieldErrors.rrLowRange) setFieldErrors(prev => ({ ...prev, rrLowRange: "" }));
                       }}
-                      className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                      className={fieldErrors.rrLowRange ? "bg-white border-red-500" : "bg-white"}
                     />
+                    {fieldErrors.rrLowRange && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrLowRange}</p>}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("High Range")} <span className="text-red-500">*</span></Label>
@@ -2731,16 +2710,25 @@ export default function RiskSettingsCategoryPage() {
                       value={riskRangeForm.highRange}
                       onChange={(e) => {
                         setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 });
-                        setRiskRangeError("");
+                        if (fieldErrors.rrHighRange) setFieldErrors(prev => ({ ...prev, rrHighRange: "" }));
                       }}
-                      className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                      className={fieldErrors.rrHighRange ? "bg-white border-red-500" : "bg-white"}
                     />
+                    {fieldErrors.rrHighRange && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrHighRange}</p>}
                   </div>
                 </div>
-                {riskRangeError && <p className="text-sm text-red-500 mt-1">{riskRangeError}</p>}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Timeline Days")}</Label>
-                  <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={riskRangeForm.timelineDays}
+                    onChange={(e) => {
+                      setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.rrTimelineDays) setFieldErrors(prev => ({ ...prev, rrTimelineDays: "" }));
+                    }}
+                    className={fieldErrors.rrTimelineDays ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {fieldErrors.rrTimelineDays && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrTimelineDays}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2756,11 +2744,11 @@ export default function RiskSettingsCategoryPage() {
                     value={riskCategoryForm.name}
                     onChange={(e) => {
                       setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value });
-                      setRiskCategoryError("");
+                      if (fieldErrors.riskCatName) setFieldErrors(prev => ({ ...prev, riskCatName: "" }));
                     }}
-                    className={riskCategoryError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.riskCatName ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {riskCategoryError && <p className="text-sm text-red-500 mt-1">{riskCategoryError}</p>}
+                  {fieldErrors.riskCatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.riskCatName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
@@ -2783,11 +2771,11 @@ export default function RiskSettingsCategoryPage() {
                   value={impactCatForm.name}
                   onChange={(e) => {
                     setImpactCatForm({ name: e.target.value });
-                    setImpactCatError("");
+                    if (fieldErrors.impactCatName) setFieldErrors(prev => ({ ...prev, impactCatName: "" }));
                   }}
-                  className={impactCatError ? "bg-white border-red-500" : "bg-white"}
+                  className={fieldErrors.impactCatName ? "bg-white border-red-500" : "bg-white"}
                 />
-                {impactCatError && <p className="text-sm text-red-500 mt-1">{impactCatError}</p>}
+                {fieldErrors.impactCatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.impactCatName}</p>}
               </div>
             )}
             {category === "impact" && activeTab === "tab2" && (
@@ -2798,15 +2786,24 @@ export default function RiskSettingsCategoryPage() {
                     value={impactRatingForm.name}
                     onChange={(e) => {
                       setImpactRatingForm({ ...impactRatingForm, name: e.target.value });
-                      setImpactRatingError("");
+                      if (fieldErrors.irName) setFieldErrors(prev => ({ ...prev, irName: "" }));
                     }}
-                    className={impactRatingError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.irName ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {impactRatingError && <p className="text-sm text-red-500 mt-1">{impactRatingError}</p>}
+                  {fieldErrors.irName && <p className="text-sm text-red-500 mt-1">{fieldErrors.irName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
-                  <Input type="number" value={impactRatingForm.score} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={impactRatingForm.score}
+                    onChange={(e) => {
+                      setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.irScore) setFieldErrors(prev => ({ ...prev, irScore: "" }));
+                    }}
+                    className={fieldErrors.irScore ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {fieldErrors.irScore && <p className="text-sm text-red-500 mt-1">{fieldErrors.irScore}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -2822,15 +2819,24 @@ export default function RiskSettingsCategoryPage() {
                     value={vulnRatingForm.label}
                     onChange={(e) => {
                       setVulnRatingForm({ ...vulnRatingForm, label: e.target.value });
-                      setVulnRatingError("");
+                      if (fieldErrors.vrLabel) setFieldErrors(prev => ({ ...prev, vrLabel: "" }));
                     }}
-                    className={vulnRatingError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.vrLabel ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {vulnRatingError && <p className="text-sm text-red-500 mt-1">{vulnRatingError}</p>}
+                  {fieldErrors.vrLabel && <p className="text-sm text-red-500 mt-1">{fieldErrors.vrLabel}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
-                  <Input type="number" value={vulnRatingForm.score} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={vulnRatingForm.score}
+                    onChange={(e) => {
+                      setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.vrScore) setFieldErrors(prev => ({ ...prev, vrScore: "" }));
+                    }}
+                    className={fieldErrors.vrScore ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {fieldErrors.vrScore && <p className="text-sm text-red-500 mt-1">{fieldErrors.vrScore}</p>}
                 </div>
               </>
             )}
@@ -2841,11 +2847,11 @@ export default function RiskSettingsCategoryPage() {
                   value={riskSubCatForm.type}
                   onChange={(e) => {
                     setRiskSubCatForm({ type: e.target.value });
-                    setRiskSubCatError("");
+                    if (fieldErrors.riskSubCatType) setFieldErrors(prev => ({ ...prev, riskSubCatType: "" }));
                   }}
-                  className={riskSubCatError ? "bg-white border-red-500" : "bg-white"}
+                  className={fieldErrors.riskSubCatType ? "bg-white border-red-500" : "bg-white"}
                 />
-                {riskSubCatError && <p className="text-sm text-red-500 mt-1">{riskSubCatError}</p>}
+                {fieldErrors.riskSubCatType && <p className="text-sm text-red-500 mt-1">{fieldErrors.riskSubCatType}</p>}
               </div>
             )}
           </div>
@@ -2873,18 +2879,7 @@ export default function RiskSettingsCategoryPage() {
       <Dialog open={isEditOpen} onOpenChange={(open) => {
         setIsEditOpen(open);
         if (!open) {
-          setVulnCatError("");
-          setThreatCatError("");
-          setControlStrengthError("");
-          setLikelihoodError("");
-          setThreatError("");
-          setVulnerabilityError("");
-          setRiskCategoryError("");
-          setImpactCatError("");
-          setImpactRatingError("");
-          setVulnRatingError("");
-          setRiskSubCatError("");
-          setRiskRangeError("");
+          setFieldErrors({});
         }
       }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -2914,11 +2909,11 @@ export default function RiskSettingsCategoryPage() {
                   value={vulnCatForm.name}
                   onChange={(e) => {
                     setVulnCatForm({ name: e.target.value });
-                    setVulnCatError("");
+                    if (fieldErrors.vulnCatName) setFieldErrors(prev => ({ ...prev, vulnCatName: "" }));
                   }}
-                  className={vulnCatError ? "bg-white border-red-500" : "bg-white"}
+                  className={fieldErrors.vulnCatName ? "bg-white border-red-500" : "bg-white"}
                 />
-                {vulnCatError && <p className="text-sm text-red-500 mt-1">{vulnCatError}</p>}
+                {fieldErrors.vulnCatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.vulnCatName}</p>}
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
@@ -2928,11 +2923,11 @@ export default function RiskSettingsCategoryPage() {
                   value={threatCatForm.name}
                   onChange={(e) => {
                     setThreatCatForm({ name: e.target.value });
-                    setThreatCatError("");
+                    if (fieldErrors.threatCatName) setFieldErrors(prev => ({ ...prev, threatCatName: "" }));
                   }}
-                  className={threatCatError ? "bg-white border-red-500" : "bg-white"}
+                  className={fieldErrors.threatCatName ? "bg-white border-red-500" : "bg-white"}
                 />
-                {threatCatError && <p className="text-sm text-red-500 mt-1">{threatCatError}</p>}
+                {fieldErrors.threatCatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.threatCatName}</p>}
               </div>
             )}
             {category === "control-strength" && (
@@ -2943,10 +2938,11 @@ export default function RiskSettingsCategoryPage() {
                     value={controlStrengthForm.name}
                     onChange={(e) => {
                       setControlStrengthForm({ ...controlStrengthForm, name: e.target.value });
-                      setControlStrengthError("");
+                      if (fieldErrors.csName) setFieldErrors(prev => ({ ...prev, csName: "" }));
                     }}
-                    className={controlStrengthError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.csName ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.csName && <p className="text-sm text-red-500 mt-1">{fieldErrors.csName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
@@ -2955,12 +2951,12 @@ export default function RiskSettingsCategoryPage() {
                     value={controlStrengthForm.score}
                     onChange={(e) => {
                       setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 });
-                      setControlStrengthError("");
+                      if (fieldErrors.csScore) setFieldErrors(prev => ({ ...prev, csScore: "" }));
                     }}
-                    className={controlStrengthError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.csScore ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.csScore && <p className="text-sm text-red-500 mt-1">{fieldErrors.csScore}</p>}
                 </div>
-                {controlStrengthError && <p className="text-sm text-red-500 mt-1">{controlStrengthError}</p>}
               </>
             )}
             {category === "likelihood" && (
@@ -2971,10 +2967,11 @@ export default function RiskSettingsCategoryPage() {
                     value={likelihoodForm.title}
                     onChange={(e) => {
                       setLikelihoodForm({ ...likelihoodForm, title: e.target.value });
-                      setLikelihoodError("");
+                      if (fieldErrors.lhTitle) setFieldErrors(prev => ({ ...prev, lhTitle: "" }));
                     }}
-                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.lhTitle ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.lhTitle && <p className="text-sm text-red-500 mt-1">{fieldErrors.lhTitle}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
@@ -2983,10 +2980,11 @@ export default function RiskSettingsCategoryPage() {
                     value={likelihoodForm.score}
                     onChange={(e) => {
                       setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 });
-                      setLikelihoodError("");
+                      if (fieldErrors.lhScore) setFieldErrors(prev => ({ ...prev, lhScore: "" }));
                     }}
-                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.lhScore ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.lhScore && <p className="text-sm text-red-500 mt-1">{fieldErrors.lhScore}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Time Frame")} <span className="text-red-500">*</span></Label>
@@ -2994,10 +2992,11 @@ export default function RiskSettingsCategoryPage() {
                     value={likelihoodForm.timeFrame}
                     onChange={(e) => {
                       setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value });
-                      setLikelihoodError("");
+                      if (fieldErrors.lhTimeFrame) setFieldErrors(prev => ({ ...prev, lhTimeFrame: "" }));
                     }}
-                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.lhTimeFrame ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.lhTimeFrame && <p className="text-sm text-red-500 mt-1">{fieldErrors.lhTimeFrame}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Probability")} <span className="text-red-500">*</span></Label>
@@ -3005,12 +3004,12 @@ export default function RiskSettingsCategoryPage() {
                     value={likelihoodForm.probability}
                     onChange={(e) => {
                       setLikelihoodForm({ ...likelihoodForm, probability: e.target.value });
-                      setLikelihoodError("");
+                      if (fieldErrors.lhProbability) setFieldErrors(prev => ({ ...prev, lhProbability: "" }));
                     }}
-                    className={likelihoodError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.lhProbability ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.lhProbability && <p className="text-sm text-red-500 mt-1">{fieldErrors.lhProbability}</p>}
                 </div>
-                {likelihoodError && <p className="text-sm text-red-500 mt-1">{likelihoodError}</p>}
               </>
             )}
             {category === "threat" && (
@@ -3021,11 +3020,11 @@ export default function RiskSettingsCategoryPage() {
                     value={threatForm.name}
                     onChange={(e) => {
                       setThreatForm({ ...threatForm, name: e.target.value });
-                      setThreatError("");
+                      if (fieldErrors.threatName) setFieldErrors(prev => ({ ...prev, threatName: "" }));
                     }}
-                    className={threatError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.threatName ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {threatError && <p className="text-sm text-red-500 mt-1">{threatError}</p>}
+                  {fieldErrors.threatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.threatName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3054,11 +3053,11 @@ export default function RiskSettingsCategoryPage() {
                     value={vulnerabilityForm.name}
                     onChange={(e) => {
                       setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value });
-                      setVulnerabilityError("");
+                      if (fieldErrors.vulnName) setFieldErrors(prev => ({ ...prev, vulnName: "" }));
                     }}
-                    className={vulnerabilityError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.vulnName ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {vulnerabilityError && <p className="text-sm text-red-500 mt-1">{vulnerabilityError}</p>}
+                  {fieldErrors.vulnName && <p className="text-sm text-red-500 mt-1">{fieldErrors.vulnName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3087,10 +3086,11 @@ export default function RiskSettingsCategoryPage() {
                     value={riskRangeForm.title}
                     onChange={(e) => {
                       setRiskRangeForm({ ...riskRangeForm, title: e.target.value });
-                      setRiskRangeError("");
+                      if (fieldErrors.rrTitle) setFieldErrors(prev => ({ ...prev, rrTitle: "" }));
                     }}
-                    className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.rrTitle ? "bg-white border-red-500" : "bg-white"}
                   />
+                  {fieldErrors.rrTitle && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrTitle}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Color")} <span className="text-red-500">*</span></Label>
@@ -3099,10 +3099,11 @@ export default function RiskSettingsCategoryPage() {
                     value={riskRangeForm.color}
                     onChange={(e) => {
                       setRiskRangeForm({ ...riskRangeForm, color: e.target.value });
-                      setRiskRangeError("");
+                      if (fieldErrors.rrColor) setFieldErrors(prev => ({ ...prev, rrColor: "" }));
                     }}
-                    className={riskRangeError ? "bg-white h-10 border-red-500" : "bg-white h-10"}
+                    className={fieldErrors.rrColor ? "bg-white h-10 border-red-500" : "bg-white h-10"}
                   />
+                  {fieldErrors.rrColor && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrColor}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -3112,10 +3113,11 @@ export default function RiskSettingsCategoryPage() {
                       value={riskRangeForm.lowRange}
                       onChange={(e) => {
                         setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 });
-                        setRiskRangeError("");
+                        if (fieldErrors.rrLowRange) setFieldErrors(prev => ({ ...prev, rrLowRange: "" }));
                       }}
-                      className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                      className={fieldErrors.rrLowRange ? "bg-white border-red-500" : "bg-white"}
                     />
+                    {fieldErrors.rrLowRange && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrLowRange}</p>}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("High Range")} <span className="text-red-500">*</span></Label>
@@ -3124,16 +3126,25 @@ export default function RiskSettingsCategoryPage() {
                       value={riskRangeForm.highRange}
                       onChange={(e) => {
                         setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 });
-                        setRiskRangeError("");
+                        if (fieldErrors.rrHighRange) setFieldErrors(prev => ({ ...prev, rrHighRange: "" }));
                       }}
-                      className={riskRangeError ? "bg-white border-red-500" : "bg-white"}
+                      className={fieldErrors.rrHighRange ? "bg-white border-red-500" : "bg-white"}
                     />
+                    {fieldErrors.rrHighRange && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrHighRange}</p>}
                   </div>
                 </div>
-                {riskRangeError && <p className="text-sm text-red-500 mt-1">{riskRangeError}</p>}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Timeline Days")}</Label>
-                  <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={riskRangeForm.timelineDays}
+                    onChange={(e) => {
+                      setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.rrTimelineDays) setFieldErrors(prev => ({ ...prev, rrTimelineDays: "" }));
+                    }}
+                    className={fieldErrors.rrTimelineDays ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {fieldErrors.rrTimelineDays && <p className="text-sm text-red-500 mt-1">{fieldErrors.rrTimelineDays}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3149,11 +3160,11 @@ export default function RiskSettingsCategoryPage() {
                     value={riskCategoryForm.name}
                     onChange={(e) => {
                       setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value });
-                      setRiskCategoryError("");
+                      if (fieldErrors.riskCatName) setFieldErrors(prev => ({ ...prev, riskCatName: "" }));
                     }}
-                    className={riskCategoryError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.riskCatName ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {riskCategoryError && <p className="text-sm text-red-500 mt-1">{riskCategoryError}</p>}
+                  {fieldErrors.riskCatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.riskCatName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
@@ -3176,11 +3187,11 @@ export default function RiskSettingsCategoryPage() {
                   value={impactCatForm.name}
                   onChange={(e) => {
                     setImpactCatForm({ name: e.target.value });
-                    setImpactCatError("");
+                    if (fieldErrors.impactCatName) setFieldErrors(prev => ({ ...prev, impactCatName: "" }));
                   }}
-                  className={impactCatError ? "bg-white border-red-500" : "bg-white"}
+                  className={fieldErrors.impactCatName ? "bg-white border-red-500" : "bg-white"}
                 />
-                {impactCatError && <p className="text-sm text-red-500 mt-1">{impactCatError}</p>}
+                {fieldErrors.impactCatName && <p className="text-sm text-red-500 mt-1">{fieldErrors.impactCatName}</p>}
               </div>
             )}
             {category === "impact" && activeTab === "tab2" && (
@@ -3191,15 +3202,24 @@ export default function RiskSettingsCategoryPage() {
                     value={impactRatingForm.name}
                     onChange={(e) => {
                       setImpactRatingForm({ ...impactRatingForm, name: e.target.value });
-                      setImpactRatingError("");
+                      if (fieldErrors.irName) setFieldErrors(prev => ({ ...prev, irName: "" }));
                     }}
-                    className={impactRatingError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.irName ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {impactRatingError && <p className="text-sm text-red-500 mt-1">{impactRatingError}</p>}
+                  {fieldErrors.irName && <p className="text-sm text-red-500 mt-1">{fieldErrors.irName}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
-                  <Input type="number" value={impactRatingForm.score} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={impactRatingForm.score}
+                    onChange={(e) => {
+                      setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.irScore) setFieldErrors(prev => ({ ...prev, irScore: "" }));
+                    }}
+                    className={fieldErrors.irScore ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {fieldErrors.irScore && <p className="text-sm text-red-500 mt-1">{fieldErrors.irScore}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3215,15 +3235,24 @@ export default function RiskSettingsCategoryPage() {
                     value={vulnRatingForm.label}
                     onChange={(e) => {
                       setVulnRatingForm({ ...vulnRatingForm, label: e.target.value });
-                      setVulnRatingError("");
+                      if (fieldErrors.vrLabel) setFieldErrors(prev => ({ ...prev, vrLabel: "" }));
                     }}
-                    className={vulnRatingError ? "bg-white border-red-500" : "bg-white"}
+                    className={fieldErrors.vrLabel ? "bg-white border-red-500" : "bg-white"}
                   />
-                  {vulnRatingError && <p className="text-sm text-red-500 mt-1">{vulnRatingError}</p>}
+                  {fieldErrors.vrLabel && <p className="text-sm text-red-500 mt-1">{fieldErrors.vrLabel}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Score")} <span className="text-red-500">*</span></Label>
-                  <Input type="number" value={vulnRatingForm.score} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
+                  <Input
+                    type="number"
+                    value={vulnRatingForm.score}
+                    onChange={(e) => {
+                      setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 });
+                      if (fieldErrors.vrScore) setFieldErrors(prev => ({ ...prev, vrScore: "" }));
+                    }}
+                    className={fieldErrors.vrScore ? "bg-white border-red-500" : "bg-white"}
+                  />
+                  {fieldErrors.vrScore && <p className="text-sm text-red-500 mt-1">{fieldErrors.vrScore}</p>}
                 </div>
               </>
             )}
@@ -3234,11 +3263,11 @@ export default function RiskSettingsCategoryPage() {
                   value={riskSubCatForm.type}
                   onChange={(e) => {
                     setRiskSubCatForm({ type: e.target.value });
-                    setRiskSubCatError("");
+                    if (fieldErrors.riskSubCatType) setFieldErrors(prev => ({ ...prev, riskSubCatType: "" }));
                   }}
-                  className={riskSubCatError ? "bg-white border-red-500" : "bg-white"}
+                  className={fieldErrors.riskSubCatType ? "bg-white border-red-500" : "bg-white"}
                 />
-                {riskSubCatError && <p className="text-sm text-red-500 mt-1">{riskSubCatError}</p>}
+                {fieldErrors.riskSubCatType && <p className="text-sm text-red-500 mt-1">{fieldErrors.riskSubCatType}</p>}
               </div>
             )}
           </div>

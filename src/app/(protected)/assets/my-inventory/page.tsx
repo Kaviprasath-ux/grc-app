@@ -192,6 +192,9 @@ export default function MyAssetInventoryPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
 
+  // Field validation errors
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
   // Inline add dialog states
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddSubCategoryOpen, setIsAddSubCategoryOpen] = useState(false);
@@ -320,11 +323,25 @@ export default function MyAssetInventoryPage() {
 
   // Asset CRUD
   const handleAddAsset = async () => {
-    if (!newAsset.assetId.trim() || !newAsset.name.trim()) return;
-    if (!isValidName(newAsset.name.trim())) {
-      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation: Asset Name
+    if (!newAsset.name.trim()) {
+      errors.name = t("Asset name is required");
+    } else if (!isValidName(newAsset.name.trim())) {
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch("/api/assets/my-assets", {
         method: "POST",
@@ -362,10 +379,26 @@ export default function MyAssetInventoryPage() {
 
   const handleEditAsset = async () => {
     if (!editingAsset) return;
-    if (editingAsset.name && !isValidName(editingAsset.name.trim())) {
-      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
+
+    // Clear previous errors
+    const errors: { [key: string]: string } = {};
+
+    // Validation: Asset Name
+    if (!editingAsset.name.trim()) {
+      errors.name = t("Asset name is required");
+    } else if (!isValidName(editingAsset.name.trim())) {
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
+    }
+
+    // If there are validation errors, set them and stop
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+
+    // Clear errors if validation passes
+    setFieldErrors({});
+
     try {
       const res = await fetch(`/api/assets/my-assets/${editingAsset.id}`, {
         method: "PUT",
@@ -426,6 +459,7 @@ export default function MyAssetInventoryPage() {
       acquisitionDate: "",
       nextReviewDate: "",
     });
+    setFieldErrors({});
   };
 
   // Inline add handlers for Category, Sub Category, Group, Lifecycle Status
@@ -886,10 +920,18 @@ export default function MyAssetInventoryPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Asset Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={newAsset.name}
-                  onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewAsset({ ...newAsset, name: e.target.value });
+                    if (fieldErrors.name) {
+                      setFieldErrors({ ...fieldErrors, name: "" });
+                    }
+                  }}
                   placeholder={t("Enter Asset Name")}
-                  className="mt-1.5"
+                  className={`mt-1.5 ${fieldErrors.name ? "border-red-500" : ""}`}
                 />
+                {fieldErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
+                )}
               </div>
 
               {/* Asset ID & Department */}
@@ -1105,7 +1147,7 @@ export default function MyAssetInventoryPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => { resetForm(); setIsAddAssetOpen(false); }}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => { resetForm(); setFieldErrors({}); setIsAddAssetOpen(false); }}>{t("Cancel")}</Button>
             <Button onClick={handleAddAsset}>{t("Save")}</Button>
           </div>
         </DialogContent>
@@ -1130,9 +1172,17 @@ export default function MyAssetInventoryPage() {
                   <Label className="text-sm font-medium text-slate-700">{t("Asset Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={editingAsset.name}
-                    onChange={(e) => setEditingAsset({ ...editingAsset, name: e.target.value })}
-                    className="mt-1.5"
+                    onChange={(e) => {
+                      setEditingAsset({ ...editingAsset, name: e.target.value });
+                      if (fieldErrors.name) {
+                        setFieldErrors({ ...fieldErrors, name: "" });
+                      }
+                    }}
+                    className={`mt-1.5 ${fieldErrors.name ? "border-red-500" : ""}`}
                   />
+                  {fieldErrors.name && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
+                  )}
                 </div>
 
                 {/* Asset ID & Department */}
@@ -1345,7 +1395,7 @@ export default function MyAssetInventoryPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => { setIsEditAssetOpen(false); setEditingAsset(null); }}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => { setIsEditAssetOpen(false); setEditingAsset(null); setFieldErrors({}); }}>{t("Cancel")}</Button>
             <Button onClick={handleEditAsset}>{t("Save Changes")}</Button>
           </div>
         </DialogContent>
