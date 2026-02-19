@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/usePagination";
 import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Select,
@@ -152,8 +153,8 @@ export default function RiskAssessmentPage() {
     fetchData();
   }, [fetchData]);
 
-  // Filter risks
-  const filteredRisks = risks.filter((risk) => {
+  // Filter risks (memoized to prevent infinite re-renders with useTranslatedData)
+  const filteredRisks = useMemo(() => risks.filter((risk) => {
     const matchesSearch =
       searchTerm === "" ||
       risk.riskId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -172,10 +173,15 @@ export default function RiskAssessmentPage() {
       typeFilter === "all" || risk.type?.id === typeFilter;
 
     return matchesSearch && matchesStatus && matchesRating && matchesCategory && matchesType;
-  });
+  }), [risks, searchTerm, statusFilter, ratingFilter, categoryFilter, typeFilter]);
 
   // Pagination
   const { currentPage, setCurrentPage, totalPages, paginatedData: paginatedRisks } = usePagination({ data: filteredRisks, itemsPerPage: ITEMS_PER_PAGE });
+
+  // Translate dynamic data for non-English locales
+  const { data: translatedRisks } = useTranslatedData(paginatedRisks, { modelName: 'Risk' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'RiskCategory' });
+  const { data: translatedRiskTypes } = useTranslatedData(riskTypes, { modelName: 'RiskType' });
 
   const getStatusLabel = (status: string) => status || "Open";
 
@@ -347,7 +353,7 @@ export default function RiskAssessmentPage() {
                 <SelectItem value="all">{t("All Ratings")}</SelectItem>
                 {ratingThresholds.map((threshold) => (
                   <SelectItem key={threshold.rating} value={threshold.rating}>
-                    {threshold.rating}
+                    {t(threshold.rating)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -358,7 +364,7 @@ export default function RiskAssessmentPage() {
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
                 <SelectItem value="all">{t("All Categories")}</SelectItem>
-                {categories.map((cat) => (
+                {translatedCategories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
                   </SelectItem>
@@ -371,7 +377,7 @@ export default function RiskAssessmentPage() {
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
                 <SelectItem value="all">{t("All Types")}</SelectItem>
-                {riskTypes.map((type) => (
+                {translatedRiskTypes.map((type) => (
                   <SelectItem key={type.id} value={type.id}>
                     {type.name}
                   </SelectItem>
@@ -396,7 +402,7 @@ export default function RiskAssessmentPage() {
 
         {/* Rows */}
         <div className="divide-y divide-slate-100">
-          {paginatedRisks.length === 0 ? (
+          {translatedRisks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
               <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                 <AlertTriangle className="h-6 w-6 text-primary-400" />
@@ -405,7 +411,7 @@ export default function RiskAssessmentPage() {
               <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
             </div>
           ) : (
-            paginatedRisks.map((risk) => {
+            translatedRisks.map((risk) => {
               const status = getStatusLabel(risk.assessmentStatus);
               return (
                 <div
@@ -418,14 +424,14 @@ export default function RiskAssessmentPage() {
                   <span>
                     {risk.riskRating ? <RiskRatingBadge rating={risk.riskRating} /> : <span className="text-sm text-slate-400">-</span>}
                   </span>
-                  <span className="text-sm text-slate-600 truncate">{risk.category?.name || "-"}</span>
+                  <span className="text-sm text-slate-600 truncate">{risk.category ? (translatedCategories.find(c => c.id === risk.category?.id)?.name || risk.category.name) : "-"}</span>
                   <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>
                   <span>
                     <span className={cn(
                       "px-2 py-1 rounded-full text-xs font-medium",
                       statusStyles[status] || "bg-slate-100 text-slate-700"
                     )}>
-                      {status}
+                      {t(status)}
                     </span>
                   </span>
                   <span className="flex justify-end">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/usePagination";
@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { useUserRoles, usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { RiskResponseDialog } from "@/components/risks/risk-response-dialog";
 
 interface Risk {
@@ -268,41 +269,61 @@ export default function RiskResponsePage() {
     }
   };
 
-  // Filter risks based on strategy (no "all" option per source system)
-  // First apply department filtering for department-scoped roles
-  const departmentFilteredRisks = isDepartmentRole && userDepartmentId
-    ? risks.filter((risk) => risk.department?.id === userDepartmentId)
-    : risks;
-
-  // DepartmentReviewer only sees items with "Awaiting Approval", "Sent Back", or "Completed" status
-  const reviewerFilteredRisks = isDepartmentReviewer
-    ? departmentFilteredRisks.filter((risk) => {
-        const status = normalizeStatus(risk.responseStatus || "Open");
-        return status === "Awaiting Approval" || status === "Sent Back" || status === "Completed";
-      })
-    : departmentFilteredRisks;
-
-  const filteredByStrategy = strategyFilter === "all"
-    ? reviewerFilteredRisks
-    : reviewerFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
-
   // Get normalized responseStatus for a risk (for Risk Response Strategy workflow)
   const getRiskStatus = (risk: Risk) => {
     const rawStatus = risk.responseStatus || "Open";
     return normalizeStatus(rawStatus);
   };
 
-  // Filter risks based on progress status ("all" shows all items)
-  const filteredByProgress = progressFilter === "all"
-    ? filteredByStrategy
-    : filteredByStrategy.filter((risk) => {
-        const status = getRiskStatus(risk);
-        return status === progressFilter;
-      });
+  // Memoize entire filter chain to provide stable array refs for useTranslatedData
+  const { departmentFilteredRisks, reviewerFilteredRisks, filteredByStrategy, filteredByProgress, displayRisks } = useMemo(() => {
+    // First apply department filtering for department-scoped roles
+    const deptFiltered = isDepartmentRole && userDepartmentId
+      ? risks.filter((risk) => risk.department?.id === userDepartmentId)
+      : risks;
+
+    // DepartmentReviewer only sees items with "Awaiting Approval", "Sent Back", or "Completed" status
+    const reviewerFiltered = isDepartmentReviewer
+      ? deptFiltered.filter((risk) => {
+          const status = normalizeStatus(risk.responseStatus || "Open");
+          return status === "Awaiting Approval" || status === "Sent Back" || status === "Completed";
+        })
+      : deptFiltered;
+
+    const byStrategy = strategyFilter === "all"
+      ? reviewerFiltered
+      : reviewerFiltered.filter((risk) => risk.responseStrategy === strategyFilter);
+
+    // Filter risks based on progress status ("all" shows all items)
+    const byProgress = progressFilter === "all"
+      ? byStrategy
+      : byStrategy.filter((risk) => {
+          const rawStatus = risk.responseStatus || "Open";
+          return normalizeStatus(rawStatus) === progressFilter;
+        });
+
+    // Search filter
+    const display = byProgress.filter((risk) => {
+      if (!searchTerm.trim()) return true;
+      const term = searchTerm.toLowerCase();
+      return (
+        risk.riskId.toLowerCase().includes(term) ||
+        risk.name.toLowerCase().includes(term) ||
+        (risk.responseStrategy || "").toLowerCase().includes(term) ||
+        (risk.owner?.fullName || "").toLowerCase().includes(term)
+      );
+    });
+
+    return {
+      departmentFilteredRisks: deptFiltered,
+      reviewerFilteredRisks: reviewerFiltered,
+      filteredByStrategy: byStrategy,
+      filteredByProgress: byProgress,
+      displayRisks: display,
+    };
+  }, [risks, isDepartmentRole, userDepartmentId, isDepartmentReviewer, strategyFilter, progressFilter, searchTerm]);
 
   // Calculate stats for strategy card
-  // Background bar = total risks with selected strategy
-  // Foreground bar = closed/completed risks with selected strategy
   const strategyTotal = filteredByStrategy.length;
   const strategyClosed = filteredByStrategy.filter(r => {
     const status = getRiskStatus(r);
@@ -310,10 +331,8 @@ export default function RiskResponsePage() {
   }).length;
 
   // Calculate stats for progress card
-  // Background bar = total risks with selected strategy
-  // Foreground bar = risks with selected status
-  const progressTotal = strategyTotal; // Total from selected strategy
-  const progressCount = filteredByProgress.length; // Risks matching selected status
+  const progressTotal = strategyTotal;
+  const progressCount = filteredByProgress.length;
 
   // Get progress label based on filter selection
   const getProgressLabel = () => {
@@ -328,20 +347,11 @@ export default function RiskResponsePage() {
     }
   };
 
-  // Search filter
-  const displayRisks = filteredByProgress.filter((risk) => {
-    if (!searchTerm.trim()) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      risk.riskId.toLowerCase().includes(term) ||
-      risk.name.toLowerCase().includes(term) ||
-      (risk.responseStrategy || "").toLowerCase().includes(term) ||
-      (risk.owner?.fullName || "").toLowerCase().includes(term)
-    );
-  });
+  // Translate dynamic risk names for non-English locales (before pagination to avoid unstable refs)
+  const { data: translatedRisks } = useTranslatedData(displayRisks, { modelName: 'Risk' });
 
-  // Pagination
-  const { currentPage, setCurrentPage, totalPages, paginatedData: paginatedRisks } = usePagination({ data: displayRisks, itemsPerPage: ITEMS_PER_PAGE });
+  // Pagination (on translated data)
+  const { currentPage, setCurrentPage, totalPages, paginatedData: paginatedRisks } = usePagination({ data: translatedRisks, itemsPerPage: ITEMS_PER_PAGE });
 
   // Percentage calculations
   const strategyPct = strategyTotal > 0 ? Math.round((strategyClosed / strategyTotal) * 100) : 0;
@@ -576,7 +586,10 @@ export default function RiskResponsePage() {
               <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
             </div>
           ) : (
-            paginatedRisks.map((risk) => (
+            paginatedRisks.map((risk) => {
+              // Find original risk for action buttons (needs untranslated data for API calls)
+              const originalRisk = displayRisks.find(r => r.id === risk.id) || risk;
+              return (
               <div
                 key={risk.id}
                 className="grid grid-cols-[80px_1.5fr_100px_90px_90px_100px_90px] gap-2 sm:gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[800px]"
@@ -584,31 +597,32 @@ export default function RiskResponsePage() {
                 <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                 <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
                 <span>
-                  <RiskRatingBadge rating={risk.riskRating || "-"} />
+                  <RiskRatingBadge rating={originalRisk.riskRating || "-"} />
                 </span>
-                <span className="text-sm text-slate-600">{risk.responseStrategy || "-"}</span>
+                <span className="text-sm text-slate-600">{originalRisk.responseStrategy ? t(originalRisk.responseStrategy) : "-"}</span>
                 <span className="text-sm text-slate-600">
-                  {risk.treatmentDueDate
-                    ? new Date(risk.treatmentDueDate).toLocaleDateString("en-GB")
+                  {originalRisk.treatmentDueDate
+                    ? new Date(originalRisk.treatmentDueDate).toLocaleDateString("en-GB")
                     : "-"}
                 </span>
                 <span>
                   <span className={cn(
                     "px-2 py-1 rounded text-xs font-medium",
-                    (risk.responseStatus || "Open") === "Completed" && "bg-green-100 text-green-800",
-                    (risk.responseStatus || "Open") === "Awaiting Approval" && "bg-purple-100 text-purple-800",
-                    (risk.responseStatus || "Open") === "In-Progress" && "bg-amber-100 text-amber-800",
-                    (risk.responseStatus || "Open") === "Sent Back" && "bg-red-100 text-red-800",
-                    (risk.responseStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
+                    (originalRisk.responseStatus || "Open") === "Completed" && "bg-green-100 text-green-800",
+                    (originalRisk.responseStatus || "Open") === "Awaiting Approval" && "bg-purple-100 text-purple-800",
+                    (originalRisk.responseStatus || "Open") === "In-Progress" && "bg-amber-100 text-amber-800",
+                    (originalRisk.responseStatus || "Open") === "Sent Back" && "bg-red-100 text-red-800",
+                    (originalRisk.responseStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
                   )}>
-                    {risk.responseStatus || "Open"}
+                    {t(originalRisk.responseStatus || "Open")}
                   </span>
                 </span>
                 <span>
-                  {getActionButtons(risk)}
+                  {getActionButtons(originalRisk)}
                 </span>
               </div>
-            ))
+              );
+            })
           )}
         </div>
         </div>
