@@ -918,6 +918,7 @@
   "Maximum frameworks limit reached. Your plan allows": "تم الوصول إلى الحد الأقصى للأطر. خطتك تسمح بـ",
   "frameworks": "أطر",
   "Only letters, spaces, and hyphens are allowed": "يُسمح فقط بالأحرف والمسافات والشرطات",
+  "Only letters, spaces, hyphens, and dots are allowed": "يُسمح فقط بالأحرف والمسافات والشرطات والنقاط",
   "Only numbers are allowed": "يُسمح فقط بالأرقام",
   "Only letters and spaces are allowed": "يُسمح فقط بالأحرف والمسافات",
   "Only letters, numbers, and underscores are allowed": "يُسمح فقط بالأحرف والأرقام والشرطات السفلية",

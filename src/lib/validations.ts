@@ -1,9 +1,9 @@
 // Shared validation helpers for form inputs across the GRC application
 
-// For name/title/label fields - allows letters (any language), spaces, hyphens
+// For name/title/label fields - allows letters (any language), spaces, hyphens, dots
 export const isValidName = (str: string): boolean => {
   if (!str.trim()) return true; // empty handled by required checks
-  return /^[\p{L}\s-]+$/u.test(str);
+  return /^[\p{L}\s.\-]+$/u.test(str);
 };
 
 // For strict digit-only fields (phone numbers, IDs)

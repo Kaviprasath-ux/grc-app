@@ -918,6 +918,7 @@
   "Maximum frameworks limit reached. Your plan allows": "Maximum frameworks limit reached. Your plan allows",
   "frameworks": "frameworks",
   "Only letters, spaces, and hyphens are allowed": "Only letters, spaces, and hyphens are allowed",
+  "Only letters, spaces, hyphens, and dots are allowed": "Only letters, spaces, hyphens, and dots are allowed",
   "Only numbers are allowed": "Only numbers are allowed",
   "Only letters and spaces are allowed": "Only letters and spaces are allowed",
   "Only letters, numbers, and underscores are allowed": "Only letters, numbers, and underscores are allowed",

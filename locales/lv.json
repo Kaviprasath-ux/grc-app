@@ -918,6 +918,7 @@
   "Maximum frameworks limit reached. Your plan allows": "Sasniegts maksimālais ietvaru limits. Jūsu plāns atļauj",
   "frameworks": "ietvarus",
   "Only letters, spaces, and hyphens are allowed": "Atļauti tikai burti, atstarpes un defises",
+  "Only letters, spaces, hyphens, and dots are allowed": "Atļauti tikai burti, atstarpes, defises un punkti",
   "Only numbers are allowed": "Atļauti tikai cipari",
   "Only letters and spaces are allowed": "Atļauti tikai burti un atstarpes",
   "Only letters, numbers, and underscores are allowed": "Atļauti tikai burti, cipari un apakšsvītras",
