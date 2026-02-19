@@ -1285,6 +1285,7 @@ const translations: [string, string, string][] = [
 
   // Shared input validation messages
   ['Only letters, spaces, and hyphens are allowed', 'يُسمح فقط بالأحرف والمسافات والشرطات', 'Atļauti tikai burti, atstarpes un defises'],
+  ['Only letters, numbers, spaces, and hyphens are allowed', 'يُسمح فقط بالأحرف والأرقام والمسافات والشرطات', 'Atļauti tikai burti, cipari, atstarpes un defises'],
   ['Only numbers are allowed', 'يُسمح فقط بالأرقام', 'Atļauti tikai cipari'],
   ['Only letters and spaces are allowed', 'يُسمح فقط بالأحرف والمسافات', 'Atļauti tikai burti un atstarpes'],
   ['Only letters, numbers, and underscores are allowed', 'يُسمح فقط بالأحرف والأرقام والشرطات السفلية', 'Atļauti tikai burti, cipari un apakšsvītras'],

@@ -30,7 +30,7 @@ import { Unauthorized } from "@/components/ui/unauthorized";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { isValidName } from "@/lib/validations";
+import { isValidName, isValidNameWithNumbers } from "@/lib/validations";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Category {
@@ -389,8 +389,8 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
       case 1:
         if (!formData.name.trim()) {
           errors.name = t("Please enter the Risk Name") || "Please enter the Risk Name";
-        } else if (!isValidName(formData.name.trim())) {
-          errors.name = t("Only letters, spaces, and hyphens are allowed");
+        } else if (!isValidNameWithNumbers(formData.name.trim())) {
+          errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
         }
 
         setValidationErrors(errors);

@@ -6,6 +6,12 @@ export const isValidName = (str: string): boolean => {
   return /^[\p{L}\s.\-]+$/u.test(str);
 };
 
+// For name fields that also allow numbers (e.g., risk names) - letters, numbers, spaces, hyphens, dots
+export const isValidNameWithNumbers = (str: string): boolean => {
+  if (!str.trim()) return true; // empty handled by required checks
+  return /^[\p{L}\d\s.\-]+$/u.test(str);
+};
+
 // For strict digit-only fields (phone numbers, IDs)
 export const isNumericOnly = (str: string): boolean => {
   if (!str && str !== "0") return true;
