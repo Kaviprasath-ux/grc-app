@@ -579,8 +579,8 @@ export default function AssetClassificationPage() {
         setAiRiskResults(data);
         setDisplayedRisks(Array.isArray(risksList) ? [...risksList] : []);
         toast({
-          title: "Success",
-          description: "AI risk evaluation completed successfully",
+          title: t("Success"),
+          description: t("AI risk evaluation completed successfully"),
         });
         return;
       }
@@ -599,8 +599,8 @@ export default function AssetClassificationPage() {
     } catch (error: any) {
       console.error("Error starting AI risk evaluation:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to start AI risk evaluation",
+        title: t("Error"),
+        description: error.message || t("Failed to start AI risk evaluation"),
         variant: "destructive",
       });
       setAiRiskStatus("error");
@@ -617,8 +617,8 @@ export default function AssetClassificationPage() {
         setIsPolling(false);
         setAiRiskStatus("error");
         toast({
-          title: "Timeout",
-          description: "AI risk evaluation timed out. Please try again.",
+          title: t("Timeout"),
+          description: t("AI risk evaluation timed out. Please try again."),
           variant: "destructive",
         });
         return;
@@ -637,15 +637,15 @@ export default function AssetClassificationPage() {
           setDisplayedRisks(Array.isArray(risksList) ? [...risksList] : []);
           setIsPolling(false);
           toast({
-            title: "Success",
-            description: "AI risk evaluation completed successfully",
+            title: t("Success"),
+            description: t("AI risk evaluation completed successfully"),
           });
         } else if (data.status === "error") {
           setAiRiskStatus("error");
           setIsPolling(false);
           toast({
-            title: "Error",
-            description: data.error || "AI risk evaluation failed",
+            title: t("Error"),
+            description: data.error || t("AI risk evaluation failed"),
             variant: "destructive",
           });
         } else {
@@ -659,8 +659,8 @@ export default function AssetClassificationPage() {
         setIsPolling(false);
         setAiRiskStatus("error");
         toast({
-          title: "Error",
-          description: "Failed to check job status",
+          title: t("Error"),
+          description: t("Failed to check job status"),
           variant: "destructive",
         });
       }

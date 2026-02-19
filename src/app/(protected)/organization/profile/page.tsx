@@ -619,8 +619,8 @@ function ProfilePageContent() {
       </nav>
 
       {/* Page Header */}
-      <div className={`flex flex-col gap-1 ${isRTL ? "items-end" : ""}`}>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Organization Profile")}</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 ltr:text-left rtl:text-right">{t("Organization Profile")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

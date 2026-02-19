@@ -695,7 +695,7 @@ export default function ExceptionsPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {categories.map((c) => (
                         <SelectItem key={c} value={c}>
-                          {c}
+                          {t(c)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1228,7 +1228,7 @@ export default function ExceptionsPage() {
                   <SelectItem value="all">{t("All Statuses")}</SelectItem>
                   {statuses.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {s}
+                      {t(s)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1246,7 +1246,7 @@ export default function ExceptionsPage() {
                   <SelectItem value="all">{t("All Categories")}</SelectItem>
                   {categories.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {c}
+                      {t(c)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1302,7 +1302,7 @@ export default function ExceptionsPage() {
                           categoryColors[exception.category] || "bg-slate-100 text-slate-600"
                         }
                       >
-                        {exception.category}
+                        {t(exception.category)}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{getReference(exception)}</TableCell>
@@ -1326,7 +1326,7 @@ export default function ExceptionsPage() {
                           statusColors[exception.status] || "bg-slate-100 text-slate-600"
                         }
                       >
-                        {exception.status}
+                        {t(exception.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3 pr-5 text-sm">
@@ -1492,7 +1492,7 @@ export default function ExceptionsPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {categories.map((c) => (
                         <SelectItem key={c} value={c}>
-                          {c}
+                          {t(c)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1714,7 +1714,7 @@ export default function ExceptionsPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {statuses.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {s}
+                          {t(s)}
                         </SelectItem>
                       ))}
                     </SelectContent>
