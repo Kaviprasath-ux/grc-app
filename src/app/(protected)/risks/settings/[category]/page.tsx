@@ -45,6 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { cn } from "@/lib/utils";
 import { isValidName, isValidNumber } from "@/lib/validations";
 import * as XLSX from "xlsx";
@@ -1591,6 +1592,21 @@ export default function RiskSettingsCategoryPage() {
     return data.slice(start, start + pageSize);
   };
 
+  // Translation hooks — must be called before any early returns (React hooks rule)
+  // Empty arrays are no-ops; only the category-relevant data will have items
+  const { data: translatedVulnCats } = useTranslatedData(vulnerabilityCategories, { modelName: 'VulnerabilityCategory' });
+  const { data: translatedThreatCats } = useTranslatedData(threatCategories, { modelName: 'ThreatCategory' });
+  const { data: translatedControlStrengths } = useTranslatedData(controlStrengths, { modelName: 'ControlStrength' });
+  const { data: translatedLikelihoods } = useTranslatedData(likelihoods, { modelName: 'RiskLikelihood' });
+  const { data: translatedThreats } = useTranslatedData(threats, { modelName: 'RiskThreat' });
+  const { data: translatedVulnerabilities } = useTranslatedData(vulnerabilities, { modelName: 'RiskVulnerability' });
+  const { data: translatedRiskCategories } = useTranslatedData(riskCategories, { modelName: 'RiskCategory' });
+  const { data: translatedImpactCats } = useTranslatedData(impactCategories, { modelName: 'ImpactCategory' });
+  const { data: translatedImpactRatings } = useTranslatedData(impactRatings, { modelName: 'ImpactRating' });
+  const { data: translatedVulnRatings } = useTranslatedData(vulnerabilityRatings, { modelName: 'VulnerabilityRating' });
+  const { data: translatedRiskSubCats } = useTranslatedData(riskSubCategories, { modelName: 'RiskSubCategory' });
+  const { data: translatedRiskRanges } = useTranslatedData(riskRanges, { modelName: 'RiskRange' });
+
   const title = t(categoryTitles[category] || "Settings");
 
   // Show loading state while permissions or data is loading
@@ -1634,18 +1650,18 @@ export default function RiskSettingsCategoryPage() {
     return <Unauthorized description={t("You don't have permission to access Risk Settings.")} />;
   }
 
-  // Filtered data helpers
-  const filteredVulnCats = vulnerabilityCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredThreatCats = threatCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredControlStrengths = controlStrengths.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredLikelihoods = likelihoods.filter(l => l.title.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredThreats = threats.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredVulnerabilities = vulnerabilities.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredRiskCategories = riskCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredImpactCats = impactCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredImpactRatings = impactRatings.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredVulnRatings = vulnerabilityRatings.filter(r => r.label.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredRiskSubCats = riskSubCategories.filter(c => c.type.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Filtered data helpers — use translated data for display and search
+  const filteredVulnCats = translatedVulnCats.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredThreatCats = translatedThreatCats.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredControlStrengths = translatedControlStrengths.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredLikelihoods = translatedLikelihoods.filter(l => l.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredThreats = translatedThreats.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredVulnerabilities = translatedVulnerabilities.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredRiskCategories = translatedRiskCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredImpactCats = translatedImpactCats.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredImpactRatings = translatedImpactRatings.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredVulnRatings = translatedVulnRatings.filter(r => r.label.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredRiskSubCats = translatedRiskSubCats.filter(c => c.type.toLowerCase().includes(searchTerm.toLowerCase()));
 
   // Pagination helpers
   const getTotalPages = (totalItems: number) => Math.ceil(totalItems / pageSize);
@@ -2136,12 +2152,12 @@ export default function RiskSettingsCategoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {riskRanges.length === 0 ? (
+                    {translatedRiskRanges.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="h-24 text-center text-sm text-slate-500">{t("No risk ranges defined")}</TableCell>
                       </TableRow>
                     ) : (
-                      riskRanges.map((item) => (
+                      translatedRiskRanges.map((item) => (
                         <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
                           <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.title}</TableCell>
                           <TableCell className="py-3">

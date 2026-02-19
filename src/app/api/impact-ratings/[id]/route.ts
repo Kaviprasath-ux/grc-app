@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -41,6 +42,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'ImpactRating', rating.id, { name: rating.name, description: rating.description });
+
       return NextResponse.json(rating);
     } catch (error: unknown) {
       console.error("Error updating impact rating:", error);
@@ -77,6 +80,7 @@ export const DELETE = withAuth(
       }
 
       await prisma.impactRating.delete({ where: { id } });
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'ImpactRating', id);
       return NextResponse.json({ message: "Impact rating deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting impact rating:", error);

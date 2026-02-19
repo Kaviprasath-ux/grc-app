@@ -24,7 +24,7 @@ import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Check } from "lucid
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { triggerTranslation } from "@/hooks/useTranslatedData";
+import { triggerTranslation, useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Category {
   id: string;
@@ -160,6 +160,13 @@ export function NewRiskWizard({
   const [newVulnerabilityDescription, setNewVulnerabilityDescription] = useState("");
   const [creatingVulnerability, setCreatingVulnerability] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
+  // Translate dropdown/tag data for non-English locales
+  const { data: translatedThreats } = useTranslatedData(threats, { modelName: 'RiskThreat' });
+  const { data: translatedVulnerabilities } = useTranslatedData(vulnerabilities, { modelName: 'RiskVulnerability' });
+  const { data: translatedCauses } = useTranslatedData(causes, { modelName: 'RiskCause' });
+  const { data: translatedCategories } = useTranslatedData(localCategories, { modelName: 'RiskCategory' });
+  const { data: translatedRiskTypes } = useTranslatedData(riskTypes, { modelName: 'RiskType' });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -470,6 +477,7 @@ export function NewRiskWizard({
           triggerTranslation('Risk', riskId, {
             name: formData.name,
             description: formData.description || null,
+            riskSources: formData.riskSources || null,
           });
         }
 
@@ -515,19 +523,19 @@ export function NewRiskWizard({
 
   const getSelectedThreatNames = () => {
     return formData.selectedThreats
-      .map((id) => threats.find((t) => t.id === id)?.name)
+      .map((id) => translatedThreats.find((t) => t.id === id)?.name)
       .filter(Boolean);
   };
 
   const getSelectedVulnerabilityNames = () => {
     return formData.selectedVulnerabilities
-      .map((id) => vulnerabilities.find((v) => v.id === id)?.name)
+      .map((id) => translatedVulnerabilities.find((v) => v.id === id)?.name)
       .filter(Boolean);
   };
 
   const getSelectedCauseNames = () => {
     return formData.selectedCauses
-      .map((id) => causes.find((c) => c.id === id)?.name)
+      .map((id) => translatedCauses.find((c) => c.id === id)?.name)
       .filter(Boolean);
   };
 
@@ -556,6 +564,7 @@ export function NewRiskWizard({
         ...prev,
         selectedCauses: [...prev.selectedCauses, newCause.id],
       }));
+      triggerTranslation('RiskCause', newCause.id, { name: newCauseName.trim() });
       setNewCauseName("");
       setNewCauseDescription("");
       setCreateCauseDialogOpen(false);
@@ -592,6 +601,7 @@ export function NewRiskWizard({
         ...prev,
         categoryId: newCategory.id,
       }));
+      triggerTranslation('RiskCategory', newCategory.id, { name: newCategoryName.trim(), description: newCategoryDescription.trim() || null });
       setNewCategoryName("");
       setNewCategoryDescription("");
       setCreateCategoryDialogOpen(false);
@@ -628,6 +638,7 @@ export function NewRiskWizard({
         ...prev,
         selectedThreats: [...prev.selectedThreats, newThreat.id],
       }));
+      triggerTranslation('RiskThreat', newThreat.id, { name: newThreatName.trim(), description: newThreatDescription.trim() || null });
       setNewThreatName("");
       setNewThreatDescription("");
       setCreateThreatDialogOpen(false);
@@ -664,6 +675,7 @@ export function NewRiskWizard({
         ...prev,
         selectedVulnerabilities: [...prev.selectedVulnerabilities, newVulnerability.id],
       }));
+      triggerTranslation('RiskVulnerability', newVulnerability.id, { name: newVulnerabilityName.trim(), description: newVulnerabilityDescription.trim() || null });
       setNewVulnerabilityName("");
       setNewVulnerabilityDescription("");
       setCreateVulnerabilityDialogOpen(false);
@@ -842,7 +854,7 @@ export function NewRiskWizard({
                           <SelectValue placeholder={t("Select Category")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {localCategories.map((cat) => (
+                          {translatedCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
                             </SelectItem>
@@ -875,7 +887,7 @@ export function NewRiskWizard({
                         <SelectValue placeholder={t("Select Risk Type")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {riskTypes.map((type) => (
+                        {translatedRiskTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id}>
                             {type.name}
                           </SelectItem>
@@ -949,7 +961,7 @@ export function NewRiskWizard({
                           <SelectValue placeholder={t("Select threats")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {threats.map((threat) => (
+                          {translatedThreats.map((threat) => (
                             <SelectItem key={threat.id} value={threat.id}>
                               {threat.name}
                             </SelectItem>
@@ -998,7 +1010,7 @@ export function NewRiskWizard({
                           <SelectValue placeholder={t("Select vulnerabilities")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {vulnerabilities.map((vuln) => (
+                          {translatedVulnerabilities.map((vuln) => (
                             <SelectItem key={vuln.id} value={vuln.id}>
                               {vuln.name}
                             </SelectItem>
@@ -1047,7 +1059,7 @@ export function NewRiskWizard({
                         <SelectValue placeholder={t("Select cause")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {causes.map((cause) => (
+                        {translatedCauses.map((cause) => (
                           <SelectItem key={cause.id} value={cause.id}>
                             {cause.name}
                           </SelectItem>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -44,6 +45,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskRange', range.id, { title: range.title, description: range.description });
+
       return NextResponse.json(range);
     } catch (error: unknown) {
       console.error("Error updating risk range:", error);
@@ -80,6 +83,7 @@ export const DELETE = withAuth(
       }
 
       await prisma.riskRange.delete({ where: { id } });
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'RiskRange', id);
       return NextResponse.json({ message: "Risk range deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting risk range:", error);

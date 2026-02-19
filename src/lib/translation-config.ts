@@ -27,7 +27,7 @@ export interface TranslatableModel {
  */
 export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   // Priority 1 — Core GRC items visible on dashboards
-  { modelName: 'Risk', fields: [{ name: 'name' }, { name: 'description' }], priority: 1 },
+  { modelName: 'Risk', fields: [{ name: 'name' }, { name: 'description' }, { name: 'riskSources' }], priority: 1 },
   { modelName: 'Control', fields: [{ name: 'name' }, { name: 'description' }], priority: 1 },
   { modelName: 'Framework', fields: [{ name: 'name' }, { name: 'description' }], priority: 1 },
   { modelName: 'Policy', fields: [{ name: 'title' }, { name: 'description' }], priority: 1 },

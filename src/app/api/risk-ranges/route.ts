@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all risk ranges - with tenant filtering
 // GRC Admins get global access to view all settings across tenants
@@ -66,6 +67,8 @@ export const POST = withAuth(
           description: description?.trim() || null,
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskRange', range.id, { title: range.title, description: range.description });
 
       return NextResponse.json(range, { status: 201 });
     } catch (error: unknown) {

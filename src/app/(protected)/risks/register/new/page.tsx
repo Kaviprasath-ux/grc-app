@@ -31,6 +31,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Category {
   id: string;
@@ -126,6 +127,12 @@ export default function NewRiskPage() {
   const [newCauseDescription, setNewCauseDescription] = useState("");
   const [creatingCause, setCreatingCause] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  // Translate dropdown/tag data for non-English locales
+  const { data: translatedThreats } = useTranslatedData(threats, { modelName: 'RiskThreat' });
+  const { data: translatedVulnerabilities } = useTranslatedData(vulnerabilities, { modelName: 'RiskVulnerability' });
+  const { data: translatedCauses } = useTranslatedData(causes, { modelName: 'RiskCause' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'RiskCategory' });
+  const { data: translatedRiskTypes } = useTranslatedData(riskTypes, { modelName: 'RiskType' });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -444,19 +451,19 @@ export default function NewRiskPage() {
 
   const getSelectedThreatNames = () => {
     return formData.selectedThreats
-      .map((id) => threats.find((t) => t.id === id)?.name)
+      .map((id) => translatedThreats.find((t) => t.id === id)?.name)
       .filter(Boolean);
   };
 
   const getSelectedVulnerabilityNames = () => {
     return formData.selectedVulnerabilities
-      .map((id) => vulnerabilities.find((v) => v.id === id)?.name)
+      .map((id) => translatedVulnerabilities.find((v) => v.id === id)?.name)
       .filter(Boolean);
   };
 
   const getSelectedCauseNames = () => {
     return formData.selectedCauses
-      .map((id) => causes.find((c) => c.id === id)?.name)
+      .map((id) => translatedCauses.find((c) => c.id === id)?.name)
       .filter(Boolean);
   };
 
@@ -712,7 +719,7 @@ export default function NewRiskPage() {
                           <SelectValue placeholder={t("selectCategory")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          {categories.map((cat) => (
+                          {translatedCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
                             </SelectItem>
@@ -740,7 +747,7 @@ export default function NewRiskPage() {
                         <SelectValue placeholder={t("riskType")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
-                        {riskTypes.map((type) => (
+                        {translatedRiskTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id}>
                             {type.name}
                           </SelectItem>
@@ -817,7 +824,7 @@ export default function NewRiskPage() {
                           <SelectValue placeholder={t("selectThreats")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          {threats.map((threat) => (
+                          {translatedThreats.map((threat) => (
                             <SelectItem key={threat.id} value={threat.id}>
                               {threat.name}
                             </SelectItem>
@@ -861,7 +868,7 @@ export default function NewRiskPage() {
                           <SelectValue placeholder={t("selectVulnerabilities")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          {vulnerabilities.map((vuln) => (
+                          {translatedVulnerabilities.map((vuln) => (
                             <SelectItem key={vuln.id} value={vuln.id}>
                               {vuln.name}
                             </SelectItem>
@@ -905,7 +912,7 @@ export default function NewRiskPage() {
                         <SelectValue placeholder={t("selectCause")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
-                        {causes.map((cause) => (
+                        {translatedCauses.map((cause) => (
                           <SelectItem key={cause.id} value={cause.id}>
                             {cause.name}
                           </SelectItem>

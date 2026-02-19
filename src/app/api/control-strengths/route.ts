@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all control strengths - with tenant filtering
 // GRC Admins get global access to view all settings across tenants
@@ -62,6 +63,8 @@ export const POST = withAuth(
           score: parseInt(score) || 0,
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'ControlStrength', strength.id, { name: strength.name });
 
       return NextResponse.json(strength, { status: 201 });
     } catch (error: unknown) {

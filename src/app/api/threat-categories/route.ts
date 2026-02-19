@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all threat categories - with tenant filtering
 // GRC Admins get global access to view all categories across tenants
@@ -66,6 +67,8 @@ export const POST = withAuth(
           name: name.trim(),
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'ThreatCategory', category.id, { name: category.name });
 
       return NextResponse.json(category, { status: 201 });
     } catch (error: unknown) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -42,6 +43,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskLikelihood', likelihood.id, { title: likelihood.title, timeFrame: likelihood.timeFrame, probability: likelihood.probability });
+
       return NextResponse.json(likelihood);
     } catch (error: unknown) {
       console.error("Error updating risk likelihood:", error);
@@ -78,6 +81,7 @@ export const DELETE = withAuth(
       }
 
       await prisma.riskLikelihood.delete({ where: { id } });
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'RiskLikelihood', id);
       return NextResponse.json({ message: "Likelihood deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting risk likelihood:", error);

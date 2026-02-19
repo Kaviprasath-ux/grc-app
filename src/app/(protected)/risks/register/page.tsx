@@ -336,6 +336,8 @@ function RiskRegisterContent() {
 
   // Translate dynamic data (name, description) for non-English locales
   const { data: translatedRisks } = useTranslatedData(displayRisks, { modelName: 'Risk' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'RiskCategory' });
+  const { data: translatedRiskTypes } = useTranslatedData(riskTypes, { modelName: 'RiskType' });
 
   // Calculate pagination
   const totalPages = Math.ceil(translatedRisks.length / ITEMS_PER_PAGE);
@@ -509,7 +511,7 @@ function RiskRegisterContent() {
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="all">{t("All Categories")}</SelectItem>
-                  {categories.map((cat) => (
+                  {translatedCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
@@ -522,7 +524,7 @@ function RiskRegisterContent() {
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="all">{t("All Types")}</SelectItem>
-                  {riskTypes.map((type) => (
+                  {translatedRiskTypes.map((type) => (
                     <SelectItem key={type.id} value={type.id}>
                       {type.name}
                     </SelectItem>
@@ -566,7 +568,7 @@ function RiskRegisterContent() {
                 <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
                 <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
                 <span className="text-sm text-slate-600 truncate" title={risk.description || ""}>{risk.description || "-"}</span>
-                <span className="text-sm text-slate-600 truncate">{risk.category?.name || "-"}</span>
+                <span className="text-sm text-slate-600 truncate">{(risk.category?.id ? translatedCategories.find(c => c.id === risk.category?.id)?.name : null) || risk.category?.name || "-"}</span>
                 <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>
                 <div>
                   <RiskRatingBadge rating={risk.riskRating} />

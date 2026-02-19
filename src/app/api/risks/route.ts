@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getDataScopeFilter } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 // Helper function to calculate risk rating based on score
 // Rating values matching website: Catastrophic, Very high, High, Low Risk
@@ -322,6 +323,8 @@ export const POST = withAuth(
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'Risk', risk.id, { name: risk.name, description: risk.description, riskSources: risk.riskSources });
 
       return NextResponse.json(risk, { status: 201 });
     } catch (error) {

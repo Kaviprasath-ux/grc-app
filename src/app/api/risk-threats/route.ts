@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // GET all risk threats - with tenant filtering
 // GRC Admins get global access to view all threats across tenants
@@ -70,6 +71,8 @@ export const POST = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskThreat', threat.id, { name: threat.name, description: threat.description });
+
       return NextResponse.json(threat, { status: 201 });
     } catch (error) {
       console.error("Error creating risk threat:", error);
@@ -131,6 +134,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskThreat', threat.id, { name: threat.name, description: threat.description });
+
       return NextResponse.json(threat);
     } catch (error) {
       console.error("Error updating risk threat:", error);
@@ -177,6 +182,7 @@ export const DELETE = withAuth(
       await prisma.riskThreat.delete({
         where: { id },
       });
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'RiskThreat', id);
 
       return NextResponse.json({ success: true });
     } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all impact ratings - with tenant filtering
 // GRC Admins get global access to view all settings across tenants
@@ -63,6 +64,8 @@ export const POST = withAuth(
           description: description?.trim() || null,
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'ImpactRating', rating.id, { name: rating.name, description: rating.description });
 
       return NextResponse.json(rating, { status: 201 });
     } catch (error: unknown) {

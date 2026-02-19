@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // GET all risk vulnerabilities - with tenant filtering
 // GRC Admins get global access to view all vulnerabilities across tenants
@@ -70,6 +71,8 @@ export const POST = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskVulnerability', vulnerability.id, { name: vulnerability.name, description: vulnerability.description });
+
       return NextResponse.json(vulnerability, { status: 201 });
     } catch (error) {
       console.error("Error creating risk vulnerability:", error);
@@ -116,6 +119,7 @@ export const DELETE = withAuth(
       await prisma.riskVulnerability.delete({
         where: { id },
       });
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'RiskVulnerability', id);
 
       return NextResponse.json({ success: true });
     } catch (error) {
