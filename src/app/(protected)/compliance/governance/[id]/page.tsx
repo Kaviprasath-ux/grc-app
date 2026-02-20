@@ -1971,7 +1971,7 @@ export default function GovernanceDetailPage() {
                   size="sm"
                   onClick={() => {
                     if (attachments.length > 0) {
-                      window.open(attachments[0].filePath, "_blank");
+                      window.open(`/api/policies/${id}/attachments/${attachments[0].id}/download`, "_blank");
                     } else if (linkedVaultDocuments.length > 0) {
                       window.open(`/api/governance-vault/${linkedVaultDocuments[0].document.id}/download`, "_blank");
                     }
@@ -2629,7 +2629,7 @@ export default function GovernanceDetailPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => window.open(att.filePath, "_blank")}
+                            onClick={() => window.open(`/api/policies/${id}/attachments/${att.id}/download`, "_blank")}
                             title={t("Download")}
                           >
                             <Download className="h-4 w-4" />
@@ -2744,7 +2744,7 @@ export default function GovernanceDetailPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
-                                    onClick={() => window.open(att.filePath, "_blank")}
+                                    onClick={() => window.open(`/api/policies/${id}/attachments/${att.id}/download`, "_blank")}
                                   >
                                     <Download className="h-3.5 w-3.5" />
                                   </Button>

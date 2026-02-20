@@ -67,11 +67,11 @@ export async function POST(req: NextRequest) {
             console.log(`[Governance Ingest] Reading file from disk: ${latestAttachment.filePath}`);
 
             // Convert relative path to absolute path
-            // filePath is stored as "/uploads/policies/file.docx"
+            // filePath is stored as "/uploads/governance/{id}/file.docx"
             const relativePath = latestAttachment.filePath.startsWith('/')
                 ? latestAttachment.filePath.slice(1)
                 : latestAttachment.filePath;
-            const absolutePath = path.join(process.cwd(), 'public', relativePath);
+            const absolutePath = path.join(process.cwd(), relativePath);
 
             try {
                 const fileBuffer = await readFile(absolutePath);
