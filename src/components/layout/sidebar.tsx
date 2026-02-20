@@ -50,7 +50,7 @@ function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onEx
       return (
         <div className="flex justify-center mb-1 px-2">
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
             title={translatedName}
             className="flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50"
           >
@@ -143,7 +143,7 @@ function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onEx
     return (
       <div className="px-3 mb-1">
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
             "text-slate-500 hover:text-red-600 hover:bg-red-50",

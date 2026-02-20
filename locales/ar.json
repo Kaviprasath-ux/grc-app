@@ -2694,5 +2694,6 @@
   "Link Control to Risk": "ربط ضابطة بالمخاطر",
   "Select a control": "اختر ضابطة",
   "No controls linked to this risk": "لا توجد ضوابط مرتبطة بهذه المخاطر",
-  "Link controls to show how this risk is being mitigated": "اربط الضوابط لإظهار كيفية التخفيف من هذه المخاطر"
+  "Link controls to show how this risk is being mitigated": "اربط الضوابط لإظهار كيفية التخفيف من هذه المخاطر",
+  "Failed to create": "فشل في الإنشاء"
 }
