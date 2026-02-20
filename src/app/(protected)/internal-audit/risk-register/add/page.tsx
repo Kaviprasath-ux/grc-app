@@ -350,7 +350,7 @@ export default function AddRiskPage() {
             onClick={() => router.push("/internal-audit/risk-register")}
             className="h-8 w-8 text-slate-400 hover:text-slate-600"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 ltr:rotate-0 rtl:rotate-180" />
           </Button>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Add Risk")}</h1>
         </div>
@@ -390,7 +390,7 @@ export default function AddRiskPage() {
           onClick={() => router.push("/internal-audit/risk-register")}
           className="h-8 w-8 text-slate-400 hover:text-slate-600"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5 ltr:rotate-0 rtl:rotate-180" />
         </Button>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Add Risk")}</h1>
       </div>

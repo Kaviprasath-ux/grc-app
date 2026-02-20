@@ -76,20 +76,21 @@ export const POST = withAuth(
       const auditHeadId = getAuditHeadId(session);
       const tenantFilter = getTenantFilter(session);
 
-      // Generate risk ID - scoped to tenant
-      const lastRisk = await prisma.internalAuditRisk.findFirst({
+      // Generate risk ID - scoped to tenant, handles all legacy formats
+      const existingRisks = await prisma.internalAuditRisk.findMany({
         where: tenantFilter,
-        orderBy: { riskId: "desc" },
+        select: { riskId: true },
       });
 
-      let nextNumber = 1;
-      if (lastRisk && lastRisk.riskId) {
-        const match = lastRisk.riskId.match(/RID(\d+)/);
+      let maxRiskNumber = 0;
+      for (const r of existingRisks) {
+        const match = r.riskId.match(/(\d+)$/);
         if (match) {
-          nextNumber = parseInt(match[1]) + 1;
+          const num = parseInt(match[1], 10);
+          if (num > maxRiskNumber) maxRiskNumber = num;
         }
       }
-      const riskId = `RID${String(nextNumber).padStart(3, "0")}`;
+      const riskId = `RID${String(maxRiskNumber + 1).padStart(3, "0")}`;
 
       // Calculate scores if not provided
       let inherentScore = body.inherentScore;

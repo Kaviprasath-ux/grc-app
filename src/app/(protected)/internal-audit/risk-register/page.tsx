@@ -543,8 +543,8 @@ export default function RiskRegisterPage() {
     } catch (error) {
       console.error("Failed to fetch risk details:", error);
       toast({
-        title: "Error",
-        description: "Failed to load risk details.",
+        title: t("Error"),
+        description: t("Failed to load risk details."),
         variant: "destructive",
       });
     } finally {
@@ -571,8 +571,8 @@ export default function RiskRegisterPage() {
         setViewingRisk(data);
       } else {
         toast({
-          title: "Error",
-          description: "Failed to load risk details.",
+          title: t("Error"),
+          description: t("Failed to load risk details."),
           variant: "destructive",
         });
         setIsViewRiskOpen(false);
@@ -580,8 +580,8 @@ export default function RiskRegisterPage() {
     } catch (error) {
       console.error("Failed to fetch risk details:", error);
       toast({
-        title: "Error",
-        description: "Failed to load risk details.",
+        title: t("Error"),
+        description: t("Failed to load risk details."),
         variant: "destructive",
       });
       setIsViewRiskOpen(false);
@@ -752,24 +752,24 @@ export default function RiskRegisterPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Risk created successfully.",
+          title: t("Success"),
+          description: t("Risk created successfully."),
         });
         closeAddRiskModal();
         fetchRisks();
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to create risk.",
+          title: t("Error"),
+          description: error.error || t("Failed to create risk."),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Failed to create risk:", error);
       toast({
-        title: "Error",
-        description: "Failed to create risk.",
+        title: t("Error"),
+        description: t("Failed to create risk."),
         variant: "destructive",
       });
     } finally {
@@ -850,24 +850,24 @@ export default function RiskRegisterPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Risk updated successfully.",
+          title: t("Success"),
+          description: t("Risk updated successfully."),
         });
         closeEditRiskModal();
         fetchRisks();
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to update risk.",
+          title: t("Error"),
+          description: error.error || t("Failed to update risk."),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Failed to update risk:", error);
       toast({
-        title: "Error",
-        description: "Failed to update risk.",
+        title: t("Error"),
+        description: t("Failed to update risk."),
         variant: "destructive",
       });
     } finally {
@@ -1089,13 +1089,13 @@ export default function RiskRegisterPage() {
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         {canViewDashboard && (
           <>
             <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
               {t("Dashboard")}
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           </>
         )}
         <span className="text-primary-700 font-medium">{t("Risk Register")}</span>
@@ -1138,17 +1138,17 @@ export default function RiskRegisterPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           <div className="relative w-full sm:w-[320px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder={t("Search risks...")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full h-9 pl-9 pr-3 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              className="w-full h-9 ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               disabled={isReadOnlyRole}
             />
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto sm:ml-auto">
+          <div className="flex items-center gap-3 w-full sm:w-auto sm:ltr:ml-auto sm:rtl:mr-auto">
             <Select value={yearFilter} onValueChange={setYearFilter} disabled={isReadOnlyRole}>
               <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200" disabled={isReadOnlyRole}>
                 <SelectValue placeholder={t("Year")} />
@@ -1181,7 +1181,7 @@ export default function RiskRegisterPage() {
           <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pl-5 min-w-[100px]">{t("Risk ID")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap ltr:pl-5 rtl:pr-5 min-w-[100px]">{t("Risk ID")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[200px]">{t("Risk Description")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[130px]">{t("Department")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[120px]">{t("Creation Date")}</TableHead>
@@ -1190,13 +1190,13 @@ export default function RiskRegisterPage() {
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Residual Score")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Risk Level")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[90px]">{t("Status")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap pr-5 min-w-[90px]">{t("Action")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap ltr:pr-5 rtl:pl-5 min-w-[90px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedRisks.map((risk) => (
                 <TableRow key={risk.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5 whitespace-nowrap">{risk.riskId}</TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5 whitespace-nowrap">{risk.riskId}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 max-w-[250px] truncate">{risk.riskDescription || risk.riskName}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.department?.name || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(risk.creationDate)}</TableCell>
@@ -1205,7 +1205,7 @@ export default function RiskRegisterPage() {
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.residualScore ?? "-"}</TableCell>
                   <TableCell className="py-3 whitespace-nowrap">{getRiskLevelBadge(risk.riskLevel)}</TableCell>
                   <TableCell className="py-3 whitespace-nowrap">{getStatusBadge(risk.status)}</TableCell>
-                  <TableCell className="py-3 pr-5 whitespace-nowrap">
+                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5 whitespace-nowrap">
                     {!isReadOnlyRole && (
                       <div className="flex items-center justify-end gap-0.5">
                         <Button
@@ -1464,7 +1464,7 @@ export default function RiskRegisterPage() {
                   </div>
                 )}
 
-                <div className="text-xs text-slate-400 text-right">
+                <div className="text-xs text-slate-400 ltr:text-right rtl:text-left">
                   {t("Generated at")}: {new Date(aiRecommendations.generatedAt).toLocaleString()}
                 </div>
               </div>

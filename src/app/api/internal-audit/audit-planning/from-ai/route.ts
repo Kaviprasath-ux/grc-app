@@ -44,11 +44,22 @@ export const POST = withAuth(
         );
       }
 
-      // Generate unique audit ID
-      const existingEngagements = await prisma.auditEngagement.count({
+      // Generate unique audit ID - scoped to tenant, handles all legacy formats
+      const existingEngagements = await prisma.auditEngagement.findMany({
         where: { customerAccountId },
+        select: { auditId: true },
       });
-      const auditId = `AUD${(existingEngagements + 1).toString().padStart(3, '0')}`;
+
+      let maxAuditNumber = 0;
+      for (const eng of existingEngagements) {
+        // Extract trailing number from any format: AUD001, AUD-001, AUD-2025-001
+        const match = eng.auditId.match(/(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxAuditNumber) maxAuditNumber = num;
+        }
+      }
+      const auditId = `AUD${String(maxAuditNumber + 1).padStart(3, '0')}`;
 
       // Format the audit tasks as a JSON string for description
       const tasksDescription = audit_tasks

@@ -376,7 +376,7 @@ export default function EditRiskPage() {
         </nav>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 ltr:rotate-0 rtl:rotate-180" />
           </Button>
           <div>
             <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
@@ -408,7 +408,7 @@ export default function EditRiskPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.push("/internal-audit/risk-register")}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 ltr:rotate-0 rtl:rotate-180" />
         </Button>
         <div>
           <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>

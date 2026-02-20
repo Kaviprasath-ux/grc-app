@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, Loader2, Sparkles } from "lucide-react";
@@ -60,6 +61,7 @@ const RISK_LEVEL_MAP: Record<string, string> = {
 
 export default function AIRecommendedRisksPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export default function AIRecommendedRisksPage() {
       }
     } catch (e) {
       console.error("Failed to fetch departments:", e);
-      toast.error("Failed to load departments");
+      toast.error(t("Failed to load departments"));
     } finally {
       setLoading(false);
     }
@@ -118,17 +120,17 @@ export default function AIRecommendedRisksPage() {
       console.log("[RunPod fieldwork-audit-plan] Client response body:", JSON.stringify(data, null, 2));
 
       if (!res.ok) {
-        toast.error(data?.error || "Failed to generate audit plan");
+        toast.error(data?.error || t("Failed to generate audit plan"));
         return;
       }
 
       setPlanResult(data as FieldworkAuditPlanResponse);
       setCurrentDepartmentId(dept.id); // Store department ID for adding to planning
       setPlanDialogOpen(true);
-      toast.success("Audit plan generated");
+      toast.success(t("Audit plan generated"));
     } catch (e) {
       console.error("Generate audit plan error:", e);
-      toast.error("Failed to generate audit plan");
+      toast.error(t("Failed to generate audit plan"));
     } finally {
       setGenerating(null);
     }
@@ -136,7 +138,7 @@ export default function AIRecommendedRisksPage() {
 
   const handleAddToAuditPlan = async (plan: AuditPlanItem, planIndex: number) => {
     if (!currentDepartmentId) {
-      toast.error("Department information missing");
+      toast.error(t("Department information missing"));
       return;
     }
 
@@ -162,20 +164,20 @@ export default function AIRecommendedRisksPage() {
       if (!res.ok) {
         // Handle duplicate (409 Conflict) with warning message
         if (res.status === 409) {
-          toast.warning(data?.error || "This audit plan has already been added to Audit Planning.");
+          toast.warning(data?.error || t("This audit plan has already been added to Audit Planning."));
         } else {
-          toast.error(data?.error || "Failed to add to audit plan");
+          toast.error(data?.error || t("Failed to add to audit plan"));
         }
         return;
       }
 
-      toast.success("Successfully added to Audit Planning!");
+      toast.success(t("Successfully added to Audit Planning!"));
 
       // Optionally navigate to audit planning
       // router.push("/internal-audit/audit-planning");
     } catch (e) {
       console.error("Add to audit plan error:", e);
-      toast.error("Failed to add to audit plan");
+      toast.error(t("Failed to add to audit plan"));
     } finally {
       setAddingToPlanning(null);
     }
@@ -185,8 +187,8 @@ export default function AIRecommendedRisksPage() {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div>
-          <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-xl sm:text-2xl font-semibold">AI Recommended Risks</h1>
+          <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
+          <h1 className="text-xl sm:text-2xl font-semibold">{t("AI Recommended Risks")}</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -199,15 +201,15 @@ export default function AIRecommendedRisksPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-xl sm:text-2xl font-semibold">AI Recommended Risks</h1>
+          <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
+          <h1 className="text-xl sm:text-2xl font-semibold">{t("AI Recommended Risks")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Generate audit plans per department from AI‑recommended risks.
+            {t("Generate audit plans per department from AI-recommended risks.")}
           </p>
         </div>
         <Button variant="outline" onClick={() => router.push("/internal-audit/risk-register")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Risk Register
+          <ArrowLeft className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Back to Risk Register")}
         </Button>
       </div>
 
@@ -219,7 +221,7 @@ export default function AIRecommendedRisksPage() {
                 <Sparkles className="h-4 w-4 text-blue-600" />
                 {dept.name}
               </CardTitle>
-              <CardDescription>Generate an audit plan for this department.</CardDescription>
+              <CardDescription>{t("Generate an audit plan for this department.")}</CardDescription>
             </CardHeader>
             <CardContent>
               <Button
@@ -229,13 +231,13 @@ export default function AIRecommendedRisksPage() {
               >
                 {generating === dept.id ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                    {t("Generating...")}
                   </>
                 ) : (
                   <>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Generate Audit Plan
+                    <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Generate Audit Plan")}
                   </>
                 )}
               </Button>
@@ -247,7 +249,7 @@ export default function AIRecommendedRisksPage() {
       {departments.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            No departments found. Add departments in Settings to generate audit plans.
+            {t("No departments found. Add departments in Settings to generate audit plans.")}
           </CardContent>
         </Card>
       )}
@@ -255,9 +257,9 @@ export default function AIRecommendedRisksPage() {
       <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Generated Audit Plan</DialogTitle>
+            <DialogTitle>{t("Generated Audit Plan")}</DialogTitle>
             <DialogDescription>
-              {planResult?.department_name && `Department: ${planResult.department_name}`}
+              {planResult?.department_name && `${t("Department")}: ${planResult.department_name}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -271,14 +273,14 @@ export default function AIRecommendedRisksPage() {
                           {plan.audit_code} – {plan.audit_title}
                         </CardTitle>
                         {plan.audit_objective && (
-                          <CardDescription className="mt-1">Objective: {plan.audit_objective}</CardDescription>
+                          <CardDescription className="mt-1">{t("Objective")}: {plan.audit_objective}</CardDescription>
                         )}
                         {plan.audit_scope && (
-                          <p className="text-sm text-muted-foreground mt-1">Scope: {plan.audit_scope}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{t("Scope")}: {plan.audit_scope}</p>
                         )}
                         {plan.associated_risks?.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Associated risks: {plan.associated_risks.join("; ")}
+                            {t("Associated risks")}: {plan.associated_risks.join("; ")}
                           </p>
                         )}
                       </div>
@@ -289,11 +291,11 @@ export default function AIRecommendedRisksPage() {
                       >
                         {addingToPlanning === idx ? (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Adding...
+                            <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                            {t("Adding...")}
                           </>
                         ) : (
-                          "Add to Audit Plan"
+                          t("Add to Audit Plan")
                         )}
                       </Button>
                     </div>
@@ -313,7 +315,7 @@ export default function AIRecommendedRisksPage() {
                           </ul>
                         )}
                         {task.evidence_to_collect?.length > 0 && (
-                          <p className="mt-1 text-xs">Evidence: {task.evidence_to_collect.slice(0, 2).join(", ")}</p>
+                          <p className="mt-1 text-xs">{t("Evidence")}: {task.evidence_to_collect.slice(0, 2).join(", ")}</p>
                         )}
                       </div>
                     ))}
@@ -321,12 +323,12 @@ export default function AIRecommendedRisksPage() {
                 </Card>
               ))
             ) : (
-              <p className="text-muted-foreground">No audit plans in response.</p>
+              <p className="text-muted-foreground">{t("No audit plans in response.")}</p>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPlanDialogOpen(false)}>
-              Close
+              {t("Close")}
             </Button>
           </DialogFooter>
         </DialogContent>

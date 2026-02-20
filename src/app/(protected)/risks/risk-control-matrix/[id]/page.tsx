@@ -821,7 +821,7 @@ export default function RiskDetailPage() {
                       ))}
                     </tbody>
                   </table>
-                  <div className="absolute -left-11 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                  <div className="absolute ltr:-left-11 rtl:-right-11 top-1/2 -translate-y-1/2 ltr:-rotate-90 rtl:rotate-90 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
                     {t("Likelihood")}
                   </div>
                   <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
@@ -840,7 +840,7 @@ export default function RiskDetailPage() {
           <div className="flex items-center gap-2">
             
             <h3 className="text-sm font-semibold text-slate-800">{t("Mitigating Controls")}</h3>
-            <span className="text-xs text-slate-400 ml-1">({linkedControls.length})</span>
+            <span className="text-xs text-slate-400 ltr:ml-1 rtl:mr-1">({linkedControls.length})</span>
           </div>
           <PermissionGate resource="risk.risk-matrix" action="edit">
             <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>

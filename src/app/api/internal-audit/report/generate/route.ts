@@ -2,31 +2,24 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
 
-// Helper function to generate report code (format: RPT-NNN - unique serial)
-async function generateReportCode(): Promise<string> {
-  // Get all reports to find the highest number
+// Helper function to generate report code (format: RPT-NNNN - unique serial, tenant-scoped)
+async function generateReportCode(customerAccountId: string): Promise<string> {
   const reports = await prisma.auditReport.findMany({
+    where: { customerAccountId },
     select: { reportCode: true },
   });
 
-  if (reports.length === 0) {
-    return 'RPT-0001';
-  }
-
-  // Extract numbers from all report codes and find max
   let maxNumber = 0;
   for (const report of reports) {
-    // Handle both old format (RPT-YYYY-NNN) and new format (RPT-NNN)
-    const parts = report.reportCode.split('-');
-    const lastPart = parts[parts.length - 1];
-    const num = parseInt(lastPart, 10) || 0;
-    if (num > maxNumber) {
-      maxNumber = num;
+    // Extract trailing number from any format: RPT-0001, RPT-2025-001, RPT001
+    const match = report.reportCode.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNumber) maxNumber = num;
     }
   }
 
-  const nextNumber = maxNumber + 1;
-  return `RPT-${nextNumber.toString().padStart(4, '0')}`;
+  return `RPT-${(maxNumber + 1).toString().padStart(4, '0')}`;
 }
 
 // POST /api/internal-audit/report/generate - Generate a new audit report
@@ -100,8 +93,8 @@ export const POST = withAuth(
         );
       }
 
-      // Generate report code
-      const reportCode = await generateReportCode();
+      // Generate report code - scoped to tenant
+      const reportCode = await generateReportCode(customerAccountId);
 
       // Format dates for report
       const formatDate = (date: Date | null) => {

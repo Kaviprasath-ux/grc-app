@@ -54,18 +54,22 @@ export const POST = withAuth(
     const departmentMap = new Map(departments.map((d) => [d.name.toLowerCase(), d.id]));
     const categoryMap = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));
 
-    // Get the last risk ID to continue numbering
-    const lastRisk = await prisma.internalAuditRisk.findFirst({
-      orderBy: { riskId: "desc" },
+    // Get the last risk ID to continue numbering - scoped to tenant, handles all formats
+    const existingRisks = await prisma.internalAuditRisk.findMany({
+      where: { customerAccountId },
+      select: { riskId: true },
     });
 
     let nextNumber = 1;
-    if (lastRisk && lastRisk.riskId) {
-      const match = lastRisk.riskId.match(/RID(\d+)/);
+    let maxRiskNum = 0;
+    for (const r of existingRisks) {
+      const match = r.riskId.match(/(\d+)$/);
       if (match) {
-        nextNumber = parseInt(match[1]) + 1;
+        const num = parseInt(match[1], 10);
+        if (num > maxRiskNum) maxRiskNum = num;
       }
     }
+    nextNumber = maxRiskNum + 1;
 
     const imported: string[] = [];
     const errors: string[] = [];
@@ -115,9 +119,9 @@ export const POST = withAuth(
           nextNumber++;
         } else {
           // If risk ID is provided, update nextNumber if needed
-          const match = riskId.match(/RID(\d+)/i);
+          const match = riskId.match(/(\d+)$/);
           if (match) {
-            const num = parseInt(match[1]);
+            const num = parseInt(match[1], 10);
             if (num >= nextNumber) {
               nextNumber = num + 1;
             }

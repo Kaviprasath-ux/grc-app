@@ -3963,7 +3963,7 @@ async function main() {
 
   const auditEngagements = [
     {
-      auditId: "AUD-2025-001",
+      auditId: "AUD001",
       engagementTitle: "Q1 2025 IT Security Audit",
       description: "Assess the effectiveness of IT security controls and identify vulnerabilities. Scope: Network security, access management, patch management, incident response",
       departmentId: createdDepts["IT Operations"],
@@ -3978,7 +3978,7 @@ async function main() {
       quarter: "Q1",
     },
     {
-      auditId: "AUD-2025-002",
+      auditId: "AUD002",
       engagementTitle: "Financial Reporting Compliance Audit",
       description: "Verify accuracy and compliance of financial reporting processes. Scope: Monthly reconciliations, journal entries, financial statement preparation",
       departmentId: createdDepts["Revenue"],
@@ -3992,7 +3992,7 @@ async function main() {
       quarter: "Q2",
     },
     {
-      auditId: "AUD-2025-003",
+      auditId: "AUD003",
       engagementTitle: "Vendor Management Review",
       description: "Evaluate vendor onboarding, monitoring, and risk assessment processes. Scope: Vendor contracts, performance monitoring, payment processing",
       departmentId: createdDepts["Procurement"],
@@ -4006,7 +4006,7 @@ async function main() {
       quarter: "Q2",
     },
     {
-      auditId: "AUD-2025-004",
+      auditId: "AUD004",
       engagementTitle: "Data Privacy Compliance Assessment",
       description: "Assess compliance with data privacy regulations (GDPR, PDPA). Scope: Data collection, storage, processing, deletion, and consent management",
       departmentId: createdDepts["IT Support"],
@@ -4022,7 +4022,7 @@ async function main() {
       quarter: "Q1",
     },
     {
-      auditId: "AUD-2025-005",
+      auditId: "AUD005",
       engagementTitle: "Payroll Processing Audit",
       description: "Review payroll calculation accuracy and compliance with labor laws. Scope: Time tracking, salary calculations, deductions, tax compliance",
       departmentId: createdDepts["Human Resources"],
@@ -4036,7 +4036,7 @@ async function main() {
       quarter: "Q3",
     },
     {
-      auditId: "AUD-2024-012",
+      auditId: "AUD006",
       engagementTitle: "Q4 2024 Regulatory Compliance Review",
       description: "Verify adherence to industry regulations and standards. Scope: SOC 2, ISO 27001, industry-specific regulations",
       departmentId: createdDepts["Compliance"],
@@ -4053,7 +4053,7 @@ async function main() {
     },
     // Additional completed audits for Report testing
     {
-      auditId: "AUD-2024-011",
+      auditId: "AUD007",
       engagementTitle: "Procurement & Contract Management Audit",
       description: "Review procurement processes, contract negotiations, and vendor compliance. Scope: Purchase orders, contract terms, payment authorization",
       departmentId: createdDepts["Procurement"],
@@ -4070,7 +4070,7 @@ async function main() {
       auditType: "Internal",
     },
     {
-      auditId: "AUD-2024-010",
+      auditId: "AUD008",
       engagementTitle: "Test Audit for Ministry of Finance",
       description: "Conduct specialized audit for Ministry of Finance compliance requirements. Scope: Budget controls, expenditure tracking, financial governance",
       departmentId: createdDepts["Revenue"],
@@ -4087,7 +4087,7 @@ async function main() {
       auditType: "Internal",
     },
     {
-      auditId: "AUD-2024-009",
+      auditId: "AUD009",
       engagementTitle: "Governance and Decision Making Review",
       description: "Assess governance structures and decision-making processes. Scope: Board oversight, policy frameworks, strategic alignment",
       departmentId: createdDepts["Operations"],
@@ -4104,7 +4104,7 @@ async function main() {
       auditType: "Internal",
     },
     {
-      auditId: "AUD-2024-008",
+      auditId: "AUD010",
       engagementTitle: "Information Security Controls Assessment",
       description: "Evaluate effectiveness of information security controls and incident response. Scope: Access controls, encryption, monitoring, incident handling",
       departmentId: createdDepts["IT Operations"],
@@ -4143,8 +4143,8 @@ async function main() {
 
   const internalAuditFindings = [
     {
-      findingId: "FND-2025-001",
-      engagementId: createdEngagements["AUD-2025-004"],
+      findingId: "FND001",
+      engagementId: createdEngagements["AUD004"],
       departmentId: createdDepts["IT Support"],
       finding: "Inadequate Data Retention Policy",
       description: "Customer data is being retained beyond the necessary period without documented justification",
@@ -4154,8 +4154,8 @@ async function main() {
       status: "Open",
     },
     {
-      findingId: "FND-2025-002",
-      engagementId: createdEngagements["AUD-2025-004"],
+      findingId: "FND002",
+      engagementId: createdEngagements["AUD004"],
       departmentId: createdDepts["IT Support"],
       finding: "Missing Consent Records",
       description: "Some customer consent records for data processing are incomplete or missing",
@@ -4165,8 +4165,8 @@ async function main() {
       status: "In Progress",
     },
     {
-      findingId: "FND-2025-003",
-      engagementId: createdEngagements["AUD-2025-001"],
+      findingId: "FND003",
+      engagementId: createdEngagements["AUD001"],
       departmentId: createdDepts["IT Operations"],
       finding: "Weak Password Policy Enforcement",
       description: "Current password policy does not enforce complexity requirements consistently",
@@ -4176,8 +4176,8 @@ async function main() {
       status: "Open",
     },
     {
-      findingId: "FND-2025-004",
-      engagementId: createdEngagements["AUD-2025-001"],
+      findingId: "FND004",
+      engagementId: createdEngagements["AUD001"],
       departmentId: createdDepts["IT Operations"],
       finding: "Outdated Antivirus Software",
       description: "Several workstations running outdated antivirus definitions",
@@ -4187,8 +4187,8 @@ async function main() {
       status: "Open",
     },
     {
-      findingId: "FND-2024-015",
-      engagementId: createdEngagements["AUD-2024-012"],
+      findingId: "FND005",
+      engagementId: createdEngagements["AUD006"],
       departmentId: createdDepts["Compliance"],
       finding: "Incomplete SOC 2 Documentation",
       description: "Some control evidence for SOC 2 Type II audit is incomplete",
@@ -4221,8 +4221,8 @@ async function main() {
 
   const internalAuditCapas = [
     {
-      capaId: "CAPA-2025-001",
-      findingId: createdInternalFindings["FND-2025-001"],
+      capaId: "CAPA001",
+      findingId: createdInternalFindings["FND001"],
       title: "Implement Automated Data Retention Policy",
       description: "Deploy automated data retention and deletion mechanism based on data classification",
       actionType: "Corrective",
@@ -4231,8 +4231,8 @@ async function main() {
       status: "In Progress",
     },
     {
-      capaId: "CAPA-2025-002",
-      findingId: createdInternalFindings["FND-2025-002"],
+      capaId: "CAPA002",
+      findingId: createdInternalFindings["FND002"],
       title: "Update Consent Management System",
       description: "Enhance consent management system to capture and store all required consent records",
       actionType: "Corrective",
@@ -4241,8 +4241,8 @@ async function main() {
       status: "In Progress",
     },
     {
-      capaId: "CAPA-2025-003",
-      findingId: createdInternalFindings["FND-2025-003"],
+      capaId: "CAPA003",
+      findingId: createdInternalFindings["FND003"],
       title: "Enforce Strong Password Policy",
       description: "Update Active Directory Group Policy to enforce 14-character passwords with complexity",
       actionType: "Corrective",
@@ -4251,8 +4251,8 @@ async function main() {
       status: "Open",
     },
     {
-      capaId: "CAPA-2025-004",
-      findingId: createdInternalFindings["FND-2025-004"],
+      capaId: "CAPA004",
+      findingId: createdInternalFindings["FND004"],
       title: "Update Antivirus Definitions",
       description: "Deploy automated antivirus update mechanism across all workstations",
       actionType: "Corrective",
@@ -4261,8 +4261,8 @@ async function main() {
       status: "In Progress",
     },
     {
-      capaId: "CAPA-2024-025",
-      findingId: createdInternalFindings["FND-2024-015"],
+      capaId: "CAPA005",
+      findingId: createdInternalFindings["FND005"],
       title: "Complete SOC 2 Control Evidence",
       description: "Gather and document all missing control evidence for SOC 2 audit",
       actionType: "Corrective",
@@ -4493,7 +4493,7 @@ async function main() {
   const auditReports = [
     {
       reportCode: "RPT-2025-001",
-      engagementId: createdEngagements["AUD-2025-004"],
+      engagementId: createdEngagements["AUD004"],
       title: "Data Privacy Compliance Audit - Final Report",
       executiveSummary: "The audit identified 2 significant findings related to data retention and consent management. While overall data privacy controls are adequate, improvements are recommended in documentation and automated processes.",
       scope: "Data collection, storage, processing, deletion, and consent management across all systems handling customer data",
@@ -4506,7 +4506,7 @@ async function main() {
     },
     {
       reportCode: "RPT-2024-012",
-      engagementId: createdEngagements["AUD-2024-012"],
+      engagementId: createdEngagements["AUD006"],
       title: "Q4 2024 Regulatory Compliance Review",
       executiveSummary: "The organization demonstrates strong compliance posture. One high-priority finding related to SOC 2 documentation has been identified and addressed. Overall compliance framework is robust.",
       scope: "SOC 2 Type II controls, ISO 27001 certification evidence, industry-specific regulatory requirements",

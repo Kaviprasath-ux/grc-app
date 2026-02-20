@@ -169,9 +169,22 @@ export const POST = withAuth(
         );
       }
 
-      // Generate audit ID
-      const count = await prisma.auditEngagement.count();
-      const auditId = String(count + 1).padStart(4, '0');
+      // Generate audit ID - scoped to tenant, handles all legacy formats
+      const existingEngagements = await prisma.auditEngagement.findMany({
+        where: { customerAccountId },
+        select: { auditId: true },
+      });
+
+      let maxAuditNumber = 0;
+      for (const eng of existingEngagements) {
+        // Extract trailing number from any format: AUD001, AUD-001, AUD-2025-001, 0001
+        const match = eng.auditId.match(/(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxAuditNumber) maxAuditNumber = num;
+        }
+      }
+      const auditId = `AUD${String(maxAuditNumber + 1).padStart(3, '0')}`;
 
       if (!customerAccountId) {
         return NextResponse.json(

@@ -7,26 +7,23 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// Helper to generate finding ID - scoped to customer account
+// Helper to generate finding ID - scoped to customer account, handles all legacy formats
 async function generateFindingId(customerAccountId: string): Promise<string> {
-  // Get all findings for this customer to find the highest number
   const findings = await prisma.internalAuditFinding.findMany({
     where: { customerAccountId },
     select: { findingId: true },
   });
 
-  if (findings.length === 0) {
-    return 'FND001';
+  let maxNumber = 0;
+  for (const f of findings) {
+    // Extract trailing number from any format: FND001, FND-001, FND-2025-001
+    const match = f.findingId.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNumber) maxNumber = num;
+    }
   }
-
-  // Extract numbers and find the maximum
-  const numbers = findings
-    .map(f => parseInt(f.findingId.replace('FND', ''), 10))
-    .filter(n => !isNaN(n));
-
-  const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
-  const nextNum = maxNum + 1;
-  return `FND${nextNum.toString().padStart(3, '0')}`;
+  return `FND${(maxNumber + 1).toString().padStart(3, '0')}`;
 }
 
 // GET /api/internal-audit/fieldwork/[id]/findings - Get findings for an engagement

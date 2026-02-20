@@ -116,7 +116,7 @@ export default function ViewRiskPage() {
         </nav>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 ltr:rotate-0 rtl:rotate-180" />
           </Button>
           <div>
             <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
@@ -153,7 +153,7 @@ export default function ViewRiskPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push("/internal-audit/risk-register")}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 ltr:rotate-0 rtl:rotate-180" />
           </Button>
           <div>
             <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
@@ -161,7 +161,7 @@ export default function ViewRiskPage() {
           </div>
         </div>
         <Button onClick={() => router.push(`/internal-audit/risk-register/${risk.id}/edit`)}>
-          <Pencil className="h-4 w-4 mr-2" />
+          <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Edit")}
         </Button>
       </div>

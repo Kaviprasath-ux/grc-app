@@ -130,15 +130,17 @@ export const POST = withAuth(
       const originalName = file.name;
       const ext = path.extname(originalName);
 
-      // Generate document code - find the highest existing code and increment
+      // Generate document code - find the highest existing code and increment, scoped to tenant
       const lastDoc = await prisma.internalAuditDocument.findFirst({
+        where: { ...(customerAccountId ? { customerAccountId } : {}) },
         orderBy: { documentCode: "desc" },
         select: { documentCode: true },
       });
 
       let nextNum = 1;
       if (lastDoc?.documentCode) {
-        const match = lastDoc.documentCode.match(/DOC-(\d+)/);
+        // Extract trailing number from any format: DOC-0001, DOC0001
+        const match = lastDoc.documentCode.match(/(\d+)$/);
         if (match) {
           nextNum = parseInt(match[1], 10) + 1;
         }
