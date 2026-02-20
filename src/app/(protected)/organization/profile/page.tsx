@@ -673,8 +673,8 @@ function ProfilePageContent() {
                           <Building2 className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Organization Name")}</p>
-                          <p className="text-sm font-medium text-slate-800">{organization.name || "-"}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Organization Name")}</p>
+                          <p className="text-base font-medium text-slate-800">{organization.name || "-"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -682,8 +682,8 @@ function ProfilePageContent() {
                           <Calendar className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Established Date")}</p>
-                          <p className="text-sm font-medium text-slate-800">{organization.establishedDate || "-"}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Established Date")}</p>
+                          <p className="text-base font-medium text-slate-800">{organization.establishedDate || "-"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -691,8 +691,8 @@ function ProfilePageContent() {
                           <Users className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Employee Count")}</p>
-                          <p className="text-sm font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Employee Size")}</p>
+                          <p className="text-base font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -700,8 +700,8 @@ function ProfilePageContent() {
                           <MapPin className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Branch Count")}</p>
-                          <p className="text-sm font-medium text-slate-800">{organization.branchCount || "0"}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Branch Size")}</p>
+                          <p className="text-base font-medium text-slate-800">{organization.branchCount || "0"}</p>
                         </div>
                       </div>
                     </div>
@@ -720,8 +720,8 @@ function ProfilePageContent() {
                           <MapPin className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Head Office Location")}</p>
-                          <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Head Office Location")}</p>
+                          <p className="text-base font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 sm:col-span-2 lg:col-span-1 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -729,8 +729,8 @@ function ProfilePageContent() {
                           <Home className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Head Office Address")}</p>
-                          <p className="text-sm font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Head Office Address")}</p>
+                          <p className="text-base font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -738,8 +738,8 @@ function ProfilePageContent() {
                           <Globe className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Website")}</p>
-                          <p className="text-sm font-medium text-primary-600 truncate">{organization.website || "-"}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Website")}</p>
+                          <p className="text-base font-medium text-primary-600 truncate">{organization.website || "-"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -747,8 +747,8 @@ function ProfilePageContent() {
                           <Target className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Email")}</p>
-                          <p className="text-sm font-medium text-slate-800 truncate">{organization.email || "-"}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Email")}</p>
+                          <p className="text-base font-medium text-slate-800 truncate">{organization.email || "-"}</p>
                         </div>
                       </div>
                     </div>
@@ -799,8 +799,8 @@ function ProfilePageContent() {
                           <FileText className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Brochure")}</p>
-                          <p className="text-sm font-medium text-slate-700">{organization.brochure.split("/").pop()}</p>
+                          <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Brochure")}</p>
+                          <p className="text-base font-medium text-slate-700">{organization.brochure.split("/").pop()}</p>
                         </div>
                         <div className={`flex items-center gap-0.5 ${isRTL ? "mr-2" : "ml-2"}`}>
                           <a href={organization.brochure} target="_blank" rel="noopener noreferrer">
@@ -1161,16 +1161,13 @@ function ProfilePageContent() {
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <Scale className="h-6 w-6 text-slate-400" />
+                <Scale className="h-6 w-6 text-primary-400" />
               </div>
               <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Regulations")}</h3>
               <p className="text-sm text-slate-500 mb-6">
                 {t("Add regulations that apply to your organization.")}
               </p>
-              <Button onClick={() => { setRegulationErrors({}); setIsAddRegulationOpen(true); }}>
-                <Plus className="h-4 w-4 me-2" />
-                {t("Add Regulation")}
-              </Button>
+              
             </div>
           )}
         </TabsContent>

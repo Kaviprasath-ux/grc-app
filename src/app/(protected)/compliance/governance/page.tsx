@@ -984,10 +984,7 @@ export default function GovernancePage() {
                             ) : (
                               <>
                                 <p className="text-sm text-slate-500 mb-6">{t(`Create your first ${docType.toLowerCase()} to get started.`)}</p>
-                                <Button size="sm" onClick={() => { setNewPolicy({ ...newPolicy, documentType: docType }); setIsCreateDialogOpen(true); }}>
-                                  <Plus className="h-4 w-4 me-2" />
-                                  {t("New Governance")}
-                                </Button>
+                                
                               </>
                             )}
                           </TableCell>
@@ -1136,10 +1133,7 @@ export default function GovernancePage() {
                           </div>
                           <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Documents")}</h3>
                           <p className="text-sm text-slate-500 mb-6">{t("Upload your first document to get started.")}</p>
-                          <Button size="sm" onClick={() => document.getElementById("vault-file")?.click()}>
-                            <Upload className="h-4 w-4 me-2" />
-                            {t("Upload Document")}
-                          </Button>
+                          
                         </TableCell>
                       </TableRow>
                     )}
@@ -1205,6 +1199,19 @@ export default function GovernancePage() {
                         {frameworks.map((f) => (
                           <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
+                      <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                        <SelectValue placeholder={t("Status")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white">
+                        <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                        <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
+                        <SelectItem value="Draft">{t("Draft")}</SelectItem>
+                        <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                        <SelectItem value="Published">{t("Published")}</SelectItem>
+                        <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
