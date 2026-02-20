@@ -43,6 +43,66 @@ async function generateRiskId(customerAccountId: string): Promise<string> {
   return `RID${String(count + 1).padStart(3, "0")}`;
 }
 
+// Find or create a department for the tenant
+async function findOrCreateDepartment(name: string, customerAccountId: string) {
+  const existing = await prisma.department.findFirst({
+    where: {
+      customerAccountId,
+      name: { equals: name, mode: "insensitive" },
+    },
+  });
+  if (existing) return existing;
+
+  return prisma.department.create({
+    data: { customerAccountId, name },
+  });
+}
+
+// Find or create a risk category for the tenant (uses @@unique([customerAccountId, name]))
+async function findOrCreateCategory(name: string, customerAccountId: string) {
+  const existing = await prisma.riskCategory.findFirst({
+    where: {
+      customerAccountId,
+      name: { equals: name, mode: "insensitive" },
+    },
+  });
+  if (existing) return existing;
+
+  return prisma.riskCategory.create({
+    data: { name, status: "Active", customerAccountId },
+  });
+}
+
+// Find or create a threat for the tenant (uses @@unique([customerAccountId, name]))
+async function findOrCreateThreat(name: string, customerAccountId: string) {
+  const existing = await prisma.riskThreat.findFirst({
+    where: {
+      customerAccountId,
+      name: { equals: name, mode: "insensitive" },
+    },
+  });
+  if (existing) return existing;
+
+  return prisma.riskThreat.create({
+    data: { name, customerAccountId },
+  });
+}
+
+// Find or create a vulnerability for the tenant (uses @@unique([customerAccountId, name]))
+async function findOrCreateVulnerability(name: string, customerAccountId: string) {
+  const existing = await prisma.riskVulnerability.findFirst({
+    where: {
+      customerAccountId,
+      name: { equals: name, mode: "insensitive" },
+    },
+  });
+  if (existing) return existing;
+
+  return prisma.riskVulnerability.create({
+    data: { name, customerAccountId },
+  });
+}
+
 // GET - Download import template (CSV with required columns only - no sample data)
 export const GET = withAuthOnly(async () => {
   try {
@@ -65,8 +125,6 @@ export const GET = withAuthOnly(async () => {
 });
 
 // POST - Import risks from uploaded data
-// Note: Some related models (RiskCategory, RiskThreat, RiskVulnerability) don't have customerAccountId
-// field yet - tenant filtering disabled for those entities
 export const POST = withAuth(
   async (request: NextRequest, context, session) => {
     try {
@@ -108,23 +166,6 @@ export const POST = withAuth(
         }
       }
 
-      // Fetch existing lookup data for caching
-      // Note: RiskCategory, RiskThreat, RiskVulnerability don't have customerAccountId
-      const [existingCategories, existingDepartments, existingThreats, existingVulnerabilities] = await Promise.all([
-        prisma.riskCategory.findMany(),
-        prisma.department.findMany({
-          where: { customerAccountId },
-        }),
-        prisma.riskThreat.findMany(),
-        prisma.riskVulnerability.findMany(),
-      ]);
-
-      // Mutable caches for created entities during import
-      const categoriesCache = [...existingCategories];
-      const departmentsCache = [...existingDepartments];
-      const threatsCache = [...existingThreats];
-      const vulnerabilitiesCache = [...existingVulnerabilities];
-
       const results = {
         success: 0,
         failed: 0,
@@ -165,41 +206,29 @@ export const POST = withAuth(
             continue;
           }
 
-          // Handle Department - find existing or create new (tenant-scoped)
-          let department = null;
-          if (departmentName) {
-            department = departmentsCache.find(
-              (d) => d.name.toLowerCase() === departmentName.toLowerCase()
-            );
+          console.log(`[Risk Import] Row ${rowNum}: name="${riskName}", dept="${departmentName}", cat="${riskCategoryName}", threat="${potentialThreat}", vuln="${associatedVulnerabilities}"`);
 
-            if (!department) {
-              // Create new department for this tenant
-              department = await prisma.department.create({
-                data: {
-                  customerAccountId,
-                  name: departmentName,
-                },
-              });
-              departmentsCache.push(department);
+          // Handle Department - find existing or create new (tenant-scoped)
+          let departmentId: string | null = null;
+          if (departmentName) {
+            try {
+              const department = await findOrCreateDepartment(departmentName, customerAccountId);
+              departmentId = department.id;
+              console.log(`[Risk Import] Row ${rowNum}: Department resolved -> ${department.id} (${department.name})`);
+            } catch (err) {
+              console.error(`[Risk Import] Row ${rowNum}: Failed to create department "${departmentName}":`, err);
             }
           }
 
-          // Handle Risk Category - find existing or create new (global - no tenant scope)
-          let category = null;
+          // Handle Risk Category - find existing or create new (tenant-scoped)
+          let categoryId: string | null = null;
           if (riskCategoryName) {
-            category = categoriesCache.find(
-              (c) => c.name.toLowerCase() === riskCategoryName.toLowerCase()
-            );
-
-            if (!category) {
-              // Create new category (global - no customerAccountId)
-              category = await prisma.riskCategory.create({
-                data: {
-                  name: riskCategoryName,
-                  status: "Active",
-                },
-              });
-              categoriesCache.push(category);
+            try {
+              const category = await findOrCreateCategory(riskCategoryName, customerAccountId);
+              categoryId = category.id;
+              console.log(`[Risk Import] Row ${rowNum}: Category resolved -> ${category.id} (${category.name})`);
+            } catch (err) {
+              console.error(`[Risk Import] Row ${rowNum}: Failed to create category "${riskCategoryName}":`, err);
             }
           }
 
@@ -220,8 +249,8 @@ export const POST = withAuth(
               name: riskName,
               description: riskDescription || null,
               riskSources: riskSources || null,
-              categoryId: category?.id || null,
-              departmentId: department?.id || null,
+              categoryId,
+              departmentId,
               likelihood,
               impact,
               riskScore,
@@ -237,82 +266,68 @@ export const POST = withAuth(
             },
           });
 
-          // Handle Potential Threat - find existing or create new (global - no tenant scope)
+          console.log(`[Risk Import] Row ${rowNum}: Risk created -> ${risk.riskId} (categoryId=${categoryId}, departmentId=${departmentId})`);
+
+          // Handle Potential Threat - find existing or create new, then link to risk
           if (potentialThreat) {
-            const threatNames = potentialThreat.split(",").map((t) => t.trim()).filter(Boolean);
+            const threatNames = potentialThreat.split(",").map((t: string) => t.trim()).filter(Boolean);
 
             for (const threatName of threatNames) {
-              let threat = threatsCache.find(
-                (t) => t.name.toLowerCase() === threatName.toLowerCase()
-              );
+              try {
+                const threat = await findOrCreateThreat(threatName, customerAccountId);
+                console.log(`[Risk Import] Row ${rowNum}: Threat resolved -> ${threat.id} (${threat.name})`);
 
-              if (!threat) {
-                // Create new threat (global - no customerAccountId)
-                threat = await prisma.riskThreat.create({
-                  data: {
-                    name: threatName,
+                await prisma.riskThreatMapping.upsert({
+                  where: {
+                    riskId_threatId: {
+                      riskId: risk.id,
+                      threatId: threat.id,
+                    },
                   },
-                });
-                threatsCache.push(threat);
-              }
-
-              // Create mapping (use upsert to avoid duplicates)
-              await prisma.riskThreatMapping.upsert({
-                where: {
-                  riskId_threatId: {
+                  update: {},
+                  create: {
                     riskId: risk.id,
                     threatId: threat.id,
                   },
-                },
-                update: {},
-                create: {
-                  riskId: risk.id,
-                  threatId: threat.id,
-                },
-              });
+                });
+              } catch (err) {
+                console.error(`[Risk Import] Row ${rowNum}: Failed to create/link threat "${threatName}":`, err);
+              }
             }
           }
 
-          // Handle Associated Vulnerabilities - find existing or create new (global - no tenant scope)
+          // Handle Associated Vulnerabilities - find existing or create new, then link to risk
           if (associatedVulnerabilities) {
-            const vulnNames = associatedVulnerabilities.split(",").map((v) => v.trim()).filter(Boolean);
+            const vulnNames = associatedVulnerabilities.split(",").map((v: string) => v.trim()).filter(Boolean);
 
             for (const vulnName of vulnNames) {
-              let vulnerability = vulnerabilitiesCache.find(
-                (v) => v.name.toLowerCase() === vulnName.toLowerCase()
-              );
+              try {
+                const vulnerability = await findOrCreateVulnerability(vulnName, customerAccountId);
+                console.log(`[Risk Import] Row ${rowNum}: Vulnerability resolved -> ${vulnerability.id} (${vulnerability.name})`);
 
-              if (!vulnerability) {
-                // Create new vulnerability (global - no customerAccountId)
-                vulnerability = await prisma.riskVulnerability.create({
-                  data: {
-                    name: vulnName,
+                await prisma.riskVulnerabilityMapping.upsert({
+                  where: {
+                    riskId_vulnerabilityId: {
+                      riskId: risk.id,
+                      vulnerabilityId: vulnerability.id,
+                    },
                   },
-                });
-                vulnerabilitiesCache.push(vulnerability);
-              }
-
-              // Create mapping (use upsert to avoid duplicates)
-              await prisma.riskVulnerabilityMapping.upsert({
-                where: {
-                  riskId_vulnerabilityId: {
+                  update: {},
+                  create: {
                     riskId: risk.id,
                     vulnerabilityId: vulnerability.id,
                   },
-                },
-                update: {},
-                create: {
-                  riskId: risk.id,
-                  vulnerabilityId: vulnerability.id,
-                },
-              });
+                });
+              } catch (err) {
+                console.error(`[Risk Import] Row ${rowNum}: Failed to create/link vulnerability "${vulnName}":`, err);
+              }
             }
           }
 
           results.success++;
           results.created.push({ riskId: risk.riskId, name: risk.name });
         } catch (error) {
-          console.error(`Error importing row ${rowNum}:`, error);
+          console.error(`[Risk Import] Error importing row ${rowNum}:`, error);
           results.errors.push({
             row: rowNum,
             error: error instanceof Error ? error.message : "Unknown error occurred",
