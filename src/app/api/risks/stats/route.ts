@@ -43,14 +43,19 @@ export const GET = withAuth(
       riskRatingCounts.High;
 
     // Risk by category
-    const categoryMap = new Map<string, number>();
+    const categoryMap = new Map<string, { id: string; name: string; count: number }>();
     risks.forEach((risk) => {
       const categoryName = risk.category?.name || "Uncategorized";
-      categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + 1);
+      const categoryId = risk.category?.id || "uncategorized";
+      if (!categoryMap.has(categoryId)) {
+        categoryMap.set(categoryId, { id: categoryId, name: categoryName, count: 0 });
+      }
+      categoryMap.get(categoryId)!.count++;
     });
 
-    const riskByCategory = Array.from(categoryMap.entries()).map(
-      ([name, count]) => ({
+    const riskByCategory = Array.from(categoryMap.values()).map(
+      ({ id, name, count }) => ({
+        id,
         name,
         value: count,
       })

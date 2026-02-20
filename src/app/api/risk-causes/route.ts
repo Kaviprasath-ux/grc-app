@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all risk causes - with tenant filtering
 export const GET = withAuth(
@@ -67,6 +68,8 @@ export const POST = withAuth(
           description: description?.trim() || null,
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskCause', cause.id, { name: cause.name });
 
       return NextResponse.json(cause, { status: 201 });
     } catch (error: unknown) {

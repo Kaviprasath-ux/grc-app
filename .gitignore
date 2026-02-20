@@ -47,6 +47,7 @@ next-env.d.ts
 
 # Claude Code configuration
 .claude/
+.mcp.json
 
 # VS Code
 .vscode/

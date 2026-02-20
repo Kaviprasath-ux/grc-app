@@ -175,7 +175,7 @@ export default function ContextPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   // Check if user is DepartmentReviewer or DepartmentContributor (read-only for stakeholders, export-only for issues)
   const isReadOnlyRole = userRoles.some(
@@ -351,7 +351,7 @@ export default function ContextPage() {
   // Handlers for adding new options
   const handleAddDomain = () => {
     if (!newDomain.trim()) { setDomainError(t("Please enter domain name")); return; }
-    if (!isValidName(newDomain.trim())) { setDomainError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newDomain.trim())) { setDomainError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setDomainError("");
     if (!domains.includes(newDomain.trim())) {
       setDomains([...domains, newDomain.trim()]);
@@ -363,7 +363,7 @@ export default function ContextPage() {
 
   const handleAddCategory = () => {
     if (!newCategory.trim()) { setCategoryError(t("Please enter category name")); return; }
-    if (!isValidName(newCategory.trim())) { setCategoryError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newCategory.trim())) { setCategoryError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setCategoryError("");
     if (!categories.includes(newCategory.trim())) {
       setCategories([...categories, newCategory.trim()]);
@@ -375,7 +375,7 @@ export default function ContextPage() {
 
   const handleAddType = () => {
     if (!newType.trim()) { setTypeError(t("Please enter issue type name")); return; }
-    if (!isValidName(newType.trim())) { setTypeError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newType.trim())) { setTypeError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setTypeError("");
     if (!issueTypes.includes(newType.trim())) {
       setIssueTypes([...issueTypes, newType.trim()]);
@@ -674,7 +674,7 @@ export default function ContextPage() {
     if (!newStakeholder.name.trim()) {
       errors.name = t("Please Enter Stakeholder Name");
     } else if (!isValidName(newStakeholder.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!newStakeholder.type) errors.type = t("Please Select Stakeholder Type");
     if (!newStakeholder.status) errors.status = t("Please Select Status");
@@ -738,7 +738,7 @@ export default function ContextPage() {
       return;
     }
     if (!isValidName(editingStakeholder.name.trim())) {
-      setStakeholderErrors({ name: t("Only letters, numbers, spaces, and hyphens are allowed") });
+      setStakeholderErrors({ name: t("Only letters, spaces, and hyphens are allowed") });
       return;
     }
     setStakeholderErrors({});
@@ -786,7 +786,7 @@ export default function ContextPage() {
     if (!isValidName(newIssue.title.trim())) {
       toast({
         title: t("Error"),
-        description: t("Only letters, numbers, spaces, and hyphens are allowed"),
+        description: t("Only letters, spaces, and hyphens are allowed"),
         variant: "destructive",
       });
       return;
@@ -935,7 +935,7 @@ export default function ContextPage() {
     if (!isValidName(editIssueForm.title.trim())) {
       toast({
         title: t("Error"),
-        description: t("Only letters, numbers, spaces, and hyphens are allowed"),
+        description: t("Only letters, spaces, and hyphens are allowed"),
         variant: "destructive",
       });
       return;
@@ -1440,7 +1440,7 @@ export default function ContextPage() {
   // Add Issue Form (5-Step Wizard) - Rendered as Modal
   const renderAddIssueModal = () => (
     <Dialog open={showAddIssue} onOpenChange={(open) => { if (!open) { setShowAddIssue(false); setCurrentStep(1); setIssueErrors({}); setStep4Errors({}); } }}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
         {/* Fixed Header */}
         <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
           <DialogHeader>
@@ -1764,16 +1764,17 @@ export default function ContextPage() {
                     value={stakeholderType}
                     onValueChange={(value) => { setStakeholderType(value); if (step4Errors.stakeholderType) setStep4Errors((prev) => { const { stakeholderType, ...rest } = prev; return rest; }); }}
                     className="flex gap-6 mt-1.5"
+                    style={isRTL ? { direction: 'rtl' } : undefined}
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem value="Internal" id="st-internal" />
                       <Label htmlFor="st-internal" className="font-normal">{t("Internal")}</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem value="External" id="st-external" />
                       <Label htmlFor="st-external" className="font-normal">{t("External")}</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem value="Third Party" id="st-thirdparty" />
                       <Label htmlFor="st-thirdparty" className="font-normal">{t("Third Party")}</Label>
                     </div>
@@ -2023,7 +2024,7 @@ export default function ContextPage() {
                 if (!newIssue.title.trim()) {
                   errors.title = t("Title is required");
                 } else if (!isValidName(newIssue.title.trim())) {
-                  errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
+                  errors.title = t("Only letters, spaces, and hyphens are allowed");
                 }
                 if (!newIssue.domain) errors.domain = t("Please select Domain");
                 if (!newIssue.category) errors.category = t("Please select Category");
@@ -2302,7 +2303,7 @@ export default function ContextPage() {
   // Edit Issue Form (5-Step Wizard) - Rendered as Modal
   const renderEditIssueModal = () => (
     <Dialog open={isEditIssueOpen && !!editingIssue} onOpenChange={(open) => { if (!open) { setIsEditIssueOpen(false); setEditCurrentStep(1); setEditingIssue(null); } }}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
         {/* Fixed Header */}
         <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
           <DialogHeader>
@@ -2601,16 +2602,17 @@ export default function ContextPage() {
                     value={editStakeholderType}
                     onValueChange={setEditStakeholderType}
                     className="flex gap-6 mt-1.5"
+                    style={isRTL ? { direction: 'rtl' } : undefined}
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem value="Internal" id="edit-st-internal" />
                       <Label htmlFor="edit-st-internal" className="font-normal">{t("Internal")}</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem value="External" id="edit-st-external" />
                       <Label htmlFor="edit-st-external" className="font-normal">{t("External")}</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem value="Third Party" id="edit-st-thirdparty" />
                       <Label htmlFor="edit-st-thirdparty" className="font-normal">{t("Third Party")}</Label>
                     </div>
@@ -2846,7 +2848,7 @@ export default function ContextPage() {
                   return;
                 }
                 if (!isValidName(editIssueForm.title.trim())) {
-                  toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
+                  toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
                   return;
                 }
                 setEditCurrentStep(2);
@@ -3139,20 +3141,20 @@ export default function ContextPage() {
       {isDepartmentContributor ? (
         <>
           {filteredStakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
               {/* Search & Filters */}
               <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                 <div className="relative w-full sm:w-56">
-                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     placeholder={t("Search stakeholders...")}
                     value={stakeholderSearch}
                     onChange={(e) => { setStakeholderSearch(e.target.value); setStakeholderPage(1); }}
-                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
+                <div className="flex items-center gap-3 w-full sm:w-auto ms-auto">
                 <Select value={stakeholderTypeFilter} onValueChange={(v) => { setStakeholderTypeFilter(v); setStakeholderPage(1); }}>
                   <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Type")} />
@@ -3179,7 +3181,7 @@ export default function ContextPage() {
               {/* Table with horizontal scroll on mobile */}
               <div className="overflow-x-auto">
               {/* Column Headers */}
-              <div className="grid grid-cols-[1fr_120px_1fr_120px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px]">
+              <div className={`grid grid-cols-[1fr_120px_1fr_120px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px] ${isRTL ? "text-right" : ""}`}>
                 <span>{t("Name")}</span>
                 <span>{t("Type")}</span>
                 <span>{t("Department")}</span>
@@ -3259,15 +3261,17 @@ export default function ContextPage() {
       ) : (
         /* Other roles: Show normal tabs with Stakeholder and Issue List */
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="stakeholder">{t("Stakeholder")}</TabsTrigger>
-            <TabsTrigger value="issuelist">{t("Issue List")}</TabsTrigger>
-          </TabsList>
+          <div className={isRTL ? "flex justify-end" : ""}>
+            <TabsList className={isRTL ? "flex-row-reverse" : ""}>
+              <TabsTrigger value="stakeholder">{t("Stakeholder")}</TabsTrigger>
+              <TabsTrigger value="issuelist">{t("Issue List")}</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Stakeholder Tab */}
           <TabsContent value="stakeholder" className="mt-4 sm:mt-6">
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 mb-4">
+            <div className={`grid grid-cols-2 sm:flex sm:items-center gap-2 mb-4 ${isRTL ? "sm:justify-start" : "sm:justify-end"}`}>
               <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportStakeholders}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
@@ -3286,20 +3290,20 @@ export default function ContextPage() {
               )}
             </div>
             {stakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
                 {/* Search & Filters */}
                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                   <div className="relative w-full sm:w-56">
-                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder={t("Search stakeholders...")}
                       value={stakeholderSearch}
                       onChange={(e) => { setStakeholderSearch(e.target.value); setStakeholderPage(1); }}
-                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
+                  <div className="flex items-center gap-3 w-full sm:w-auto ms-auto">
                   <Select value={stakeholderTypeFilter} onValueChange={(v) => { setStakeholderTypeFilter(v); setStakeholderPage(1); }}>
                     <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Type")} />
@@ -3326,12 +3330,12 @@ export default function ContextPage() {
                 {/* Table with horizontal scroll on mobile */}
                 <div className="overflow-x-auto">
                 {/* Column Headers */}
-                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1fr_120px_1fr_120px_72px]" : "grid-cols-[1fr_120px_1fr_120px]"} gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px]`}>
+                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1fr_120px_1fr_120px_72px]" : "grid-cols-[1fr_120px_1fr_120px]"} gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px] ${isRTL ? "text-right" : ""}`}>
                   <span>{t("Name")}</span>
                   <span>{t("Type")}</span>
                   <span>{t("Department")}</span>
                   <span>{t("Status")}</span>
-                  {!isReadOnlyRole && <span className="text-end">{t("Actions")}</span>}
+                  {!isReadOnlyRole && <span className={isRTL ? "text-start" : "text-end"}>{t("Actions")}</span>}
                 </div>
                 {/* Rows */}
                 {(() => {
@@ -3368,7 +3372,7 @@ export default function ContextPage() {
                               </span>
                             </div>
                             {!isReadOnlyRole && (
-                              <div className="flex items-center justify-end gap-0.5">
+                              <div className={`flex items-center gap-0.5 ${isRTL ? "justify-start" : "justify-end"}`}>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => handleEditStakeholder(s)}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
@@ -3424,7 +3428,7 @@ export default function ContextPage() {
           {/* Issue List Tab */}
           <TabsContent value="issuelist" className="mt-4 sm:mt-6">
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 mb-4">
+            <div className={`grid grid-cols-2 sm:flex sm:items-center gap-2 mb-4 ${isRTL ? "sm:justify-start" : "sm:justify-end"}`}>
               <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportIssues}>
                 <Upload className="h-4 w-4 me-2" />
                 {t("Export")}
@@ -3443,20 +3447,20 @@ export default function ContextPage() {
               )}
             </div>
             {issues.length > 0 || issueSearch || issueDepartmentFilter !== "all" || issueCategoryFilter !== "all" || issueDomainFilter !== "all" ? (
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
                 {/* Search & Filters */}
                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                   <div className="relative w-full sm:w-56">
-                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder={t("Search issues...")}
                       value={issueSearch}
                       onChange={(e) => { setIssueSearch(e.target.value); setIssuePage(1); }}
-                      className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                      className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                     />
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto ms-auto">
                   <Select value={issueDepartmentFilter} onValueChange={(v) => { setIssueDepartmentFilter(v); setIssuePage(1); }}>
                     <SelectTrigger className="w-[calc(50%-6px)] sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                       <SelectValue placeholder={t("Department")} />
@@ -3495,13 +3499,13 @@ export default function ContextPage() {
                 {/* Table with horizontal scroll on mobile */}
                 <div className="overflow-x-auto">
                 {/* Column Headers */}
-                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_120px_100px_1fr_110px_72px]" : "grid-cols-[1.5fr_120px_100px_1fr_110px]"} gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]`}>
+                <div className={`grid ${!isReadOnlyRole ? "grid-cols-[1.5fr_120px_100px_1fr_110px_72px]" : "grid-cols-[1.5fr_120px_100px_1fr_110px]"} gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px] ${isRTL ? "text-right" : ""}`}>
                   <span>{t("Title")}</span>
                   <span>{t("Category")}</span>
                   <span>{t("Domain")}</span>
                   <span>{t("Department")}</span>
                   <span>{t("Status")}</span>
-                  {!isReadOnlyRole && <span className="text-end">{t("Actions")}</span>}
+                  {!isReadOnlyRole && <span className={isRTL ? "text-start" : "text-end"}>{t("Actions")}</span>}
                 </div>
                 {/* Rows */}
                 {(() => {
@@ -3535,7 +3539,7 @@ export default function ContextPage() {
                                 </span>
                               </div>
                               {!isReadOnlyRole && (
-                                <div className="flex items-center justify-end gap-0.5">
+                                <div className={`flex items-center gap-0.5 ${isRTL ? "justify-start" : "justify-end"}`}>
                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => handleEditIssue(issue)}>
                                     <Pencil className="h-3.5 w-3.5" />
                                   </Button>
@@ -3628,7 +3632,7 @@ export default function ContextPage() {
 
       {/* Add Stakeholder Dialog */}
       <Dialog open={showAddStakeholder} onOpenChange={(open) => { setShowAddStakeholder(open); if (!open) setStakeholderErrors({}); }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3648,16 +3652,17 @@ export default function ContextPage() {
                     if (stakeholderErrors.type) setStakeholderErrors((prev) => { const { type, ...rest } = prev; return rest; });
                   }}
                   className="flex gap-6 mt-1.5"
+                  style={isRTL ? { direction: 'rtl' } : undefined}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <RadioGroupItem value="Internal" id="add-internal" />
                     <Label htmlFor="add-internal" className="font-normal text-sm text-slate-600">{t("Internal")}</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <RadioGroupItem value="External" id="add-external" />
                     <Label htmlFor="add-external" className="font-normal text-sm text-slate-600">{t("External")}</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <RadioGroupItem value="Third Party" id="add-thirdparty" />
                     <Label htmlFor="add-thirdparty" className="font-normal text-sm text-slate-600">{t("Third Party")}</Label>
                   </div>
@@ -3745,7 +3750,7 @@ export default function ContextPage() {
 
       {/* Edit Stakeholder Dialog */}
       <Dialog open={showEditStakeholder} onOpenChange={setShowEditStakeholder}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3762,16 +3767,17 @@ export default function ContextPage() {
                   value={editingStakeholder?.type || "Internal"}
                   onValueChange={(value) => setEditingStakeholder(editingStakeholder ? { ...editingStakeholder, type: value } : null)}
                   className="flex gap-6 mt-1.5"
+                  style={isRTL ? { direction: 'rtl' } : undefined}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <RadioGroupItem value="Internal" id="edit-internal" />
                     <Label htmlFor="edit-internal" className="font-normal text-sm text-slate-600">{t("Internal")}</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <RadioGroupItem value="External" id="edit-external" />
                     <Label htmlFor="edit-external" className="font-normal text-sm text-slate-600">{t("External")}</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <RadioGroupItem value="Third Party" id="edit-thirdparty" />
                     <Label htmlFor="edit-thirdparty" className="font-normal text-sm text-slate-600">{t("Third Party")}</Label>
                   </div>

@@ -257,7 +257,7 @@ export default function FrameworkOverviewPage() {
     if (!formData.name.trim()) {
       newErrors.name = t("Framework name is required");
     } else if (!isValidName(formData.name.trim())) {
-      newErrors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      newErrors.name = t("Only letters, spaces, and hyphens are allowed");
     }
 
     if (Object.keys(newErrors).length > 0) {

@@ -332,7 +332,7 @@ export default function ExceptionsPage() {
   const handleCreate = async () => {
     const errors: Record<string, string> = {};
     if (!createForm.name.trim()) errors.name = t("Please enter the exception name");
-    else if (!isValidName(createForm.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(createForm.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!createForm.category) errors.category = t("Please select a category");
     if (!createForm.description.trim()) errors.description = t("Please enter the reason for exception");
     if (!createForm.endDate) errors.endDate = t("Please select the enddate");
@@ -447,7 +447,7 @@ export default function ExceptionsPage() {
     if (!selectedException) return;
     const errors: Record<string, string> = {};
     if (!editForm.name.trim()) errors.name = t("Please enter the exception name");
-    else if (!isValidName(editForm.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(editForm.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) {
       setExceptionErrors(errors);
       return;
@@ -695,7 +695,7 @@ export default function ExceptionsPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {categories.map((c) => (
                         <SelectItem key={c} value={c}>
-                          {c}
+                          {t(c)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1228,7 +1228,7 @@ export default function ExceptionsPage() {
                   <SelectItem value="all">{t("All Statuses")}</SelectItem>
                   {statuses.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {s}
+                      {t(s)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1246,7 +1246,7 @@ export default function ExceptionsPage() {
                   <SelectItem value="all">{t("All Categories")}</SelectItem>
                   {categories.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {c}
+                      {t(c)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1302,7 +1302,7 @@ export default function ExceptionsPage() {
                           categoryColors[exception.category] || "bg-slate-100 text-slate-600"
                         }
                       >
-                        {exception.category}
+                        {t(exception.category)}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{getReference(exception)}</TableCell>
@@ -1326,7 +1326,7 @@ export default function ExceptionsPage() {
                           statusColors[exception.status] || "bg-slate-100 text-slate-600"
                         }
                       >
-                        {exception.status}
+                        {t(exception.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3 pr-5 text-sm">
@@ -1492,7 +1492,7 @@ export default function ExceptionsPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {categories.map((c) => (
                         <SelectItem key={c} value={c}>
-                          {c}
+                          {t(c)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1714,7 +1714,7 @@ export default function ExceptionsPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {statuses.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {s}
+                          {t(s)}
                         </SelectItem>
                       ))}
                     </SelectContent>

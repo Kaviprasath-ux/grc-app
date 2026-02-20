@@ -926,7 +926,7 @@ export default function GRCAdminControlListPage() {
                 const errors: Record<string, string> = {};
                 if (!newControl.domainId) errors.domainId = t("Please select the Control Domain");
                 if (!newControl.name.trim()) errors.name = t("Please enter name");
-                else if (!isValidName(newControl.name)) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                else if (!isValidName(newControl.name)) errors.name = t("Only letters, spaces, and hyphens are allowed");
                 if (!newControl.controlQuestion?.trim()) errors.controlQuestion = t("Please enter the question");
                 if (!newControl.functionalGrouping) errors.functionalGrouping = t("Please select the Functional Grouping");
                 if (Object.keys(errors).length > 0) { setControlErrors(errors); return; }

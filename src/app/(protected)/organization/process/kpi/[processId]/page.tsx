@@ -161,9 +161,9 @@ export default function KPIDetailsPage() {
   const handleSave = async () => {
     const errors: Record<string, string> = {};
     if (!kpiConfig.objective.trim()) errors.objective = t("Please Enter Objective.");
-    else if (!isValidName(kpiConfig.objective.trim())) errors.objective = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(kpiConfig.objective.trim())) errors.objective = t("Only letters, spaces, and hyphens are allowed");
     if (!kpiConfig.dataSource.trim()) errors.dataSource = t("Please Enter Data Source.");
-    else if (!isValidName(kpiConfig.dataSource.trim())) errors.dataSource = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(kpiConfig.dataSource.trim())) errors.dataSource = t("Only letters, spaces, and hyphens are allowed");
     if (!kpiConfig.expectedValue) errors.expectedValue = t("Please Enter the Expected Score.");
     else if (!isValidNumber(kpiConfig.expectedValue)) errors.expectedValue = t("Please enter a valid number");
     if (!kpiConfig.description.trim()) errors.description = t("Please Enter Description.");

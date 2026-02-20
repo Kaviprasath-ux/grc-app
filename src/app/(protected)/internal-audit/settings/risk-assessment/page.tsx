@@ -224,7 +224,7 @@ export default function RiskAssessmentConfigPage() {
       newErrors.label = t("Label is required");
       hasError = true;
     } else if (!isValidName(formData.label)) {
-      newErrors.label = t("Only letters, numbers, spaces, and hyphens are allowed");
+      newErrors.label = t("Only letters, spaces, and hyphens are allowed");
       hasError = true;
     }
 

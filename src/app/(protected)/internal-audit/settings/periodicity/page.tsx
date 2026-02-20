@@ -113,7 +113,7 @@ export default function PeriodicityPage() {
       newErrors.interval = t("Interval is required");
       hasError = true;
     } else if (!isValidName(formData.interval)) {
-      newErrors.interval = t("Only letters, numbers, spaces, and hyphens are allowed");
+      newErrors.interval = t("Only letters, spaces, and hyphens are allowed");
       hasError = true;
     }
     if (!formData.months || Number(formData.months) < 1) {

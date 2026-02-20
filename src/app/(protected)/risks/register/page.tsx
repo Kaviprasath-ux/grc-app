@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Risk {
   id: string;
@@ -358,6 +359,23 @@ function RiskRegisterContent() {
     }
   };
 
+  // Filter risks for department-scoped roles
+  const displayRisks = isDepartmentRole && userDepartmentId
+    ? risks.filter(r => r.department?.id === userDepartmentId)
+    : risks;
+
+  // Translate dynamic data (name, description) for non-English locales
+  const { data: translatedRisks } = useTranslatedData(displayRisks, { modelName: 'Risk' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'RiskCategory' });
+  const { data: translatedRiskTypes } = useTranslatedData(riskTypes, { modelName: 'RiskType' });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(translatedRisks.length / ITEMS_PER_PAGE);
+  const paginatedRisks = translatedRisks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
@@ -374,18 +392,6 @@ function RiskRegisterContent() {
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access Risk Register.")} />;
   }
-
-  // Filter risks for department-scoped roles
-  const displayRisks = isDepartmentRole && userDepartmentId
-    ? risks.filter(r => r.department?.id === userDepartmentId)
-    : risks;
-
-  // Calculate pagination
-  const totalPages = Math.ceil(displayRisks.length / ITEMS_PER_PAGE);
-  const paginatedRisks = displayRisks.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -535,7 +541,7 @@ function RiskRegisterContent() {
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="all">{t("All Categories")}</SelectItem>
-                  {categories.map((cat) => (
+                  {translatedCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
@@ -548,7 +554,7 @@ function RiskRegisterContent() {
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="all">{t("All Types")}</SelectItem>
-                  {riskTypes.map((type) => (
+                  {translatedRiskTypes.map((type) => (
                     <SelectItem key={type.id} value={type.id}>
                       {type.name}
                     </SelectItem>
@@ -612,7 +618,7 @@ function RiskRegisterContent() {
                 {columnVisibility.riskId && <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>}
                 {columnVisibility.name && <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>}
                 {columnVisibility.description && <span className="text-sm text-slate-600 truncate" title={risk.description || ""}>{risk.description || "-"}</span>}
-                {columnVisibility.category && <span className="text-sm text-slate-600 truncate">{risk.category?.name || "-"}</span>}
+                {columnVisibility.category && <span className="text-sm text-slate-600 truncate">{(risk.category?.id ? translatedCategories.find(c => c.id === risk.category?.id)?.name : null) || risk.category?.name || "-"}</span>}
                 {columnVisibility.owner && <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>}
                 {columnVisibility.rating && <div><RiskRatingBadge rating={risk.riskRating} /></div>}
                 {(canEdit || canDelete) && (
@@ -648,7 +654,7 @@ function RiskRegisterContent() {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={displayRisks.length}
+            totalItems={translatedRisks.length}
             itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
           />
@@ -796,7 +802,7 @@ function RiskRegisterContent() {
                     }
                   }}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Download Template")}
                 </Button>
               </div>

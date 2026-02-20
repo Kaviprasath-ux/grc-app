@@ -145,7 +145,7 @@ function ControlListPageContent() {
   const fromDashboard = searchParams.get("from") === "dashboard";
   const { data: session } = useSession();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.controls');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [controls, setControls] = useState<Control[]>([]);
@@ -321,7 +321,7 @@ function ControlListPageContent() {
           else if (c.status === "Not Applicable") frameworkStats[fwName].notApplicable++;
         });
         const fwData = Object.entries(frameworkStats).map(([name, stats]) => ({
-          name: name.length > 8 ? name.substring(0, 8) + ".." : name,
+          name,
           fullName: name,
           compliant: stats.compliant,
           nonCompliant: stats.nonCompliant,
@@ -581,9 +581,9 @@ function ControlListPageContent() {
   const handleCreateDomain = async () => {
     const errors: Record<string, string> = {};
     if (!newDomain.code.trim()) errors.code = t("Please enter Domain Code");
-    else if (!isValidName(newDomain.code.trim())) errors.code = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(newDomain.code.trim())) errors.code = t("Only letters, spaces, and hyphens are allowed");
     if (!newDomain.name.trim()) errors.name = t("Please enter Domain name");
-    else if (!isValidName(newDomain.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(newDomain.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) { setDomainErrors(errors); return; }
     setDomainErrors({});
     setCreatingDomain(true);
@@ -740,7 +740,7 @@ function ControlListPageContent() {
             {/* Functional Grouping Donut Chart */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h3 className="text-sm font-medium text-slate-500 mb-4">{t("Functional Grouping")}</h3>
-              <div className="h-[300px]">
+              <div className="h-[300px]" style={{ direction: 'ltr' }}>
                 {functionalGroupingData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -799,23 +799,39 @@ function ControlListPageContent() {
             {/* By Framework Bar Chart */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h3 className="text-sm font-medium text-slate-500 mb-4">{t("Controls by Framework")}</h3>
-              <div className="h-[300px]">
+              <div className={isRTL ? "h-[420px]" : "h-[300px]"} style={{ direction: 'ltr' }}>
                 {frameworkChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={frameworkChartData}
-                      margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                      margin={isRTL ? { top: 10, right: 20, left: 10, bottom: 100 } : { top: 10, right: 20, left: 10, bottom: 5 }}
                       barCategoryGap="20%"
                     >
                       <XAxis
                         dataKey="name"
-                        tick={{ fontSize: 11, fill: '#475569' }}
                         axisLine={{ stroke: '#e2e8f0' }}
                         tickLine={false}
-                        angle={-45}
-                        textAnchor="end"
-                        height={50}
                         interval={0}
+                        height={isRTL ? 110 : 50}
+                        tick={isRTL
+                          ? ({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => (
+                            <g transform={`translate(${x},${y})`} style={{ direction: 'ltr' as const }}>
+                              <text
+                                x={0}
+                                y={12}
+                                textAnchor="end"
+                                fill="#475569"
+                                fontSize={11}
+                                transform="rotate(-55)"
+                                direction="ltr"
+                              >
+                                {payload.value}
+                              </text>
+                            </g>
+                          )
+                          : { fontSize: 11, fill: '#475569' }
+                        }
+                        {...(!isRTL && { angle: -45, textAnchor: 'end' as const })}
                       />
                       <YAxis
                         tick={{ fontSize: 11, fill: '#94a3b8' }}
@@ -1137,7 +1153,7 @@ function ControlListPageContent() {
 
       {/* Create Control Dialog - 3 Step Wizard */}
       <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateDialogOpen(false); setCreateStep(1); setNewControl({ name: "", description: "", controlQuestion: "", functionalGrouping: "", domainId: "", departmentId: "", ownerId: "", assigneeId: "" }); setControlErrors({}); } }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1401,7 +1417,7 @@ function ControlListPageContent() {
                 const errors: Record<string, string> = {};
                 if (!newControl.domainId) errors.domainId = t("Please select the Control Domain");
                 if (!newControl.name.trim()) errors.name = t("Please enter name");
-                else if (!isValidName(newControl.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                else if (!isValidName(newControl.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
                 if (!newControl.controlQuestion?.trim()) errors.controlQuestion = t("Please enter the question");
                 if (!newControl.functionalGrouping) errors.functionalGrouping = t("Please select the Functional Grouping");
                 if (Object.keys(errors).length > 0) { setControlErrors(errors); return; }
@@ -1434,7 +1450,7 @@ function ControlListPageContent() {
           }
         }
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -1527,7 +1543,7 @@ function ControlListPageContent() {
 
       {/* Create Domain Dialog */}
       <Dialog open={isCreateDomainDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateDomainDialogOpen(false); setNewDomain({ code: "", name: "" }); setDomainErrors({}); } else { setIsCreateDomainDialogOpen(true); } }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base font-semibold text-slate-800">{t("Create New Domain")}</DialogTitle>

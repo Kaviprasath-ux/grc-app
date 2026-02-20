@@ -8,6 +8,7 @@ import { Unauthorized } from "@/components/ui/unauthorized";
 import { Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface RiskStats {
   summary: {
@@ -17,7 +18,7 @@ interface RiskStats {
     riskByStatus: { name: string; value: number; color: string }[];
     riskByStrategy: { name: string; value: number }[];
     riskByRating: { name: string; value: number }[];
-    riskByCategory: { name: string; value: number }[];
+    riskByCategory: { id: string; name: string; value: number }[];
   };
 }
 
@@ -46,6 +47,11 @@ export default function RiskDashboardPage() {
     fetchStats();
   }, []);
 
+  // Translate dynamic category names via useTranslatedData hook
+  // Must be called before early returns to respect Rules of Hooks
+  const riskByCategory = stats?.charts?.riskByCategory || [];
+  const { data: translatedCategories } = useTranslatedData(riskByCategory, { modelName: 'RiskCategory' });
+
   if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -63,24 +69,28 @@ export default function RiskDashboardPage() {
 
   const totalRisks = stats?.summary?.totalRisks || 0;
 
-  // Transform data for horizontal bar charts
+  // Transform data for horizontal bar charts — translate enum labels with t()
   const riskByStrategyData = (stats?.charts?.riskByStrategy || []).map((item) => ({
-    category: item.name,
+    category: t(item.name),
     value: item.value,
   }));
 
   const riskByRatingData = (stats?.charts?.riskByRating || []).map((item) => ({
+    category: t(item.name),
+    value: item.value,
+  }));
+
+  const riskByCategoryData = translatedCategories.map((item) => ({
     category: item.name,
     value: item.value,
   }));
 
-  const riskByCategory = stats?.charts?.riskByCategory || [];
-  const riskByCategoryData = riskByCategory.map((item) => ({
-    category: item.name,
-    value: item.value,
+  // Translate status labels with t()
+  const riskByStatus = (stats?.charts?.riskByStatus || []).map((item) => ({
+    ...item,
+    name: t(item.name),
   }));
 
-  const riskByStatus = stats?.charts?.riskByStatus || [];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -90,7 +100,7 @@ export default function RiskDashboardPage() {
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Risk Dashboard")}</span>
       </nav>
 

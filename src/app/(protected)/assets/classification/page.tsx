@@ -421,11 +421,24 @@ export default function AssetClassificationPage() {
 
   // Handle adding new sensitivity
   const handleAddSensitivity = async () => {
-    if (!newSensitivityName.trim()) return;
-    if (!isValidName(newSensitivityName)) {
-      toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
+    const errors: { [key: string]: string } = {};
+
+    if (!newSensitivityName.trim()) {
+      errors.sensitivityName = t("Please enter sensitivity name");
+    } else if (!isValidName(newSensitivityName)) {
+      errors.sensitivityName = t("Only letters, spaces, and hyphens are allowed");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors({ ...fieldErrors, ...errors });
       return;
     }
+
+    // Clear sensitivity name error
+    if (fieldErrors.sensitivityName) {
+      setFieldErrors({ ...fieldErrors, sensitivityName: "" });
+    }
+
     try {
       const res = await fetch("/api/asset-sensitivities", {
         method: "POST",
@@ -446,15 +459,29 @@ export default function AssetClassificationPage() {
 
   // Handle adding new CIA rating
   const handleAddCIARating = async () => {
-    if (!newCIARatingLabel.trim()) return;
-    if (!isValidName(newCIARatingLabel)) {
-      toast({ title: t("Error"), description: t("Only letters, numbers, spaces, and hyphens are allowed"), variant: "destructive" });
-      return;
+    const errors: { [key: string]: string } = {};
+
+    if (!newCIARatingLabel.trim()) {
+      errors.ciaRatingLabel = t("Please enter label");
+    } else if (!isValidName(newCIARatingLabel)) {
+      errors.ciaRatingLabel = t("Only letters, spaces, and hyphens are allowed");
     }
+
     if (!isValidNumber(newCIARatingValue)) {
-      toast({ title: t("Error"), description: t("Please enter a valid number"), variant: "destructive" });
+      errors.ciaRatingValue = t("Please enter a valid number");
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors({ ...fieldErrors, ...errors });
       return;
     }
+
+    // Clear CIA rating errors
+    const clearedErrors = { ...fieldErrors };
+    delete clearedErrors.ciaRatingLabel;
+    delete clearedErrors.ciaRatingValue;
+    setFieldErrors(clearedErrors);
+
     try {
       const res = await fetch("/api/cia-ratings", {
         method: "POST",
@@ -579,8 +606,8 @@ export default function AssetClassificationPage() {
         setAiRiskResults(data);
         setDisplayedRisks(Array.isArray(risksList) ? [...risksList] : []);
         toast({
-          title: "Success",
-          description: "AI risk evaluation completed successfully",
+          title: t("Success"),
+          description: t("AI risk evaluation completed successfully"),
         });
         return;
       }
@@ -599,8 +626,8 @@ export default function AssetClassificationPage() {
     } catch (error: any) {
       console.error("Error starting AI risk evaluation:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to start AI risk evaluation",
+        title: t("Error"),
+        description: error.message || t("Failed to start AI risk evaluation"),
         variant: "destructive",
       });
       setAiRiskStatus("error");
@@ -617,8 +644,8 @@ export default function AssetClassificationPage() {
         setIsPolling(false);
         setAiRiskStatus("error");
         toast({
-          title: "Timeout",
-          description: "AI risk evaluation timed out. Please try again.",
+          title: t("Timeout"),
+          description: t("AI risk evaluation timed out. Please try again."),
           variant: "destructive",
         });
         return;
@@ -637,15 +664,15 @@ export default function AssetClassificationPage() {
           setDisplayedRisks(Array.isArray(risksList) ? [...risksList] : []);
           setIsPolling(false);
           toast({
-            title: "Success",
-            description: "AI risk evaluation completed successfully",
+            title: t("Success"),
+            description: t("AI risk evaluation completed successfully"),
           });
         } else if (data.status === "error") {
           setAiRiskStatus("error");
           setIsPolling(false);
           toast({
-            title: "Error",
-            description: data.error || "AI risk evaluation failed",
+            title: t("Error"),
+            description: data.error || t("AI risk evaluation failed"),
             variant: "destructive",
           });
         } else {
@@ -659,8 +686,8 @@ export default function AssetClassificationPage() {
         setIsPolling(false);
         setAiRiskStatus("error");
         toast({
-          title: "Error",
-          description: "Failed to check job status",
+          title: t("Error"),
+          description: t("Failed to check job status"),
           variant: "destructive",
         });
       }
@@ -1452,15 +1479,24 @@ export default function AssetClassificationPage() {
               <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newSensitivityName}
-                onChange={(e) => setNewSensitivityName(e.target.value)}
+                onChange={(e) => {
+                  setNewSensitivityName(e.target.value);
+                  if (fieldErrors.sensitivityName) {
+                    setFieldErrors({ ...fieldErrors, sensitivityName: "" });
+                  }
+                }}
                 placeholder={t("Enter sensitivity name")}
-                className="mt-1.5"
+                className={`mt-1.5 ${fieldErrors.sensitivityName ? "border-red-500" : ""}`}
               />
+              {fieldErrors.sensitivityName && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.sensitivityName}</p>
+              )}
             </div>
           </div>
           <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewSensitivityName("");
+              setFieldErrors({ ...fieldErrors, sensitivityName: "" });
               setIsAddSensitivityOpen(false);
             }}>{t("Cancel")}</Button>
             <Button onClick={handleAddSensitivity}>{t("Save")}</Button>
@@ -1481,26 +1517,43 @@ export default function AssetClassificationPage() {
               <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newCIARatingLabel}
-                onChange={(e) => setNewCIARatingLabel(e.target.value)}
+                onChange={(e) => {
+                  setNewCIARatingLabel(e.target.value);
+                  if (fieldErrors.ciaRatingLabel) {
+                    setFieldErrors({ ...fieldErrors, ciaRatingLabel: "" });
+                  }
+                }}
                 placeholder={t("e.g., high, medium, low")}
-                className="mt-1.5"
+                className={`mt-1.5 ${fieldErrors.ciaRatingLabel ? "border-red-500" : ""}`}
               />
+              {fieldErrors.ciaRatingLabel && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.ciaRatingLabel}</p>
+              )}
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Value")} <span className="text-semantic-error">*</span></Label>
               <Input
                 type="number"
                 value={newCIARatingValue}
-                onChange={(e) => setNewCIARatingValue(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  setNewCIARatingValue(parseInt(e.target.value) || 0);
+                  if (fieldErrors.ciaRatingValue) {
+                    setFieldErrors({ ...fieldErrors, ciaRatingValue: "" });
+                  }
+                }}
                 placeholder={t("Score value")}
-                className="mt-1.5"
+                className={`mt-1.5 ${fieldErrors.ciaRatingValue ? "border-red-500" : ""}`}
               />
+              {fieldErrors.ciaRatingValue && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.ciaRatingValue}</p>
+              )}
             </div>
           </div>
           <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setNewCIARatingLabel("");
               setNewCIARatingValue(0);
+              setFieldErrors({ ...fieldErrors, ciaRatingLabel: "", ciaRatingValue: "" });
               setIsAddCIARatingOpen(false);
             }}>{t("Cancel")}</Button>
             <Button onClick={handleAddCIARating}>{t("Save")}</Button>

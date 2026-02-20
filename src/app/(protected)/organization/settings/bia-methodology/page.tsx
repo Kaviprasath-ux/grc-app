@@ -184,7 +184,7 @@ export default function BIAMethodologyPage() {
   const handleAddRating = async () => {
     if (!ratingForm.label.trim()) return;
     if (!isValidName(ratingForm.label)) {
-      alert(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      alert(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!isValidNumber(ratingForm.score)) {
@@ -213,7 +213,7 @@ export default function BIAMethodologyPage() {
   const handleEditRating = async () => {
     if (!editingRating || !ratingForm.label.trim()) return;
     if (!isValidName(ratingForm.label)) {
-      alert(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      alert(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     if (!isValidNumber(ratingForm.score)) {
@@ -263,7 +263,7 @@ export default function BIAMethodologyPage() {
     if (!rangeForm.label.trim()) {
       errors.label = t("Criticality Label is required");
     } else if (!isValidName(rangeForm.label)) {
-      errors.label = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.label = t("Only letters, spaces, and hyphens are allowed");
     }
 
     if (!isValidNumber(rangeForm.lowValue)) {

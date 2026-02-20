@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -357,6 +358,8 @@ export const PUT = withAuth(
         });
       }
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'Risk', risk.id, { name: risk.name, description: risk.description, riskSources: risk.riskSources });
+
       return NextResponse.json(risk);
     } catch (error) {
       console.error("Error updating risk:", error);
@@ -601,6 +604,7 @@ export const DELETE = withAuth(
       }
 
       await prisma.risk.delete({ where: { id } });
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'Risk', id);
 
       return NextResponse.json({ message: "Risk deleted successfully" });
     } catch (error) {

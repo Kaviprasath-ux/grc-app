@@ -176,7 +176,7 @@ export function EditProfileWizard({
       if (!formData.name.trim()) {
         errors.name = t("Organization Name is required");
       } else if (!isValidName(formData.name.trim())) {
-        errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+        errors.name = t("Only letters, spaces, hyphens, and dots are allowed");
       }
       if (formData.phone.trim() && !isNumericOnly(formData.phone.trim().replace(/[\s\-\+\(\)]/g, ""))) {
         errors.phone = t("Only numbers are allowed");
@@ -203,7 +203,7 @@ export function EditProfileWizard({
     if (!formData.name.trim()) {
       errors.name = t("Organization Name is required");
     } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, hyphens, and dots are allowed");
     }
     if (formData.phone.trim() && !isNumericOnly(formData.phone.trim().replace(/[\s\-\+\(\)]/g, ""))) {
       errors.phone = t("Only numbers are allowed");
@@ -357,7 +357,7 @@ export function EditProfileWizard({
                       currentStep >= step.id ? "text-slate-700" : "text-slate-400"
                     )}
                   >
-                    {step.name}
+                    {t(step.name)}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
@@ -414,7 +414,10 @@ export function EditProfileWizard({
                 <Input
                   value={formData.name}
                   onChange={(e) => {
-                    setFormData({ ...formData, name: e.target.value });
+                    const value = e.target.value;
+                    // Only allow letters, spaces, hyphens, and dots (block numbers and special chars)
+                    if (value && !/^[\p{L}\s.\-]*$/u.test(value)) return;
+                    setFormData({ ...formData, name: value });
                     if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: "" }));
                   }}
                   className={`mt-1.5 ${formErrors.name ? "border-red-500" : ""}`}

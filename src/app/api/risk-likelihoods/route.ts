@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all risk likelihoods - with tenant filtering
 // GRC Admins get global access to view all settings across tenants
@@ -64,6 +65,8 @@ export const POST = withAuth(
           probability: probability?.trim() || null,
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskLikelihood', likelihood.id, { title: likelihood.title, timeFrame: likelihood.timeFrame, probability: likelihood.probability });
 
       return NextResponse.json(likelihood, { status: 201 });
     } catch (error: unknown) {

@@ -2,7 +2,32 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+function Input({ className, type, onKeyDown, onPaste, ...props }: React.ComponentProps<"input">) {
+  const handleNumericKeyDown = type === "number"
+    ? (e: React.KeyboardEvent<HTMLInputElement>) => {
+        // Allow: backspace, delete, tab, escape, enter, arrows, home, end
+        const allowed = ["Backspace", "Delete", "Tab", "Escape", "Enter",
+          "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"];
+        if (allowed.includes(e.key)) return;
+        // Allow Ctrl/Cmd + A, C, V, X
+        if ((e.ctrlKey || e.metaKey) && ["a", "c", "v", "x"].includes(e.key)) return;
+        // Allow digits and decimal point/minus for number fields
+        if (/^[0-9.\-]$/.test(e.key)) return;
+        e.preventDefault();
+        onKeyDown?.(e);
+      }
+    : onKeyDown;
+
+  const handleNumericPaste = type === "number"
+    ? (e: React.ClipboardEvent<HTMLInputElement>) => {
+        const pasted = e.clipboardData.getData("text");
+        if (!/^[0-9.\-]+$/.test(pasted)) {
+          e.preventDefault();
+        }
+        onPaste?.(e);
+      }
+    : onPaste;
+
   return (
     <input
       type={type}
@@ -13,6 +38,8 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className
       )}
+      onKeyDown={handleNumericKeyDown}
+      onPaste={handleNumericPaste}
       {...props}
     />
   )

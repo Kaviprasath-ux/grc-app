@@ -162,7 +162,7 @@ export default function ProcessPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   // Check if user is DepartmentReviewer (needs to see assigned processes and approve)
   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
@@ -901,7 +901,7 @@ export default function ProcessPage() {
     if (!processForm.name.trim()) {
       errors.name = t("Please enter the Process Name");
     } else if (!isValidName(processForm.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) {
       setProcessFormErrors(errors);
@@ -982,7 +982,7 @@ export default function ProcessPage() {
     if (!editingProcess.name.trim()) {
       errors.name = t("Please enter the Process Name");
     } else if (!isValidName(editingProcess.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) {
       setProcessFormErrors(errors);
@@ -1728,16 +1728,16 @@ export default function ProcessPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-slate-500">
+      <nav className={`flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("Process")}</span>
       </nav>
 
@@ -1747,48 +1747,50 @@ export default function ProcessPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <div className={`overflow-x-auto -mx-1 px-1 ${isRTL ? "flex justify-end" : ""}`}>
+        <TabsList className={isRTL ? "flex-row-reverse" : ""}>
           <TabsTrigger value="repository">{t("Repository")}</TabsTrigger>
           <TabsTrigger value="bia">{t("Business Impact Analysis")}</TabsTrigger>
           <TabsTrigger value="performance">{t("Performance Dashboard")}</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Repository Tab */}
         <TabsContent value="repository" className="mt-6">
           {/* Action Buttons */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2 mb-4">
-            <Button variant="outline" size="sm" onClick={handleExportRepository}>
+          <div className={`grid grid-cols-2 sm:flex sm:items-center gap-2 mb-4 ${isRTL ? "sm:justify-start" : "sm:justify-end"}`}>
+            <Button variant="outline" size="sm" onClick={handleExportRepository} className={isRTL ? "flex-row-reverse" : ""}>
               <Upload className="h-4 w-4 me-2" />
               {t("Export")}
             </Button>
             {!isDepartmentContributor && (
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Import")}
               </Button>
             )}
             {canAddProcess && (
-              <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => setIsAddProcessOpen(true)}>
+              <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={() => setIsAddProcessOpen(true)}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("Add Process")}
               </Button>
             )}
           </div>
           {/* Table Card with Integrated Filters */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
             {/* Search & Filters */}
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
               <div className="relative w-full sm:w-56">
-                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder={t("Search processes...")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                 />
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ltr:sm:ml-auto rtl:sm:mr-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:ms-auto">
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                   <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
@@ -1843,26 +1845,26 @@ export default function ProcessPage() {
         {/* Business Impact Analysis Tab */}
         <TabsContent value="bia" className="mt-6">
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 mb-4">
-            <Button variant="outline" size="sm" onClick={handleExportBIA}>
+          <div className={`flex items-center gap-2 mb-4 ${isRTL ? "justify-start" : "justify-end"}`}>
+            <Button variant="outline" size="sm" onClick={handleExportBIA} className={isRTL ? "flex-row-reverse" : ""}>
               <Upload className="h-4 w-4 me-2" />
               {t("Export")}
             </Button>
           </div>
 
           {/* Table Card with Integrated Filters */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
               <div className="relative w-full sm:w-56">
-                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   placeholder={t("Search By Process ID, Name")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                 />
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ltr:sm:ml-auto rtl:sm:mr-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:ms-auto">
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                   <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
@@ -1943,10 +1945,10 @@ export default function ProcessPage() {
         {/* Performance Dashboard Tab - Matching UAT structure */}
         <TabsContent value="performance" className="mt-6 space-y-6">
           {/* Two Donut Charts Side by Side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 ${isRTL ? "direction-rtl" : ""}`} style={isRTL ? { direction: 'rtl' } : undefined}>
             {/* Status Chart */}
             <div className="bg-white rounded-xl border border-slate-200">
-              <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+              <div className={`px-4 sm:px-6 py-4 border-b border-slate-100 ${isRTL ? "text-right" : ""}`}>
                 <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
               </div>
               <div className="p-6">
@@ -2002,7 +2004,7 @@ export default function ProcessPage() {
 
             {/* Department Chart */}
             <div className="bg-white rounded-xl border border-slate-200">
-              <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+              <div className={`px-4 sm:px-6 py-4 border-b border-slate-100 ${isRTL ? "text-right" : ""}`}>
                 <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
               </div>
               <div className="p-6">
@@ -2074,27 +2076,27 @@ export default function ProcessPage() {
             return (
               <>
                 {/* Section Header */}
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-3">
+                <div className={`flex items-center justify-between mb-5 ${isRTL ? "flex-row-reverse" : ""}`}>
+                  <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
                     <h3 className="text-base font-semibold text-slate-800">{t("KPI Processes")}</h3>
                   </div>
                 </div>
 
                 {/* Card with Search + Filter + Table */}
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
                   {/* Search and Filter Row */}
                   <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                     <div className="relative w-full sm:w-56">
-                      <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
                         placeholder={t("Search processes...")}
                         value={kpiSearchTerm}
                         onChange={(e) => setKpiSearchTerm(e.target.value)}
-                        className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                        className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                       />
                     </div>
-                    <div className="flex items-stretch sm:items-center gap-3 ltr:sm:ml-auto rtl:sm:mr-auto">
+                    <div className="flex items-stretch sm:items-center gap-3 sm:ms-auto">
                       <Select value={kpiDepartmentFilter} onValueChange={setKpiDepartmentFilter}>
                         <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
                           <SelectValue placeholder={t("Department")} />
@@ -2137,7 +2139,7 @@ export default function ProcessPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[420px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
@@ -2161,7 +2163,7 @@ export default function ProcessPage() {
 
       {/* AI Risk Evaluation Dialog */}
       <Dialog open={isAIEvaluationOpen} onOpenChange={setIsAIEvaluationOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
@@ -2406,7 +2408,7 @@ export default function ProcessPage() {
 
       {/* BIA Form Dialog */}
       <Dialog open={isBIAFormOpen} onOpenChange={setIsBIAFormOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2611,7 +2613,7 @@ export default function ProcessPage() {
         setIsAddProcessOpen(open);
         if (!open) resetProcessForm();
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2970,7 +2972,7 @@ export default function ProcessPage() {
         setIsEditProcessOpen(open);
         if (!open) setEditingProcess(null);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3408,7 +3410,7 @@ export default function ProcessPage() {
         setIsKPIModalOpen(open);
         if (!open) { setSelectedKPIProcess(null); setKpiErrors({}); }
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3630,7 +3632,7 @@ export default function ProcessPage() {
           if (fileInputRef.current) fileInputRef.current.value = '';
         }
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>

@@ -95,7 +95,7 @@ export default function PoliciesByFrameworkPage() {
   const router = useRouter();
   const params = useParams();
   const frameworkId = params.id as string;
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   // All policies extracted from framework controls (de-duplicated)
   const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
@@ -276,38 +276,42 @@ export default function PoliciesByFrameworkPage() {
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
+      <nav className={`flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Integrated Frameworks")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("Governance")}</span>
       </nav>
 
       {/* Header */}
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance")}</h1>
+      <div style={isRTL ? { direction: 'rtl' } : undefined}>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance")}</h1>
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeDocType} onValueChange={handleTabChange}>
-        <TabsList className="overflow-x-auto">
+        <div className={`overflow-x-auto ${isRTL ? "flex justify-end" : ""}`}>
+        <TabsList className={`overflow-x-auto ${isRTL ? "flex-row-reverse" : ""}`}>
           <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
           <TabsTrigger value="Standard">{t("Standards")}</TabsTrigger>
           <TabsTrigger value="Procedure">{t("Procedures")}</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Tab Content - Same structure for all tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
           <TabsContent key={docType} value={docType} className="mt-6">
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
               {/* Toolbar */}
               <div className="flex flex-wrap items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
                 <div className="relative w-full sm:w-56">
-                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     placeholder={t("Search by name or code...")}
@@ -317,7 +321,7 @@ export default function PoliciesByFrameworkPage() {
                       setCurrentPage(1);
                     }}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full ps-9 pe-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>

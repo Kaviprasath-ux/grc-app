@@ -278,7 +278,7 @@ export default function ControlsMasterDataPage() {
     if (!formData.name.trim()) {
       editErrors.name = t("Please enter name");
     } else if (!isValidName(formData.name.trim())) {
-      editErrors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      editErrors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(editErrors).length > 0) {
       setControlErrors(editErrors);
@@ -810,7 +810,7 @@ export default function ControlsMasterDataPage() {
                         <SelectItem value="none">{t("Select grouping")}</SelectItem>
                         {functionalGroupings.map((g) => (
                           <SelectItem key={g} value={g}>
-                            {g}
+                            {t(g)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -943,7 +943,7 @@ export default function ControlsMasterDataPage() {
                         {t("Functional Grouping")}
                       </p>
                       <p className="text-sm text-slate-800">
-                        {formData.functionalGrouping}
+                        {formData.functionalGrouping ? t(formData.functionalGrouping) : "-"}
                       </p>
                     </div>
                   </div>
@@ -1000,7 +1000,7 @@ export default function ControlsMasterDataPage() {
                       if (!formData.name.trim()) {
                         errors.name = t("Please enter name");
                       } else if (!isValidName(formData.name.trim())) {
-                        errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                        errors.name = t("Only letters, spaces, and hyphens are allowed");
                       }
                       if (!formData.controlQuestion?.trim()) errors.controlQuestion = t("Please enter the question");
                       if (!formData.functionalGrouping) errors.functionalGrouping = t("Please select the Functional Grouping");
@@ -1104,7 +1104,7 @@ export default function ControlsMasterDataPage() {
                     {control.description || "-"}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
-                    {control.functionalGrouping || "-"}
+                    {control.functionalGrouping ? t(control.functionalGrouping) : "-"}
                   </TableCell>
                   <TableCell className="py-3 text-sm">
                     <Badge
@@ -1281,7 +1281,7 @@ export default function ControlsMasterDataPage() {
                     <SelectItem value="none">{t("None")}</SelectItem>
                     {functionalGroupings.map((g) => (
                       <SelectItem key={g} value={g}>
-                        {g}
+                        {t(g)}
                       </SelectItem>
                     ))}
                   </SelectContent>

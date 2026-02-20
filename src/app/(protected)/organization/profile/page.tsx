@@ -127,7 +127,7 @@ interface Regulation {
 function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const initialTab = searchParams.get("tab") || "overview";
   const fromDashboard = searchParams.get("from") === "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -239,7 +239,7 @@ function ProfilePageContent() {
   // Department CRUD
   const handleAddDepartment = async () => {
     if (!newDepartmentName.trim()) { setDepartmentNameError(t("Please enter department name")); return; }
-    if (!isValidName(newDepartmentName.trim())) { setDepartmentNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newDepartmentName.trim())) { setDepartmentNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setDepartmentNameError("");
     try {
       const res = await fetch("/api/departments", {
@@ -278,7 +278,7 @@ function ProfilePageContent() {
 
   const handleEditDepartment = async () => {
     if (!editingDepartment || !editingDepartment.name.trim()) { setEditDepartmentNameError(t("Please enter department name")); return; }
-    if (!isValidName(editingDepartment.name.trim())) { setEditDepartmentNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(editingDepartment.name.trim())) { setEditDepartmentNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setEditDepartmentNameError("");
     try {
       const res = await fetch(`/api/departments/${editingDepartment.id}`, {
@@ -301,7 +301,7 @@ function ProfilePageContent() {
   const handleAddService = async () => {
     const errors: Record<string, string> = {};
     if (!newService.title.trim()) errors.title = t("Please enter the title");
-    else if (!isValidName(newService.title.trim())) errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(newService.title.trim())) errors.title = t("Only letters, spaces, and hyphens are allowed");
     if (!newService.serviceUser) errors.serviceUser = t("Please select service user");
     if (!newService.serviceCategory) errors.serviceCategory = t("Please select the category");
     if (!newService.serviceItem) errors.serviceItem = t("Please select the service title");
@@ -337,7 +337,7 @@ function ProfilePageContent() {
     if (!editingService) return;
     const errors: Record<string, string> = {};
     if (!editingService.title.trim()) errors.title = t("Please enter the title");
-    else if (!isValidName(editingService.title.trim())) errors.title = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(editingService.title.trim())) errors.title = t("Only letters, spaces, and hyphens are allowed");
     if (Object.keys(errors).length > 0) { setEditServiceErrors(errors); return; }
     setEditServiceErrors({});
     try {
@@ -418,7 +418,7 @@ function ProfilePageContent() {
   const handleAddRegulation = async () => {
     const errors: Record<string, string> = {};
     if (!newRegulation.name.trim()) errors.name = t("Please enter the name");
-    else if (!isValidName(newRegulation.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(newRegulation.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!newRegulation.version.trim()) errors.version = t("Please enter the version");
     if (Object.keys(errors).length > 0) { setRegulationErrors(errors); return; }
     setRegulationErrors({});
@@ -470,7 +470,7 @@ function ProfilePageContent() {
     if (!editingRegulation) return;
     const errors: Record<string, string> = {};
     if (!editingRegulation.name.trim()) errors.name = t("Please enter the name");
-    else if (!isValidName(editingRegulation.name.trim())) errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+    else if (!isValidName(editingRegulation.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!editingRegulation.version.trim()) errors.version = t("Please enter the version");
     if (Object.keys(errors).length > 0) { setEditRegulationErrors(errors); return; }
     setEditRegulationErrors({});
@@ -542,7 +542,7 @@ function ProfilePageContent() {
   // Add new service category
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) { setCategoryNameError(t("Please enter category name")); return; }
-    if (!isValidName(newCategoryName.trim())) { setCategoryNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newCategoryName.trim())) { setCategoryNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setCategoryNameError("");
     if (!serviceCategories.includes(newCategoryName)) {
       setServiceCategories([...serviceCategories, newCategoryName]);
@@ -555,7 +555,7 @@ function ProfilePageContent() {
   // Add new service item
   const handleAddItem = () => {
     if (!newItemName.trim()) { setItemNameError(t("Please enter item name")); return; }
-    if (!isValidName(newItemName.trim())) { setItemNameError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newItemName.trim())) { setItemNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setItemNameError("");
     if (!serviceItems.includes(newItemName)) {
       setServiceItems([...serviceItems, newItemName]);
@@ -605,27 +605,27 @@ function ProfilePageContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-slate-500">
+      <nav className={`flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("Profile")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Organization Profile")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 ltr:text-left rtl:text-right">{t("Organization Profile")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto -mx-1 px-1">
-          <TabsList className="w-full sm:w-auto inline-flex">
+        <div className={`overflow-x-auto -mx-1 px-1 ${isRTL ? "flex justify-end" : ""}`}>
+          <TabsList className={`w-full sm:w-auto inline-flex ${isRTL ? "flex-row-reverse" : ""}`}>
             <TabsTrigger value="overview" className="text-xs sm:text-sm">{t("Company Info")}</TabsTrigger>
             <TabsTrigger value="services" className="text-xs sm:text-sm">{t("Services")}</TabsTrigger>
             <TabsTrigger value="regulations" className="text-xs sm:text-sm">{t("Regulations")}</TabsTrigger>
@@ -639,9 +639,9 @@ function ProfilePageContent() {
           {organization ? (
             <>
               {/* Header - matches other tabs */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
                 <h3 className="text-base font-semibold text-slate-800">{t("Organization Information")}</h3>
-                <Button size="sm" onClick={openEditOrganization} className="w-full sm:w-auto">
+                <Button size="sm" onClick={openEditOrganization} className={`w-full sm:w-auto ${isRTL ? "flex-row-reverse" : ""}`}>
                   <Pencil className="h-4 w-4 me-2" />
                   {t("Edit Profile")}
                 </Button>
@@ -650,7 +650,7 @@ function ProfilePageContent() {
               <div className="space-y-4 sm:space-y-5">
                 {/* Organization Logo & Name Header */}
                 {organization.logo && (
-                  <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex items-center gap-4">
+                  <div className={`bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex items-center gap-4 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                     <img src={organization.logo} alt={organization.name} className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
                     <div>
                       <h3 className="text-lg font-semibold text-slate-800">{organization.name}</h3>
@@ -663,12 +663,12 @@ function ProfilePageContent() {
 
                 {/* General Information Section */}
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">
+                  <div className={`px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 ${isRTL ? "text-right" : ""}`}>
                     <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("General Information")}</span>
                   </div>
                   <div className="p-3 sm:p-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                      <div className="flex items-start gap-3">
+                    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 ${isRTL ? "direction-rtl" : ""}`} style={isRTL ? { direction: 'rtl' } : undefined}>
+                      <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <Building2 className="h-4 w-4 text-primary-500" />
                         </div>
@@ -677,7 +677,7 @@ function ProfilePageContent() {
                           <p className="text-sm font-medium text-slate-800">{organization.name || "-"}</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
+                      <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <Calendar className="h-4 w-4 text-primary-500" />
                         </div>
@@ -686,7 +686,7 @@ function ProfilePageContent() {
                           <p className="text-sm font-medium text-slate-800">{organization.establishedDate || "-"}</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
+                      <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <Users className="h-4 w-4 text-primary-500" />
                         </div>
@@ -695,7 +695,7 @@ function ProfilePageContent() {
                           <p className="text-sm font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
+                      <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <MapPin className="h-4 w-4 text-primary-500" />
                         </div>
@@ -710,12 +710,12 @@ function ProfilePageContent() {
 
                 {/* Location & Contact Section */}
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">
+                  <div className={`px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 ${isRTL ? "text-right" : ""}`}>
                     <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Location & Contact")}</span>
                   </div>
                   <div className="p-3 sm:p-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                      <div className="flex items-start gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5" style={isRTL ? { direction: 'rtl' } : undefined}>
+                      <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <MapPin className="h-4 w-4 text-primary-500" />
                         </div>
@@ -724,7 +724,7 @@ function ProfilePageContent() {
                           <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3 sm:col-span-2 lg:col-span-1">
+                      <div className={`flex items-start gap-3 sm:col-span-2 lg:col-span-1 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <Home className="h-4 w-4 text-primary-500" />
                         </div>
@@ -733,7 +733,7 @@ function ProfilePageContent() {
                           <p className="text-sm font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
+                      <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <Globe className="h-4 w-4 text-primary-500" />
                         </div>
@@ -742,7 +742,7 @@ function ProfilePageContent() {
                           <p className="text-sm font-medium text-primary-600 truncate">{organization.website || "-"}</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
+                      <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center mt-0.5">
                           <Target className="h-4 w-4 text-primary-500" />
                         </div>
@@ -757,13 +757,13 @@ function ProfilePageContent() {
 
                 {/* About Section - Description, Vision, Mission */}
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">
+                  <div className={`px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 ${isRTL ? "text-right" : ""}`}>
                     <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("About")}</span>
                   </div>
-                  <div className="p-3 sm:p-5 space-y-4 sm:space-y-5">
+                  <div className={`p-3 sm:p-5 space-y-4 sm:space-y-5 ${isRTL ? "text-right" : ""}`}>
                     {/* Description */}
                     {organization.description && (
-                      <div className="border-l-2 border-primary-200 pl-4">
+                      <div className={isRTL ? "border-r-2 border-primary-200 pr-4" : "border-l-2 border-primary-200 pl-4"}>
                         <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Description")}</p>
                         <p className="text-sm text-slate-700 leading-relaxed">{organization.description}</p>
                       </div>
@@ -772,13 +772,13 @@ function ProfilePageContent() {
                     {/* Vision & Mission */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                       {organization.vision && (
-                        <div className="border-l-2 border-emerald-200 pl-4">
+                        <div className={isRTL ? "border-r-2 border-emerald-200 pr-4" : "border-l-2 border-emerald-200 pl-4"}>
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Vision")}</p>
                           <p className="text-sm text-slate-700 leading-relaxed">{organization.vision}</p>
                         </div>
                       )}
                       {organization.mission && (
-                        <div className="border-l-2 border-amber-200 pl-4">
+                        <div className={isRTL ? "border-r-2 border-amber-200 pr-4" : "border-l-2 border-amber-200 pl-4"}>
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Mission")}</p>
                           <p className="text-sm text-slate-700 leading-relaxed">{organization.mission}</p>
                         </div>
@@ -790,11 +790,11 @@ function ProfilePageContent() {
                 {/* Brochure / Documents Section */}
                 {organization.brochure && (
                   <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    <div className="px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100">
+                    <div className={`px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 ${isRTL ? "text-right" : ""}`}>
                       <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Documents")}</span>
                     </div>
-                    <div className="p-3 sm:p-5">
-                      <div className="flex items-center gap-3 px-3 sm:px-4 py-3 bg-slate-50 rounded-lg border border-slate-200 w-full sm:w-fit">
+                    <div className={`p-3 sm:p-5 ${isRTL ? "flex justify-end" : ""}`}>
+                      <div className={`flex items-center gap-3 px-3 sm:px-4 py-3 bg-slate-50 rounded-lg border border-slate-200 w-full sm:w-fit ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
                           <FileText className="h-4 w-4 text-primary-500" />
                         </div>
@@ -802,7 +802,7 @@ function ProfilePageContent() {
                           <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Brochure")}</p>
                           <p className="text-sm font-medium text-slate-700">{organization.brochure.split("/").pop()}</p>
                         </div>
-                        <div className="flex items-center gap-0.5 ml-2">
+                        <div className={`flex items-center gap-0.5 ${isRTL ? "mr-2" : "ml-2"}`}>
                           <a href={organization.brochure} target="_blank" rel="noopener noreferrer">
                             <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
                               <Eye className="h-3.5 w-3.5" />
@@ -840,8 +840,8 @@ function ProfilePageContent() {
         {/* Services Tab */}
         <TabsContent value="services" className="mt-4 sm:mt-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
-            <div className="flex items-center gap-3">
+          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
+            <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
               <h3 className="text-base font-semibold text-slate-800">{t("Services")}</h3>
               {services.length > 0 && (
                 <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -856,28 +856,28 @@ function ProfilePageContent() {
           </div>
 
           {services.length > 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
               {/* Search */}
               <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
                 <div className="relative w-full sm:max-w-xs">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 start-3" />
                   <input
                     type="text"
                     placeholder={t("Search services...")}
                     value={serviceSearch}
                     onChange={(e) => { setServiceSearch(e.target.value); setServicePage(1); }}
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full py-2 ps-9 pe-3 text-sm bg-slate-50 border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>
               <div className="overflow-x-auto">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px]">
+              <div className={`grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[600px] ${isRTL ? "text-right" : ""}`}>
                 <span>{t("Service Name")}</span>
                 <span>{t("User Type")}</span>
                 <span>{t("Category")}</span>
                 <span>{t("Item")}</span>
-                <span className="text-end">{t("Actions")}</span>
+                <span className={isRTL ? "text-start" : "text-end"}>{t("Actions")}</span>
               </div>
               {/* Table rows */}
               {(() => {
@@ -898,55 +898,55 @@ function ProfilePageContent() {
                           key={service.id}
                           className="grid grid-cols-[1fr_120px_1fr_1fr_72px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[600px]"
                         >
-                          {/* Service Name */}
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-                              <Briefcase className="h-4 w-4 text-primary-500" />
-                            </div>
-                            <span className="text-sm font-medium text-slate-800 truncate">{service.title}</span>
-                          </div>
+                              {/* Service Name */}
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                                  <Briefcase className="h-4 w-4 text-primary-500" />
+                                </div>
+                                <span className="text-sm font-medium text-slate-800 truncate">{service.title}</span>
+                              </div>
 
-                          {/* User Type Badge */}
-                          <div>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                              service.serviceUser === "Internal"
-                                ? "bg-primary-50 text-primary-700"
-                                : service.serviceUser === "External"
-                                ? "bg-amber-50 text-amber-700"
-                                : "bg-slate-100 text-slate-600"
-                            }`}>
-                              {t(service.serviceUser)}
-                            </span>
-                          </div>
+                              {/* User Type Badge */}
+                              <div>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  service.serviceUser === "Internal"
+                                    ? "bg-primary-50 text-primary-700"
+                                    : service.serviceUser === "External"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}>
+                                  {t(service.serviceUser)}
+                                </span>
+                              </div>
 
-                          {/* Category */}
-                          <span className="text-sm text-slate-600 truncate">{service.serviceCategory || "—"}</span>
+                              {/* Category */}
+                              <span className="text-sm text-slate-600 truncate">{service.serviceCategory || "—"}</span>
 
-                          {/* Item */}
-                          <span className="text-sm text-slate-600 truncate">{service.serviceItem || "—"}</span>
+                              {/* Item */}
+                              <span className="text-sm text-slate-600 truncate">{service.serviceItem || "—"}</span>
 
-                          {/* Actions */}
-                          <div className="flex items-center justify-end gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
-                              onClick={() => {
-                                setEditingService(service);
-                                setIsEditServiceOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
-                              onClick={() => handleDeleteService(service.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+                              {/* Actions */}
+                              <div className={`flex items-center gap-0.5 ${isRTL ? "justify-start" : "justify-end"}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                                  onClick={() => {
+                                    setEditingService(service);
+                                    setIsEditServiceOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-400 hover:text-semantic-error hover:bg-red-50"
+                                  onClick={() => handleDeleteService(service.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                         </div>
                       ))}
                       {filtered.length === 0 && (
@@ -1015,8 +1015,8 @@ function ProfilePageContent() {
         {/* Regulations Tab */}
         <TabsContent value="regulations" className="mt-4 sm:mt-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
-            <div className="flex items-center gap-3">
+          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
+            <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
               <h3 className="text-base font-semibold text-slate-800">{t("Regulations")}</h3>
               {regulations.length > 0 && (
                 <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -1031,27 +1031,27 @@ function ProfilePageContent() {
           </div>
 
           {regulations.length > 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
               {/* Search */}
               <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
                 <div className="relative w-full sm:max-w-xs">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 start-3" />
                   <input
                     type="text"
                     placeholder={t("Search regulations...")}
                     value={regulationSearch}
                     onChange={(e) => { setRegulationSearch(e.target.value); setRegulationPage(1); }}
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full py-2 ps-9 pe-3 text-sm bg-white border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>
               <div className="overflow-x-auto">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_100px_120px_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[500px]">
+              <div className={`grid grid-cols-[1fr_100px_120px_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[500px] ${isRTL ? "text-right" : ""}`}>
                 <span>{t("Regulation Name")}</span>
                 <span>{t("Version")}</span>
                 <span>{t("Status")}</span>
-                <span className="text-end">{t("Actions")}</span>
+                <span className={isRTL ? "text-start" : "text-end"}>{t("Actions")}</span>
               </div>
               {/* Table rows */}
               {(() => {
@@ -1085,12 +1085,12 @@ function ProfilePageContent() {
                           {/* Status Badge */}
                           <div>
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-compliance-compliant-bg text-compliance-compliant">
-                              {regulation.status || "—"}
+                              {t(regulation.status) || "—"}
                             </span>
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center justify-end gap-0.5">
+                          <div className={`flex items-center gap-0.5 ${isRTL ? "justify-start" : "justify-end"}`}>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1178,8 +1178,8 @@ function ProfilePageContent() {
         {/* Departments Tab */}
         <TabsContent value="departments" className="mt-4 sm:mt-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
-            <div className="flex items-center gap-3">
+          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
+            <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
               <h3 className="text-base font-semibold text-slate-800">{t("Departments")}</h3>
               {departments.length > 0 && (
                 <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -1194,24 +1194,24 @@ function ProfilePageContent() {
           </div>
 
           {departments.length > 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
               {/* Search */}
               <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
                 <div className="relative w-full sm:max-w-xs">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 start-3" />
                   <input
                     type="text"
                     placeholder={t("Search departments...")}
                     value={departmentSearch}
                     onChange={(e) => { setDepartmentSearch(e.target.value); setDepartmentPage(1); }}
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                    className="w-full py-2 ps-9 pe-3 text-sm bg-slate-50 border border-slate-300 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
                   />
                 </div>
               </div>
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <div className={`grid grid-cols-[1fr_72px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider ${isRTL ? "text-right" : ""}`}>
                 <span>{t("Department Name")}</span>
-                <span className="text-end">{t("Actions")}</span>
+                <span className={isRTL ? "text-start" : "text-end"}>{t("Actions")}</span>
               </div>
               {/* Table rows */}
               {(() => {
@@ -1239,7 +1239,7 @@ function ProfilePageContent() {
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center justify-end gap-0.5">
+                          <div className={`flex items-center gap-0.5 ${isRTL ? "justify-start" : "justify-end"}`}>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1320,7 +1320,7 @@ function ProfilePageContent() {
         {/* Organization Chart Tab */}
         <TabsContent value="orgchart" className="mt-4 sm:mt-6">
           {/* Header - matches other tabs */}
-          <div className="flex items-center justify-between mb-4 sm:mb-5">
+          <div className={`flex items-center justify-between mb-4 sm:mb-5 ${isRTL ? "flex-row-reverse" : ""}`}>
             <h3 className="text-base font-semibold text-slate-800">{t("Organization Structure")}</h3>
           </div>
 

@@ -766,7 +766,7 @@ export default function CustomerAdminFrameworkDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [framework, setFramework] = useState<Framework | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1333,16 +1333,16 @@ export default function CustomerAdminFrameworkDetailPage({
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
+        <nav className={`flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
           <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Integrated Frameworks")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <span className="text-primary-700 font-medium">{t("Framework Details")}</span>
         </nav>
 
@@ -1542,44 +1542,46 @@ export default function CustomerAdminFrameworkDetailPage({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
+      <nav className={`flex items-center gap-1.5 text-xs sm:text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Integrated Frameworks")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium truncate">{framework.name}</span>
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1" style={isRTL ? { direction: 'rtl' } : undefined}>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{framework.name}</h1>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="overflow-x-auto">
+        <div className={`overflow-x-auto ${isRTL ? "flex justify-end" : ""}`}>
+        <TabsList className={`overflow-x-auto ${isRTL ? "flex-row-reverse" : ""}`}>
           <TabsTrigger value="requirements">{t("All Requirements")}</TabsTrigger>
           <TabsTrigger value="soa">{t("SOA")}</TabsTrigger>
           <TabsTrigger value="audit-logs">{t("Audit Logs")}</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Requirements Tab */}
         <TabsContent value="requirements" className="mt-6">
           {/* Action bar + Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4" style={isRTL ? { direction: 'rtl' } : undefined}>
             <div className="relative w-full sm:w-64">
-              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder={t("Search requirements...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                className="w-full ps-9 pe-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -1606,7 +1608,7 @@ export default function CustomerAdminFrameworkDetailPage({
                 ))}
               </SelectContent>
             </Select>
-            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto ltr:sm:ml-auto rtl:sm:mr-auto">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto sm:ms-auto">
               <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportRequirements}>
                 <Download className="h-4 w-4 me-2" />
                 {t("Export")}
@@ -1635,13 +1637,14 @@ export default function CustomerAdminFrameworkDetailPage({
                   <div
                     key={cat.id}
                     className="bg-white rounded-xl border border-slate-200 overflow-hidden"
+                    style={isRTL ? { direction: 'rtl' } : undefined}
                   >
                     {/* Category Header */}
                     <button
                       onClick={() => toggleCategory(cat.id)}
-                      className={`w-full flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-3.5 text-left transition-colors hover:bg-slate-50/80 ${isOpen ? "border-b border-slate-100" : ""}`}
+                      className={`w-full flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-3.5 text-start transition-colors hover:bg-slate-50/80 ${isOpen ? "border-b border-slate-100" : ""}`}
                     >
-                      <ChevronRight className={`h-4 w-4 text-slate-400 shrink-0 transition-transform ${isOpen ? "rotate-90" : "ltr:rotate-0 rtl:rotate-180"}`} />
+                      <ChevronRight className={`h-4 w-4 text-slate-400 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
                       <span className="text-sm font-semibold text-slate-800 flex-1">
                         {cat.code}. {cat.name}
                       </span>
@@ -1728,7 +1731,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
                               {/* Expanded Detail */}
                               {isExpanded && (
-                                <div className="px-3 sm:px-5 pb-4 ltr:sm:pl-[52px] rtl:sm:pr-[52px]">
+                                <div className="px-3 sm:px-5 pb-4 sm:ps-[52px]">
                                   <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
                                     {/* Description */}
                                     {req.description && (
@@ -1785,7 +1788,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                       <div className="flex items-center justify-between mb-2">
                                         <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                                           {t("Linked Controls")}
-                                          <span className="ltr:ml-1.5 rtl:mr-1.5 text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                                          <span className="ms-1.5 text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
                                             {controlCount}
                                           </span>
                                         </span>
@@ -1880,16 +1883,16 @@ export default function CustomerAdminFrameworkDetailPage({
         {/* SOA Tab */}
         <TabsContent value="soa" className="mt-6">
           {/* Top bar: count, search, filter, actions */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4" style={isRTL ? { direction: 'rtl' } : undefined}>
             <span className="text-sm text-slate-500">{soaTotalRequirements} {t("requirements")}</span>
-            <div className="relative w-full sm:w-56 ltr:sm:ml-auto rtl:sm:mr-auto">
-              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <div className="relative w-full sm:w-56 sm:ms-auto">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder={t("Search requirements...")}
                 value={soaSearch}
                 onChange={(e) => setSoaSearch(e.target.value)}
-                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                className="w-full ps-9 pe-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
             <Select value={soaStatusFilter} onValueChange={(v) => setSoaStatusFilter(v)}>
@@ -1916,13 +1919,13 @@ export default function CustomerAdminFrameworkDetailPage({
               const isExpanded = soaEffectiveExpanded.includes(cat.id);
               const requirements = cat.children || [];
               return (
-                <div key={cat.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div key={cat.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
                   {/* Card Header - clickable */}
                   <button
                     onClick={() => toggleSoaCat(cat.id)}
                     className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/60 transition-colors"
                   >
-                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? "" : "ltr:-rotate-90 rtl:rotate-90"}`} />
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? "" : "-rotate-90"}`} />
                     <span className="text-sm font-semibold text-slate-800">{cat.name}</span>
                     <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                       {requirements.length}
@@ -2015,18 +2018,18 @@ export default function CustomerAdminFrameworkDetailPage({
         {/* Audit Logs Tab */}
         <TabsContent value="audit-logs" className="mt-6">
           {/* Top bar: search, filter, export */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4" style={isRTL ? { direction: 'rtl' } : undefined}>
             <div className="relative w-full sm:w-56">
-              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder={t("Search logs...")}
                 value={auditLogSearch}
                 onChange={(e) => { setAuditLogSearch(e.target.value); setAuditLogPage(1); }}
-                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                className="w-full ps-9 pe-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
               />
             </div>
-            <div className="hidden sm:block ltr:ml-auto rtl:mr-auto"></div>
+            <div className="hidden sm:block ms-auto"></div>
             <Select value={auditLogActionFilter} onValueChange={(v) => { setAuditLogActionFilter(v); setAuditLogPage(1); }}>
               <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-white border-slate-200">
                 <SelectValue placeholder={t("All Actions")} />
@@ -2048,7 +2051,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Audit Log Table */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
             <div className="overflow-x-auto">
             {/* Column Headers */}
             <div className="grid grid-cols-[180px_100px_1fr_1fr_170px] gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[800px]">
@@ -2133,7 +2136,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Add Requirement Dialog */}
       <Dialog open={isAddRequirementOpen} onOpenChange={(open) => { if (!open) { setReqErrors({}); } setIsAddRequirementOpen(open); }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -2284,7 +2287,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Link Controls Dialog */}
       <Dialog open={isLinkControlsOpen} onOpenChange={setIsLinkControlsOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -2409,7 +2412,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Add Exception Dialog */}
       <Dialog open={isAddExceptionOpen} onOpenChange={(open) => { if (!open) { setExcErrors({}); } setIsAddExceptionOpen(open); }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -2547,7 +2550,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Update Requirement Dialog */}
       <Dialog open={isUpdateRequirementOpen} onOpenChange={setIsUpdateRequirementOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>

@@ -172,7 +172,7 @@ const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 export default function EvidencePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.evidence');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [evidences, setEvidences] = useState<Evidence[]>([]);
@@ -198,6 +198,7 @@ export default function EvidencePage() {
   const artifactFileInputRef = useRef<HTMLInputElement>(null);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [artifactDragging, setArtifactDragging] = useState(false);
+  const [artifactUploading, setArtifactUploading] = useState(false);
   const [aiReviewLoading, setAiReviewLoading] = useState(false);
 
   // Link Evidence Dialog state
@@ -586,22 +587,49 @@ export default function EvidencePage() {
   };
 
   const handleArtifactUpload = async (files: FileList) => {
-    for (const file of Array.from(files)) {
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
+    setArtifactUploading(true);
+    let successCount = 0;
+    let failCount = 0;
+    try {
+      for (const file of Array.from(files)) {
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
 
-        const response = await fetch("/api/artifacts", {
-          method: "POST",
-          body: formData,
-        });
+          const response = await fetch("/api/artifacts", {
+            method: "POST",
+            body: formData,
+          });
 
-        if (response.ok) {
-          // Refresh artifacts list after upload
-          await fetchArtifacts();
+          if (response.ok) {
+            successCount++;
+          } else {
+            failCount++;
+            const errorData = await response.json().catch(() => ({}));
+            console.error("Artifact upload failed:", errorData.error || response.statusText);
+          }
+        } catch (error) {
+          failCount++;
+          console.error("Error uploading artifact:", error);
         }
-      } catch (error) {
-        console.error("Error uploading artifact:", error);
+      }
+
+      // Refresh artifacts list
+      await fetchArtifacts();
+
+      // Show feedback
+      if (successCount > 0 && failCount === 0) {
+        toast.success(t(successCount === 1 ? "Artifact uploaded successfully!" : "Artifacts uploaded successfully!"));
+      } else if (successCount > 0 && failCount > 0) {
+        toast.warning(`${successCount} ${t("uploaded")}, ${failCount} ${t("failed")}`);
+      } else {
+        toast.error(t("Failed to upload artifact"));
+      }
+    } finally {
+      setArtifactUploading(false);
+      // Reset file input so the same file can be re-uploaded
+      if (artifactFileInputRef.current) {
+        artifactFileInputRef.current.value = "";
       }
     }
   };
@@ -817,13 +845,13 @@ export default function EvidencePage() {
   // Show loading state while permissions are being fetched
   if (permissionsLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" style={isRTL ? { direction: 'rtl' } : undefined}>
         <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <Link href="" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Compliance")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <span className="text-primary-700 font-medium">{t("Evidence")}</span>
         </nav>
         <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
@@ -842,7 +870,7 @@ export default function EvidencePage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6" style={isRTL ? { direction: 'rtl' } : undefined}>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500 ">
@@ -859,7 +887,7 @@ export default function EvidencePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir={isRTL ? "rtl" : "ltr"}>
         <TabsList>
           <TabsTrigger value="evidence-request">
             {t("Evidence Request List")}
@@ -1122,9 +1150,11 @@ export default function EvidencePage() {
           {/* File Upload Area */}
           <div
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-              artifactDragging
-                ? "border-primary-500 bg-primary-50"
-                : "border-slate-200 hover:border-slate-300 bg-white"
+              artifactUploading
+                ? "border-primary-400 bg-primary-50/50 pointer-events-none opacity-70"
+                : artifactDragging
+                  ? "border-primary-500 bg-primary-50"
+                  : "border-slate-200 hover:border-slate-300 bg-white"
             }`}
             onDragOver={handleArtifactDragOver}
             onDragLeave={handleArtifactDragLeave}
@@ -1136,19 +1166,28 @@ export default function EvidencePage() {
               multiple
               className="hidden"
               onChange={handleArtifactFileChange}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
             />
             <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
-              <Upload className="h-6 w-6 text-primary-400" />
+              {artifactUploading ? (
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+              ) : (
+                <Upload className="h-6 w-6 text-primary-400" />
+              )}
             </div>
-            <p className="text-slate-600 mb-2">
-              {t("Drag and drop files here, or")}{" "}
-              <button
-                onClick={() => artifactFileInputRef.current?.click()}
-                className="text-primary-600 hover:text-primary-700 font-medium"
-              >
-                {t("click to upload")}
-              </button>
-            </p>
+            {artifactUploading ? (
+              <p className="text-slate-600 mb-2">{t("Uploading...")}</p>
+            ) : (
+              <p className="text-slate-600 mb-2">
+                {t("Drag and drop files here, or")}{" "}
+                <button
+                  onClick={() => artifactFileInputRef.current?.click()}
+                  className="text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  {t("click to upload")}
+                </button>
+              </p>
+            )}
             <p className="text-sm text-slate-400">
               {t("Supported formats: PDF, PNG, JPG, XLSX, DOC, DOCX")}
             </p>
@@ -1195,10 +1234,27 @@ export default function EvidencePage() {
                       >
                         <Link2 className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => window.open(`/api/artifacts/${artifact.id}/download`, "_blank")}
+                        title={t("View")}
+                      >
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => {
+                          const link = document.createElement("a");
+                          link.href = `/api/artifacts/${artifact.id}/download`;
+                          link.download = artifact.fileName;
+                          link.click();
+                        }}
+                        title={t("Download")}
+                      >
                         <Download className="h-3.5 w-3.5" />
                       </Button>
                       <Button
@@ -1223,7 +1279,7 @@ export default function EvidencePage() {
         if (!open) resetCreateForm();
         setCreateDialogOpen(open);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -1461,7 +1517,7 @@ export default function EvidencePage() {
                   </div>
                   <div>
                     <Label className="text-xs text-slate-500">{t("Recurrence")}</Label>
-                    <p className="font-medium text-slate-900">{createForm.recurrence}</p>
+                    <p className="font-medium text-slate-900">{createForm.recurrence ? t(createForm.recurrence) : "-"}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-slate-500">{t("Department")}</Label>
@@ -1522,7 +1578,7 @@ export default function EvidencePage() {
                   if (!createForm.name) {
                     errors.name = t("Please enter the evidence name");
                   } else if (!isValidName(createForm.name.trim())) {
-                    errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+                    errors.name = t("Only letters, spaces, and hyphens are allowed");
                   }
                   if (!createForm.recurrence) errors.recurrence = t("Please select the recurrence");
                   if (!createForm.departmentId) errors.departmentId = t("Please select the Department");
@@ -1542,7 +1598,7 @@ export default function EvidencePage() {
 
       {/* Delete All Dialog */}
       <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent style={isRTL ? { direction: 'rtl' } : undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Delete All Evidence")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1560,7 +1616,7 @@ export default function EvidencePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <DialogHeader>
@@ -1646,7 +1702,7 @@ export default function EvidencePage() {
         }
         setLinkEvidenceDialogOpen(open);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 overflow-hidden max-h-[80vh] flex flex-col" style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Header */}
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { isValidName } from "@/lib/validations";
 import { ChevronLeft, ChevronRight, Check, Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -240,6 +241,10 @@ export default function AddProcessPage() {
   const handleSave = async () => {
     if (!formData.name.trim()) {
       toast({ title: t("Error"), description: t("Process Name is required"), variant: "destructive" });
+      return;
+    }
+    if (!isValidName(formData.name.trim())) {
+      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
       return;
     }
 

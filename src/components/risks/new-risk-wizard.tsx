@@ -24,6 +24,7 @@ import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, Check } from "lucid
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { triggerTranslation, useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Category {
   id: string;
@@ -159,6 +160,13 @@ export function NewRiskWizard({
   const [newVulnerabilityDescription, setNewVulnerabilityDescription] = useState("");
   const [creatingVulnerability, setCreatingVulnerability] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
+  // Translate dropdown/tag data for non-English locales
+  const { data: translatedThreats } = useTranslatedData(threats, { modelName: 'RiskThreat' });
+  const { data: translatedVulnerabilities } = useTranslatedData(vulnerabilities, { modelName: 'RiskVulnerability' });
+  const { data: translatedCauses } = useTranslatedData(causes, { modelName: 'RiskCause' });
+  const { data: translatedCategories } = useTranslatedData(localCategories, { modelName: 'RiskCategory' });
+  const { data: translatedRiskTypes } = useTranslatedData(riskTypes, { modelName: 'RiskType' });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -385,28 +393,28 @@ export function NewRiskWizard({
       case 1:
         // Validate required fields
         if (!formData.name.trim()) {
-          errors.name = "Please enter the Risk Name";
+          errors.name = t("Please enter the Risk Name");
         }
         if (!formData.departmentId) {
-          errors.departmentId = "Please select the Department";
+          errors.departmentId = t("Please select the Department");
         }
         if (!formData.ownerId) {
-          errors.ownerId = "Please select the Risk Owner";
+          errors.ownerId = t("Please select the Risk Owner");
         }
         if (!formData.riskSources.trim()) {
-          errors.riskSources = "Please enter the Risk Sources";
+          errors.riskSources = t("Please enter the Risk Sources");
         }
         if (!formData.categoryId) {
-          errors.categoryId = "Please Select the Risk Category";
+          errors.categoryId = t("Please select the Risk Category");
         }
         if (!formData.typeId) {
-          errors.typeId = "Please Select the Risk Type";
+          errors.typeId = t("Please select the Risk Type");
         }
         if (formData.selectedThreats.length === 0) {
-          errors.selectedThreats = "Please Select the Threat";
+          errors.selectedThreats = t("Please select the Threat");
         }
         if (formData.selectedVulnerabilities.length === 0) {
-          errors.selectedVulnerabilities = "Please Select the Vulnerability";
+          errors.selectedVulnerabilities = t("Please select the Vulnerability");
         }
 
         setValidationErrors(errors);
@@ -461,16 +469,28 @@ export function NewRiskWizard({
       });
 
       if (response.ok) {
-        toast.success(isEditMode ? "Risk updated successfully" : "Risk created successfully");
+        const responseData = await response.json().catch(() => null);
+        const riskId = isEditMode ? editData!.id : responseData?.id;
+
+        // Trigger dynamic data translation (fire-and-forget)
+        if (riskId) {
+          triggerTranslation('Risk', riskId, {
+            name: formData.name,
+            description: formData.description || null,
+            riskSources: formData.riskSources || null,
+          });
+        }
+
+        toast.success(isEditMode ? t("Risk updated successfully") : t("Risk created successfully"));
         resetForm();
         onSuccess();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || `Failed to ${isEditMode ? 'update' : 'create'} risk`);
+        toast.error(errorData.error || (isEditMode ? t("Failed to update risk") : t("Failed to create risk")));
       }
     } catch (error) {
       console.error(`Failed to ${isEditMode ? 'update' : 'create'} risk:`, error);
-      toast.error(`Failed to ${isEditMode ? 'update' : 'create'} risk`);
+      toast.error(isEditMode ? t("Failed to update risk") : t("Failed to create risk"));
     } finally {
       setLoading(false);
     }
@@ -503,25 +523,25 @@ export function NewRiskWizard({
 
   const getSelectedThreatNames = () => {
     return formData.selectedThreats
-      .map((id) => threats.find((t) => t.id === id)?.name)
+      .map((id) => translatedThreats.find((t) => t.id === id)?.name)
       .filter(Boolean);
   };
 
   const getSelectedVulnerabilityNames = () => {
     return formData.selectedVulnerabilities
-      .map((id) => vulnerabilities.find((v) => v.id === id)?.name)
+      .map((id) => translatedVulnerabilities.find((v) => v.id === id)?.name)
       .filter(Boolean);
   };
 
   const getSelectedCauseNames = () => {
     return formData.selectedCauses
-      .map((id) => causes.find((c) => c.id === id)?.name)
+      .map((id) => translatedCauses.find((c) => c.id === id)?.name)
       .filter(Boolean);
   };
 
   const handleCreateCause = async () => {
     if (!newCauseName.trim()) {
-      toast.error("Cause name is required");
+      toast.error(t("Cause name is required"));
       return;
     }
     setCreatingCause(true);
@@ -536,7 +556,7 @@ export function NewRiskWizard({
       });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to create cause");
+        throw new Error(errorData.error || t("Failed to create cause"));
       }
       const newCause = await res.json();
       setCauses((prev) => [...prev, newCause]);
@@ -544,12 +564,13 @@ export function NewRiskWizard({
         ...prev,
         selectedCauses: [...prev.selectedCauses, newCause.id],
       }));
+      triggerTranslation('RiskCause', newCause.id, { name: newCauseName.trim() });
       setNewCauseName("");
       setNewCauseDescription("");
       setCreateCauseDialogOpen(false);
-      toast.success("Cause created successfully");
+      toast.success(t("Cause created successfully"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create cause");
+      toast.error(error instanceof Error ? error.message : t("Failed to create cause"));
     } finally {
       setCreatingCause(false);
     }
@@ -557,7 +578,7 @@ export function NewRiskWizard({
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
-      toast.error("Category name is required");
+      toast.error(t("Category name is required"));
       return;
     }
     setCreatingCategory(true);
@@ -572,7 +593,7 @@ export function NewRiskWizard({
       });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to create category");
+        throw new Error(errorData.error || t("Failed to create category"));
       }
       const newCategory = await res.json();
       setLocalCategories((prev) => [...prev, newCategory]);
@@ -580,12 +601,13 @@ export function NewRiskWizard({
         ...prev,
         categoryId: newCategory.id,
       }));
+      triggerTranslation('RiskCategory', newCategory.id, { name: newCategoryName.trim(), description: newCategoryDescription.trim() || null });
       setNewCategoryName("");
       setNewCategoryDescription("");
       setCreateCategoryDialogOpen(false);
-      toast.success("Category created successfully");
+      toast.success(t("Category created successfully"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create category");
+      toast.error(error instanceof Error ? error.message : t("Failed to create category"));
     } finally {
       setCreatingCategory(false);
     }
@@ -593,7 +615,7 @@ export function NewRiskWizard({
 
   const handleCreateThreat = async () => {
     if (!newThreatName.trim()) {
-      toast.error("Threat name is required");
+      toast.error(t("Threat name is required"));
       return;
     }
     setCreatingThreat(true);
@@ -608,7 +630,7 @@ export function NewRiskWizard({
       });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to create threat");
+        throw new Error(errorData.error || t("Failed to create threat"));
       }
       const newThreat = await res.json();
       setThreats((prev) => [...prev, newThreat]);
@@ -616,12 +638,13 @@ export function NewRiskWizard({
         ...prev,
         selectedThreats: [...prev.selectedThreats, newThreat.id],
       }));
+      triggerTranslation('RiskThreat', newThreat.id, { name: newThreatName.trim(), description: newThreatDescription.trim() || null });
       setNewThreatName("");
       setNewThreatDescription("");
       setCreateThreatDialogOpen(false);
-      toast.success("Threat created successfully");
+      toast.success(t("Threat created successfully"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create threat");
+      toast.error(error instanceof Error ? error.message : t("Failed to create threat"));
     } finally {
       setCreatingThreat(false);
     }
@@ -629,7 +652,7 @@ export function NewRiskWizard({
 
   const handleCreateVulnerability = async () => {
     if (!newVulnerabilityName.trim()) {
-      toast.error("Vulnerability name is required");
+      toast.error(t("Vulnerability name is required"));
       return;
     }
     setCreatingVulnerability(true);
@@ -644,7 +667,7 @@ export function NewRiskWizard({
       });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to create vulnerability");
+        throw new Error(errorData.error || t("Failed to create vulnerability"));
       }
       const newVulnerability = await res.json();
       setVulnerabilities((prev) => [...prev, newVulnerability]);
@@ -652,12 +675,13 @@ export function NewRiskWizard({
         ...prev,
         selectedVulnerabilities: [...prev.selectedVulnerabilities, newVulnerability.id],
       }));
+      triggerTranslation('RiskVulnerability', newVulnerability.id, { name: newVulnerabilityName.trim(), description: newVulnerabilityDescription.trim() || null });
       setNewVulnerabilityName("");
       setNewVulnerabilityDescription("");
       setCreateVulnerabilityDialogOpen(false);
-      toast.success("Vulnerability created successfully");
+      toast.success(t("Vulnerability created successfully"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create vulnerability");
+      toast.error(error instanceof Error ? error.message : t("Failed to create vulnerability"));
     } finally {
       setCreatingVulnerability(false);
     }
@@ -694,7 +718,7 @@ export function NewRiskWizard({
                       currentStep >= step.id ? "text-slate-700" : "text-slate-400"
                     )}
                   >
-                    {step.name}
+                    {t(step.name)}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
@@ -830,7 +854,7 @@ export function NewRiskWizard({
                           <SelectValue placeholder={t("Select Category")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {localCategories.map((cat) => (
+                          {translatedCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
                             </SelectItem>
@@ -863,9 +887,9 @@ export function NewRiskWizard({
                         <SelectValue placeholder={t("Select Risk Type")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {riskTypes.map((type) => (
+                        {translatedRiskTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id}>
-                            {type.name}
+                            {t(type.name)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -937,7 +961,7 @@ export function NewRiskWizard({
                           <SelectValue placeholder={t("Select threats")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {threats.map((threat) => (
+                          {translatedThreats.map((threat) => (
                             <SelectItem key={threat.id} value={threat.id}>
                               {threat.name}
                             </SelectItem>
@@ -986,7 +1010,7 @@ export function NewRiskWizard({
                           <SelectValue placeholder={t("Select vulnerabilities")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {vulnerabilities.map((vuln) => (
+                          {translatedVulnerabilities.map((vuln) => (
                             <SelectItem key={vuln.id} value={vuln.id}>
                               {vuln.name}
                             </SelectItem>
@@ -1035,7 +1059,7 @@ export function NewRiskWizard({
                         <SelectValue placeholder={t("Select cause")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {causes.map((cause) => (
+                        {translatedCauses.map((cause) => (
                           <SelectItem key={cause.id} value={cause.id}>
                             {cause.name}
                           </SelectItem>
@@ -1078,7 +1102,7 @@ export function NewRiskWizard({
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                   <h3 className="text-lg font-semibold text-slate-800">{t("Controls")}</h3>
                   <Button variant="outline" onClick={() => setLinkControlDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     {t("Link Control")}
                   </Button>
                 </div>
@@ -1088,10 +1112,10 @@ export function NewRiskWizard({
                     <table className="w-full">
                       <thead className="bg-slate-50">
                         <tr className="h-12">
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Control Code")}</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Name")}</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("Domain")}</th>
-                          <th className="text-right px-4 text-sm font-medium text-slate-700">{t("Action")}</th>
+                          <th className="text-start px-4 text-sm font-medium text-slate-700">{t("Control Code")}</th>
+                          <th className="text-start px-4 text-sm font-medium text-slate-700">{t("Name")}</th>
+                          <th className="text-start px-4 text-sm font-medium text-slate-700">{t("Domain")}</th>
+                          <th className="text-end px-4 text-sm font-medium text-slate-700">{t("Action")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -1103,7 +1127,7 @@ export function NewRiskWizard({
                               <td className="px-4 py-3 text-sm font-medium text-primary-600">{control.controlCode}</td>
                               <td className="px-4 py-3 text-sm text-slate-600">{control.name}</td>
                               <td className="px-4 py-3 text-sm text-slate-600">{control.domain?.name || "-"}</td>
-                              <td className="px-4 py-3 text-right">
+                              <td className="px-4 py-3 text-end">
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -1136,12 +1160,12 @@ export function NewRiskWizard({
                     </DialogHeader>
                     <div className="flex-1 overflow-hidden flex flex-col px-4 sm:px-6 py-4">
                       <div className="relative mb-4">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                           placeholder={t("Search controls...")}
                           value={controlSearch}
                           onChange={(e) => setControlSearch(e.target.value)}
-                          className="pl-9"
+                          className="ps-9"
                         />
                       </div>
                       <div className="flex-1 overflow-auto border border-slate-200 rounded-lg">
@@ -1149,9 +1173,9 @@ export function NewRiskWizard({
                           <thead className="bg-slate-50 sticky top-0">
                             <tr className="h-12">
                               <th className="w-10 px-3"></th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("Control Code")}</th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("Name")}</th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("Domain")}</th>
+                              <th className="text-start px-3 text-sm font-medium text-slate-700">{t("Control Code")}</th>
+                              <th className="text-start px-3 text-sm font-medium text-slate-700">{t("Name")}</th>
+                              <th className="text-start px-3 text-sm font-medium text-slate-700">{t("Domain")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -1186,7 +1210,7 @@ export function NewRiskWizard({
                     </div>
                     <div className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                       <span className="text-sm text-slate-500">
-                        {formData.selectedControls.length} control(s) selected
+                        {formData.selectedControls.length} {t("control(s) selected")}
                       </span>
                       <Button onClick={() => setLinkControlDialogOpen(false)}>
                         {t("Done")}

@@ -76,7 +76,7 @@ export default function BIACategoriesPage() {
     if (!formData.name.trim()) {
       errors.name = t("Please enter the name");
     } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -108,7 +108,7 @@ export default function BIACategoriesPage() {
     if (!formData.name.trim()) {
       errors.name = t("Please enter the name");
     } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);

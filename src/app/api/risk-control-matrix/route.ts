@@ -53,6 +53,22 @@ async function syncRisksToMatrix(customerAccountId: string): Promise<void> {
 
   const existingRiskIds = new Set(existingEntries.map(e => e.riskId).filter(Boolean));
 
+  // Update existing entries whose riskCode is stale (differs from the linked risk's riskId)
+  const existingEntries2 = await prisma.riskControlMatrixEntry.findMany({
+    where: { customerAccountId, riskId: { not: null } },
+    select: { id: true, riskId: true, riskCode: true },
+  });
+
+  for (const entry of existingEntries2) {
+    const linkedRisk = risks.find(r => r.id === entry.riskId);
+    if (linkedRisk && entry.riskCode !== linkedRisk.riskId) {
+      await prisma.riskControlMatrixEntry.update({
+        where: { id: entry.id },
+        data: { riskCode: linkedRisk.riskId },
+      });
+    }
+  }
+
   // Create matrix entries for risks that don't have one
   for (const risk of risks) {
     if (existingRiskIds.has(risk.id)) {

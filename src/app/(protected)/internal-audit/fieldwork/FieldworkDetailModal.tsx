@@ -592,7 +592,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleAddFinding = async () => {
     if (!newFinding.title.trim()) { setFindingTitleError(t("Finding title is required")); return; }
-    if (!isValidName(newFinding.title.trim())) { setFindingTitleError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(newFinding.title.trim())) { setFindingTitleError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setFindingTitleError("");
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newFinding, status: "Open" }) });
@@ -603,7 +603,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleAddFullFinding = async () => {
     if (!fullFinding.findingTitle.trim()) { setFullFindingTitleError(t("Finding title is required")); return; }
-    if (!isValidName(fullFinding.findingTitle.trim())) { setFullFindingTitleError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(fullFinding.findingTitle.trim())) { setFullFindingTitleError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setFullFindingTitleError("");
     setSavingFullFinding(true);
     try {
@@ -633,7 +633,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const handleSaveEditFinding = async () => {
     if (!selectedFindingId) return;
     if (!editFinding.findingTitle.trim()) { setEditFindingTitleError(t("Finding title is required")); return; }
-    if (!isValidName(editFinding.findingTitle.trim())) { setEditFindingTitleError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(editFinding.findingTitle.trim())) { setEditFindingTitleError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setEditFindingTitleError("");
     setSavingEditFinding(true);
     try {

@@ -882,7 +882,7 @@ export default function FieldworkDetailsPage() {
       return;
     }
     if (!isValidName(newFinding.title.trim())) {
-      toast.error(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      toast.error(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
 
@@ -913,7 +913,7 @@ export default function FieldworkDetailsPage() {
       return;
     }
     if (!isValidName(fullFinding.findingTitle.trim())) {
-      toast.error(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      toast.error(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
 

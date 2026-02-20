@@ -254,7 +254,7 @@ export default function CustomerEvidencePage() {
       return;
     } else if (!isValidName(editItemName.trim())) {
       setEditItemError(
-        t("Only letters, numbers, spaces, and hyphens are allowed")
+        t("Only letters, spaces, and hyphens are allowed")
       );
       return;
     }

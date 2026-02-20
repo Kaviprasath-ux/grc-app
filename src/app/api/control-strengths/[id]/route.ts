@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -40,6 +41,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'ControlStrength', strength.id, { name: strength.name });
+
       return NextResponse.json(strength);
     } catch (error: unknown) {
       console.error("Error updating control strength:", error);
@@ -76,6 +79,7 @@ export const DELETE = withAuth(
       }
 
       await prisma.controlStrength.delete({ where: { id } });
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'ControlStrength', id);
       return NextResponse.json({ message: "Control strength deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting control strength:", error);

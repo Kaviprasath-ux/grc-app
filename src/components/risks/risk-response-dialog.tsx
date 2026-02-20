@@ -24,6 +24,7 @@ import { ChooseControlDialog } from "@/components/risks/choose-control-dialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 import { toast } from "sonner";
 
 interface ActivityLog {
@@ -94,6 +95,9 @@ export function RiskResponseDialog({
   const [expandedPlannedControls, setExpandedPlannedControls] = useState<string[]>([]);
   const [addControlOpen, setAddControlOpen] = useState(false);
   const [chooseControlOpen, setChooseControlOpen] = useState(false);
+
+  // Translate dynamic risk data (name, description) for non-English locales
+  const { data: translatedRisk } = useTranslatedRecord(risk, { modelName: 'Risk' });
 
   // Action states
   const [submitting, setSubmitting] = useState(false);
@@ -332,7 +336,7 @@ export function RiskResponseDialog({
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-lg font-semibold text-slate-800 truncate pe-2">
                   {risk
-                    ? `${risk.riskId} - ${risk.name}`
+                    ? `${risk.riskId} - ${translatedRisk?.name || risk.name}`
                     : t("Risk Response")}
                 </DialogTitle>
                 <DialogDescription className="sr-only">
@@ -356,11 +360,11 @@ export function RiskResponseDialog({
                           "bg-green-100 text-green-800"
                       )}
                     >
-                      {currentStatus}
+                      {t(currentStatus)}
                     </span>
                     {risk.responseStrategy && (
                       <span className="px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
-                        {risk.responseStrategy}
+                        {t(risk.responseStrategy)}
                       </span>
                     )}
                   </div>
@@ -468,7 +472,7 @@ export function RiskResponseDialog({
                   </h4>
                   {risk.description && (
                     <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-                      {risk.description}
+                      {translatedRisk?.description || risk.description}
                     </p>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
@@ -478,7 +482,7 @@ export function RiskResponseDialog({
                     </div>
                     <div className="flex justify-between py-2.5 border-b border-slate-100">
                       <span className="text-sm text-slate-500">{t("Response Strategy")}</span>
-                      <span className="text-sm font-medium text-slate-800">{risk.responseStrategy || "-"}</span>
+                      <span className="text-sm font-medium text-slate-800">{risk.responseStrategy ? t(risk.responseStrategy) : "-"}</span>
                     </div>
                     <div className="flex justify-between py-2.5 border-b border-slate-100">
                       <span className="text-sm text-slate-500">{t("Likelihood")}</span>
@@ -490,7 +494,7 @@ export function RiskResponseDialog({
                     </div>
                     <div className="flex justify-between py-2.5 border-b border-slate-100">
                       <span className="text-sm text-slate-500">{t("Risk Rating")}</span>
-                      <span className="text-sm font-medium text-slate-800">{risk.riskRating || "-"}</span>
+                      <span className="text-sm font-medium text-slate-800">{risk.riskRating ? t(risk.riskRating) : "-"}</span>
                     </div>
                     <div className="flex justify-between py-2.5 border-b border-slate-100">
                       <span className="text-sm text-slate-500">{t("Treatment Due Date")}</span>

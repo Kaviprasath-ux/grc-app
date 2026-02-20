@@ -325,7 +325,7 @@ export default function AssetSettingsPage() {
     if (!categoryForm.name.trim()) {
       errors.categoryName = t("Please enter category name");
     } else if (!isValidName(categoryForm.name)) {
-      errors.categoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.categoryName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!categoryForm.status) {
       errors.categoryStatus = t("Please select status");
@@ -370,7 +370,7 @@ export default function AssetSettingsPage() {
     if (!categoryForm.name.trim()) {
       errors.categoryName = t("Please enter category name");
     } else if (!isValidName(categoryForm.name)) {
-      errors.categoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.categoryName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!categoryForm.status) {
       errors.categoryStatus = t("Please select status");
@@ -431,7 +431,7 @@ export default function AssetSettingsPage() {
     if (!subCategoryForm.name.trim()) {
       errors.subCategoryName = t("Please enter sub category name");
     } else if (!isValidName(subCategoryForm.name)) {
-      errors.subCategoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.subCategoryName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!subCategoryForm.categoryId) {
       errors.subCategoryCategoryId = t("Please select category");
@@ -474,7 +474,7 @@ export default function AssetSettingsPage() {
     if (!subCategoryForm.name.trim()) {
       errors.subCategoryName = t("Please enter sub category name");
     } else if (!isValidName(subCategoryForm.name)) {
-      errors.subCategoryName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.subCategoryName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!subCategoryForm.categoryId) {
       errors.subCategoryCategoryId = t("Please select category");
@@ -534,7 +534,7 @@ export default function AssetSettingsPage() {
     if (!groupForm.name.trim()) {
       errors.groupName = t("Please enter group name");
     } else if (!isValidName(groupForm.name)) {
-      errors.groupName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.groupName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!groupForm.status) {
       errors.groupStatus = t("Please select status");
@@ -575,7 +575,7 @@ export default function AssetSettingsPage() {
     if (!groupForm.name.trim()) {
       errors.groupName = t("Please enter group name");
     } else if (!isValidName(groupForm.name)) {
-      errors.groupName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.groupName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!groupForm.status) {
       errors.groupStatus = t("Please select status");
@@ -632,7 +632,7 @@ export default function AssetSettingsPage() {
     if (!lifecycleForm.name.trim()) {
       errors.lifecycleName = t("Please enter lifecycle name");
     } else if (!isValidName(lifecycleForm.name)) {
-      errors.lifecycleName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.lifecycleName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!isValidNumber(lifecycleForm.order)) {
       errors.lifecycleOrder = t("Please enter a valid number");
@@ -673,7 +673,7 @@ export default function AssetSettingsPage() {
     if (!lifecycleForm.name.trim()) {
       errors.lifecycleName = t("Please enter lifecycle name");
     } else if (!isValidName(lifecycleForm.name)) {
-      errors.lifecycleName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.lifecycleName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!isValidNumber(lifecycleForm.order)) {
       errors.lifecycleOrder = t("Please enter a valid number");
@@ -730,7 +730,7 @@ export default function AssetSettingsPage() {
     if (!assetForm.name.trim()) {
       errors.assetName = t("Please enter asset name");
     } else if (!isValidName(assetForm.name)) {
-      errors.assetName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.assetName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!assetForm.sensitivityId) {
       errors.assetSensitivityId = t("Please select asset sensitivity");
@@ -809,7 +809,7 @@ export default function AssetSettingsPage() {
     if (!sensitivityForm.name.trim()) {
       errors.sensitivityName = t("Please enter sensitivity name");
     } else if (!isValidName(sensitivityForm.name)) {
-      errors.sensitivityName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.sensitivityName = t("Only letters, spaces, and hyphens are allowed");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -847,7 +847,7 @@ export default function AssetSettingsPage() {
     if (!sensitivityForm.name.trim()) {
       errors.sensitivityName = t("Please enter sensitivity name");
     } else if (!isValidName(sensitivityForm.name)) {
-      errors.sensitivityName = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.sensitivityName = t("Only letters, spaces, and hyphens are allowed");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -901,7 +901,7 @@ export default function AssetSettingsPage() {
     if (!ciaRatingForm.label.trim()) {
       errors.ciaRatingLabel = t("Please enter label");
     } else if (!isValidName(ciaRatingForm.label)) {
-      errors.ciaRatingLabel = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.ciaRatingLabel = t("Only letters, spaces, and hyphens are allowed");
     }
     if (ciaRatingForm.value === null || ciaRatingForm.value === undefined) {
       errors.ciaRatingValue = t("Please enter value");
@@ -948,7 +948,7 @@ export default function AssetSettingsPage() {
     if (!ciaRatingForm.label.trim()) {
       errors.ciaRatingLabel = t("Please enter label");
     } else if (!isValidName(ciaRatingForm.label)) {
-      errors.ciaRatingLabel = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.ciaRatingLabel = t("Only letters, spaces, and hyphens are allowed");
     }
     if (ciaRatingForm.value === null || ciaRatingForm.value === undefined) {
       errors.ciaRatingValue = t("Please enter value");
@@ -1029,7 +1029,7 @@ export default function AssetSettingsPage() {
     if (!scoringConfigForm.level.trim()) {
       errors.scoringConfigLevel = t("Please enter level");
     } else if (!isValidName(scoringConfigForm.level)) {
-      errors.scoringConfigLevel = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.scoringConfigLevel = t("Only letters, spaces, and hyphens are allowed");
     }
     if (scoringConfigForm.minScore === null || scoringConfigForm.minScore === undefined) {
       errors.scoringConfigMinScore = t("Please enter minimum score");
@@ -1173,7 +1173,7 @@ export default function AssetSettingsPage() {
     if (!scoringConfigForm.level.trim()) {
       errors.scoringConfigLevel = t("Please enter level");
     } else if (!isValidName(scoringConfigForm.level)) {
-      errors.scoringConfigLevel = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.scoringConfigLevel = t("Only letters, spaces, and hyphens are allowed");
     }
     if (scoringConfigForm.minScore === null || scoringConfigForm.minScore === undefined) {
       errors.scoringConfigMinScore = t("Please enter minimum score");
@@ -1903,42 +1903,42 @@ export default function AssetSettingsPage() {
               <TableRow className="bg-slate-50 border-b border-slate-100 hover:bg-slate-50">
                 {entitySubTab === "asset-list" && (
                   <>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider ps-5">{t("Name")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("ID")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Location")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Value")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Sensitivity")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pe-5">{t("Sensitivity")}</TableHead>
                   </>
                 )}
                 {entitySubTab === "categories" && (
                   <>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider ps-5">{t("Title")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pe-5">{t("Actions")}</TableHead>
                   </>
                 )}
                 {entitySubTab === "subcategories" && (
                   <>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Asset Category")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider ps-5">{t("Asset Category")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Asset Sub-Category")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pe-5">{t("Actions")}</TableHead>
                   </>
                 )}
                 {entitySubTab === "groups" && (
                   <>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider ps-5">{t("Name")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pe-5">{t("Actions")}</TableHead>
                   </>
                 )}
                 {entitySubTab === "sensitivity" && (
                   <>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider ps-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pe-5">{t("Actions")}</TableHead>
                   </>
                 )}
               </TableRow>
@@ -1959,22 +1959,22 @@ export default function AssetSettingsPage() {
               ) : entitySubTab === "asset-list" ? (
                 (paginatedData as Asset[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.assetId}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.location || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.value || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.lifecycleStatus?.name || "-"}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700 pr-5">{item.sensitivity?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700 pe-5">{item.sensitivity?.name || "-"}</TableCell>
                   </TableRow>
                 ))
               ) : entitySubTab === "categories" ? (
                 (paginatedData as AssetCategory[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       <Badge variant={item.status === "Active" ? "default" : "secondary"}>{t(item.status)}</Badge>
                     </TableCell>
-                    <TableCell className="py-3 pr-5">
+                    <TableCell className="py-3 pe-5">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                           setSelectedItem(item);
@@ -1997,13 +1997,13 @@ export default function AssetSettingsPage() {
               ) : entitySubTab === "subcategories" ? (
                 (paginatedData as AssetSubCategory[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.category?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.category?.name || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.description || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       <Badge variant={item.status === "Active" ? "default" : "secondary"}>{t(item.status)}</Badge>
                     </TableCell>
-                    <TableCell className="py-3 pr-5">
+                    <TableCell className="py-3 pe-5">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                           setSelectedItem(item);
@@ -2026,12 +2026,12 @@ export default function AssetSettingsPage() {
               ) : entitySubTab === "groups" ? (
                 (paginatedData as AssetGroup[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.description || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       <Badge variant={(item as any).status === "Active" ? "default" : "secondary"}>{t((item as any).status || "Active")}</Badge>
                     </TableCell>
-                    <TableCell className="py-3 pr-5">
+                    <TableCell className="py-3 pe-5">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                           setSelectedItem(item);
@@ -2054,8 +2054,8 @@ export default function AssetSettingsPage() {
               ) : entitySubTab === "sensitivity" ? (
                 (paginatedData as AssetSensitivity[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
-                    <TableCell className="py-3 pr-5">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
+                    <TableCell className="py-3 pe-5">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                           setSelectedItem(item as any);
@@ -3100,8 +3100,8 @@ export default function AssetSettingsPage() {
           <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="bg-slate-50 border-b border-slate-100 hover:bg-slate-50">
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pl-5">{t("Name")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pr-5">{t("Actions")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider ps-5">{t("Name")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider pe-5">{t("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -3118,8 +3118,8 @@ export default function AssetSettingsPage() {
                 </TableRow>
               ) : lcPaginatedData.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
-                  <TableCell className="py-3 pr-5">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
+                  <TableCell className="py-3 pe-5">
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                         setSelectedItem(item);
@@ -3331,17 +3331,17 @@ export default function AssetSettingsPage() {
                 <table className="w-full min-w-[400px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="pl-3 sm:pl-5 pr-3 py-2.5 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Label")}</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Value")}</th>
-                      <th className="pl-3 pr-3 sm:pr-5 py-2.5 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
+                      <th className="ps-3 sm:ps-5 pe-3 py-2.5 text-start text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Label")}</th>
+                      <th className="px-3 py-2.5 text-start text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Value")}</th>
+                      <th className="ps-3 pe-3 sm:pe-5 py-2.5 text-end text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ratingsList.map((r) => (
                       <tr key={r.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                        <td className="pl-3 sm:pl-5 pr-3 py-3 text-sm font-medium text-slate-800">{r.label}</td>
+                        <td className="ps-3 sm:ps-5 pe-3 py-3 text-sm font-medium text-slate-800">{t(r.label)}</td>
                         <td className="px-3 py-3 text-sm text-slate-700">{r.value}</td>
-                        <td className="pl-3 pr-3 sm:pr-5 py-3 text-right">
+                        <td className="ps-3 pe-3 sm:pe-5 py-3">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
                               setSelectedCiaRating(r);
@@ -3418,22 +3418,22 @@ export default function AssetSettingsPage() {
           <table className="w-full min-w-[500px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="pl-3 sm:pl-5 pr-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Rating")}</th>
+                <th className="ps-3 sm:ps-5 pe-3 py-3 text-start text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Rating")}</th>
                 {scoringCalculationType === "high_of_all" ? (
-                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("High range")}</th>
+                  <th className="px-3 py-3 text-start text-xs font-medium text-slate-500 uppercase tracking-wider">{t("High range")}</th>
                 ) : (
                   <>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Low range")}</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t("High range")}</th>
+                    <th className="px-3 py-3 text-start text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Low range")}</th>
+                    <th className="px-3 py-3 text-start text-xs font-medium text-slate-500 uppercase tracking-wider">{t("High range")}</th>
                   </>
                 )}
-                <th className="pl-3 pr-3 sm:pr-5 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
+                <th className="ps-3 pe-3 sm:pe-5 py-3 text-end text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actions")}</th>
               </tr>
             </thead>
             <tbody>
               {getCurrentConfigs().map((config) => (
                 <tr key={config.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                  <td className="pl-3 sm:pl-5 pr-3 py-3 text-sm font-medium text-slate-800">{config.level}</td>
+                  <td className="ps-3 sm:ps-5 pe-3 py-3 text-sm font-medium text-slate-800">{config.level}</td>
                   {scoringCalculationType === "high_of_all" ? (
                     <td className="px-3 py-3 text-sm text-slate-700">{config.maxScore}</td>
                   ) : (
@@ -3442,7 +3442,7 @@ export default function AssetSettingsPage() {
                       <td className="px-3 py-3 text-sm text-slate-700">{config.maxScore}</td>
                     </>
                   )}
-                  <td className="pl-3 pr-3 sm:pr-5 py-3 text-right">
+                  <td className="ps-3 pe-3 sm:pe-5 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"

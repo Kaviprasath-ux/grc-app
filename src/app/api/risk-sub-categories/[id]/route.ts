@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -36,6 +37,8 @@ export const PUT = withAuth(
         where: { id },
         data: { type: type.trim() },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskSubCategory', category.id, { type: category.type });
 
       return NextResponse.json(category);
     } catch (error: unknown) {
@@ -73,6 +76,7 @@ export const DELETE = withAuth(
       }
 
       await prisma.riskSubCategory.delete({ where: { id } });
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'RiskSubCategory', id);
       return NextResponse.json({ message: "Risk sub category deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting risk sub category:", error);

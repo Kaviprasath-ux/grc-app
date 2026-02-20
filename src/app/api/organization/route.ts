@@ -59,6 +59,14 @@ export const PUT = withAuth(
         cloudProviders,
       } = body;
 
+      // Validate organization name: required, no numbers, only letters/spaces/hyphens/dots
+      if (!name || !name.trim()) {
+        return NextResponse.json({ error: "Organization name is required" }, { status: 400 });
+      }
+      if (!/^[\p{L}\s.\-]+$/u.test(name.trim())) {
+        return NextResponse.json({ error: "Organization name can only contain letters, spaces, hyphens, and dots" }, { status: 400 });
+      }
+
       const customerAccountId = getCustomerAccountId(session);
       const tenantFilter = getTenantFilter(session);
       const existingOrg = await prisma.organization.findFirst({

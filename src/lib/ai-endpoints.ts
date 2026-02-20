@@ -78,6 +78,11 @@ export const AI_ENDPOINTS = {
   GENERATE_AUDIT_PLAN: '/api/generate_audit_plan',
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Translation
+  // ─────────────────────────────────────────────────────────────────────────
+  TRANSLATE: '/api/translate',
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Cleanup
   // ─────────────────────────────────────────────────────────────────────────
   DELETE: '/api/grc_delete',
@@ -122,6 +127,7 @@ export const ENDPOINT_NAMES: Record<string, string> = {
   [AI_ENDPOINTS.SIMPLE_INGEST]: 'Document Library Ingest',
   [AI_ENDPOINTS.SIMPLE_INGEST_STATUS]: 'Document Library Ingest Status',
   [AI_ENDPOINTS.SIMPLE_INGEST_RESULT]: 'Document Library Ingest Result',
+  [AI_ENDPOINTS.TRANSLATE]: 'Text Translation',
 };
 
 /**

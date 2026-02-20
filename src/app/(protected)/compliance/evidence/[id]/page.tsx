@@ -576,16 +576,16 @@ export default function EvidenceDetailPage() {
 
         if (response.ok) {
           fetchEvidence();
-          toast.success(`${selectedMonth} ${t("cycle validated. Evidence status updated to Validated.")}`);
+          toast.success(`${t(selectedMonth || "")} ${t("cycle validated. Evidence status updated to Validated.")}`);
         } else {
-          toast.success(`${selectedMonth} ${t("cycle validated successfully.")}`);
+          toast.success(`${t(selectedMonth || "")} ${t("cycle validated successfully.")}`);
         }
       } catch (error) {
         console.error("Error updating parent status:", error);
-        toast.success(`${selectedMonth} ${t("cycle validated successfully.")}`);
+        toast.success(`${t(selectedMonth || "")} ${t("cycle validated successfully.")}`);
       }
     } else {
-      toast.success(`${selectedMonth} ${t("cycle validated successfully.")}`);
+      toast.success(`${t(selectedMonth || "")} ${t("cycle validated successfully.")}`);
     }
   };
 
@@ -627,7 +627,7 @@ export default function EvidenceDetailPage() {
       });
       if (res.ok) {
         updateCycleStatus(selectedMonth, { status: "rejected" });
-        toast.info(`${selectedMonth} ${t("cycle sent back.")}`);
+        toast.info(`${t(selectedMonth || "")} ${t("cycle sent back.")}`);
         setSendBackDialogOpen(false);
         setCycleComment("");
       } else {
@@ -673,7 +673,7 @@ export default function EvidenceDetailPage() {
       });
       if (res.ok) {
         updateCycleStatus(selectedMonth, { status: "submitted" });
-        toast.success(`${selectedMonth} ${t("cycle resubmitted.")}`);
+        toast.success(`${t(selectedMonth || "")} ${t("cycle resubmitted.")}`);
         setResubmitDialogOpen(false);
         setCycleComment("");
       } else {
@@ -1974,7 +1974,16 @@ export default function EvidenceDetailPage() {
                       </p>
                       <p className="font-medium">{att.fileName}</p>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = `/api/evidences/${id}/attachments/${att.id}/download`;
+                        link.download = att.fileName;
+                        link.click();
+                      }}
+                    >
                       <Download className="h-4 w-4 mr-1" />
                       {t("Download")}
                     </Button>
@@ -2029,8 +2038,8 @@ export default function EvidenceDetailPage() {
                       onClick={() => setSelectedMonth(selectedMonth === period ? null : period)}
                       className={`text-xs ${isCurrentCycle ? "ring-2 ring-primary-400" : ""}`}
                     >
-                      <FileText className="h-3 w-3 mr-1" />
-                      {period}
+                      <FileText className="h-3 w-3 me-1" />
+                      {t(period)}
                     </Button>
                     {/* Validated/Rejected Tags */}
                     {cycleStatus?.status === "validated" && (
@@ -2155,7 +2164,16 @@ export default function EvidenceDetailPage() {
                     <span className="text-sm">{att.fileName}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = `/api/evidences/${id}/attachments/${att.id}/download`;
+                        link.download = att.fileName;
+                        link.click();
+                      }}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                     {isCustomerAdmin && (
@@ -2187,10 +2205,23 @@ export default function EvidenceDetailPage() {
                     <Badge variant="outline" className="text-xs text-purple-600 border-purple-300">
                       {t("Linked")}
                     </Badge>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => window.open(`/api/artifacts/${la.artifact.id}/download`, "_blank")}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = `/api/artifacts/${la.artifact.id}/download`;
+                        link.download = la.artifact.fileName;
+                        link.click();
+                      }}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                     {isCustomerAdmin && (
@@ -2207,7 +2238,7 @@ export default function EvidenceDetailPage() {
               ))}
               {filteredAttachments.length === 0 && filteredLinkedArtifacts.length === 0 && (
                 <p className="text-center text-slate-500 text-sm py-4">
-                  {selectedMonth ? `${t("No attachments for")} ${selectedMonth}` : t("No attachments")}
+                  {selectedMonth ? `${t("No attachments for")} ${t(selectedMonth)}` : t("No attachments")}
                 </p>
               )}
             </div>
@@ -2402,7 +2433,7 @@ export default function EvidenceDetailPage() {
                                   {control.controlCode} : {control.name}
                                 </span>
                                 <Badge className="bg-slate-100 text-slate-600 rounded-full px-3 text-xs font-medium">
-                                  {control.entities || "Organization Wide"}
+                                  {control.entities || t("Organization Wide")}
                                 </Badge>
                               </div>
                               {control.description && (
@@ -2499,10 +2530,23 @@ export default function EvidenceDetailPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(`/api/artifacts/${la.artifact.id}/download`, "_blank")}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = `/api/artifacts/${la.artifact.id}/download`;
+                            link.download = la.artifact.fileName;
+                            link.click();
+                          }}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
@@ -3012,7 +3056,7 @@ export default function EvidenceDetailPage() {
       }}>
         <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("Comments")} - {selectedMonth}</DialogTitle>
+            <DialogTitle>{t("Comments")} - {selectedMonth ? t(selectedMonth) : ""}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {cycleComments.length > 0 ? (

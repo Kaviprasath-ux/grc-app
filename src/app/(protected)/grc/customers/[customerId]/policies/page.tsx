@@ -195,7 +195,7 @@ export default function CustomerPoliciesPage() {
       setEditItemError(t("Name is required"));
       return;
     } else if (!isValidName(editItemName.trim())) {
-      setEditItemError(t("Only letters, numbers, spaces, and hyphens are allowed"));
+      setEditItemError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
     setEditItemError("");

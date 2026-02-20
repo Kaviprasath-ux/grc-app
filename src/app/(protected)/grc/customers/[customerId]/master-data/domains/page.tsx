@@ -88,7 +88,7 @@ export default function CustomerMasterDataDomainsPage() {
   const handleSaveEdit = async () => {
     if (!editItem) return;
     if (!editName.trim()) { setEditError(t("Name is required")); return; }
-    if (!isValidName(editName.trim())) { setEditError(t("Only letters, numbers, spaces, and hyphens are allowed")); return; }
+    if (!isValidName(editName.trim())) { setEditError(t("Only letters, spaces, and hyphens are allowed")); return; }
     try {
       const res = await fetch(`/api/control-domains/${editItem.id}`, {
         method: "PUT",

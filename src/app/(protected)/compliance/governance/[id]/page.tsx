@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isValidName } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 // Card components replaced with plain divs for design consistency
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
@@ -570,6 +571,11 @@ export default function GovernanceDetailPage() {
   }, [policy?.id, policy?.status]);
 
   const handleSave = async () => {
+    if (!editForm.name || !editForm.name.trim()) return;
+    if (!isValidName(editForm.name.trim())) {
+      alert(t("Only letters, spaces, and hyphens are allowed"));
+      return;
+    }
     try {
       const response = await fetch(`/api/policies/${id}`, {
         method: "PUT",
@@ -1449,7 +1455,7 @@ export default function GovernanceDetailPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {RECURRENCE_OPTIONS.map((r) => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                          <SelectItem key={r} value={r}>{t(r)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1757,12 +1763,12 @@ export default function GovernanceDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {RECURRENCE_OPTIONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                      <SelectItem key={r} value={r}>{t(r)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="text-sm text-slate-700">{policy.recurrence || "-"}</p>
+                <p className="text-sm text-slate-700">{policy.recurrence ? t(policy.recurrence) : "-"}</p>
               )}
             </div>
 

@@ -558,7 +558,7 @@ export default function GovernanceTemplatesPage() {
                         "bg-slate-100 text-slate-600"
                       }`}
                     >
-                      {template.governanceType}
+                      {t(template.governanceType)}
                     </span>
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">

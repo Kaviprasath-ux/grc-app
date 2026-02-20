@@ -1,9 +1,15 @@
 // Shared validation helpers for form inputs across the GRC application
 
-// For name/title/label fields - allows letters, numbers, spaces, hyphens
+// For name/title/label fields - allows letters (any language), spaces, hyphens, dots
 export const isValidName = (str: string): boolean => {
   if (!str.trim()) return true; // empty handled by required checks
-  return /^[a-zA-Z0-9\s\-]+$/.test(str);
+  return /^[\p{L}\s.\-]+$/u.test(str);
+};
+
+// For name fields that also allow numbers (e.g., risk names) - letters, numbers, spaces, hyphens, dots
+export const isValidNameWithNumbers = (str: string): boolean => {
+  if (!str.trim()) return true; // empty handled by required checks
+  return /^[\p{L}\d\s.\-]+$/u.test(str);
 };
 
 // For strict digit-only fields (phone numbers, IDs)
@@ -21,7 +27,7 @@ export const isValidNumber = (value: string | number): boolean => {
 // For person name fields (no numbers)
 export const isAlphaWithSpaces = (str: string): boolean => {
   if (!str.trim()) return true;
-  return /^[a-zA-Z\s]+$/.test(str);
+  return /^[\p{L}\s]+$/u.test(str);
 };
 
 // For username fields

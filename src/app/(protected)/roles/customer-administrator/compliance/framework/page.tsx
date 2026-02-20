@@ -86,7 +86,7 @@ const TEMPLATE_COLUMNS = [
 export default function CustomerAdminFrameworkPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const isGRCReviewer = useHasRole("GRCReviewer");
   const isDepartmentReviewer = useHasRole("DepartmentReviewer");
@@ -200,7 +200,7 @@ export default function CustomerAdminFrameworkPage() {
     if (!formData.name?.trim()) {
       errors.name = t("Please enter name");
     } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, numbers, spaces, and hyphens are allowed");
+      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!formData.type) {
       errors.type = t("Please Select Framework Type");
@@ -989,7 +989,7 @@ export default function CustomerAdminFrameworkPage() {
                           </h4>
                           {framework.type && (
                             <span className={`inline-flex mt-1.5 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${typeBadge}`}>
-                              {framework.type}
+                              {t(framework.type)}
                             </span>
                           )}
                         </div>
@@ -1132,7 +1132,7 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* AI Create Framework Dialog */}
       <Dialog open={isAICreateDialogOpen} onOpenChange={setIsAICreateDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 shrink-0">
             <DialogHeader>
@@ -1310,7 +1310,7 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* Step 1: Create Framework Dialog (Manual with Excel Import) */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 shrink-0">
             <DialogHeader>
@@ -1433,7 +1433,7 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* Step 2: Import Requirements Dialog (same as GRC Admin) */}
       <Dialog open={isImportDialogOpen} onOpenChange={handleCloseImportDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
@@ -1608,7 +1608,7 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* Subscription Error Dialog */}
       <Dialog open={showSubscriptionErrorDialog} onOpenChange={setShowSubscriptionErrorDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-red-600">{t("Error")}</DialogTitle>
