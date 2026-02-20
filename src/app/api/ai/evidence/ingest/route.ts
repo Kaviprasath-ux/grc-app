@@ -44,6 +44,11 @@ export const POST = withAuth(
           attachments: attachmentId
             ? { where: { id: attachmentId } }
             : { take: 10, orderBy: { uploadedAt: "desc" } },
+          linkedArtifacts: {
+            include: {
+              artifact: true,
+            },
+          },
         },
       });
 
@@ -55,8 +60,11 @@ export const POST = withAuth(
         return forbidden("Access denied to this evidence");
       }
 
-      if (!evidence.attachments || evidence.attachments.length === 0) {
-        return badRequestResponse("No attachments found for this evidence");
+      const hasAttachments = evidence.attachments && evidence.attachments.length > 0;
+      const hasLinkedArtifacts = evidence.linkedArtifacts && evidence.linkedArtifacts.length > 0;
+
+      if (!hasAttachments && !hasLinkedArtifacts) {
+        return badRequestResponse("No attachments or linked artifacts found for this evidence");
       }
 
       // Prepare multipart form data for RunPod
@@ -68,10 +76,16 @@ export const POST = withAuth(
 
       // Attach files and track file names for delete
       const ingestedFileNames: string[] = [];
-      for (const attachment of evidence.attachments) {
-        const filePath = path.join(process.cwd(), attachment.filePath);
+      const processedFilePaths = new Set<string>();
 
-        // Check if file exists
+      // Include direct attachments
+      for (const attachment of evidence.attachments) {
+        // Handle leading slash in filePath
+        const relativePath = attachment.filePath.startsWith("/")
+          ? attachment.filePath.slice(1)
+          : attachment.filePath;
+        const filePath = path.join(process.cwd(), relativePath);
+
         if (!fs.existsSync(filePath)) {
           console.log(`[AI] File not found: ${filePath}`);
           continue;
@@ -83,8 +97,40 @@ export const POST = withAuth(
 
         formData.append("files", file);
         ingestedFileNames.push(attachment.fileName);
+        processedFilePaths.add(attachment.filePath);
       }
-      console.log("[Evidence Ingest] Submitting to AI service");
+
+      // Include linked artifacts (skip if same file was already added via attachments)
+      for (const la of evidence.linkedArtifacts) {
+        const artifact = la.artifact;
+        if (processedFilePaths.has(artifact.filePath)) continue;
+
+        // Handle leading slash in filePath
+        const relativePath = artifact.filePath.startsWith("/")
+          ? artifact.filePath.slice(1)
+          : artifact.filePath;
+        const filePath = path.join(process.cwd(), relativePath);
+
+        if (!fs.existsSync(filePath)) {
+          console.log(`[AI] Linked artifact file not found: ${filePath}`);
+          continue;
+        }
+
+        const fileBuffer = fs.readFileSync(filePath);
+        const blob = new Blob([fileBuffer], { type: artifact.fileType || "application/octet-stream" });
+        const file = new File([blob], artifact.fileName, { type: artifact.fileType || "application/octet-stream" });
+
+        formData.append("files", file);
+        ingestedFileNames.push(artifact.fileName);
+        processedFilePaths.add(artifact.filePath);
+      }
+
+      // Ensure at least one file was successfully loaded
+      if (ingestedFileNames.length === 0) {
+        return badRequestResponse("No files could be loaded from attachments or linked artifacts");
+      }
+
+      console.log("[Evidence Ingest] Submitting to AI service, files:", ingestedFileNames);
 
       // Call RunPod ingest endpoint via standardized aiApiClient
       const response = await aiApiClient.post(AI_ENDPOINTS.INGEST, formData);

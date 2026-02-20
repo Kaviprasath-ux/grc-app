@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { withAuth, validateTenantAccess, forbidden, getCustomerAccountId } from "@/lib/api-auth";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 
@@ -123,6 +123,34 @@ export const POST = withAuth(
           fileSize: file.size,
           filePath: `/uploads/evidence/${id}/${fileName}`,
           uploadedAt,
+        },
+      });
+
+      // Also create an Artifact record and link it to this evidence
+      const customerAccountId = getCustomerAccountId(session);
+      const artifactCount = await prisma.artifact.count({
+        where: { customerAccountId },
+      });
+      const artifactCode = `ART-${artifactCount + 1}`;
+
+      const artifact = await prisma.artifact.create({
+        data: {
+          customerAccountId,
+          artifactCode,
+          name: originalName,
+          fileName: originalName,
+          fileType,
+          fileSize: file.size,
+          filePath: `/uploads/evidence/${id}/${fileName}`,
+          uploadedById: session.id,
+        },
+      });
+
+      // Link the artifact to this evidence
+      await prisma.evidenceArtifact.create({
+        data: {
+          evidenceId: id,
+          artifactId: artifact.id,
         },
       });
 

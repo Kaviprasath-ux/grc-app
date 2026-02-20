@@ -48,6 +48,7 @@ import {
   Plus,
   Check,
   Link2,
+  Unlink,
   Eye,
   MessageSquare,
   Send,
@@ -1141,6 +1142,9 @@ export default function EvidenceDetailPage() {
   // Unlink artifact handler
   const handleUnlinkArtifact = async (artifactId: string) => {
     try {
+      // Find the artifact being unlinked to get its fileName
+      const artifactToUnlink = evidence?.linkedArtifacts?.find((la) => la.artifact.id === artifactId);
+
       const response = await fetch(`/api/evidences/${id}/link-artifacts`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -1148,12 +1152,24 @@ export default function EvidenceDetailPage() {
       });
 
       if (response.ok) {
+        // Also delete the corresponding EvidenceAttachment (same fileName) so it doesn't reappear
+        if (artifactToUnlink) {
+          const matchingAttachment = evidence?.attachments?.find(
+            (att) => att.fileName === artifactToUnlink.artifact.fileName
+          );
+          if (matchingAttachment) {
+            await fetch(`/api/evidences/${id}/attachments?attachmentId=${matchingAttachment.id}`, {
+              method: "DELETE",
+            });
+          }
+        }
+
         // Check if there will be any remaining attachments or linked artifacts after unlinking
-        const remainingAttachments = evidence?.attachments?.length || 0;
+        const remainingAttachments = (evidence?.attachments?.length || 0) - (artifactToUnlink ? 1 : 0);
         const remainingLinkedArtifacts = (evidence?.linkedArtifacts?.length || 0) - 1; // Subtract 1 for the one being unlinked
 
         // If no documents remain, set status back to "Not Uploaded"
-        if (remainingAttachments === 0 && remainingLinkedArtifacts <= 0) {
+        if (remainingAttachments <= 0 && remainingLinkedArtifacts <= 0) {
           await fetch(`/api/evidences/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -1197,8 +1213,15 @@ export default function EvidenceDetailPage() {
     }
   };
 
-  // Filter attachments by selected period
+  // Build a set of file paths that have linked artifacts (to avoid showing duplicates)
+  const linkedArtifactFilePaths = new Set(
+    evidence?.linkedArtifacts?.map((la) => la.artifact.fileName) || []
+  );
+
+  // Filter attachments by selected period, excluding those already shown as linked artifacts
   const filteredAttachments = evidence?.attachments?.filter((att) => {
+    // Skip attachments that have a corresponding linked artifact
+    if (linkedArtifactFilePaths.has(att.fileName)) return false;
     if (!selectedMonth) return true; // Show all if no period selected
     const monthIndex = getMonthFromDate(att.uploadedAt);
     const period = getMonthPeriod(monthIndex, evidence.recurrence);
@@ -2225,13 +2248,18 @@ export default function EvidenceDetailPage() {
                       <Download className="h-4 w-4" />
                     </Button>
                     {isCustomerAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleUnlinkArtifact(la.artifact.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleUnlinkArtifact(la.artifact.id)}
+                          >
+                            <Unlink className="h-4 w-4 text-orange-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{t("Unlink Artifact")}</TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                 </div>
