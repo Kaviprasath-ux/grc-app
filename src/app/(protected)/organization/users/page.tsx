@@ -1633,7 +1633,7 @@ export default function UsersPage() {
                 <Select
                   value={editingUser.function || ""}
                   onValueChange={(value) => {
-                    setEditingUser({ ...editingUser, function: value, reportingManagerId: "" });
+                    setEditingUser({ ...editingUser, function: value, role: "", reportingManagerId: "" });
                     fetchReportingManagers(value);
                   }}
                 >
@@ -1651,23 +1651,45 @@ export default function UsersPage() {
               {/* User Role */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label htmlFor="editRole" className="sm:text-end">{t("User Role")}</Label>
-                <Select
-                  value={editingUser.role}
-                  onValueChange={(value) =>
-                    setEditingUser({ ...editingUser, role: value })
-                  }
-                >
-                  <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder={t("Select...")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                    {allUserRoles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Select
+                          value={editingUser.role}
+                          onValueChange={(value) =>
+                            setEditingUser({ ...editingUser, role: value })
+                          }
+                          disabled={!editingUser.function}
+                        >
+                          <SelectTrigger className={`w-full bg-white ${!editingUser.function ? "cursor-not-allowed opacity-50" : ""}`}>
+                            <SelectValue placeholder={editingUser.function ? t("Select role") : t("Select function first")} />
+                          </SelectTrigger>
+                          <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                            {editingUser.function && (
+                              editingUser.function === "Audit" && userRoles.includes("CustomerAdministrator") && !userRoles.includes("GRCAdministrator")
+                                ? customerAdminAuditRoles.map((role) => (
+                                    <SelectItem key={role} value={role}>
+                                      {role}
+                                    </SelectItem>
+                                  ))
+                                : rolesByFunction[editingUser.function]?.map((role) => (
+                                    <SelectItem key={role} value={role}>
+                                      {role}
+                                    </SelectItem>
+                                  ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TooltipTrigger>
+                    {!editingUser.function && (
+                      <TooltipContent>
+                        <p>{t("Please select a function first")}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               {/* Department */}
