@@ -457,19 +457,19 @@ export default function UserManagementPage() {
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           {canViewDashboard && (
             <>
               <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
                 {t("Dashboard")}
               </Link>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             </>
           )}
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("User Management")}</span>
         </nav>
 
@@ -495,19 +495,19 @@ export default function UserManagementPage() {
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         {canViewDashboard && (
           <>
             <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
               {t("Dashboard")}
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           </>
         )}
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Settings")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("User Management")}</span>
       </nav>
 
@@ -515,7 +515,7 @@ export default function UserManagementPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("User Management")}</h1>
         <Button size="sm" onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("New User")}
         </Button>
       </div>
@@ -525,7 +525,7 @@ export default function UserManagementPage() {
         {/* Search */}
         <div className="flex flex-wrap items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
           <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder={t("Search users...")}
               value={searchTerm}
@@ -538,10 +538,10 @@ export default function UserManagementPage() {
         <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Full Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Full Name")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("User Role")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -554,7 +554,7 @@ export default function UserManagementPage() {
             ) : (
               filteredUsers.map((user) => (
                 <TableRow key={user.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{user.fullName}</TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{user.fullName}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{user.email}</TableCell>
                   <TableCell className="py-3">
                     <div className="flex flex-wrap gap-1">
@@ -565,7 +565,7 @@ export default function UserManagementPage() {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="py-3 pr-5">
+                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"

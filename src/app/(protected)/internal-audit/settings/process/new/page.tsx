@@ -584,7 +584,7 @@ export default function NewProcessPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
                     <Checkbox
                       id="assetDependency"
                       checked={formData.assetDependency}
@@ -597,7 +597,7 @@ export default function NewProcessPage() {
                     </Label>
                   </div>
                   {formData.assetDependency && (
-                    <div className="ml-6">
+                    <div className="ltr:ml-6 rtl:mr-6">
                       <Label>{t("Select Asset")}</Label>
                       <Select
                         value={formData.assetId}
@@ -618,7 +618,7 @@ export default function NewProcessPage() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
                     <Checkbox
                       id="externalDependency"
                       checked={formData.externalDependency}
@@ -631,7 +631,7 @@ export default function NewProcessPage() {
                     </Label>
                   </div>
                   {formData.externalDependency && (
-                    <div className="ml-6">
+                    <div className="ltr:ml-6 rtl:mr-6">
                       <Label>{t("Stakeholder")}</Label>
                       <Select
                         value={formData.externalParty}
@@ -654,7 +654,7 @@ export default function NewProcessPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
                   <Checkbox
                     id="kpiMeasurementRequired"
                     checked={formData.kpiMeasurementRequired}
@@ -666,7 +666,7 @@ export default function NewProcessPage() {
                     {t("KPI Measurement Required")}
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
                   <Checkbox
                     id="piiCapture"
                     checked={formData.piiCapture}

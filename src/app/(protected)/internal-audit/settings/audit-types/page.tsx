@@ -200,19 +200,19 @@ export default function AuditTypesPage() {
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           {canViewDashboard && (
             <>
               <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
                 {t("Dashboard")}
               </Link>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             </>
           )}
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Audit Type")}</span>
         </nav>
 
@@ -238,19 +238,19 @@ export default function AuditTypesPage() {
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         {canViewDashboard && (
           <>
             <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
               {t("Dashboard")}
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           </>
         )}
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Settings")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Audit Type")}</span>
       </nav>
 
@@ -258,7 +258,7 @@ export default function AuditTypesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Audit Type")}</h1>
         <Button size="sm" onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("New Audit Type")}
         </Button>
       </div>
@@ -276,15 +276,15 @@ export default function AuditTypesPage() {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-10 w-full sm:w-[300px] h-9 bg-slate-50 border-slate-200"
+              className="ltr:pl-10 rtl:pr-10 w-full sm:w-[300px] h-9 bg-slate-50 border-slate-200"
             />
           </div>
         </div>
         <Table>
           <TableHeader>
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Type Name")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Type Name")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -297,8 +297,8 @@ export default function AuditTypesPage() {
             ) : (
               paginatedItems.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
-                  <TableCell className="py-3 pr-5">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.name}</TableCell>
+                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"

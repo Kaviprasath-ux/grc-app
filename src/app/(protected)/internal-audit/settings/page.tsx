@@ -88,13 +88,13 @@ export default function InternalAuditSettingsPage() {
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         {canViewDashboard && (
           <>
             <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
               {t("Dashboard")}
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           </>
         )}
         <span className="text-primary-700 font-medium">{t("Settings")}</span>
@@ -112,7 +112,7 @@ export default function InternalAuditSettingsPage() {
           return (
             <button
               key={category.name}
-              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 text-left cursor-pointer"
+              className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 ltr:text-left rtl:text-right cursor-pointer"
               onClick={() => router.push(category.href)}
             >
               <div className="p-3 bg-primary-50 rounded-xl flex-shrink-0">
@@ -124,7 +124,7 @@ export default function InternalAuditSettingsPage() {
                   {category.description}
                 </p>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 ltr:rotate-0 rtl:rotate-180" />
             </button>
           );
         })}

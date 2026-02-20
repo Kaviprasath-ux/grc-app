@@ -1594,15 +1594,15 @@ export default function RiskSettingsCategoryPage() {
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Risk Dashboard")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/risks/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{title}</span>
         </nav>
 
@@ -1681,15 +1681,15 @@ export default function RiskSettingsCategoryPage() {
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Risk Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Settings")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{title}</span>
       </nav>
 
@@ -1719,9 +1719,9 @@ export default function RiskSettingsCategoryPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Category Name")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Category Name")}</TableHead>
                       {(canEdit || canDelete) && (
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                       )}
                     </TableRow>
                   </TableHeader>
@@ -1735,9 +1735,9 @@ export default function RiskSettingsCategoryPage() {
                     ) : (
                       getPaginatedSlice(filteredVulnCats, currentPage).map((item) => (
                         <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                          <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                          <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.name}</TableCell>
                           {(canEdit || canDelete) && (
-                            <TableCell className="py-3 pr-5">
+                            <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                               {renderActions(
                                 () => { setActiveTab("tab1"); setSelectedItem(item); setVulnCatForm({ name: item.name }); setIsEditOpen(true); },
                                 () => { setActiveTab("tab1"); setSelectedItem(item); setIsDeleteOpen(true); }
@@ -1768,9 +1768,9 @@ export default function RiskSettingsCategoryPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Category Name")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Category Name")}</TableHead>
                       {(canEdit || canDelete) && (
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                       )}
                     </TableRow>
                   </TableHeader>
@@ -1784,9 +1784,9 @@ export default function RiskSettingsCategoryPage() {
                     ) : (
                       getPaginatedSlice(filteredThreatCats, currentPage2).map((item) => (
                         <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                          <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                          <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.name}</TableCell>
                           {(canEdit || canDelete) && (
-                            <TableCell className="py-3 pr-5">
+                            <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                               {renderActions(
                                 () => { setActiveTab("tab2"); setSelectedItem(item); setThreatCatForm({ name: item.name }); setIsEditOpen(true); },
                                 () => { setActiveTab("tab2"); setSelectedItem(item); setIsDeleteOpen(true); }
@@ -1823,10 +1823,10 @@ export default function RiskSettingsCategoryPage() {
             <Table>
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Name")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Score")}</TableHead>
                   {(canEdit || canDelete) && (
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
@@ -1838,10 +1838,10 @@ export default function RiskSettingsCategoryPage() {
                 ) : (
                   getPaginatedSlice(filteredControlStrengths, currentPage).map((item) => (
                     <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.name}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600">{item.score}</TableCell>
                       {(canEdit || canDelete) && (
-                        <TableCell className="py-3 pr-5">
+                        <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                           {renderActions(
                             () => { setSelectedItem(item); setControlStrengthForm({ name: item.name, score: item.score }); setIsEditOpen(true); },
                             () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -1877,11 +1877,11 @@ export default function RiskSettingsCategoryPage() {
             <Table className="min-w-[550px]">
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Title")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Title")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Score")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Time Frame")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Probability")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1892,11 +1892,11 @@ export default function RiskSettingsCategoryPage() {
                 ) : (
                   getPaginatedSlice(filteredLikelihoods, currentPage).map((item) => (
                     <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.title}</TableCell>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.title}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600">{item.score}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600">{item.timeFrame || "-"}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600">{item.probability || "-"}</TableCell>
-                      <TableCell className="py-3 pr-5">
+                      <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                         {renderActions(
                           () => { setSelectedItem(item); setLikelihoodForm({ title: item.title, score: item.score, timeFrame: item.timeFrame || "", probability: item.probability || "" }); setIsEditOpen(true); },
                           () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -1942,11 +1942,11 @@ export default function RiskSettingsCategoryPage() {
             <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Threat ID")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Threat ID")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1957,11 +1957,11 @@ export default function RiskSettingsCategoryPage() {
                 ) : (
                   getPaginatedSlice(filteredThreats, currentPage).map((item) => (
                     <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm text-slate-600 pl-5">{item.threatId}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600 ltr:pl-5 rtl:pr-5">{item.threatId}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600">{item.category?.name || "-"}</TableCell>
                       <TableCell className="py-3 text-sm font-medium text-slate-800">{item.name}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600 max-w-[200px] truncate">{item.description || "-"}</TableCell>
-                      <TableCell className="py-3 pr-5">
+                      <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                         {renderActions(
                           () => { setSelectedItem(item); setThreatForm({ name: item.name, description: item.description || "", categoryId: item.categoryId || "" }); setIsEditOpen(true); },
                           () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -2007,11 +2007,11 @@ export default function RiskSettingsCategoryPage() {
             <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Vulnerability ID")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Vulnerability ID")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -2022,11 +2022,11 @@ export default function RiskSettingsCategoryPage() {
                 ) : (
                   getPaginatedSlice(filteredVulnerabilities, currentPage).map((item) => (
                     <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm text-slate-600 pl-5">{item.vulnId}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-600 ltr:pl-5 rtl:pr-5">{item.vulnId}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600">{item.category?.name || "-"}</TableCell>
                       <TableCell className="py-3 text-sm font-medium text-slate-800">{item.name}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600 max-w-[200px] truncate">{item.description || "-"}</TableCell>
-                      <TableCell className="py-3 pr-5">
+                      <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                         {renderActions(
                           () => { setSelectedItem(item); setVulnerabilityForm({ name: item.name, description: item.description || "", categoryId: item.categoryId || "" }); setIsEditOpen(true); },
                           () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -2116,13 +2116,13 @@ export default function RiskSettingsCategoryPage() {
                 <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Title")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Title")}</TableHead>
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Color")}</TableHead>
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Low Range")}</TableHead>
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("High Range")}</TableHead>
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Timeline Days")}</TableHead>
                       {(canEdit || canDelete) && (
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                       )}
                     </TableRow>
                   </TableHeader>
@@ -2134,7 +2134,7 @@ export default function RiskSettingsCategoryPage() {
                     ) : (
                       translatedRiskRanges.map((item) => (
                         <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                          <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.title}</TableCell>
+                          <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.title}</TableCell>
                           <TableCell className="py-3">
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 rounded border border-slate-200" style={{ backgroundColor: item.color || "#ccc" }} />
@@ -2145,7 +2145,7 @@ export default function RiskSettingsCategoryPage() {
                           <TableCell className="py-3 text-sm text-slate-600">{item.highRange}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-600">{item.timelineDays}</TableCell>
                           {(canEdit || canDelete) && (
-                            <TableCell className="py-3 pr-5">
+                            <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                               {renderActions(
                                 () => { setSelectedItem(item); setRiskRangeForm({ title: item.title, color: item.color || "#000000", lowRange: item.lowRange, highRange: item.highRange, timelineDays: item.timelineDays, description: item.description || "" }); setIsEditOpen(true); },
                                 () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -2182,10 +2182,10 @@ export default function RiskSettingsCategoryPage() {
             <Table>
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Type")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Type")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
                   {(canEdit || canDelete) && (
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
@@ -2197,7 +2197,7 @@ export default function RiskSettingsCategoryPage() {
                 ) : (
                   getPaginatedSlice(filteredRiskCategories, currentPage).map((item) => (
                     <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.name}</TableCell>
                       <TableCell className="py-3">
                         <span className={cn(
                           "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
@@ -2207,7 +2207,7 @@ export default function RiskSettingsCategoryPage() {
                         </span>
                       </TableCell>
                       {(canEdit || canDelete) && (
-                        <TableCell className="py-3 pr-5">
+                        <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                           {renderActions(
                             () => { setSelectedItem(item); setRiskCategoryForm({ name: item.name, status: item.status }); setIsEditOpen(true); },
                             () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -2272,9 +2272,9 @@ export default function RiskSettingsCategoryPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Name")}</TableHead>
                     {(canEdit || canDelete) && (
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                     )}
                   </TableRow>
                 </TableHeader>
@@ -2286,9 +2286,9 @@ export default function RiskSettingsCategoryPage() {
                   ) : (
                     getPaginatedSlice(filteredImpactCats, currentPage).map((item) => (
                       <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                        <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                        <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.name}</TableCell>
                         {(canEdit || canDelete) && (
-                          <TableCell className="py-3 pr-5">
+                          <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                             {renderActions(
                               () => { setSelectedItem(item); setImpactCatForm({ name: item.name }); setIsEditOpen(true); },
                               () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -2312,11 +2312,11 @@ export default function RiskSettingsCategoryPage() {
               <Table className="min-w-[450px]">
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Name")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Score")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
                     {(canEdit || canDelete) && (
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                     )}
                   </TableRow>
                 </TableHeader>
@@ -2328,11 +2328,11 @@ export default function RiskSettingsCategoryPage() {
                   ) : (
                     getPaginatedSlice(filteredImpactRatings, currentPage).map((item) => (
                       <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                        <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.name}</TableCell>
+                        <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.name}</TableCell>
                         <TableCell className="py-3 text-sm text-slate-600">{item.score}</TableCell>
                         <TableCell className="py-3 text-sm text-slate-600 max-w-[200px] truncate">{item.description || "-"}</TableCell>
                         {(canEdit || canDelete) && (
-                          <TableCell className="py-3 pr-5">
+                          <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                             {renderActions(
                               () => { setSelectedItem(item); setImpactRatingForm({ name: item.name, score: item.score, description: item.description || "" }); setIsEditOpen(true); },
                               () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -2369,10 +2369,10 @@ export default function RiskSettingsCategoryPage() {
             <Table>
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Label")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Label")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Score")}</TableHead>
                   {(canEdit || canDelete) && (
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
@@ -2384,10 +2384,10 @@ export default function RiskSettingsCategoryPage() {
                 ) : (
                   getPaginatedSlice(filteredVulnRatings, currentPage).map((item) => (
                     <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.label}</TableCell>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-600">{item.score}</TableCell>
                       {(canEdit || canDelete) && (
-                        <TableCell className="py-3 pr-5">
+                        <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                           {renderActions(
                             () => { setSelectedItem(item); setVulnRatingForm({ label: item.label, score: item.score }); setIsEditOpen(true); },
                             () => { setSelectedItem(item); setIsDeleteOpen(true); }
@@ -2422,9 +2422,9 @@ export default function RiskSettingsCategoryPage() {
             <Table>
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Type")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Type")}</TableHead>
                   {(canEdit || canDelete) && (
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
@@ -2436,9 +2436,9 @@ export default function RiskSettingsCategoryPage() {
                 ) : (
                   getPaginatedSlice(filteredRiskSubCats, currentPage).map((item) => (
                     <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{item.type}</TableCell>
+                      <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.type}</TableCell>
                       {(canEdit || canDelete) && (
-                        <TableCell className="py-3 pr-5">
+                        <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                           {renderActions(
                             () => { setSelectedItem(item); setRiskSubCatForm({ type: item.type }); setIsEditOpen(true); },
                             () => { setSelectedItem(item); setIsDeleteOpen(true); }

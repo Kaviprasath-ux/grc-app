@@ -12,22 +12,28 @@ export const GET = withAuth(
       const riskFilter = getAuditHeadRiskFilter(session);
 
       // Total risks identified (filtered by tenant and audit head's engagements)
+      // Include risks with matching auditHeadId OR null auditHeadId (legacy/unassigned)
+      const auditHeadIdValue = 'auditHeadId' in riskFilter ? (riskFilter as { auditHeadId: string }).auditHeadId : null;
+      const riskWhere = auditHeadIdValue
+        ? { ...tenantFilter, OR: [{ auditHeadId: auditHeadIdValue }, { auditHeadId: null }] }
+        : { ...tenantFilter };
+
       const totalRisksIdentified = await prisma.internalAuditRisk.count({
-        where: {
-          ...tenantFilter,
-          ...riskFilter,
-        },
+        where: riskWhere,
       });
 
       // Risks with extreme severity (riskLevel = "Extreme" or very high score)
       const risksWithExtremeSeverity = await prisma.internalAuditRisk.count({
         where: {
-          ...tenantFilter,
-          ...riskFilter,
-          OR: [
-            { riskLevel: "Extreme" },
-            { riskLevel: "Very High" },
-            { residualScore: { gte: 250 } },
+          ...riskWhere,
+          AND: [
+            {
+              OR: [
+                { riskLevel: "Extreme" },
+                { riskLevel: "Very High" },
+                { residualScore: { gte: 250 } },
+              ],
+            },
           ],
         },
       });

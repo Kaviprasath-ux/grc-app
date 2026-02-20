@@ -205,11 +205,11 @@ export default function RiskReportsPage() {
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Risk Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
@@ -219,7 +219,7 @@ export default function RiskReportsPage() {
       {/* Management Report - Featured Card */}
       <button
         onClick={() => setIsManagementDialogOpen(true)}
-        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-5 flex items-center gap-4 text-left transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
+        className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-5 flex items-center gap-4 ltr:text-left rtl:text-right transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
       >
         <div className="p-2.5 bg-primary-100/80 rounded-lg flex-shrink-0">
           <FileBarChart className="h-5 w-5 text-primary-600" />
@@ -259,7 +259,7 @@ export default function RiskReportsPage() {
                 <button
                   key={report.id}
                   onClick={() => handleReportClick(report)}
-                  className="group w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/60 transition-colors cursor-pointer"
+                  className="group w-full flex items-center justify-between px-5 py-3.5 ltr:text-left rtl:text-right hover:bg-slate-50/60 transition-colors cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium text-slate-800">{t(report.title)}</h4>
@@ -290,7 +290,7 @@ export default function RiskReportsPage() {
           {/* Export Button */}
           <div className="flex-shrink-0 flex justify-end px-4 sm:px-6 py-3 border-b border-slate-100">
             <Button variant="outline" size="sm" onClick={handleExport}>
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Export")}
             </Button>
           </div>
@@ -310,7 +310,7 @@ export default function RiskReportsPage() {
                   <thead>
                     <tr className="h-12 bg-slate-50">
                       {selectedReport?.columns.map((col) => (
-                        <th key={col} className="text-left px-4 text-sm font-medium text-slate-700">
+                        <th key={col} className="ltr:text-left rtl:text-right px-4 text-sm font-medium text-slate-700">
                           {t(col)}
                         </th>
                       ))}
@@ -361,7 +361,7 @@ export default function RiskReportsPage() {
           <div className="px-4 sm:px-6 py-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {managementOptions.map((option) => (
-                <div key={option.id} className="flex items-center space-x-2">
+                <div key={option.id} className="flex items-center gap-2">
                   <Checkbox
                     id={option.id}
                     checked={option.checked}
@@ -375,7 +375,7 @@ export default function RiskReportsPage() {
                   </label>
                   {/* Year filter for timeline option */}
                   {option.id === "risk-activity-timeline" && option.checked && (
-                    <div className="ml-2">
+                    <div className="ltr:ml-2 rtl:mr-2">
                       <Input
                         type="text"
                         value={filterYear}

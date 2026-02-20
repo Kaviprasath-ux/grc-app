@@ -24,7 +24,12 @@ export const GET = withAuth(
 
       // Combined filters for engagement and risk queries
       const engagementFilter = { ...tenantFilter, ...auditHeadFilter };
-      const riskQueryFilter = { ...tenantFilter, ...riskFilter };
+
+      // Build risk filter that includes risks with matching auditHeadId OR null (legacy/unassigned)
+      const auditHeadIdValue = 'auditHeadId' in riskFilter ? (riskFilter as { auditHeadId: string }).auditHeadId : null;
+      const riskQueryFilter = auditHeadIdValue
+        ? { ...tenantFilter, OR: [{ auditHeadId: auditHeadIdValue }, { auditHeadId: null }] }
+        : { ...tenantFilter };
 
       console.log('[DASHBOARD DEBUG] Engagement filter:', JSON.stringify(engagementFilter));
 
@@ -44,6 +49,7 @@ export const GET = withAuth(
 
       // Get risk register stats (with tenant + audit head filter)
       // Handle different riskLevel case variations
+      // Use AND to combine riskQueryFilter (which may have its own OR for auditHeadId) with riskLevel OR
       const [
         totalRisks,
         extremeRisks,
@@ -54,44 +60,52 @@ export const GET = withAuth(
         prisma.internalAuditRisk.count({ where: riskQueryFilter }),
         prisma.internalAuditRisk.count({
           where: {
-            ...riskQueryFilter,
-            OR: [
-              { riskLevel: 'Extreme' },
-              { riskLevel: 'extreme' },
-              { riskLevel: 'EXTREME' },
-              { riskLevel: 'Critical' },
-              { riskLevel: 'critical' }
+            AND: [
+              riskQueryFilter,
+              { OR: [
+                { riskLevel: 'Extreme' },
+                { riskLevel: 'extreme' },
+                { riskLevel: 'EXTREME' },
+                { riskLevel: 'Critical' },
+                { riskLevel: 'critical' }
+              ] }
             ]
           }
         }),
         prisma.internalAuditRisk.count({
           where: {
-            ...riskQueryFilter,
-            OR: [
-              { riskLevel: 'High' },
-              { riskLevel: 'high' },
-              { riskLevel: 'HIGH' }
+            AND: [
+              riskQueryFilter,
+              { OR: [
+                { riskLevel: 'High' },
+                { riskLevel: 'high' },
+                { riskLevel: 'HIGH' }
+              ] }
             ]
           }
         }),
         prisma.internalAuditRisk.count({
           where: {
-            ...riskQueryFilter,
-            OR: [
-              { riskLevel: 'Medium' },
-              { riskLevel: 'medium' },
-              { riskLevel: 'MEDIUM' },
-              { riskLevel: 'Moderate' }
+            AND: [
+              riskQueryFilter,
+              { OR: [
+                { riskLevel: 'Medium' },
+                { riskLevel: 'medium' },
+                { riskLevel: 'MEDIUM' },
+                { riskLevel: 'Moderate' }
+              ] }
             ]
           }
         }),
         prisma.internalAuditRisk.count({
           where: {
-            ...riskQueryFilter,
-            OR: [
-              { riskLevel: 'Low' },
-              { riskLevel: 'low' },
-              { riskLevel: 'LOW' }
+            AND: [
+              riskQueryFilter,
+              { OR: [
+                { riskLevel: 'Low' },
+                { riskLevel: 'low' },
+                { riskLevel: 'LOW' }
+              ] }
             ]
           }
         }),

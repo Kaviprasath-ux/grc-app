@@ -95,7 +95,7 @@ function ManagementReportContent() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${t("riskManagementReport")}</title>
+          <title>${t("Risk Management Report")}</title>
           <style>
             ${styles}
             @media print {
@@ -178,7 +178,7 @@ function ManagementReportContent() {
   // Get top 5 departments
   const deptCounts: Record<string, { name: string; count: number }> = {};
   risks.forEach(risk => {
-    const name = risk.department?.name || t("unassigned");
+    const name = risk.department?.name || t("Unassigned");
     if (!deptCounts[name]) {
       deptCounts[name] = { name, count: 0 };
     }
@@ -206,7 +206,7 @@ function ManagementReportContent() {
   // Get top 5 risk owners
   const ownerCounts: Record<string, { name: string; count: number }> = {};
   risks.forEach(risk => {
-    const name = risk.owner?.fullName || t("unassigned");
+    const name = risk.owner?.fullName || t("Unassigned");
     if (!ownerCounts[name]) {
       ownerCounts[name] = { name, count: 0 };
     }
@@ -219,7 +219,7 @@ function ManagementReportContent() {
   // Active risks by rating
   const risksByRating: Record<string, number> = {};
   risks.forEach(risk => {
-    const rating = risk.riskRating || t("notRated");
+    const rating = risk.riskRating || t("Not Rated");
     risksByRating[rating] = (risksByRating[rating] || 0) + 1;
   });
 
@@ -273,15 +273,15 @@ function ManagementReportContent() {
             <Home className="h-4 w-4" />
             <span>{t("Risk Management")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/risks/dashboard" className="text-slate-400 hover:text-primary-600 transition-colors">
             {t("Risk Dashboard")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <Link href="/risks/reports" className="text-slate-400 hover:text-primary-600 transition-colors">
             {t("Reports")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Management Report")}</span>
         </nav>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -302,15 +302,15 @@ function ManagementReportContent() {
           <Home className="h-4 w-4" />
           <span>{t("Risk Management")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/dashboard" className="text-slate-400 hover:text-primary-600 transition-colors">
           {t("Risk Dashboard")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/risks/reports" className="text-slate-400 hover:text-primary-600 transition-colors">
           {t("Reports")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Management Report")}</span>
       </nav>
 

@@ -581,19 +581,19 @@ export default function ProcessPage() {
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           {canViewDashboard && (
             <>
               <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
                 {t("Dashboard")}
               </Link>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             </>
           )}
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Process")}</span>
         </nav>
 
@@ -619,19 +619,19 @@ export default function ProcessPage() {
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         {canViewDashboard && (
           <>
             <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
               {t("Dashboard")}
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           </>
         )}
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Settings")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Process")}</span>
       </nav>
 
@@ -705,11 +705,11 @@ export default function ProcessPage() {
         {/* Actions */}
         <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => document.getElementById('import-file')?.click()}>
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Import")}
           </Button>
           <input
@@ -720,7 +720,7 @@ export default function ProcessPage() {
             onChange={handleImport}
           />
           <Button size="sm" className="col-span-2 sm:col-span-1" onClick={openAddDialog}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("New Process")}
           </Button>
         </div>
@@ -730,7 +730,7 @@ export default function ProcessPage() {
           {/* Search & Filters */}
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
             <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder={t("Search By Process ID, Name")}
                 value={searchQuery}
@@ -785,20 +785,20 @@ export default function ProcessPage() {
           <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Reference ID")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Reference ID")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Process Owner")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Frequency")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Implementation")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Rating")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[100px]">{t("Action")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[100px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProcesses.map((process) => (
                 <TableRow key={process.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 text-sm text-slate-600 pl-5">{process.processCode}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600 ltr:pl-5 rtl:pr-5">{process.processCode}</TableCell>
                   <TableCell className="py-3 text-sm font-medium text-slate-800">{process.name}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{process.department?.name || ""}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{process.owner?.fullName || ""}</TableCell>
@@ -819,7 +819,7 @@ export default function ProcessPage() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="py-3 pr-5">
+                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
                       <Button
                         variant="ghost"

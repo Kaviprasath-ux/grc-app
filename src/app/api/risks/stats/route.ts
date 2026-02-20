@@ -29,18 +29,29 @@ export const GET = withAuth(
     const inProgressRisks = risks.filter((r) => r.status === "In Progress").length;
     const closedRisks = risks.filter((r) => r.status === "Closed").length;
 
-    // Risk rating distribution (matching website: Catastrophic, Very high, High, Low Risk)
-    const riskRatingCounts = {
-      Catastrophic: risks.filter((r) => r.riskRating === "Catastrophic").length,
-      "Very high": risks.filter((r) => r.riskRating === "Very high").length,
-      High: risks.filter((r) => r.riskRating === "High").length,
-      "Low Risk": risks.filter((r) => r.riskRating === "Low Risk").length,
+    // Risk rating distribution - dynamically count all rating values from data
+    const riskRatingMap = new Map<string, number>();
+    risks.forEach((risk) => {
+      const rating = risk.riskRating || "Unrated";
+      riskRatingMap.set(rating, (riskRatingMap.get(rating) || 0) + 1);
+    });
+
+    // Define rating colors and severity order
+    const ratingColors: Record<string, string> = {
+      "Catastrophic": "#7f1d1d",
+      "Extreme": "#991b1b",
+      "Very high": "#dc2626",
+      "Very High": "#dc2626",
+      "High": "#f59e0b",
+      "Medium": "#eab308",
+      "Low Risk": "#22c55e",
+      "Low": "#16a34a",
+      "Unrated": "#9ca3af",
     };
 
-    const highCriticalRisks =
-      riskRatingCounts.Catastrophic +
-      riskRatingCounts["Very high"] +
-      riskRatingCounts.High;
+    // High/critical risks count (any rating that's High or above)
+    const highCriticalLabels = ["Catastrophic", "Extreme", "Very high", "Very High", "High"];
+    const highCriticalRisks = risks.filter((r) => highCriticalLabels.includes(r.riskRating || "")).length;
 
     // Risk by category
     const categoryMap = new Map<string, { id: string; name: string; count: number }>();
@@ -84,13 +95,14 @@ export const GET = withAuth(
       })
     );
 
-    // Risk rating distribution for chart (matching website: Catastrophic, Very high, High, Low Risk)
-    const riskRatingDistribution = [
-      { name: "Catastrophic", value: riskRatingCounts.Catastrophic, color: "#dc2626" },
-      { name: "Very high", value: riskRatingCounts["Very high"], color: "#ea580c" },
-      { name: "High", value: riskRatingCounts.High, color: "#f59e0b" },
-      { name: "Low Risk", value: riskRatingCounts["Low Risk"], color: "#22c55e" },
-    ];
+    // Risk rating distribution for chart - built from actual data
+    const riskRatingDistribution = Array.from(riskRatingMap.entries()).map(
+      ([name, count]) => ({
+        name,
+        value: count,
+        color: ratingColors[name] || "#6B7280",
+      })
+    );
 
     // Response strategy distribution
     const responseMap = new Map<string, number>();
@@ -151,13 +163,10 @@ export const GET = withAuth(
       }
     }
 
-    // Risk by rating for bar chart (matching website: Catastrophic, Very high, High, Low Risk)
-    const riskByRating = [
-      { name: "Catastrophic", value: riskRatingCounts.Catastrophic },
-      { name: "Very high", value: riskRatingCounts["Very high"] },
-      { name: "High", value: riskRatingCounts.High },
-      { name: "Low Risk", value: riskRatingCounts["Low Risk"] },
-    ].filter((item) => item.value > 0);
+    // Risk by rating for bar chart - built from actual data
+    const riskByRating = Array.from(riskRatingMap.entries())
+      .map(([name, count]) => ({ name, value: count }))
+      .filter((item) => item.value > 0);
 
     // Risk by strategy (Treat, Transfer, Avoid, Accept)
     const strategyMap = new Map<string, number>();

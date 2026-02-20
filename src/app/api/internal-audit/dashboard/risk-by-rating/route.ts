@@ -10,11 +10,11 @@ export const GET = withAuth(
       const tenantFilter = getTenantFilter(session);
       const riskFilter = getAuditHeadRiskFilter(session);
 
-      // Build combined where clause
-      const whereClause = {
-        ...tenantFilter,
-        ...riskFilter,
-      };
+      // Build combined where clause - include risks with matching auditHeadId OR null (legacy/unassigned)
+      const auditHeadIdValue = 'auditHeadId' in riskFilter ? (riskFilter as { auditHeadId: string }).auditHeadId : null;
+      const whereClause = auditHeadIdValue
+        ? { ...tenantFilter, OR: [{ auditHeadId: auditHeadIdValue }, { auditHeadId: null }] }
+        : { ...tenantFilter };
 
       // Get risk counts grouped by risk level (with tenant and audit head filter)
       const risks = await prisma.internalAuditRisk.groupBy({

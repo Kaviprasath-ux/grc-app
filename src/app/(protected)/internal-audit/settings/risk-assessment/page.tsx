@@ -383,19 +383,19 @@ export default function RiskAssessmentConfigPage() {
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           {canViewDashboard && (
             <>
               <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
                 {t("Dashboard")}
               </Link>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
             </>
           )}
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Settings")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Risk Assessment")}</span>
         </nav>
 
@@ -421,19 +421,19 @@ export default function RiskAssessmentConfigPage() {
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         {canViewDashboard && (
           <>
             <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
               {t("Dashboard")}
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           </>
         )}
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Settings")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Risk Assessment")}</span>
       </nav>
 
@@ -449,22 +449,22 @@ export default function RiskAssessmentConfigPage() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Factors")}</h3>
             <Button size="sm" onClick={() => openAddDialog("factor")}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Factor")}
             </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Label")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[80px]">{t("Action")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Label")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[80px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {factors.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 text-sm text-slate-800 pl-5">{item.label}</TableCell>
-                  <TableCell className="py-3 pr-5">
+                  <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
+                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("factor", item)}>
                         <Pencil className="h-4 w-4" />
@@ -492,24 +492,24 @@ export default function RiskAssessmentConfigPage() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Probability")}</h3>
             <Button size="sm" onClick={() => openAddDialog("probability")}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Probability")}
             </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Label")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Label")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Value")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[80px]">{t("Action")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[80px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {probabilities.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 text-sm text-slate-800 pl-5">{item.label}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{item.value}</TableCell>
-                  <TableCell className="py-3 pr-5">
+                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("probability", item)}>
                         <Pencil className="h-4 w-4" />
@@ -537,24 +537,24 @@ export default function RiskAssessmentConfigPage() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Impact")}</h3>
             <Button size="sm" onClick={() => openAddDialog("impact")}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Impact")}
             </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Label")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Label")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Value")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[80px]">{t("Action")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[80px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {impacts.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 text-sm text-slate-800 pl-5">{item.label}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{item.value}</TableCell>
-                  <TableCell className="py-3 pr-5">
+                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("impact", item)}>
                         <Pencil className="h-4 w-4" />
@@ -666,7 +666,7 @@ export default function RiskAssessmentConfigPage() {
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-slate-700">{t("Scoring Range")}</Label>
                 <Button size="sm" onClick={() => openAddDialog("scoringRange")}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("New Range")}
                 </Button>
               </div>
@@ -674,12 +674,12 @@ export default function RiskAssessmentConfigPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Label")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Label")}</TableHead>
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Low")}</TableHead>
                       {scoringConfig?.riskRatingCalcType !== "High of all" && (
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("High")}</TableHead>
                       )}
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 w-[80px]">{t("Action")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 w-[80px]">{t("Action")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -687,12 +687,12 @@ export default function RiskAssessmentConfigPage() {
                       .filter((item) => item.calculationType === scoringConfig?.riskRatingCalcType)
                       .map((item) => (
                         <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
-                          <TableCell className="py-3 text-sm text-slate-800 pl-5">{item.label}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-600">{item.lowValue}</TableCell>
                           {scoringConfig?.riskRatingCalcType !== "High of all" && (
                             <TableCell className="py-3 text-sm text-slate-600">{item.highValue ?? "-"}</TableCell>
                           )}
-                          <TableCell className="py-3 pr-5">
+                          <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                             <div className="flex items-center gap-0.5">
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("scoringRange", item)}>
                                 <Pencil className="h-4 w-4" />

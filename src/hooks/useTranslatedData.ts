@@ -20,7 +20,7 @@
  *   triggerTranslation('Risk', risk.id, { name: risk.name, description: risk.description });
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // ==================== TYPES ====================
@@ -105,27 +105,36 @@ export function useTranslatedData<T extends object>(
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Keep translated data in sync with source data when locale is en
-  useEffect(() => {
-    if (locale === "en" || !data) {
-      setTranslatedData(data ?? []);
-    }
-  }, [data, locale]);
+  // Use a ref so the effect body always reads the latest data
+  // without needing `data` itself as a dependency (avoids infinite loops
+  // when the parent passes a new array reference each render).
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  // Stable key derived from record IDs — only changes when actual records change
+  const dataKey = useMemo(() => {
+    if (!data || data.length === 0) return "";
+    return data
+      .map((item) => (item as Record<string, unknown>)[idField])
+      .join(",");
+  }, [data, idField]);
 
   useEffect(() => {
+    const currentData = dataRef.current;
+
     // No translation needed for English or empty data
-    if (locale === "en" || !data || data.length === 0) {
-      setTranslatedData(data ?? []);
+    if (locale === "en" || !currentData || currentData.length === 0) {
+      setTranslatedData(currentData ?? []);
       setIsLoading(false);
       return;
     }
 
-    const recordIds = data
+    const recordIds = currentData
       .map((item) => (item as Record<string, unknown>)[idField] as string)
       .filter(Boolean);
 
     if (recordIds.length === 0) {
-      setTranslatedData(data);
+      setTranslatedData(currentData);
       setIsLoading(false);
       return;
     }
@@ -134,7 +143,7 @@ export function useTranslatedData<T extends object>(
     const cacheKey = getCacheKey(modelName, locale, recordIds);
     const cached = getCached(cacheKey);
     if (cached) {
-      setTranslatedData(overlayTranslations(data, cached, idField));
+      setTranslatedData(overlayTranslations(currentData, cached, idField));
       setIsLoading(false);
       return;
     }
@@ -161,21 +170,21 @@ export function useTranslatedData<T extends object>(
 
         const translations = result.translations ?? {};
         setCache(cacheKey, translations);
-        setTranslatedData(overlayTranslations(data, translations, idField));
+        setTranslatedData(overlayTranslations(dataRef.current ?? [], translations, idField));
         setIsLoading(false);
       })
       .catch((err) => {
         if (err.name === "AbortError") return;
         console.error("Failed to fetch bulk translations:", err);
         // On error, show original data
-        setTranslatedData(data);
+        setTranslatedData(dataRef.current ?? []);
         setIsLoading(false);
       });
 
     return () => {
       controller.abort();
     };
-  }, [data, locale, modelName, idField]);
+  }, [dataKey, locale, modelName, idField]);
 
   return { data: translatedData, isLoading };
 }
@@ -196,23 +205,28 @@ export function useTranslatedRecord<T extends object>(
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Keep in sync when locale is en
-  useEffect(() => {
-    if (locale === "en" || !record) {
-      setTranslatedRecord(record ?? null);
-    }
-  }, [record, locale]);
+  // Use a ref to avoid infinite loops from object reference changes
+  const recordRef = useRef(record);
+  recordRef.current = record;
+
+  // Stable key from record ID
+  const recordKey = useMemo(() => {
+    if (!record) return "";
+    return String((record as Record<string, unknown>)[idField] ?? "");
+  }, [record, idField]);
 
   useEffect(() => {
-    if (locale === "en" || !record) {
-      setTranslatedRecord(record ?? null);
+    const currentRecord = recordRef.current;
+
+    if (locale === "en" || !currentRecord) {
+      setTranslatedRecord(currentRecord ?? null);
       setIsLoading(false);
       return;
     }
 
-    const recordId = (record as Record<string, unknown>)[idField] as string;
+    const recordId = (currentRecord as Record<string, unknown>)[idField] as string;
     if (!recordId) {
-      setTranslatedRecord(record);
+      setTranslatedRecord(currentRecord);
       setIsLoading(false);
       return;
     }
@@ -221,7 +235,7 @@ export function useTranslatedRecord<T extends object>(
     const cacheKey = getCacheKey(modelName, locale, [recordId]);
     const cached = getCached(cacheKey);
     if (cached && cached[recordId]) {
-      setTranslatedRecord(overlaySingleRecord(record, cached[recordId]));
+      setTranslatedRecord(overlaySingleRecord(currentRecord, cached[recordId]));
       setIsLoading(false);
       return;
     }
@@ -246,20 +260,20 @@ export function useTranslatedRecord<T extends object>(
         const translations = result.translations ?? {};
         // Store in cache using bulk format
         setCache(cacheKey, { [recordId]: translations });
-        setTranslatedRecord(overlaySingleRecord(record, translations));
+        setTranslatedRecord(overlaySingleRecord(recordRef.current!, translations));
         setIsLoading(false);
       })
       .catch((err) => {
         if (err.name === "AbortError") return;
         console.error("Failed to fetch record translations:", err);
-        setTranslatedRecord(record);
+        setTranslatedRecord(recordRef.current ?? null);
         setIsLoading(false);
       });
 
     return () => {
       controller.abort();
     };
-  }, [record, locale, modelName, idField]);
+  }, [recordKey, locale, modelName, idField]);
 
   return { data: translatedRecord, isLoading };
 }
