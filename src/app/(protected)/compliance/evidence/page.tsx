@@ -1128,6 +1128,7 @@ export default function EvidencePage() {
           {/* Add Artifact Header and AI Review Button */}
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold text-slate-800">{t("Add Artifact")}</h3>
+            {/* AI Review Artifacts button - hidden for now
             <Button
               variant="outline"
               size="sm"
@@ -1147,6 +1148,7 @@ export default function EvidencePage() {
                 </>
               )}
             </Button>
+            */}
           </div>
 
           {/* File Upload Area */}
