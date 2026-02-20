@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-table";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2, Inbox } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -196,11 +196,14 @@ export function DataGrid<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-slate-500"
-                >
-                  {t("No results.")}
+                <TableCell colSpan={columns.length} className="py-0">
+                  <div className="py-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                      <Inbox className="h-6 w-6 text-primary-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">{t("No results found")}</p>
+                    <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
+                  </div>
                 </TableCell>
               </TableRow>
             )}

@@ -162,6 +162,8 @@ function ControlListPageContent() {
   );
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  const [domainFilter, setDomainFilter] = useState<string>("all");
+  const [functionalGroupingFilter, setFunctionalGroupingFilter] = useState<string>("all");
 
   // Column visibility
   const [visibleColumns, setVisibleColumns] = useState({
@@ -347,6 +349,12 @@ function ControlListPageContent() {
       if (assigneeFilter && assigneeFilter !== "all") {
         params.set("assigneeId", assigneeFilter);
       }
+      if (domainFilter && domainFilter !== "all") {
+        params.set("domainId", domainFilter);
+      }
+      if (functionalGroupingFilter && functionalGroupingFilter !== "all") {
+        params.set("functionalGrouping", functionalGroupingFilter);
+      }
       if (search) params.set("search", search);
       if (selectedStatus) params.set("status", selectedStatus);
 
@@ -361,7 +369,7 @@ function ControlListPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, integratedFrameworkFilter, departmentFilter, assigneeFilter, search, selectedStatus]);
+  }, [currentPage, integratedFrameworkFilter, departmentFilter, assigneeFilter, domainFilter, functionalGroupingFilter, search, selectedStatus]);
 
   useEffect(() => {
     fetchControls();
@@ -944,6 +952,28 @@ function ControlListPageContent() {
                     <SelectItem value="all">{t("All Assignees")}</SelectItem>
                     {users.map((u) => (
                       <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={domainFilter} onValueChange={setDomainFilter}>
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Domain")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("All Domains")}</SelectItem>
+                    {domains.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={functionalGroupingFilter} onValueChange={setFunctionalGroupingFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Functional Grouping")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("All Groupings")}</SelectItem>
+                    {FUNCTIONAL_GROUPINGS.map((g) => (
+                      <SelectItem key={g} value={g}>{t(g)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

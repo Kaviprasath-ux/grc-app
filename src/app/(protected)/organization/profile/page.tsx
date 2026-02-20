@@ -673,7 +673,7 @@ function ProfilePageContent() {
                           <Building2 className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Organization Name")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Organization Name")}</p>
                           <p className="text-sm font-medium text-slate-800">{organization.name || "-"}</p>
                         </div>
                       </div>
@@ -682,7 +682,7 @@ function ProfilePageContent() {
                           <Calendar className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Established Date")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Established Date")}</p>
                           <p className="text-sm font-medium text-slate-800">{organization.establishedDate || "-"}</p>
                         </div>
                       </div>
@@ -691,7 +691,7 @@ function ProfilePageContent() {
                           <Users className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Employee Count")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Employee Count")}</p>
                           <p className="text-sm font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
                         </div>
                       </div>
@@ -700,7 +700,7 @@ function ProfilePageContent() {
                           <MapPin className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Branch Count")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Branch Count")}</p>
                           <p className="text-sm font-medium text-slate-800">{organization.branchCount || "0"}</p>
                         </div>
                       </div>
@@ -720,7 +720,7 @@ function ProfilePageContent() {
                           <MapPin className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Head Office Location")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Head Office Location")}</p>
                           <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
                         </div>
                       </div>
@@ -729,7 +729,7 @@ function ProfilePageContent() {
                           <Home className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Head Office Address")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Head Office Address")}</p>
                           <p className="text-sm font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
                         </div>
                       </div>
@@ -738,7 +738,7 @@ function ProfilePageContent() {
                           <Globe className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Website")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Website")}</p>
                           <p className="text-sm font-medium text-primary-600 truncate">{organization.website || "-"}</p>
                         </div>
                       </div>
@@ -747,7 +747,7 @@ function ProfilePageContent() {
                           <Target className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Email")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Email")}</p>
                           <p className="text-sm font-medium text-slate-800 truncate">{organization.email || "-"}</p>
                         </div>
                       </div>
@@ -799,7 +799,7 @@ function ProfilePageContent() {
                           <FileText className="h-4 w-4 text-primary-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-400 mb-0.5">{t("Brochure")}</p>
+                          <p className="text-xs font-semibold text-slate-600 mb-0.5">{t("Brochure")}</p>
                           <p className="text-sm font-medium text-slate-700">{organization.brochure.split("/").pop()}</p>
                         </div>
                         <div className="flex items-center gap-0.5 ml-2">

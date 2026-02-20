@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { formatLocalDate } from "@/lib/utils";
@@ -30,6 +30,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
@@ -186,6 +194,15 @@ export default function ProcessPage() {
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [frequencyFilter, setFrequencyFilter] = useState("all");
   const [kpiDepartmentFilter, setKpiDepartmentFilter] = useState("all");
+  const [biaColumnVisibility, setBiaColumnVisibility] = useState<Record<string, boolean>>({
+    processCode: true,
+    name: true,
+    "department.name": true,
+    "owner.fullName": true,
+    processFrequency: true,
+    processCriticality: true,
+    actions: true,
+  });
 
   // Dialog states
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -1576,6 +1593,12 @@ export default function ProcessPage() {
     },
   ];
 
+  // Filtered BIA columns based on visibility
+  const filteredBiaColumns = biaColumns.filter((col) => {
+    const key = (col as { accessorKey?: string }).accessorKey || (col as { id?: string }).id || "";
+    return biaColumnVisibility[key] !== false;
+  });
+
   // Process columns
   const processColumns: ColumnDef<Process>[] = [
     {
@@ -1767,7 +1790,7 @@ export default function ProcessPage() {
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ltr:sm:ml-auto rtl:sm:mr-auto">
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1780,7 +1803,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[170px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Process Owner")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1793,7 +1816,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[170px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Frequency")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1841,7 +1864,7 @@ export default function ProcessPage() {
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ltr:sm:ml-auto rtl:sm:mr-auto">
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1854,7 +1877,7 @@ export default function ProcessPage() {
                   </SelectContent>
                 </Select>
                 <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-[170px] h-9 text-sm bg-slate-50 border-slate-200">
                     <SelectValue placeholder={t("Process Owner")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -1866,10 +1889,50 @@ export default function ProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
+                  <SelectTrigger className="w-full sm:w-[170px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Frequency")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">{t("All Frequencies")}</SelectItem>
+                    {processFrequencies.map((freq) => (
+                      <SelectItem key={freq} value={freq}>
+                        {freq}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 border-0 bg-transparent hover:bg-slate-100">
+                      <Settings2 className="h-4 w-4 text-slate-500" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel>{t("Toggle Columns")}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {biaColumns.map((col) => {
+                      const key = (col as { accessorKey?: string }).accessorKey || (col as { id?: string }).id || "";
+                      const label = typeof col.header === "string" ? col.header : key;
+                      if (key === "actions") return null;
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={key}
+                          checked={biaColumnVisibility[key] !== false}
+                          onCheckedChange={(checked) =>
+                            setBiaColumnVisibility((prev) => ({ ...prev, [key]: !!checked }))
+                          }
+                        >
+                          {label}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             <DataGrid
-              columns={biaColumns}
+              columns={filteredBiaColumns}
               data={filteredProcesses}
               hideSearch={true}
               className="border-0 rounded-none"
@@ -2057,14 +2120,12 @@ export default function ProcessPage() {
                       className="border-0 rounded-none"
                     />
                   ) : (
-                    <div className="p-12">
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <FileText className="h-12 w-12 text-slate-400 mb-4" />
-                        <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No KPI Data")}</h3>
-                        <p className="text-sm text-slate-500">
-                          {t("No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.")}
-                        </p>
+                    <div className="py-16 text-center">
+                      <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                        <BarChart3 className="h-6 w-6 text-primary-400" />
                       </div>
+                      <p className="text-sm font-medium text-slate-600 mb-1">{t("No KPI Data")}</p>
+                      <p className="text-xs text-slate-400">{t("Enable KPI Measurement Required when adding a process to see it here")}</p>
                     </div>
                   )}
                 </div>

@@ -32,6 +32,7 @@ import {
   CheckCircle,
   Home,
   ChevronRight,
+  Settings2,
 } from "lucide-react";
 import Link from "next/link";
 import { NewRiskWizard } from "@/components/risks/new-risk-wizard";
@@ -45,6 +46,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -149,6 +158,27 @@ function RiskRegisterContent() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState(initialRating || "all");
   const [statusFilter, setStatusFilter] = useState(initialStatus || "");
+
+  // Column visibility
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
+    riskId: true,
+    name: true,
+    description: true,
+    category: true,
+    owner: true,
+    rating: true,
+  });
+
+  const columnDefs = [
+    { key: "riskId", label: t("Risk ID") },
+    { key: "name", label: t("Risk Name") },
+    { key: "description", label: t("Risk Description") },
+    { key: "category", label: t("Risk Category") },
+    { key: "owner", label: t("Risk Owner") },
+    { key: "rating", label: t("Risk Rating") },
+  ];
+
+  const visibleColumns = columnDefs.filter((col) => columnVisibility[col.key]);
 
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -537,18 +567,37 @@ function RiskRegisterContent() {
                   <SelectItem value="Low Risk">{t("Low Risk")}</SelectItem>
                 </SelectContent>
               </Select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 border-0 bg-transparent hover:bg-slate-100">
+                    <Settings2 className="h-4 w-4 text-slate-500" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>{t("Toggle columns")}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {columnDefs.map((col) => (
+                    <DropdownMenuCheckboxItem
+                      key={col.key}
+                      checked={columnVisibility[col.key]}
+                      onCheckedChange={(checked) =>
+                        setColumnVisibility((prev) => ({ ...prev, [col.key]: !!checked }))
+                      }
+                    >
+                      {col.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
           {/* Column Headers + Rows */}
           <div className="overflow-x-auto">
-          <div className={`grid ${canEdit || canDelete ? "grid-cols-[80px_1.5fr_1fr_100px_100px_90px_56px]" : "grid-cols-[80px_1.5fr_1fr_100px_100px_90px]"} gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]`}>
-            <span>{t("Risk ID")}</span>
-            <span>{t("Risk Name")}</span>
-            <span>{t("Risk Description")}</span>
-            <span>{t("Risk Category")}</span>
-            <span>{t("Risk Owner")}</span>
-            <span>{t("Risk Rating")}</span>
+          <div className="grid gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]" style={{ gridTemplateColumns: visibleColumns.map((col) => ({ riskId: "80px", name: "1.5fr", description: "1fr", category: "100px", owner: "100px", rating: "90px" }[col.key])).join(" ") + ((canEdit || canDelete) ? " 56px" : "") }}>
+            {visibleColumns.map((col) => (
+              <span key={col.key}>{col.label}</span>
+            ))}
             {(canEdit || canDelete) && <span className="text-end">{t("Actions")}</span>}
           </div>
 
@@ -557,16 +606,15 @@ function RiskRegisterContent() {
             {paginatedRisks.map((risk) => (
               <div
                 key={risk.id}
-                className={`grid ${canEdit || canDelete ? "grid-cols-[80px_1.5fr_1fr_100px_100px_90px_56px]" : "grid-cols-[80px_1.5fr_1fr_100px_100px_90px]"} gap-2 sm:gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]`}
+                className="grid gap-2 sm:gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]"
+                style={{ gridTemplateColumns: visibleColumns.map((col) => ({ riskId: "80px", name: "1.5fr", description: "1fr", category: "100px", owner: "100px", rating: "90px" }[col.key])).join(" ") + ((canEdit || canDelete) ? " 56px" : "") }}
               >
-                <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>
-                <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>
-                <span className="text-sm text-slate-600 truncate" title={risk.description || ""}>{risk.description || "-"}</span>
-                <span className="text-sm text-slate-600 truncate">{risk.category?.name || "-"}</span>
-                <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>
-                <div>
-                  <RiskRatingBadge rating={risk.riskRating} />
-                </div>
+                {columnVisibility.riskId && <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>}
+                {columnVisibility.name && <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>}
+                {columnVisibility.description && <span className="text-sm text-slate-600 truncate" title={risk.description || ""}>{risk.description || "-"}</span>}
+                {columnVisibility.category && <span className="text-sm text-slate-600 truncate">{risk.category?.name || "-"}</span>}
+                {columnVisibility.owner && <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>}
+                {columnVisibility.rating && <div><RiskRatingBadge rating={risk.riskRating} /></div>}
                 {(canEdit || canDelete) && (
                   <div className="flex items-center justify-end gap-1">
                     {canEdit && (

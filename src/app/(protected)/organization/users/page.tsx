@@ -82,6 +82,7 @@ interface User {
   department?: Department;
   reportingManagerId?: string;
   reportingManager?: ReportingManager;
+  lastLogin?: string;
 }
 
 // RBAC roles mapped by function
@@ -664,6 +665,11 @@ export default function UsersPage() {
       header: t("Designation"),
     },
     {
+      accessorKey: "role",
+      header: t("User Role"),
+      cell: ({ row }) => row.original.role || "-",
+    },
+    {
       accessorKey: "isActive",
       header: t("Status"),
       cell: ({ row }) => {
@@ -679,6 +685,15 @@ export default function UsersPage() {
             {isActive ? t("Active") : t("Inactive")}
           </Badge>
         );
+      },
+    },
+    {
+      id: "lastLogin",
+      header: t("Last Login"),
+      cell: ({ row }) => {
+        const lastLogin = row.original.lastLogin;
+        if (!lastLogin) return "-";
+        return new Date(lastLogin).toLocaleDateString();
       },
     },
     {
