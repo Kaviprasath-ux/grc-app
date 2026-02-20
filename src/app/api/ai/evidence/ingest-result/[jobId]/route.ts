@@ -9,6 +9,10 @@ import {
   errorResponse,
   buildEvidencePayload,
   updateEvidenceAIStatus,
+  parseComplianceData,
+  buildComplianceSummary,
+  extractGaps,
+  extractRecommendations,
 } from "@/lib/ai-route-helpers";
 
 interface RouteContext {
@@ -157,7 +161,7 @@ export const GET = withAuth(
               throw reviewApiError; // Re-throw to be caught by outer catch
             }
 
-            const reviewData = reviewResponse.data;
+            const reviewRaw = reviewResponse.data;
             console.log(`[Evidence Ingest Result] AUTO-TRIGGER review completed`);
 
             // Create AI operation record
@@ -166,27 +170,14 @@ export const GET = withAuth(
                 endpoint: AI_ENDPOINTS.EVIDENCE_QUERY,
                 method: "POST",
                 requestBody: JSON.stringify(reviewRequestBody),
-                responseBody: JSON.stringify(reviewData),
+                responseBody: JSON.stringify(reviewRaw),
                 statusCode: reviewResponse.status,
                 latencyMs: reviewResponse.latencyMs,
                 userId: session.id,
               },
             });
 
-            // Parse the API response format:
-            // [{ status_code, question, control_code, answer, score, status, uuid, Issue, Risk, Severity }]
-            const reviewItems = Array.isArray(reviewData) ? reviewData : [reviewData];
-            const firstItem = reviewItems[0] || {};
-
-            // Extract compliance summary from the answer
-            const complianceSummary = firstItem.answer || null;
-
-            // Extract compliance score (can be null)
-            const complianceScore = firstItem.score !== null && firstItem.score !== undefined
-              ? Number(firstItem.score)
-              : null;
-
-            // Define type for review item
+            // Define type for review items from RunPod evidence query
             interface ReviewItem {
               status_code?: number;
               question?: string;
@@ -200,43 +191,120 @@ export const GET = withAuth(
               Severity?: string;
             }
 
-            // Extract gaps from Issues
-            const gaps = (reviewItems as ReviewItem[])
-              .filter((item) => item.Issue)
-              .map((item) => ({
-                issue: item.Issue,
-                risk: item.Risk,
-                severity: item.Severity,
+            // Process RunPod response - handle array, governance-style, and direct formats
+            let complianceSummary: string | null = null;
+            let complianceScore: number | null = null;
+            let gaps: unknown[] | null = null;
+            let suggestions: unknown[] | null = null;
+            let critique: string | null = null;
+            let rawResponseArray: unknown[] | null = null;
+            let recommendations: unknown[] | null = null;
+
+            if (Array.isArray(reviewRaw)) {
+              // Array response format: [{ control_code, question, answer, status, Severity, ... }]
+              const reviewItems = reviewRaw as ReviewItem[];
+              rawResponseArray = reviewItems;
+
+              const nonCompliant = reviewItems.filter(
+                (item) => item.status && item.status.toLowerCase() !== 'compliant'
+              );
+              const totalItems = reviewItems.length;
+              const compliantCount = totalItems - nonCompliant.length;
+              const compliancePercent = totalItems > 0 ? Math.round((compliantCount / totalItems) * 100) : 0;
+
+              complianceScore = compliancePercent;
+              critique = compliancePercent >= 80 ? 'compliant' : 'non-compliant';
+              complianceSummary = `Evidence review completed. ${compliantCount}/${totalItems} controls compliant (${compliancePercent}%). ` +
+                (nonCompliant.length > 0
+                  ? `Non-compliant: ${nonCompliant.map(c => c.control_code || 'Unknown').join(', ')}`
+                  : 'All controls are compliant.');
+
+              gaps = nonCompliant.map((item) => ({
+                issue: item.answer || `Control ${item.control_code} is ${item.status}`,
+                risk: item.Risk || item.Severity || item.status,
+                severity: item.Severity || 'Medium',
                 status: item.status,
                 controlCode: item.control_code,
               }));
 
-            // Extract suggestions from Risk descriptions
-            const suggestions = (reviewItems as ReviewItem[])
-              .filter((item) => item.Risk)
-              .map((item) => ({
-                risk: item.Risk,
-                severity: item.Severity,
+              suggestions = nonCompliant.map((item) => ({
+                risk: `Control ${item.control_code || 'Unknown'} is ${item.status || 'non-compliant'}`,
+                severity: item.Severity || 'Medium',
                 controlCode: item.control_code,
               }));
+
+              console.log(`[Evidence Ingest Result] Array-style: ${totalItems} items, ${nonCompliant.length} non-compliant, ${compliancePercent}%`);
+            } else {
+              const reviewData = reviewRaw as Record<string, unknown>;
+
+              if (reviewData.policy_compliant_data || reviewData.controls_response) {
+                // Governance-style response
+                const complianceData = parseComplianceData(reviewData as {
+                  policy_compliant_data?: { total_controls?: number; total_compliant_controls?: number; compliant_percent?: number };
+                  controls_response?: Array<{ control_code: string; status: string; answer: string; score?: number }>;
+                });
+                complianceSummary = buildComplianceSummary(complianceData);
+                complianceScore = complianceData.compliancePercent;
+                gaps = extractGaps(complianceData.controlsResponse);
+                const recs = extractRecommendations(complianceData.controlsResponse);
+                recommendations = recs.length > 0 ? recs : null;
+                suggestions = gaps.length > 0 ? gaps.map((g) => {
+                  const item = g as { control_code?: string; status?: string };
+                  return {
+                    risk: `Control ${item.control_code || 'Unknown'} is ${item.status || 'non-compliant'}`,
+                    severity: item.status || 'non-compliant',
+                  };
+                }) : null;
+                rawResponseArray = complianceData.controlsResponse;
+                critique = complianceData.compliancePercent >= 80 ? 'compliant' : 'non-compliant';
+
+                console.log(`[Evidence Ingest Result] Governance-style: ${complianceData.compliancePercent}% compliant, ${gaps.length} gaps`);
+              } else {
+                // Direct-field format
+                critique = (reviewData.critique as string) || null;
+                complianceSummary = (reviewData.compliance_summary as string) || null;
+                complianceScore = (reviewData.compliance_score as number) || null;
+                gaps = reviewData.gaps ? (reviewData.gaps as unknown[]) : null;
+                suggestions = reviewData.suggestions ? (reviewData.suggestions as unknown[]) : null;
+
+                if (!complianceSummary) {
+                  const fallbackText = (reviewData.answer as string) ||
+                    (reviewData.response as string) ||
+                    (reviewData.message as string);
+                  if (fallbackText && typeof fallbackText === 'string') {
+                    complianceSummary = fallbackText;
+                  }
+                }
+
+                if (Array.isArray(reviewData.evidence_response)) {
+                  rawResponseArray = reviewData.evidence_response as unknown[];
+                } else if (Array.isArray(reviewData.results)) {
+                  rawResponseArray = reviewData.results as unknown[];
+                }
+
+                console.log(`[Evidence Ingest Result] Direct-field: critique=${critique}, score=${complianceScore}`);
+              }
+            }
 
             // Create review record with proper document ID tracking
             await prisma.evidenceAIReview.create({
               data: {
                 evidenceId: fullEvidence.id,
                 status: "completed",
-                critique: firstItem.status || null,
-                complianceSummary: complianceSummary,
-                complianceScore: complianceScore,
-                gaps: gaps.length > 0 ? JSON.stringify(gaps) : null,
-                suggestions: suggestions.length > 0 ? JSON.stringify(suggestions) : null,
+                critique,
+                complianceSummary,
+                complianceScore,
+                gaps: gaps && gaps.length > 0 ? JSON.stringify(gaps) : null,
+                suggestions: suggestions && suggestions.length > 0 ? JSON.stringify(suggestions) : null,
                 similarityScore: null,
-                recommendations: null,
-                rawResponse: JSON.stringify(reviewData),
+                recommendations: recommendations && recommendations.length > 0 ? JSON.stringify(recommendations) : null,
+                rawResponse: rawResponseArray && rawResponseArray.length > 0
+                  ? JSON.stringify(rawResponseArray)
+                  : JSON.stringify(reviewRaw),
                 aiOperationId: aiOperation.id,
                 // Document ID tracking for proper cleanup
                 ingestJobId: jobId,
-                evidenceDocumentId: fullEvidence.id, // Same as document_id sent during ingest
+                evidenceDocumentId: fullEvidence.id,
               },
             });
 

@@ -77,9 +77,18 @@ export const POST = withAuth(
       // Attach files and track file names for delete
       const ingestedFileNames: string[] = [];
       const processedFilePaths = new Set<string>();
+      const missingFiles: string[] = [];
+
+      console.log(`[Evidence Ingest] Attachments: ${evidence.attachments.length}, Linked artifacts: ${evidence.linkedArtifacts.length}`);
+      console.log(`[Evidence Ingest] CWD: ${process.cwd()}`);
 
       // Include direct attachments
       for (const attachment of evidence.attachments) {
+        if (!attachment.filePath) {
+          console.log(`[AI] Attachment ${attachment.fileName || attachment.id} has no filePath`);
+          continue;
+        }
+
         // Handle leading slash in filePath
         const relativePath = attachment.filePath.startsWith("/")
           ? attachment.filePath.slice(1)
@@ -87,7 +96,8 @@ export const POST = withAuth(
         const filePath = path.join(process.cwd(), relativePath);
 
         if (!fs.existsSync(filePath)) {
-          console.log(`[AI] File not found: ${filePath}`);
+          console.log(`[AI] Attachment file not found on disk: ${filePath}`);
+          missingFiles.push(`${attachment.fileName} (${filePath})`);
           continue;
         }
 
@@ -103,6 +113,10 @@ export const POST = withAuth(
       // Include linked artifacts (skip if same file was already added via attachments)
       for (const la of evidence.linkedArtifacts) {
         const artifact = la.artifact;
+        if (!artifact || !artifact.filePath) {
+          console.log(`[AI] Linked artifact has no filePath`);
+          continue;
+        }
         if (processedFilePaths.has(artifact.filePath)) continue;
 
         // Handle leading slash in filePath
@@ -112,7 +126,8 @@ export const POST = withAuth(
         const filePath = path.join(process.cwd(), relativePath);
 
         if (!fs.existsSync(filePath)) {
-          console.log(`[AI] Linked artifact file not found: ${filePath}`);
+          console.log(`[AI] Linked artifact file not found on disk: ${filePath}`);
+          missingFiles.push(`${artifact.fileName} (${filePath})`);
           continue;
         }
 
@@ -127,7 +142,10 @@ export const POST = withAuth(
 
       // Ensure at least one file was successfully loaded
       if (ingestedFileNames.length === 0) {
-        return badRequestResponse("No files could be loaded from attachments or linked artifacts");
+        console.error(`[Evidence Ingest] All files missing from disk:`, missingFiles);
+        return badRequestResponse(
+          `No files could be loaded. ${missingFiles.length} file(s) not found on disk: ${missingFiles.map(f => f.split(' (')[0]).join(', ')}`
+        );
       }
 
       console.log("[Evidence Ingest] Submitting to AI service, files:", ingestedFileNames);

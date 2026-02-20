@@ -952,12 +952,14 @@ export default function EvidencePage() {
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Export")}
             </Button>
+            {/* Import button hidden - functionality preserved for future use
             <PermissionGate resource="compliance.evidence" action="create">
               <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
                 <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Import")}
               </Button>
             </PermissionGate>
+            */}
             <PermissionGate resource="compliance.evidence" action="delete">
               <Button variant="outline" size="sm" className="col-span-2 sm:col-span-1 text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
                 <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />

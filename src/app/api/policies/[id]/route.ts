@@ -44,6 +44,11 @@ export const GET = withAuth(
               document: true,
             },
           },
+          policyAIReviews: {
+            where: { status: "completed" },
+            orderBy: { reviewedAt: "desc" },
+            take: 1,
+          },
         },
       });
 

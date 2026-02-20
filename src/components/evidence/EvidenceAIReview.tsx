@@ -46,6 +46,7 @@ interface RawResponseItem {
   Issue?: string;
   Risk?: string;
   Severity?: string;
+  [key: string]: unknown;
 }
 
 export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIReviewProps) {
@@ -387,35 +388,52 @@ export function EvidenceAIReview({ evidenceId, hasAttachments }: EvidenceAIRevie
             )}
 
             {/* Raw Response Details - show detailed items if available */}
-            {latestReview.rawResponse && Array.isArray(latestReview.rawResponse) && latestReview.rawResponse.length > 0 && (
-              <div className="bg-slate-50 rounded-lg p-3">
-                <h5 className="text-sm font-medium text-slate-700 mb-2">{t("Control Assessment Details")}</h5>
-                <div className="space-y-3">
-                  {latestReview.rawResponse.map((item: RawResponseItem, idx: number) => (
-                    <div key={idx} className="border-b border-slate-200 pb-2 last:border-0 last:pb-0">
-                      {item.control_code && (
-                        <p className="text-xs font-medium text-slate-500">{t("Control")}: {item.control_code}</p>
-                      )}
-                      {item.answer && (
-                        <p className="text-sm text-slate-600 mt-1">{item.answer}</p>
-                      )}
-                      <div className="flex gap-2 mt-1">
-                        {item.status && (
-                          <Badge variant={item.status === "compliant" ? "default" : "destructive"} className="text-xs">
-                            {item.status}
-                          </Badge>
+            {latestReview.rawResponse && (() => {
+              // Handle rawResponse as array or extract controls_response from object
+              const items: RawResponseItem[] = Array.isArray(latestReview.rawResponse)
+                ? latestReview.rawResponse
+                : Array.isArray(latestReview.rawResponse?.controls_response)
+                  ? latestReview.rawResponse.controls_response
+                  : [];
+
+              return items.length > 0 ? (
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <h5 className="text-sm font-medium text-slate-700 mb-2">{t("Control Assessment Details")}</h5>
+                  <div className="space-y-3">
+                    {items.map((item: RawResponseItem, idx: number) => (
+                      <div key={idx} className="border-b border-slate-200 pb-2 last:border-0 last:pb-0">
+                        {item.control_code && (
+                          <p className="text-xs font-medium text-slate-500">{t("Control")}: {item.control_code}</p>
                         )}
-                        {item.Severity && (
-                          <Badge variant="outline" className="text-xs">
-                            {item.Severity}
-                          </Badge>
+                        {item.question && (
+                          <p className="text-xs text-slate-500 mt-0.5">{item.question}</p>
                         )}
+                        {item.answer && (
+                          <p className="text-sm text-slate-600 mt-1">{item.answer}</p>
+                        )}
+                        <div className="flex gap-2 mt-1">
+                          {item.status && (
+                            <Badge variant={item.status === "compliant" ? "default" : "destructive"} className="text-xs">
+                              {item.status}
+                            </Badge>
+                          )}
+                          {item.Severity && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.Severity}
+                            </Badge>
+                          )}
+                          {item.score !== undefined && item.score !== null && (
+                            <Badge variant="outline" className="text-xs">
+                              {t("Score")}: {item.score}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null;
+            })()}
 
             <p className="text-xs text-slate-400">
               {t("Reviewed")}: {new Date(latestReview.createdAt).toLocaleString()}

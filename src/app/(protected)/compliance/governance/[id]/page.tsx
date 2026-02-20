@@ -477,6 +477,34 @@ export default function GovernanceDetailPage() {
         setSelectedApproverId(data.approverId || "");
         setSelectedRecurrence(data.recurrence || "");
         setSelectedReviewDate(data.reviewDate?.split("T")[0] || "");
+
+        // Load stored AI review data if available
+        const storedReview = data.policyAIReviews?.[0];
+        if (storedReview && storedReview.status === "completed" && !aiReviewResult) {
+          try {
+            const controlsResponse = storedReview.matchedControls ? JSON.parse(storedReview.matchedControls) : [];
+            const gaps = storedReview.gaps ? JSON.parse(storedReview.gaps) : [];
+            const recommendations = storedReview.recommendations ? JSON.parse(storedReview.recommendations) : [];
+            setAiReviewResult({
+              compliance_score: storedReview.riskScore || undefined,
+              compliance_summary: storedReview.complianceSummary || undefined,
+              total_controls: controlsResponse.length,
+              compliant_controls: controlsResponse.filter((c: { status?: string }) => c.status?.toLowerCase() === "compliant").length,
+              gaps,
+              recommendations,
+              raw_response: {
+                controls_response: controlsResponse,
+                policy_compliant_data: {
+                  total_controls: controlsResponse.length,
+                  total_compliant_controls: controlsResponse.filter((c: { status?: string }) => c.status?.toLowerCase() === "compliant").length,
+                  compliant_percent: storedReview.riskScore || 0,
+                },
+              },
+            } as AIReviewResponse);
+          } catch (e) {
+            console.error("Error parsing stored AI review data:", e);
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching policy:", error);

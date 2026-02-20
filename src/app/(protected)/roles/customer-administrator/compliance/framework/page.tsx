@@ -199,8 +199,8 @@ export default function CustomerAdminFrameworkPage() {
     const errors: Record<string, string> = {};
     if (!formData.name?.trim()) {
       errors.name = t("Please enter name");
-    } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, spaces, and hyphens are allowed");
+    } else if (!/^[\p{L}\d\s.\-:]+$/u.test(formData.name.trim())) {
+      errors.name = t("Only letters, numbers, spaces, hyphens, and colons are allowed");
     }
     if (!formData.type) {
       errors.type = t("Please Select Framework Type");

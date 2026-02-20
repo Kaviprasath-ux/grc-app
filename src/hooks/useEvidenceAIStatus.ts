@@ -26,7 +26,7 @@ export interface EvidenceAIStatus {
       suggestions: any[] | null;
       similarityScore: number | null;
       recommendations: any[] | null;
-      rawResponse: any[] | null;
+      rawResponse: any;
       createdAt: string;
       updatedAt: string;
     } | null;
