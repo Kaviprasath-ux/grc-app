@@ -183,6 +183,18 @@ export default function RiskAssessmentPage() {
   const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'RiskCategory' });
   const { data: translatedRiskTypes } = useTranslatedData(riskTypes, { modelName: 'RiskType' });
 
+  // Translate risk owner names
+  const uniqueOwners = useMemo(() => {
+    const ownerMap = new Map<string, { id: string; fullName: string }>();
+    paginatedRisks.forEach(risk => {
+      if (risk.owner) {
+        ownerMap.set(risk.owner.id, { id: risk.owner.id, fullName: risk.owner.fullName });
+      }
+    });
+    return Array.from(ownerMap.values());
+  }, [paginatedRisks]);
+  const { data: translatedOwners } = useTranslatedData(uniqueOwners, { modelName: 'User' });
+
   const getStatusLabel = (status: string) => status || "Open";
 
   const getActionButton = (risk: Risk) => {
@@ -425,7 +437,7 @@ export default function RiskAssessmentPage() {
                     {risk.riskRating ? <RiskRatingBadge rating={risk.riskRating} /> : <span className="text-sm text-slate-400">-</span>}
                   </span>
                   <span className="text-sm text-slate-600 truncate">{risk.category ? (translatedCategories.find(c => c.id === risk.category?.id)?.name || risk.category.name) : "-"}</span>
-                  <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>
+                  <span className="text-sm text-slate-600 truncate">{(risk.owner?.id ? translatedOwners.find(o => o.id === risk.owner?.id)?.fullName : null) || risk.owner?.fullName || "-"}</span>
                   <span>
                     <span className={cn(
                       "px-2 py-1 rounded-full text-xs font-medium",
