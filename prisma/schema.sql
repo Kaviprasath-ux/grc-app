@@ -1729,6 +1729,17 @@ CREATE TABLE "OrganizationLocation" (
 );
 
 -- CreateTable
+CREATE TABLE "Designation" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Designation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "InternalAuditProcess" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -2881,6 +2892,12 @@ CREATE INDEX "OrganizationLocation_customerAccountId_idx" ON "OrganizationLocati
 CREATE UNIQUE INDEX "OrganizationLocation_customerAccountId_name_key" ON "OrganizationLocation"("customerAccountId", "name");
 
 -- CreateIndex
+CREATE INDEX "Designation_customerAccountId_idx" ON "Designation"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Designation_customerAccountId_name_key" ON "Designation"("customerAccountId", "name");
+
+-- CreateIndex
 CREATE INDEX "InternalAuditProcess_customerAccountId_idx" ON "InternalAuditProcess"("customerAccountId");
 
 -- CreateIndex
@@ -3659,6 +3676,9 @@ ALTER TABLE "NatureOfImplementation" ADD CONSTRAINT "NatureOfImplementation_audi
 
 -- AddForeignKey
 ALTER TABLE "OrganizationLocation" ADD CONSTRAINT "OrganizationLocation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Designation" ADD CONSTRAINT "Designation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditProcess" ADD CONSTRAINT "InternalAuditProcess_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;

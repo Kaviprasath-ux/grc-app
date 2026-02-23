@@ -101,6 +101,7 @@ model CustomerAccount {
   processFrequencies     ProcessFrequency[]
   natureOfImplementations NatureOfImplementation[]
   organizationLocations  OrganizationLocation[]
+  designations           Designation[]
   internalAuditProcesses InternalAuditProcess[]
   governanceTemplates    GovernanceTemplate[]
   // Notification relations
@@ -2422,6 +2423,18 @@ model NatureOfImplementation {
 
 // Organization Location (for organization settings location options)
 model OrganizationLocation {
+  id                String           @id @default(cuid())
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
+}
+
+model Designation {
   id                String           @id @default(cuid())
   customerAccountId String?
   customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])

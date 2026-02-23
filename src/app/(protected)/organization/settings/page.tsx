@@ -81,6 +81,7 @@ const categoryApiEndpoints: Record<string, string> = {
   frequency: "/api/organization-settings/process-frequency",
   location: "/api/organization-settings/location",
   implementation: "/api/organization-settings/nature-of-implementation",
+  designation: "/api/organization-settings/designation",
 };
 
 export default function OrganizationSettingsPage() {
