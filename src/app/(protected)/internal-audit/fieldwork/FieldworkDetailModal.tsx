@@ -1603,7 +1603,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
           {/* Fixed Footer with Action Buttons */}
           {!loading && engagement && (
-            <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-end gap-3">
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center ltr:justify-end rtl:justify-start gap-3">
               {!isAuditeeOnly && (
                 <Button variant="outline" onClick={() => setCommentsDialogOpen(true)}>
                   {t("Comments")}
@@ -1677,7 +1677,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               </div>
             )}
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setCommentsDialogOpen(false)}>{t("Close")}</Button>
             <Button onClick={handleAddComment} disabled={!newComment.trim() || submittingComment}>
               {submittingComment ? t("Adding...") : t("Add Comment")}
@@ -1702,7 +1702,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             {uploadFilesError && <p className="text-sm text-red-500 mt-1">{uploadFilesError}</p>}
             {uploadedFiles.length > 0 && (<div className="space-y-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeFile(file.id)}><X className="h-4 w-4" /></Button></div>))}</div>)}
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleUploadFiles} disabled={uploading || uploadedFiles.length === 0 || isReadOnly}>{uploading ? t("Uploading...") : t("Upload")}</Button>
           </div>
@@ -1725,7 +1725,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Severity")}</Label><Select value={newFinding.severity} onValueChange={(value) => setNewFinding({ ...newFinding, severity: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Low">{t("Low")}</SelectItem><SelectItem value="Medium">{t("Medium")}</SelectItem><SelectItem value="High">{t("High")}</SelectItem><SelectItem value="Critical">{t("Critical")}</SelectItem></SelectContent></Select></div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Recommendation")}</Label><Textarea value={newFinding.recommendation} onChange={(e) => setNewFinding({ ...newFinding, recommendation: e.target.value })} placeholder={t("Enter recommendation")} rows={3} /></div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setAddFindingDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleAddFinding} disabled={isReadOnly}>{t("Add Finding")}</Button></div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setAddFindingDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleAddFinding} disabled={isReadOnly}>{t("Add Finding")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -1990,7 +1990,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setAddFullFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2020,7 +2020,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Auditee")} <span className="text-red-500">*</span></Label><Select value={newEvidence.auditeeId} onValueChange={(value) => { const sa = auditees.find(a => a.id === value); setNewEvidence({ ...newEvidence, auditeeId: value, auditee: sa?.fullName || "" }); }}><SelectTrigger><SelectValue placeholder={t("Select auditee")} /></SelectTrigger><SelectContent>{auditees.map((auditee) => (<SelectItem key={auditee.id} value={auditee.id}>{auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}</SelectItem>))}</SelectContent></Select></div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Number of Samples")}</Label><Input type="number" min="1" value={newEvidence.numberOfSamples} onChange={(e) => setNewEvidence({ ...newEvidence, numberOfSamples: e.target.value })} placeholder={t("Enter number of samples required")} /></div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAddEvidenceDialogOpen(false); setNewEvidenceTitleError(""); }}>{t("Cancel")}</Button><Button onClick={handleAddEvidence} disabled={isReadOnly}>{t("Add Evidence Request")}</Button></div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAddEvidenceDialogOpen(false); setNewEvidenceTitleError(""); }}>{t("Cancel")}</Button><Button onClick={handleAddEvidence} disabled={isReadOnly}>{t("Add Evidence Request")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2028,7 +2028,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteFindingDialogOpen} onOpenChange={setDeleteFindingDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Finding")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete the finding")} &quot;{findingToDelete?.title}&quot;? {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteFindingDialogOpen(false); setFindingToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteFinding} disabled={deletingFinding || isReadOnly}>{deletingFinding ? t("Deleting...") : t("Delete")}</Button></div>
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-3"><Button variant="outline" onClick={() => { setDeleteFindingDialogOpen(false); setFindingToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteFinding} disabled={deletingFinding || isReadOnly}>{deletingFinding ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2067,7 +2067,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); removeFile(file.id); }}><X className="h-4 w-4" /></Button></div>))}</div>)}
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setNewDocumentDialogOpen(false); setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentTitleError(""); setNewDocumentFileError(""); }}>{t("Cancel")}</Button><Button onClick={handleUploadDocument} disabled={uploading || isReadOnly}>{uploading ? t("Saving...") : t("Save")}</Button></div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setNewDocumentDialogOpen(false); setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentTitleError(""); setNewDocumentFileError(""); }}>{t("Cancel")}</Button><Button onClick={handleUploadDocument} disabled={uploading || isReadOnly}>{uploading ? t("Saving...") : t("Save")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2075,7 +2075,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteDocumentDialogOpen} onOpenChange={setDeleteDocumentDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Document")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete")} &quot;{documentToDelete?.title || documentToDelete?.fileName}&quot;? {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteDocumentDialogOpen(false); setDocumentToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteDocument} disabled={deletingDocument || isReadOnly}>{deletingDocument ? t("Deleting...") : t("Delete")}</Button></div>
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-3"><Button variant="outline" onClick={() => { setDeleteDocumentDialogOpen(false); setDocumentToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteDocument} disabled={deletingDocument || isReadOnly}>{deletingDocument ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2083,7 +2083,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteWorkpaperDialogOpen} onOpenChange={setDeleteWorkpaperDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Workpaper")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete")} &quot;{workpaperToDelete?.fileName}&quot;? {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteWorkpaperDialogOpen(false); setWorkpaperToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteWorkpaper} disabled={deletingWorkpaper || isReadOnly}>{deletingWorkpaper ? t("Deleting...") : t("Delete")}</Button></div>
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-3"><Button variant="outline" onClick={() => { setDeleteWorkpaperDialogOpen(false); setWorkpaperToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteWorkpaper} disabled={deletingWorkpaper || isReadOnly}>{deletingWorkpaper ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2104,7 +2104,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="grid grid-cols-[140px_1fr] items-center gap-4"><Label className="text-end text-slate-500">{t("Question Checklist")}</Label><Input value={editAIWorkpaper.questionChecklist} onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, questionChecklist: e.target.value })} placeholder={t("Enter question checklist")} /></div>
             <div className="grid grid-cols-[140px_1fr] items-start gap-4"><Label className="text-end text-slate-500 pt-2">{t("Comments")}</Label><Textarea value={editAIWorkpaper.comments} onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, comments: e.target.value })} placeholder={t("Enter comments")} rows={2} /></div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setEditAIWorkpaperDialogOpen(false); setSelectedAIWorkpaper(null); }}>{t("Cancel")}</Button><Button onClick={handleUpdateAIWorkpaper} disabled={savingAIWorkpaper || isReadOnly}>{savingAIWorkpaper ? t("Saving...") : t("Save Changes")}</Button></div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setEditAIWorkpaperDialogOpen(false); setSelectedAIWorkpaper(null); }}>{t("Cancel")}</Button><Button onClick={handleUpdateAIWorkpaper} disabled={savingAIWorkpaper || isReadOnly}>{savingAIWorkpaper ? t("Saving...") : t("Save Changes")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2112,7 +2112,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteAIWorkpaperDialogOpen} onOpenChange={setDeleteAIWorkpaperDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete AI Workpaper")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete this AI workpaper?")} {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteAIWorkpaperDialogOpen(false); setSelectedAIWorkpaper(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteAIWorkpaper} disabled={deletingAIWorkpaper || isReadOnly}>{deletingAIWorkpaper ? t("Deleting...") : t("Delete")}</Button></div>
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-3"><Button variant="outline" onClick={() => { setDeleteAIWorkpaperDialogOpen(false); setSelectedAIWorkpaper(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteAIWorkpaper} disabled={deletingAIWorkpaper || isReadOnly}>{deletingAIWorkpaper ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2298,7 +2298,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               </div>
             )}
           </div>
-          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div dir="ltr" className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <div className="flex-1">
               {generatedWorkpapersError && <p className="text-sm text-red-500 flex items-center">{generatedWorkpapersError}</p>}
             </div>
@@ -2334,7 +2334,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Description")}</Label>{isEditingDocument ? <Textarea value={editDocument.description} onChange={(e) => setEditDocument({ ...editDocument, description: e.target.value })} placeholder={t("Enter description")} rows={4} /> : <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">{selectedDocument?.description || "-"}</div>}</div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Attached File")}</Label><div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border"><div className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary-600" /><div><p className="text-sm font-medium">{selectedDocument?.fileName}</p><p className="text-xs text-slate-500">{formatFileSize(selectedDocument?.fileSize || 0)}</p></div></div><Button variant="outline" size="sm" onClick={() => { if (selectedDocument?.filePath) { const link = document.createElement("a"); link.href = `/api${selectedDocument.filePath}`; link.download = selectedDocument.fileName; link.click(); } }}>{t("Download")}</Button></div></div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setViewEditDocumentDialogOpen(false); setSelectedDocument(null); setIsEditingDocument(false); setEditDocumentTitleError(""); }}>{isEditingDocument ? t("Cancel") : t("Close")}</Button>{isEditingDocument && <Button onClick={handleUpdateDocument} disabled={savingDocument || isReadOnly}>{savingDocument ? t("Saving...") : t("Save")}</Button>}</div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setViewEditDocumentDialogOpen(false); setSelectedDocument(null); setIsEditingDocument(false); setEditDocumentTitleError(""); }}>{isEditingDocument ? t("Cancel") : t("Close")}</Button>{isEditingDocument && <Button onClick={handleUpdateDocument} disabled={savingDocument || isReadOnly}>{savingDocument ? t("Saving...") : t("Save")}</Button>}</div>
         </DialogContent>
       </Dialog>
 
@@ -2378,7 +2378,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               <div className="flex justify-end mt-4"><Button size="sm" onClick={() => { setAuditeeClariEvidence(selectedEvidence); setAuditeeClariDialogOpen(true); }}>{t("Comments")}</Button></div>
             )}
           </div>
-          <div className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div dir="ltr" className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); setIsEditingEvidence(false); setEditEvidenceTitleError(""); }}>{isEditingEvidence ? t("Cancel") : t("Close")}</Button>
             <div className="flex gap-3">
               {!isEditingEvidence && isAuditHead && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
@@ -2399,7 +2399,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Comment")}</Label><Textarea value={clarificationComment} onChange={(e) => setClarificationComment(e.target.value)} placeholder={t("Enter your clarification request...")} rows={5} /></div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Previous Comments")}</Label><div className="p-3 bg-slate-50 rounded-md border border-slate-200 text-slate-500 text-sm text-center">{t("No items found")}</div></div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setClarificationDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleSendClarification} disabled={sendingClarification || !clarificationDocument || isReadOnly}>{sendingClarification ? t("Sending...") : t("Send")}</Button></div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setClarificationDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleSendClarification} disabled={sendingClarification || !clarificationDocument || isReadOnly}>{sendingClarification ? t("Sending...") : t("Send")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2411,7 +2411,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="flex items-start justify-between"><div className="space-y-1"><p className="text-sm font-medium text-slate-700">{t("Document that requires clarification")}</p><p className="text-sm text-slate-900">{auditeeClariEvidence?.clarificationDocumentName || "-"}</p></div><Button size="sm" onClick={() => { setRespondComment(""); setRespondFiles([]); setRespondDialogOpen(true); }}>{t("Respond")}</Button></div>
             <div className="border-t border-slate-100 pt-3"><p className="text-sm text-slate-900">{auditeeClariEvidence?.clarificationComment || "-"}</p><p className="text-sm text-slate-500 mt-1">~ {auditeeClariEvidence?.clarificationByUserName || "Unknown"}</p><p className="text-xs text-slate-400 mt-1">{auditeeClariEvidence?.clarificationSentAt ? new Date(auditeeClariEvidence.clarificationSentAt).toLocaleString() : "-"}</p></div>
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => setAuditeeClariDialogOpen(false)}>{t("Close")}</Button></div>
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0"><Button variant="outline" size="sm" onClick={() => setAuditeeClariDialogOpen(false)}>{t("Close")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2423,7 +2423,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Comment")}</Label><Textarea value={respondComment} onChange={(e) => setRespondComment(e.target.value)} placeholder={t("Enter your response...")} rows={5} /></div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Attach File")}</Label><div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-slate-400 transition-colors" onClick={() => { const input = document.createElement("input"); input.type = "file"; input.multiple = true; input.onchange = (e) => { const files = (e.target as HTMLInputElement).files; if (files) setRespondFiles(Array.from(files)); }; input.click(); }} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const files = e.dataTransfer.files; if (files) setRespondFiles(Array.from(files)); }}><p className="text-slate-500">{t("Drag and drop or select file.")}</p>{respondFiles.length > 0 && <div className="mt-2 text-sm text-emerald-600">{respondFiles.map((f) => f.name).join(", ")}</div>}</div></div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setRespondDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleSendResponse} disabled={sendingResponse || isReadOnly}>{sendingResponse ? t("Sending...") : t("Send Response")}</Button></div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => setRespondDialogOpen(false)}>{t("Cancel")}</Button><Button onClick={handleSendResponse} disabled={sendingResponse || isReadOnly}>{sendingResponse ? t("Sending...") : t("Send Response")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2431,7 +2431,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       <Dialog open={deleteEvidenceDialogOpen} onOpenChange={setDeleteEvidenceDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Evidence Request")}</DialogTitle><DialogDescription className="text-slate-600">{t("Are you sure you want to delete")} &quot;{evidenceToDelete?.title}&quot;? {t("This action cannot be undone.")}</DialogDescription></DialogHeader></div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-3"><Button variant="outline" onClick={() => { setDeleteEvidenceDialogOpen(false); setEvidenceToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteEvidence} disabled={deletingEvidence || isReadOnly}>{deletingEvidence ? t("Deleting...") : t("Delete")}</Button></div>
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-3"><Button variant="outline" onClick={() => { setDeleteEvidenceDialogOpen(false); setEvidenceToDelete(null); }}>{t("Cancel")}</Button><Button variant="destructive" onClick={handleDeleteEvidence} disabled={deletingEvidence || isReadOnly}>{deletingEvidence ? t("Deleting...") : t("Delete")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2440,7 +2440,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0"><DialogHeader><DialogTitle className="text-lg font-semibold text-slate-800">{t("AI Review Results")}</DialogTitle><DialogDescription className="text-slate-600">{t("AI-generated review of")} {selectedEvidenceIds.length} {t("evidence request(s)")}</DialogDescription></DialogHeader></div>
           <div className="px-6 py-5 overflow-y-auto flex-1">{aiReviewResult ? <div className="prose prose-sm max-w-none"><div className="bg-slate-50 rounded-lg p-4 whitespace-pre-wrap text-sm">{aiReviewResult}</div></div> : <div className="text-center py-8 text-slate-500">{t("No review generated yet")}</div>}</div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAiReviewDialogOpen(false); setAiReviewResult(""); }}>{t("Close")}</Button></div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAiReviewDialogOpen(false); setAiReviewResult(""); }}>{t("Close")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2462,7 +2462,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeFile(file.id)}><X className="h-4 w-4" /></Button></div>))}</div>)}
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAttachmentDialogOpen(false); setEvidenceForAttachment(null); setUploadedFiles([]); setAttachmentFileError(""); }}>{t("Cancel")}</Button><Button onClick={handleUploadAttachment} disabled={uploadingAttachment || isReadOnly}>{uploadingAttachment ? t("Uploading...") : t("Upload")}</Button></div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0"><Button variant="outline" onClick={() => { setAttachmentDialogOpen(false); setEvidenceForAttachment(null); setUploadedFiles([]); setAttachmentFileError(""); }}>{t("Cancel")}</Button><Button onClick={handleUploadAttachment} disabled={uploadingAttachment || isReadOnly}>{uploadingAttachment ? t("Uploading...") : t("Upload")}</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -2580,7 +2580,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               </div>
 
               {/* Footer */}
-              <div className="px-4 sm:px-6 py-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg flex justify-end gap-3 flex-shrink-0">
+              <div className="px-4 sm:px-6 py-4 border-t border-slate-200 bg-slate-50/50 rounded-b-lg flex ltr:justify-end rtl:justify-start gap-3 flex-shrink-0">
                 <Button variant="outline" onClick={() => { setFindingDetailDialogOpen(false); setSelectedFindingId(null); setSelectedFindingData(null); }} className="px-5">{t("Cancel")}</Button>
                 <Button onClick={handleSaveEditFinding} disabled={savingEditFinding} className="bg-primary-600 hover:bg-primary-700 px-5">
                   {savingEditFinding ? (<><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</>) : (<><Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Save Finding")}</>)}
@@ -2667,7 +2667,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+              <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                 <Button variant="outline" onClick={() => { setFindingDetailDialogOpen(false); setSelectedFindingId(null); setSelectedFindingData(null); }}>
                   {t("Close")}
                 </Button>
@@ -2736,7 +2736,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>
               {isReadOnly ? t("Close") : t("Cancel")}
             </Button>

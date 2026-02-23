@@ -144,10 +144,10 @@ interface DrillDownDialogState {
   auditId?: string;
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_KEYS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // Severity badge - muted pill style
-const SeverityBadge = ({ severity }: { severity: string }) => {
+const SeverityBadge = ({ severity, t }: { severity: string; t?: (key: string) => string }) => {
   const styles: Record<string, string> = {
     extreme: "bg-red-100 text-red-700",
     critical: "bg-red-100 text-red-700",
@@ -157,15 +157,16 @@ const SeverityBadge = ({ severity }: { severity: string }) => {
     low: "bg-emerald-100 text-emerald-700",
   };
   const style = styles[severity?.toLowerCase()] || "bg-slate-100 text-slate-600";
+  const label = t ? t(severity || 'N/A') : (severity || 'N/A');
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style}`}>
-      {severity || 'N/A'}
+      {label}
     </span>
   );
 };
 
 // Status badge - muted pill style
-const StatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = ({ status, t }: { status: string; t?: (key: string) => string }) => {
   const styles: Record<string, string> = {
     open: "bg-amber-100 text-amber-700",
     "in progress": "bg-sky-100 text-sky-700",
@@ -175,9 +176,10 @@ const StatusBadge = ({ status }: { status: string }) => {
     planned: "bg-purple-100 text-purple-700",
   };
   const style = styles[status?.toLowerCase()] || "bg-slate-100 text-slate-600";
+  const label = t ? t(status || 'N/A') : (status || 'N/A');
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${style}`}>
-      {status || 'N/A'}
+      {label}
     </span>
   );
 };
@@ -272,7 +274,7 @@ export default function InternalAuditDashboard() {
     setDrillDown({
       open: true,
       type: 'capa',
-      title: `CAPA - ${department} (${status})`,
+      title: `${t("CAPA")} - ${department} (${t(status)})`,
       department,
       status,
     });
@@ -295,7 +297,7 @@ export default function InternalAuditDashboard() {
     if (!canDrillDown) return;
     if (data && data.name) {
       const riskLevel = data.name.toLowerCase();
-      handleRiskCardClick(riskLevel, `${data.name} Risk Details`);
+      handleRiskCardClick(riskLevel, `${t(data.name)} ${t("Risk Details")}`);
     }
   };
 
@@ -401,8 +403,8 @@ export default function InternalAuditDashboard() {
                       </TableCell>
                       <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.department as string}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.category as string}</TableCell>
-                      <TableCell className="py-3 whitespace-nowrap"><SeverityBadge severity={risk.riskLevel as string} /></TableCell>
-                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge status={risk.status as string} /></TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><SeverityBadge t={t} severity={risk.riskLevel as string} /></TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge t={t} status={risk.status as string} /></TableCell>
                       <TableCell className="py-3 pr-5">
                         <Button
                           variant="ghost"
@@ -452,7 +454,7 @@ export default function InternalAuditDashboard() {
                       <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{audit.department as string}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{audit.auditType as string}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{audit.auditor as string}</TableCell>
-                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge status={audit.status as string} /></TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge t={t} status={audit.status as string} /></TableCell>
                       <TableCell className="py-3 pr-5">
                         <Button
                           variant="ghost"
@@ -503,14 +505,14 @@ export default function InternalAuditDashboard() {
                       <TableCell className="py-3 text-sm text-slate-700 max-w-[140px] truncate" title={capa.finding as string}>
                         {capa.finding as string}
                       </TableCell>
-                      <TableCell className="py-3 whitespace-nowrap"><SeverityBadge severity={capa.severity as string} /></TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><SeverityBadge t={t} severity={capa.severity as string} /></TableCell>
                       <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{capa.responsiblePerson as string}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">
                         {capa.targetDate
                           ? new Date(capa.targetDate as string).toLocaleDateString()
                           : 'N/A'}
                       </TableCell>
-                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge status={capa.status as string} /></TableCell>
+                      <TableCell className="py-3 whitespace-nowrap"><StatusBadge t={t} status={capa.status as string} /></TableCell>
                       <TableCell className="py-3 pr-5">
                         <Button
                           variant="ghost"
@@ -582,7 +584,7 @@ export default function InternalAuditDashboard() {
                   <Activity className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     <span className="text-sm text-slate-500">{t("Status")}:</span>
-                    <StatusBadge status={auditDetail.status || ''} />
+                    <StatusBadge t={t} status={auditDetail.status || ''} />
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -641,7 +643,7 @@ export default function InternalAuditDashboard() {
             )}
 
             {/* View Full Details Button */}
-            <div className="flex justify-end">
+            <div className="flex ltr:justify-end rtl:justify-start">
               <Button
                 className="bg-primary-600 hover:bg-primary-700"
                 onClick={() => navigateToDetail('audit', auditDetail.id || '')}
@@ -1004,8 +1006,8 @@ export default function InternalAuditDashboard() {
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="min-w-[200px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Audit Name")}</TableHead>
                   <TableHead className="min-w-[150px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
-                  {MONTHS.map((month) => (
-                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{month}</TableHead>
+                  {MONTH_KEYS.map((month) => (
+                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t(month)}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -1023,7 +1025,7 @@ export default function InternalAuditDashboard() {
                         </span>
                       </TableCell>
                       <TableCell className="py-3 text-sm text-slate-700">{audit.auditorName || '-'}</TableCell>
-                      {MONTHS.map((month, monthIndex) => {
+                      {MONTH_KEYS.map((month, monthIndex) => {
                         const isInRange = monthIndex >= audit.startMonth && monthIndex <= audit.endMonth;
                         const isStart = monthIndex === audit.startMonth;
                         return (
@@ -1067,8 +1069,8 @@ export default function InternalAuditDashboard() {
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="min-w-[200px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Auditor Name")}</TableHead>
-                  {MONTHS.map((month) => (
-                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{month}</TableHead>
+                  {MONTH_KEYS.map((month) => (
+                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t(month)}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -1077,7 +1079,7 @@ export default function InternalAuditDashboard() {
                   data.auditorSchedule.map((auditor) => (
                     <TableRow key={auditor.id} className="border-b border-slate-100 last:border-0">
                       <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{auditor.name}</TableCell>
-                      {MONTHS.map((month, monthIndex) => {
+                      {MONTH_KEYS.map((month, monthIndex) => {
                         const assignment = auditor.assignments.find(
                           (a) => monthIndex >= a.startMonth && monthIndex <= a.endMonth
                         );
