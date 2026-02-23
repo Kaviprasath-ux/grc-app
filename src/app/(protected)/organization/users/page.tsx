@@ -1888,20 +1888,21 @@ export default function UsersPage() {
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
-              <div className="flex gap-2 mt-1.5">
-                <Input
+              <div className="flex items-center gap-3 mt-1.5">
+                <input
                   type="file"
                   accept=".csv"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  className="flex-1"
+                  className="hidden"
                 />
+                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                  {t("Choose File")}
+                </Button>
+                <span className="text-sm text-slate-500">
+                  {importFile ? importFile.name : t("No file chosen")}
+                </span>
               </div>
-              {importFile && (
-                <p className="text-sm text-slate-500 mt-1">
-                  {t("Selected:")} {importFile.name}
-                </p>
-              )}
             </div>
           </div>
           {/* Fixed Footer */}

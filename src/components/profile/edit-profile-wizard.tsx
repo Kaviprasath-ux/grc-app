@@ -90,7 +90,7 @@ export function EditProfileWizard({
   organization,
   onSave,
 }: EditProfileWizardProps) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -804,8 +804,8 @@ export function EditProfileWizard({
         </div>
 
         {/* Fixed Footer */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-          <span className="text-xs font-medium text-slate-400 me-auto">
+        <div className={cn("flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg", isRTL && "flex-row-reverse")}>
+          <span className={cn("text-xs font-medium text-slate-400", isRTL ? "ms-auto" : "me-auto")}>
             {t("Step")} {currentStep} {t("of")} 4
           </span>
           <Button
@@ -818,13 +818,13 @@ export function EditProfileWizard({
               }
             }}
           >
-            {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+            {currentStep > 1 && <ChevronLeft className={cn("h-4 w-4", isRTL ? "ms-1 rotate-180" : "me-1")} />}
             {currentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           {currentStep < 4 ? (
             <Button onClick={handleNext}>
               {t("Next")}
-              <ChevronRight className="h-4 w-4 ms-1" />
+              <ChevronRight className={cn("h-4 w-4", isRTL ? "me-1 rotate-180" : "ms-1")} />
             </Button>
           ) : (
             <Button onClick={handleSave} disabled={saving}>

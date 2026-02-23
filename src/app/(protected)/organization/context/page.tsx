@@ -1991,8 +1991,8 @@ export default function ContextPage() {
         </div>
 
         {/* Fixed Footer with Navigation */}
-        <div className="flex-shrink-0 flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-          <span className="text-xs font-medium text-slate-400 me-auto">
+        <div className={`flex-shrink-0 flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "flex-row-reverse" : ""}`}>
+          <span className={`text-xs font-medium text-slate-400 ${isRTL ? "ms-auto" : "me-auto"}`}>
             {t("Step")} {currentStep} {t("of")} 5
           </span>
           <Button
@@ -2102,7 +2102,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2138,7 +2138,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2174,7 +2174,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2250,7 +2250,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => setShowProcessDialog(false)}>
                 {t("Cancel")}
               </Button>
@@ -2287,7 +2287,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => { setShowAddNeedDialog(false); setNewNeedExpectation(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2889,7 +2889,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2935,7 +2935,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -2981,7 +2981,7 @@ export default function ContextPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
                 {t("Cancel")}
               </Button>
@@ -3066,7 +3066,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => setShowEditProcessDialog(false)}>
                 {t("Cancel")}
               </Button>
@@ -3103,7 +3103,7 @@ export default function ContextPage() {
               </div>
             </div>
             {/* Fixed Footer */}
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
               <Button variant="outline" onClick={() => { setShowAddNeedDialog(false); setNewNeedExpectation(""); }}>
                 {t("Cancel")}
               </Button>
@@ -3739,7 +3739,7 @@ export default function ContextPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => { setStakeholderErrors({}); setShowAddStakeholder(false); }}>
               {t("Cancel")}
             </Button>
@@ -3833,7 +3833,7 @@ export default function ContextPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setShowEditStakeholder(false)}>
               {t("Cancel")}
             </Button>
@@ -3855,7 +3855,7 @@ export default function ContextPage() {
             </DialogHeader>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3894,7 +3894,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); setDomainError(""); }}>
               {t("Cancel")}
             </Button>
@@ -3933,7 +3933,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); setCategoryError(""); }}>
               {t("Cancel")}
             </Button>
@@ -3972,7 +3972,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); setTypeError(""); }}>
               {t("Cancel")}
             </Button>
@@ -4102,7 +4102,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setShowCreateActionDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4294,7 +4294,7 @@ export default function ContextPage() {
             />
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setShowViewActionsDialog(false)}>
               {t("Close")}
             </Button>
@@ -4405,7 +4405,7 @@ export default function ContextPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex flex-row items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => setShowActionReviewDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4458,7 +4458,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setShowResendDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4502,7 +4502,7 @@ export default function ContextPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setShowActionCommentsDialog(false)}>
               {t("Close")}
             </Button>
@@ -4579,7 +4579,7 @@ export default function ContextPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setShowEditActionDialog(false)}>
               {t("Cancel")}
             </Button>
@@ -4616,24 +4616,25 @@ export default function ContextPage() {
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
-              <div className="flex gap-2 mt-1.5">
-                <Input
+              <div className="flex items-center gap-3 mt-1.5">
+                <input
                   type="file"
                   accept=".csv"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  className="flex-1"
+                  className="hidden"
                 />
+                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                  {t("Choose File")}
+                </Button>
+                <span className="text-sm text-slate-500">
+                  {importFile ? importFile.name : t("No file chosen")}
+                </span>
               </div>
-              {importFile && (
-                <p className="text-sm text-slate-500 mt-1">
-                  {t("Selected")}: {importFile.name}
-                </p>
-              )}
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg ${isRTL ? "flex-row-reverse" : ""}`}>
             <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               {t("Download Template")}

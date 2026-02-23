@@ -2150,7 +2150,7 @@ export default function ProcessPage() {
               {t("Are you sure you want to delete this process? This action cannot be undone.")}
             </p>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2349,7 +2349,7 @@ export default function ProcessPage() {
               </div>
             )}
           </div>
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button
               variant="outline"
               onClick={() => {
@@ -2597,7 +2597,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setIsBIAFormOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2956,7 +2956,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setIsAddProcessOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3394,7 +3394,7 @@ export default function ProcessPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => setIsEditProcessOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3613,7 +3613,7 @@ export default function ProcessPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button variant="outline" onClick={() => { setKpiErrors({}); setIsKPIModalOpen(false); }}>
               {t("Close")}
             </Button>
@@ -3648,20 +3648,21 @@ export default function ProcessPage() {
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
-              <div className="flex gap-2 mt-1.5">
-                <Input
+              <div className="flex items-center gap-3 mt-1.5">
+                <input
                   type="file"
                   accept=".xlsx,.xls"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  className="flex-1"
+                  className="hidden"
                 />
+                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                  {t("Choose File")}
+                </Button>
+                <span className="text-sm text-slate-500">
+                  {importFile ? importFile.name : t("No file chosen")}
+                </span>
               </div>
-              {importFile && (
-                <p className="text-sm text-slate-500 mt-1">
-                  {t("Selected")}: {importFile.name}
-                </p>
-              )}
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
