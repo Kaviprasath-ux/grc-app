@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import path from "path";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -91,33 +89,27 @@ export const POST = withAuth(
         );
       }
 
-      // Create upload directory
-      const uploadDir = path.join(process.cwd(), "uploads", "governance", id);
-      await mkdir(uploadDir, { recursive: true });
-
-      // Generate unique filename
-      const timestamp = Date.now();
+      // Read file into buffer for database storage
       const originalName = file.name;
-      const ext = path.extname(originalName);
-      const baseName = path.basename(originalName, ext);
-      const fileName = `${baseName}_${timestamp}${ext}`;
-      const filePath = path.join(uploadDir, fileName);
-
-      // Write file to disk
+      const ext = originalName.split(".").pop()?.toLowerCase() || "";
       const buffer = Buffer.from(await file.arrayBuffer());
-      await writeFile(filePath, buffer);
 
       // Get file type from extension
-      const fileType = ext.replace(".", "").toLowerCase() || file.type;
+      const fileType = ext || file.type;
 
-      // Create attachment record
+      // Generate a virtual path for reference
+      const timestamp = Date.now();
+      const virtualPath = `/uploads/governance/${id}/${originalName.replace(/\.[^/.]+$/, "")}_${timestamp}.${ext}`;
+
+      // Create attachment record with file data stored in DB
       const attachment = await prisma.policyAttachment.create({
         data: {
           policyId: id,
           fileName: originalName,
           fileType,
           fileSize: file.size,
-          filePath: `/uploads/governance/${id}/${fileName}`,
+          filePath: virtualPath,
+          fileData: buffer,
         },
       });
 
@@ -199,39 +191,7 @@ export const DELETE = withAuth(
         );
       }
 
-      // Delete physical file from disk
-      if (attachment.filePath) {
-        try {
-          // Handle both /uploads/... and uploads/... paths
-          // Files are stored in public/uploads/ but path in DB is /uploads/
-          const relativePath = attachment.filePath.startsWith("/")
-            ? attachment.filePath.slice(1)
-            : attachment.filePath;
-
-          // Try public/uploads first (where files are actually stored)
-          let absolutePath = path.join(process.cwd(), "public", relativePath);
-
-          // Check if file exists at public/uploads, if not try uploads directly
-          const fs = await import("fs/promises");
-          try {
-            await fs.access(absolutePath);
-          } catch {
-            // Fallback to direct path (uploads/...)
-            absolutePath = path.join(process.cwd(), relativePath);
-          }
-
-          await unlink(absolutePath);
-          console.log(`[Policy Attachment] Deleted file: ${absolutePath}`);
-        } catch (fileError) {
-          // Log but don't fail if file doesn't exist
-          console.warn(
-            `[Policy Attachment] Could not delete file: ${attachment.filePath}`,
-            fileError
-          );
-        }
-      }
-
-      // Delete attachment record from database
+      // Delete attachment record from database (file data is stored in DB, no disk cleanup needed)
       await prisma.policyAttachment.delete({
         where: { id: attachmentId },
       });

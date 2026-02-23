@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 // GET all vault documents - filtered by customer account
 export const GET = withAuth(
@@ -103,21 +101,15 @@ export const POST = withAuth(
       const fileType = fileName.split(".").pop()?.toLowerCase() || "unknown";
       const fileSize = file.size;
 
-      // Create uploads directory if it doesn't exist
-      const uploadsDir = path.join(process.cwd(), "uploads", "vault", customerAccountId);
-      await mkdir(uploadsDir, { recursive: true });
-
-      // Save file
-      const uniqueFileName = `${documentCode}_${Date.now()}_${fileName}`;
-      const filePath = path.join(uploadsDir, uniqueFileName);
+      // Read file into buffer for database storage
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      await writeFile(filePath, buffer);
 
-      // Store relative path
+      // Store a virtual path for reference
+      const uniqueFileName = `${documentCode}_${Date.now()}_${fileName}`;
       const relativePath = `/uploads/vault/${customerAccountId}/${uniqueFileName}`;
 
-      // Create document record
+      // Create document record with file data stored in DB
       const document = await prisma.governanceVaultDocument.create({
         data: {
           customerAccountId,
@@ -126,6 +118,7 @@ export const POST = withAuth(
           fileType,
           fileSize,
           filePath: relativePath,
+          fileData: buffer,
           status: "Active",
         },
         include: {

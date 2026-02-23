@@ -10,8 +10,6 @@ import {
   notFoundResponse,
   errorResponse,
 } from "@/lib/ai-route-helpers";
-import { readFile } from "fs/promises";
-import path from "path";
 
 /**
  * POST /api/ai/governance/ingest
@@ -57,36 +55,28 @@ export async function POST(req: NextRequest) {
             return notFoundResponse("Policy");
         }
 
-        // If no file provided, read from disk using the latest attachment
+        // If no file provided, read from database using the latest attachment
         if (!file) {
             const latestAttachment = policy.attachments[0];
             if (!latestAttachment) {
                 return badRequestResponse("No document attached to this policy");
             }
 
-            console.log(`[Governance Ingest] Reading file from disk: ${latestAttachment.filePath}`);
-
-            // Convert relative path to absolute path
-            // filePath is stored as "/uploads/governance/{id}/file.docx"
-            const relativePath = latestAttachment.filePath.startsWith('/')
-                ? latestAttachment.filePath.slice(1)
-                : latestAttachment.filePath;
-            const absolutePath = path.join(process.cwd(), relativePath);
-
-            try {
-                const fileBuffer = await readFile(absolutePath);
-                const mimeType = latestAttachment.fileType === 'docx'
-                    ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    : latestAttachment.fileType === 'pdf'
-                        ? 'application/pdf'
-                        : 'application/octet-stream';
-
-                file = new File([fileBuffer], latestAttachment.fileName, { type: mimeType });
-                console.log(`[Governance Ingest] File loaded from disk: ${latestAttachment.fileName} (${fileBuffer.length} bytes)`);
-            } catch (readError) {
-                console.error(`[Governance Ingest] Failed to read file from disk:`, readError);
-                return errorResponse(`File not found on disk: ${latestAttachment.fileName}`, 404);
+            if (!latestAttachment.fileData) {
+                return errorResponse(`File data not found in database for: ${latestAttachment.fileName}`, 404);
             }
+
+            console.log(`[Governance Ingest] Reading file from database: ${latestAttachment.fileName}`);
+
+            const fileBuffer = Buffer.from(latestAttachment.fileData);
+            const mimeType = latestAttachment.fileType === 'docx'
+                ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                : latestAttachment.fileType === 'pdf'
+                    ? 'application/pdf'
+                    : 'application/octet-stream';
+
+            file = new File([fileBuffer], latestAttachment.fileName, { type: mimeType });
+            console.log(`[Governance Ingest] File loaded from database: ${latestAttachment.fileName} (${fileBuffer.length} bytes)`);
         }
 
         // Canonical OpenAPI Payload construction

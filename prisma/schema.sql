@@ -877,6 +877,7 @@ CREATE TABLE "PolicyAttachment" (
     "fileType" TEXT,
     "fileSize" INTEGER,
     "filePath" TEXT NOT NULL,
+    "fileData" BYTEA,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "policyId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -894,6 +895,7 @@ CREATE TABLE "GovernanceVaultDocument" (
     "fileType" TEXT,
     "fileSize" INTEGER,
     "filePath" TEXT NOT NULL,
+    "fileData" BYTEA,
     "status" TEXT NOT NULL DEFAULT 'Active',
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -3829,13 +3831,3 @@ ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fk
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-┌─────────────────────────────────────────────────────────┐
-│  Update available 5.22.0 -> 7.4.0                       │
-│                                                         │
-│  This is a major update - please follow the guide at    │
-│  https://pris.ly/d/major-version-upgrade                │
-│                                                         │
-│  Run the following to update                            │
-│    npm i --save-dev prisma@latest                       │
-│    npm i @prisma/client@latest                          │
-└─────────────────────────────────────────────────────────┘

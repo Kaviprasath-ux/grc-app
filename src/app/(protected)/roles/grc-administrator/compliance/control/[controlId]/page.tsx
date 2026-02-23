@@ -510,19 +510,19 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
             </TabsTrigger>
             <TabsTrigger value="governance" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Governance")} ({control.policyControls?.length || 0})
+              {t("Linked Governance")} ({control.policyControls?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="evidence" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <ClipboardCheck className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Evidence")} ({control.evidences?.length || 0})
+              {t("Linked Evidence")} ({control.evidences?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="exceptions" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <AlertTriangle className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Exception")} ({control.exceptions?.length || 0})
+              {t("Linked Exception")} ({control.exceptions?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="risks" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <Shield className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Risk")} ({control.controlRisks?.length || 0})
+              {t("Linked Risk")} ({control.controlRisks?.length || 0})
             </TabsTrigger>
           </TabsList>
 

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { readFile } from "fs/promises";
-import path from "path";
 
 interface RouteContext {
   params: Promise<{ id: string; attachmentId: string }>;
@@ -42,12 +40,14 @@ export const GET = withAuth(
         );
       }
 
-      // Read file from disk
-      const relativePath = attachment.filePath.startsWith("/")
-        ? attachment.filePath.slice(1)
-        : attachment.filePath;
-      const fullPath = path.join(process.cwd(), relativePath);
-      const fileBuffer = await readFile(fullPath);
+      // Read file from database
+      if (!attachment.fileData) {
+        return NextResponse.json(
+          { error: "File data not found in database" },
+          { status: 404 }
+        );
+      }
+      const fileBuffer = Buffer.from(attachment.fileData);
 
       // Determine content type
       const contentTypeMap: Record<string, string> = {

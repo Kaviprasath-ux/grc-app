@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { readFile } from "fs/promises";
-import path from "path";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -21,6 +19,7 @@ export const GET = withAuth(
           fileName: true,
           fileType: true,
           filePath: true,
+          fileData: true,
         },
       });
 
@@ -35,9 +34,14 @@ export const GET = withAuth(
         return forbidden("Access denied to this document");
       }
 
-      // Read file from disk
-      const fullPath = path.join(process.cwd(), document.filePath);
-      const fileBuffer = await readFile(fullPath);
+      // Read file from database
+      if (!document.fileData) {
+        return NextResponse.json(
+          { error: "File data not found in database" },
+          { status: 404 }
+        );
+      }
+      const fileBuffer = Buffer.from(document.fileData);
 
       // Determine content type
       const contentTypeMap: Record<string, string> = {

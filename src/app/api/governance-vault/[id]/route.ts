@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { unlink } from "fs/promises";
-import path from "path";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -92,15 +90,6 @@ export const DELETE = withAuth(
 
       if (!validateTenantAccess(session, document.customerAccountId)) {
         return forbidden("Access denied to this document");
-      }
-
-      // Delete the file from disk
-      try {
-        const fullPath = path.join(process.cwd(), document.filePath);
-        await unlink(fullPath);
-      } catch (fileError) {
-        // File might not exist, continue with database deletion
-        console.warn("Could not delete file:", fileError);
       }
 
       // Delete linked policies first (due to foreign key constraints)
