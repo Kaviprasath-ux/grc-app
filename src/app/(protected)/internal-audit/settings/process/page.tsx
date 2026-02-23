@@ -735,7 +735,7 @@ export default function ProcessPage() {
                 placeholder={t("Search By Process ID, Name")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-full sm:w-[250px] h-9 bg-slate-50 border-slate-200"
+                className="ltr:pl-10 rtl:pr-10 w-full sm:w-[250px] h-9 bg-slate-50 border-slate-200"
               />
             </div>
 
@@ -775,7 +775,7 @@ export default function ProcessPage() {
                 <SelectItem value="all">{t("All Frequencies")}</SelectItem>
                 {PROCESS_FREQUENCIES.map((freq) => (
                   <SelectItem key={freq} value={freq}>
-                    {freq}
+                    {t(freq)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -802,8 +802,8 @@ export default function ProcessPage() {
                   <TableCell className="py-3 text-sm font-medium text-slate-800">{process.name}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{process.department?.name || ""}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{process.owner?.fullName || ""}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-600">{process.processFrequency || ""}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-600">{process.natureOfImplementation || ""}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{process.processFrequency ? t(process.processFrequency) : ""}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{process.natureOfImplementation ? t(process.natureOfImplementation) : ""}</TableCell>
                   <TableCell className="py-3">
                     {process.riskRating && (
                       <span
@@ -815,7 +815,7 @@ export default function ProcessPage() {
                             : "bg-green-100 text-green-700"
                         }`}
                       >
-                        {process.riskRating}
+                        {t(process.riskRating)}
                       </span>
                     )}
                   </TableCell>
@@ -995,7 +995,7 @@ export default function ProcessPage() {
                   <SelectContent>
                     {PROCESS_FREQUENCIES.map((freq) => (
                       <SelectItem key={freq} value={freq}>
-                        {freq}
+                        {t(freq)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1016,7 +1016,7 @@ export default function ProcessPage() {
                   <SelectContent>
                     {NATURE_OF_IMPLEMENTATIONS.map((nature) => (
                       <SelectItem key={nature} value={nature}>
-                        {nature}
+                        {t(nature)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1102,7 +1102,7 @@ export default function ProcessPage() {
                   <SelectContent>
                     {OPERATIONAL_COMPLEXITIES.map((complexity) => (
                       <SelectItem key={complexity} value={complexity}>
-                        {complexity}
+                        {t(complexity)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1302,8 +1302,8 @@ export default function ProcessPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-wrap items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <span className="text-xs font-medium text-slate-400 me-auto">
+          <div dir="ltr" className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <span className="text-xs font-medium text-slate-400 mr-auto self-center">
               {t("Step")} {currentStep} {t("of")} {TOTAL_STEPS}
             </span>
             <Button
@@ -1316,13 +1316,13 @@ export default function ProcessPage() {
                 }
               }}
             >
-              {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+              {currentStep > 1 && <ChevronLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1 ltr:rotate-0 rtl:rotate-180" />}
               {currentStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             {currentStep < TOTAL_STEPS ? (
               <Button onClick={handleNext}>
                 {t("Next")}
-                <ChevronRight className="h-4 w-4 ms-1" />
+                <ChevronRight className="h-4 w-4 ltr:ml-1 rtl:mr-1 ltr:rotate-0 rtl:rotate-180" />
               </Button>
             ) : (
               <Button onClick={handleSave} disabled={saving}>

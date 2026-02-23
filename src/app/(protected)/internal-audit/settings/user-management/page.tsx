@@ -530,7 +530,7 @@ export default function UserManagementPage() {
               placeholder={t("Search users...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full sm:w-[300px] h-9 bg-slate-50 border-slate-200"
+              className="ltr:pl-10 rtl:pr-10 w-full sm:w-[300px] h-9 bg-slate-50 border-slate-200"
             />
           </div>
         </div>
@@ -560,7 +560,7 @@ export default function UserManagementPage() {
                     <div className="flex flex-wrap gap-1">
                       {parseRoles(user.role).map((role, idx) => (
                         <Badge key={idx} variant="secondary" className="text-xs">
-                          {role}
+                          {t(role)}
                         </Badge>
                       ))}
                     </div>
@@ -740,7 +740,7 @@ export default function UserManagementPage() {
                         }}
                       />
                       <label htmlFor={role} className="text-sm cursor-pointer text-slate-700">
-                        {role}
+                        {t(role)}
                       </label>
                     </div>
                   ))}
@@ -748,7 +748,7 @@ export default function UserManagementPage() {
                 {formErrors.roles && <p className="text-sm text-red-500 mt-1">{formErrors.roles}</p>}
                 {allowedRoles.length === 1 && (
                   <p className="text-xs text-slate-500 mt-1">
-                    {isCustomerAdmin ? "As Customer Administrator, you can only create Audit Head users." : ""}
+                    {isCustomerAdmin ? t("As Customer Administrator, you can only create Audit Head users.") : ""}
                   </p>
                 )}
               </div>
@@ -790,26 +790,23 @@ export default function UserManagementPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-row justify-between items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <div>
-              {editItem && (
-                <Button
-                  variant="outline"
-                  onClick={openChangePasswordDialog}
-                  type="button"
-                >
-                  {t("Change Password")}
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                {t("Cancel")}
+          <div dir="ltr" className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            {editItem && (
+              <Button
+                variant="outline"
+                onClick={openChangePasswordDialog}
+                type="button"
+                className="mr-auto"
+              >
+                {t("Change Password")}
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? t("Saving...") : t("Save")}
-              </Button>
-            </div>
+            )}
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? t("Saving...") : t("Save")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
