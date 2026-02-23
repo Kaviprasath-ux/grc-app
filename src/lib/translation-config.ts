@@ -62,6 +62,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'InternalAuditRisk', fields: [{ name: 'name' }, { name: 'description' }], priority: 4 },
 
   // Priority 5 — Organization & assets
+  { modelName: 'User', fields: [{ name: 'fullName' }], priority: 5 },
   { modelName: 'Organization', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
   { modelName: 'Department', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
   { modelName: 'Process', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },

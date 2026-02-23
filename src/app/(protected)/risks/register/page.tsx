@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import { Button } from "@/components/ui/button";
@@ -369,6 +369,18 @@ function RiskRegisterContent() {
   const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'RiskCategory' });
   const { data: translatedRiskTypes } = useTranslatedData(riskTypes, { modelName: 'RiskType' });
 
+  // Translate risk owner names
+  const uniqueOwners = useMemo(() => {
+    const ownerMap = new Map<string, { id: string; fullName: string }>();
+    displayRisks.forEach(risk => {
+      if (risk.owner) {
+        ownerMap.set(risk.owner.id, { id: risk.owner.id, fullName: risk.owner.fullName });
+      }
+    });
+    return Array.from(ownerMap.values());
+  }, [displayRisks]);
+  const { data: translatedOwners } = useTranslatedData(uniqueOwners, { modelName: 'User' });
+
   // Calculate pagination
   const totalPages = Math.ceil(translatedRisks.length / ITEMS_PER_PAGE);
   const paginatedRisks = translatedRisks.slice(
@@ -619,7 +631,7 @@ function RiskRegisterContent() {
                 {columnVisibility.name && <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>}
                 {columnVisibility.description && <span className="text-sm text-slate-600 truncate" title={risk.description || ""}>{risk.description || "-"}</span>}
                 {columnVisibility.category && <span className="text-sm text-slate-600 truncate">{(risk.category?.id ? translatedCategories.find(c => c.id === risk.category?.id)?.name : null) || risk.category?.name || "-"}</span>}
-                {columnVisibility.owner && <span className="text-sm text-slate-600 truncate">{risk.owner?.fullName || "-"}</span>}
+                {columnVisibility.owner && <span className="text-sm text-slate-600 truncate">{(risk.owner?.id ? translatedOwners.find(o => o.id === risk.owner?.id)?.fullName : null) || risk.owner?.fullName || "-"}</span>}
                 {columnVisibility.rating && <div><RiskRatingBadge rating={risk.riskRating} /></div>}
                 {(canEdit || canDelete) && (
                   <div className="flex items-center justify-end gap-1">

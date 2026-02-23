@@ -599,6 +599,8 @@ const translations: [string, string, string][] = [
   ['Actor', 'الفاعل', 'Dalībnieks'],
   ['activities', 'الأنشطة', 'aktivitātes'],
   ['No activity log entries found', 'لم يتم العثور على إدخالات في سجل النشاط', 'Nav atrasti aktivitāšu žurnāla ieraksti'],
+  ['No activity logs found', 'لم يتم العثور على سجلات نشاط', 'Nav atrasti aktivitāšu žurnāli'],
+  ['Toggle columns', 'تبديل الأعمدة', 'Pārslēgt kolonnas'],
   ['Import Risks', 'استيراد المخاطر', 'Importēt riskus'],
   ['Upload a CSV file to import risks', 'ارفع ملف CSV لاستيراد المخاطر', 'Augšupielādējiet CSV failu, lai importētu riskus'],
   ['Required columns:', 'الأعمدة المطلوبة:', 'Obligātās kolonnas:'],
