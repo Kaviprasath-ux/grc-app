@@ -159,6 +159,7 @@ const translations: [string, string, string][] = [
   ['FieldWork', 'العمل الميداني', 'Lauka darbs'],
   ['Report', 'التقرير', 'Atskaite'],
   ['CAPA Tracking', 'تتبع الإجراءات التصحيحية', 'CAPA izsekošana'],
+  ['Audit Settings', 'إعدادات التدقيق', 'Audita iestatījumi'],
   ['Document Library', 'مكتبة المستندات', 'Dokumentu bibliotēka'],
   ['Risk Universe', 'نطاق المخاطر', 'Risku telpa'],
   ['Log Out', 'تسجيل الخروج', 'Iziet'],
