@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNumber } from "@/lib/validations";
 
 const RISKS_REGISTER_PATH = "/risks/register";
@@ -143,6 +144,23 @@ export default function AssetClassificationPage() {
   const [isPolling, setIsPolling] = useState(false);
   const [isAddingToRegister, setIsAddingToRegister] = useState(false);
   const [currentClassificationForAI, setCurrentClassificationForAI] = useState<CIAClassification | null>(null);
+
+  // Dynamic translation hooks
+  const { data: translatedSubCategories } = useTranslatedData(subCategories, { modelName: 'AssetSubCategory' });
+  const { data: translatedGroups } = useTranslatedData(groups, { modelName: 'AssetGroup' });
+  const { data: translatedFilteredGroups } = useTranslatedData(filteredGroups, { modelName: 'AssetGroup' });
+  const { data: translatedSensitivities } = useTranslatedData(sensitivities, { modelName: 'AssetSensitivity' });
+  const { data: translatedCIARatings } = useTranslatedData(ciaRatings, { modelName: 'CIARating' });
+
+  // Lookup maps for nested entity names in table
+  const subCategoryNameMap = new Map(translatedSubCategories.map(sc => [sc.id, sc.name]));
+  const groupNameMap = new Map(translatedGroups.map(g => [g.id, g.name]));
+  const ciaLabelMap = new Map<string, string>();
+  ciaRatings.forEach((r, i) => {
+    if (translatedCIARatings[i]) {
+      ciaLabelMap.set(r.label, translatedCIARatings[i].label);
+    }
+  });
 
   useEffect(() => {
     fetchData();
@@ -449,6 +467,7 @@ export default function AssetClassificationPage() {
         const created = await res.json();
         setSensitivities([...sensitivities, created]);
         setFormData({ ...formData, sensitivityId: created.id });
+        triggerTranslation('AssetSensitivity', created.id, { name: newSensitivityName.trim() });
         setNewSensitivityName("");
         setIsAddSensitivityOpen(false);
       }
@@ -507,6 +526,7 @@ export default function AssetClassificationPage() {
           [field]: created.label,
           [`${field}Score`]: created.value,
         });
+        triggerTranslation('CIARating', created.id, { label: newCIARatingLabel.trim().toLowerCase() });
         setNewCIARatingLabel("");
         setNewCIARatingValue(0);
         setIsAddCIARatingOpen(false);
@@ -516,15 +536,20 @@ export default function AssetClassificationPage() {
     }
   };
 
-  // Filter classifications based on search
+  // Filter classifications based on search (using translated names)
   const filteredClassifications = classifications.filter((c) => {
     const search = searchTerm.toLowerCase();
+    const subCatName = (subCategoryNameMap.get(c.subCategoryId) || c.subCategory?.name || "").toLowerCase();
+    const grpName = (groupNameMap.get(c.groupId) || c.group?.name || "").toLowerCase();
+    const confLabel = (ciaLabelMap.get(c.confidentiality) || c.confidentiality || "").toLowerCase();
+    const intLabel = (ciaLabelMap.get(c.integrity) || c.integrity || "").toLowerCase();
+    const availLabel = (ciaLabelMap.get(c.availability) || c.availability || "").toLowerCase();
     return (
-      c.subCategory?.name?.toLowerCase().includes(search) ||
-      c.group?.name?.toLowerCase().includes(search) ||
-      c.confidentiality?.toLowerCase().includes(search) ||
-      c.integrity?.toLowerCase().includes(search) ||
-      c.availability?.toLowerCase().includes(search) ||
+      subCatName.includes(search) ||
+      grpName.includes(search) ||
+      confLabel.includes(search) ||
+      intLabel.includes(search) ||
+      availLabel.includes(search) ||
       c.assetCriticality?.toLowerCase().includes(search)
     );
   });
@@ -545,11 +570,11 @@ export default function AssetClassificationPage() {
   const handleExport = () => {
     const headers = ["Sub Category", "Asset Group", "Confidentiality", "Integrity", "Availability", "Asset Criticality", "Asset Criticality Score"];
     const rows = filteredClassifications.map(c => [
-      c.subCategory?.name || "",
-      c.group?.name || "",
-      c.confidentiality || "",
-      c.integrity || "",
-      c.availability || "",
+      subCategoryNameMap.get(c.subCategoryId) || c.subCategory?.name || "",
+      groupNameMap.get(c.groupId) || c.group?.name || "",
+      ciaLabelMap.get(c.confidentiality) || c.confidentiality || "",
+      ciaLabelMap.get(c.integrity) || c.integrity || "",
+      ciaLabelMap.get(c.availability) || c.availability || "",
       c.assetCriticality || "",
       c.assetCriticalityScore?.toString() || "",
     ]);
@@ -912,11 +937,11 @@ export default function AssetClassificationPage() {
             <TableBody>
               {paginatedClassifications.map((c) => (
                 <TableRow key={c.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{c.subCategory?.name || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{c.group?.name || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{c.confidentiality || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{c.integrity || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{c.availability || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-5">{subCategoryNameMap.get(c.subCategoryId) || c.subCategory?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{groupNameMap.get(c.groupId) || c.group?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{ciaLabelMap.get(c.confidentiality) || c.confidentiality || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{ciaLabelMap.get(c.integrity) || c.integrity || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{ciaLabelMap.get(c.availability) || c.availability || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{c.assetCriticality || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{c.assetCriticalityScore}</TableCell>
                   <TableCell className="py-3 pr-5">
@@ -1020,7 +1045,7 @@ export default function AssetClassificationPage() {
                       <SelectValue placeholder={t("Select Sub Category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {subCategories.map((sc) => (
+                      {translatedSubCategories.map((sc) => (
                         <SelectItem key={sc.id} value={sc.id}>
                           {sc.name}
                         </SelectItem>
@@ -1047,7 +1072,7 @@ export default function AssetClassificationPage() {
                       <SelectValue placeholder={formData.subCategoryId ? t("Select Group") : t("Select Sub Category first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {filteredGroups.map((g) => (
+                      {translatedFilteredGroups.map((g) => (
                         <SelectItem key={g.id} value={g.id}>
                           {g.name}
                         </SelectItem>
@@ -1077,7 +1102,7 @@ export default function AssetClassificationPage() {
                       <SelectValue placeholder={t("Select Sensitivity")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {sensitivities.map((s) => (
+                      {translatedSensitivities.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
                           {s.name}
                         </SelectItem>
@@ -1113,7 +1138,7 @@ export default function AssetClassificationPage() {
                       <SelectContent position="popper" sideOffset={4}>
                         {getRatingsByType("Confidentiality").map((r) => (
                           <SelectItem key={r.id} value={r.label}>
-                            {r.label}
+                            {ciaLabelMap.get(r.label) || r.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1147,7 +1172,7 @@ export default function AssetClassificationPage() {
                       <SelectContent position="popper" sideOffset={4}>
                         {getRatingsByType("Integrity").map((r) => (
                           <SelectItem key={r.id} value={r.label}>
-                            {r.label}
+                            {ciaLabelMap.get(r.label) || r.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1184,7 +1209,7 @@ export default function AssetClassificationPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {getRatingsByType("Availability").map((r) => (
                         <SelectItem key={r.id} value={r.label}>
-                          {r.label}
+                          {ciaLabelMap.get(r.label) || r.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1249,7 +1274,7 @@ export default function AssetClassificationPage() {
                       <SelectValue placeholder={t("Select Sub Category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {subCategories.map((sc) => (
+                      {translatedSubCategories.map((sc) => (
                         <SelectItem key={sc.id} value={sc.id}>
                           {sc.name}
                         </SelectItem>
@@ -1276,7 +1301,7 @@ export default function AssetClassificationPage() {
                       <SelectValue placeholder={formData.subCategoryId ? t("Select Group") : t("Select Sub Category first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {filteredGroups.map((g) => (
+                      {translatedFilteredGroups.map((g) => (
                         <SelectItem key={g.id} value={g.id}>
                           {g.name}
                         </SelectItem>
@@ -1306,7 +1331,7 @@ export default function AssetClassificationPage() {
                       <SelectValue placeholder={t("Select Sensitivity")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {sensitivities.map((s) => (
+                      {translatedSensitivities.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
                           {s.name}
                         </SelectItem>
@@ -1342,7 +1367,7 @@ export default function AssetClassificationPage() {
                       <SelectContent position="popper" sideOffset={4}>
                         {getRatingsByType("Confidentiality").map((r) => (
                           <SelectItem key={r.id} value={r.label}>
-                            {r.label}
+                            {ciaLabelMap.get(r.label) || r.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1376,7 +1401,7 @@ export default function AssetClassificationPage() {
                       <SelectContent position="popper" sideOffset={4}>
                         {getRatingsByType("Integrity").map((r) => (
                           <SelectItem key={r.id} value={r.label}>
-                            {r.label}
+                            {ciaLabelMap.get(r.label) || r.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1413,7 +1438,7 @@ export default function AssetClassificationPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {getRatingsByType("Availability").map((r) => (
                         <SelectItem key={r.id} value={r.label}>
-                          {r.label}
+                          {ciaLabelMap.get(r.label) || r.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1575,7 +1600,7 @@ export default function AssetClassificationPage() {
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-6">
             <div className="space-y-1">
               <p className="text-sm font-medium text-slate-700">
-                {t("Asset")}: {currentClassificationForAI?.subCategory?.name} - {currentClassificationForAI?.group?.name}
+                {t("Asset")}: {subCategoryNameMap.get(currentClassificationForAI?.subCategoryId || "") || currentClassificationForAI?.subCategory?.name} - {groupNameMap.get(currentClassificationForAI?.groupId || "") || currentClassificationForAI?.group?.name}
               </p>
               {currentClassificationForAI?.group?.description && (
                 <p className="text-xs text-slate-500 line-clamp-2">{currentClassificationForAI.group.description}</p>
