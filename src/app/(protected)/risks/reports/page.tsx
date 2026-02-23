@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import { Download, ChevronRight, Home, FileBarChart, Search ,Upload } from "luci
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // Risk Report Types matching UAT exactly
 const reportTypes = [
@@ -45,11 +46,22 @@ interface ReportData {
   [key: string]: string | number | null | undefined;
 }
 
+interface RawRisk {
+  id: string;
+  name: string;
+  category?: { id: string; name: string };
+  responseStrategy?: string;
+  riskRating?: string;
+  status?: string;
+  type?: { id?: string; name: string };
+  owner?: { id: string; fullName: string };
+}
+
 export default function RiskReportsPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const [selectedReport, setSelectedReport] = useState<typeof reportTypes[0] | null>(null);
-  const [reportData, setReportData] = useState<ReportData[]>([]);
+  const [rawRisks, setRawRisks] = useState<RawRisk[]>([]);
   const [loading, setLoading] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isManagementDialogOpen, setIsManagementDialogOpen] = useState(false);
@@ -62,72 +74,74 @@ export default function RiskReportsPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
-  const [totalItems, setTotalItems] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchReportData = async (reportId: string) => {
+  // Translation hooks for dynamic data
+  const riskItems = useMemo(() =>
+    rawRisks.map(r => ({ id: r.id, name: r.name })),
+    [rawRisks]
+  );
+  const { data: translatedRiskItems } = useTranslatedData(riskItems, { modelName: 'Risk' });
+
+  const uniqueCategories = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    rawRisks.forEach(r => {
+      if (r.category?.id) map.set(r.category.id, { id: r.category.id, name: r.category.name });
+    });
+    return Array.from(map.values());
+  }, [rawRisks]);
+  const { data: translatedCategories } = useTranslatedData(uniqueCategories, { modelName: 'RiskCategory' });
+
+  const uniqueOwners = useMemo(() => {
+    const map = new Map<string, { id: string; fullName: string }>();
+    rawRisks.forEach(r => {
+      if (r.owner?.id) map.set(r.owner.id, { id: r.owner.id, fullName: r.owner.fullName });
+    });
+    return Array.from(map.values());
+  }, [rawRisks]);
+  const { data: translatedOwners } = useTranslatedData(uniqueOwners, { modelName: 'User' });
+
+  // Build translated report data
+  const reportData: ReportData[] = useMemo(() => {
+    if (!selectedReport || rawRisks.length === 0) return [];
+
+    const getRiskName = (risk: RawRisk) =>
+      translatedRiskItems.find(r => r.id === risk.id)?.name || risk.name;
+    const getCategoryName = (risk: RawRisk) =>
+      translatedCategories.find(c => c.id === risk.category?.id)?.name || risk.category?.name || "";
+    const getOwnerName = (risk: RawRisk) =>
+      translatedOwners.find(o => o.id === risk.owner?.id)?.fullName || risk.owner?.fullName || "";
+
+    switch (selectedReport.id) {
+      case "risk-by-category":
+        return rawRisks.map(risk => ({ "Risk Category": getCategoryName(risk), "Risk name": getRiskName(risk) }));
+      case "risk-by-strategy":
+        return rawRisks.map(risk => ({ Strategy: risk.responseStrategy ? t(risk.responseStrategy) : "", "Risk name": getRiskName(risk) }));
+      case "risk-by-rating":
+        return rawRisks.map(risk => ({ Rating: risk.riskRating ? t(risk.riskRating) : "", "Risk name": getRiskName(risk) }));
+      case "risk-by-status":
+        return rawRisks.map(risk => ({ Status: risk.status ? t(risk.status) : "", "Risk name": getRiskName(risk) }));
+      case "risk-by-type":
+        return rawRisks.map(risk => ({ Type: risk.type?.name || "", "Risk name": getRiskName(risk) }));
+      case "risk-by-owner":
+        return rawRisks.map(risk => ({ Owner: getOwnerName(risk), "Risk name": getRiskName(risk) }));
+      default:
+        return [];
+    }
+  }, [rawRisks, selectedReport, translatedRiskItems, translatedCategories, translatedOwners, t]);
+
+  const totalItems = reportData.length;
+
+  const fetchRisks = async () => {
     setLoading(true);
     try {
       const response = await fetch("/api/risks");
-      if (!response.ok) {
-        setReportData([]);
-        return;
+      if (response.ok) {
+        const result = await response.json();
+        setRawRisks(result.data || result || []);
       }
-
-      const result = await response.json();
-      const risks = result.data || result || [];
-      let data: ReportData[] = [];
-
-      switch (reportId) {
-        case "risk-by-category":
-          data = risks.map((risk: { category?: { name: string }; name: string }) => ({
-            "Risk Category": risk.category?.name || "",
-            "Risk name": risk.name,
-          }));
-          break;
-
-        case "risk-by-strategy":
-          data = risks.map((risk: { responseStrategy?: string; name: string }) => ({
-            Strategy: risk.responseStrategy || "",
-            "Risk name": risk.name,
-          }));
-          break;
-
-        case "risk-by-rating":
-          data = risks.map((risk: { riskRating?: string; name: string }) => ({
-            Rating: risk.riskRating || "",
-            "Risk name": risk.name,
-          }));
-          break;
-
-        case "risk-by-status":
-          data = risks.map((risk: { status?: string; name: string }) => ({
-            Status: risk.status || "",
-            "Risk name": risk.name,
-          }));
-          break;
-
-        case "risk-by-type":
-          data = risks.map((risk: { type?: { name: string }; name: string }) => ({
-            Type: risk.type?.name || "",
-            "Risk name": risk.name,
-          }));
-          break;
-
-        case "risk-by-owner":
-          data = risks.map((risk: { owner?: { fullName: string }; name: string }) => ({
-            Owner: risk.owner?.fullName || "",
-            "Risk name": risk.name,
-          }));
-          break;
-      }
-
-      setTotalItems(data.length);
-      setReportData(data);
-      setCurrentPage(1);
     } catch (error) {
       console.error("Failed to fetch report data:", error);
-      setReportData([]);
     } finally {
       setLoading(false);
     }
@@ -136,7 +150,10 @@ export default function RiskReportsPage() {
   const handleReportClick = (report: typeof reportTypes[0]) => {
     setSelectedReport(report);
     setIsReportDialogOpen(true);
-    fetchReportData(report.id);
+    setCurrentPage(1);
+    if (rawRisks.length === 0) {
+      fetchRisks();
+    }
   };
 
   const handleExport = () => {

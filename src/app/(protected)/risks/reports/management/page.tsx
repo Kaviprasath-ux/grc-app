@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef } from "react";
+import { useState, useEffect, Suspense, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Download, Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Risk {
   id: string;
@@ -39,6 +40,53 @@ function ManagementReportContent() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  // Translation hooks for dynamic data
+  const riskItems = useMemo(() =>
+    risks.map(r => ({ id: r.id, name: r.name })),
+    [risks]
+  );
+  const { data: translatedRiskItems } = useTranslatedData(riskItems, { modelName: 'Risk' });
+
+  const uniqueDepartments = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    risks.forEach(r => {
+      if (r.department?.id) map.set(r.department.id, { id: r.department.id, name: r.department.name });
+    });
+    return Array.from(map.values());
+  }, [risks]);
+  const { data: translatedDepartments } = useTranslatedData(uniqueDepartments, { modelName: 'Department' });
+
+  const uniqueOwners = useMemo(() => {
+    const map = new Map<string, { id: string; fullName: string }>();
+    risks.forEach(r => {
+      if (r.owner?.id) map.set(r.owner.id, { id: r.owner.id, fullName: r.owner.fullName });
+    });
+    return Array.from(map.values());
+  }, [risks]);
+  const { data: translatedOwners } = useTranslatedData(uniqueOwners, { modelName: 'User' });
+
+  const uniqueAssets = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    risks.forEach(r => {
+      r.assets?.forEach(a => {
+        if (a.asset.id) map.set(a.asset.id, { id: a.asset.id, name: a.asset.name });
+      });
+    });
+    return Array.from(map.values());
+  }, [risks]);
+  const { data: translatedAssets } = useTranslatedData(uniqueAssets, { modelName: 'Asset' });
+
+  const uniqueThreats = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    risks.forEach(r => {
+      r.threats?.forEach(th => {
+        if (th.threat.id) map.set(th.threat.id, { id: th.threat.id, name: th.threat.name });
+      });
+    });
+    return Array.from(map.values());
+  }, [risks]);
+  const { data: translatedThreats } = useTranslatedData(uniqueThreats, { modelName: 'RiskThreat' });
 
   const selectedOptions = searchParams.get("options")?.split(",") || [];
   const filterYear = searchParams.get("year") || new Date().getFullYear().toString();
@@ -161,14 +209,14 @@ function ManagementReportContent() {
     .slice(0, 5);
 
   // Get top 5 assets (from risk associations)
-  const assetCounts: Record<string, { name: string; count: number }> = {};
+  const assetCounts: Record<string, { id: string; name: string; count: number }> = {};
   risks.forEach(risk => {
     risk.assets?.forEach(a => {
-      const name = a.asset.name;
-      if (!assetCounts[name]) {
-        assetCounts[name] = { name, count: 0 };
+      const id = a.asset.id;
+      if (!assetCounts[id]) {
+        assetCounts[id] = { id, name: a.asset.name, count: 0 };
       }
-      assetCounts[name].count++;
+      assetCounts[id].count++;
     });
   });
   const top5Assets = Object.values(assetCounts)
@@ -176,27 +224,28 @@ function ManagementReportContent() {
     .slice(0, 5);
 
   // Get top 5 departments
-  const deptCounts: Record<string, { name: string; count: number }> = {};
+  const deptCounts: Record<string, { id: string; name: string; count: number }> = {};
   risks.forEach(risk => {
-    const name = risk.department?.name || t("Unassigned");
-    if (!deptCounts[name]) {
-      deptCounts[name] = { name, count: 0 };
+    const id = risk.department?.id || "unassigned";
+    const name = risk.department?.name || "Unassigned";
+    if (!deptCounts[id]) {
+      deptCounts[id] = { id, name, count: 0 };
     }
-    deptCounts[name].count++;
+    deptCounts[id].count++;
   });
   const top5Departments = Object.values(deptCounts)
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
   // Get top 5 threats
-  const threatCounts: Record<string, { name: string; count: number }> = {};
+  const threatCounts: Record<string, { id: string; name: string; count: number }> = {};
   risks.forEach(risk => {
-    risk.threats?.forEach(t => {
-      const name = t.threat.name;
-      if (!threatCounts[name]) {
-        threatCounts[name] = { name, count: 0 };
+    risk.threats?.forEach(th => {
+      const id = th.threat.id;
+      if (!threatCounts[id]) {
+        threatCounts[id] = { id, name: th.threat.name, count: 0 };
       }
-      threatCounts[name].count++;
+      threatCounts[id].count++;
     });
   });
   const top5Threats = Object.values(threatCounts)
@@ -204,13 +253,14 @@ function ManagementReportContent() {
     .slice(0, 5);
 
   // Get top 5 risk owners
-  const ownerCounts: Record<string, { name: string; count: number }> = {};
+  const ownerCounts: Record<string, { id: string; name: string; count: number }> = {};
   risks.forEach(risk => {
-    const name = risk.owner?.fullName || t("Unassigned");
-    if (!ownerCounts[name]) {
-      ownerCounts[name] = { name, count: 0 };
+    const id = risk.owner?.id || "unassigned";
+    const name = risk.owner?.fullName || "Unassigned";
+    if (!ownerCounts[id]) {
+      ownerCounts[id] = { id, name, count: 0 };
     }
-    ownerCounts[name].count++;
+    ownerCounts[id].count++;
   });
   const top5Owners = Object.values(ownerCounts)
     .sort((a, b) => b.count - a.count)
@@ -219,7 +269,7 @@ function ManagementReportContent() {
   // Active risks by rating
   const risksByRating: Record<string, number> = {};
   risks.forEach(risk => {
-    const rating = risk.riskRating || t("Not Rated");
+    const rating = risk.riskRating || "Not Rated";
     risksByRating[rating] = (risksByRating[rating] || 0) + 1;
   });
 
@@ -363,7 +413,7 @@ function ManagementReportContent() {
                     const pct = totalRisks > 0 ? Math.round((count / totalRisks) * 100) : 0;
                     return (
                       <div key={rating} className="flex items-center gap-3">
-                        <span className="w-24 text-xs text-slate-500 truncate">{rating}</span>
+                        <span className="w-24 text-xs text-slate-500 truncate">{t(rating)}</span>
                         <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${getRatingBar(rating)}`}
@@ -394,9 +444,9 @@ function ManagementReportContent() {
                 top5Risks.map((risk, idx) => (
                   <div key={risk.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
                     <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
-                    <span className="flex-1 text-sm text-slate-600 truncate">{risk.name}</span>
+                    <span className="flex-1 text-sm text-slate-600 truncate">{translatedRiskItems.find(r => r.id === risk.id)?.name || risk.name}</span>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${getRatingBadge(risk.riskRating || "")}`}>
-                      {risk.riskRating || "-"}
+                      {risk.riskRating ? t(risk.riskRating) : "-"}
                     </span>
                   </div>
                 ))
@@ -421,9 +471,9 @@ function ManagementReportContent() {
                     </div>
                   ) : (
                     top5Assets.map((asset, idx) => (
-                      <div key={asset.name} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                      <div key={asset.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
                         <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
-                        <span className="flex-1 text-sm text-slate-600 truncate">{asset.name}</span>
+                        <span className="flex-1 text-sm text-slate-600 truncate">{translatedAssets.find(a => a.id === asset.id)?.name || asset.name}</span>
                         <span className="text-[11px] text-slate-400 tabular-nums">{asset.count}</span>
                       </div>
                     ))
@@ -445,9 +495,9 @@ function ManagementReportContent() {
                     </div>
                   ) : (
                     top5Departments.map((dept, idx) => (
-                      <div key={dept.name} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                      <div key={dept.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
                         <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
-                        <span className="flex-1 text-sm text-slate-600 truncate">{dept.name}</span>
+                        <span className="flex-1 text-sm text-slate-600 truncate">{dept.id === "unassigned" ? t("Unassigned") : translatedDepartments.find(d => d.id === dept.id)?.name || dept.name}</span>
                         <span className="text-[11px] text-slate-400 tabular-nums">{dept.count}</span>
                       </div>
                     ))
@@ -469,9 +519,9 @@ function ManagementReportContent() {
                     </div>
                   ) : (
                     top5Threats.map((threat, idx) => (
-                      <div key={threat.name} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                      <div key={threat.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
                         <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
-                        <span className="flex-1 text-sm text-slate-600 truncate">{threat.name}</span>
+                        <span className="flex-1 text-sm text-slate-600 truncate">{translatedThreats.find(th => th.id === threat.id)?.name || threat.name}</span>
                         <span className="text-[11px] text-slate-400 tabular-nums">{threat.count}</span>
                       </div>
                     ))
@@ -493,9 +543,9 @@ function ManagementReportContent() {
                     </div>
                   ) : (
                     top5Owners.map((owner, idx) => (
-                      <div key={owner.name} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
+                      <div key={owner.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-50 last:border-0">
                         <span className="w-5 text-[11px] font-medium text-slate-300">{idx + 1}</span>
-                        <span className="flex-1 text-sm text-slate-600 truncate">{owner.name}</span>
+                        <span className="flex-1 text-sm text-slate-600 truncate">{owner.id === "unassigned" ? t("Unassigned") : translatedOwners.find(o => o.id === owner.id)?.fullName || owner.name}</span>
                         <span className="text-[11px] text-slate-400 tabular-nums">{owner.count}</span>
                       </div>
                     ))
@@ -528,7 +578,7 @@ function ManagementReportContent() {
                     ) || 1;
                     return (
                       <div key={month} className="flex items-center gap-2">
-                        <span className="w-7 text-[10px] text-slate-400">{month}</span>
+                        <span className="w-7 text-[10px] text-slate-400">{t(month)}</span>
                         <div className="flex-1 flex gap-0.5">
                           <div
                             className="h-2 bg-sky-400 rounded-sm"
@@ -583,7 +633,7 @@ function ManagementReportContent() {
                     ) || 1;
                     return (
                       <div key={month} className="flex items-center gap-2">
-                        <span className="w-7 text-[10px] text-slate-400">{month}</span>
+                        <span className="w-7 text-[10px] text-slate-400">{t(month)}</span>
                         <div className="flex-1 flex gap-0.5">
                           <div
                             className="h-2 bg-sky-400 rounded-sm"
