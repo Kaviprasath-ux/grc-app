@@ -166,7 +166,7 @@ export default function RiskIdentificationPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data?.error || "Failed to generate risk suggestions");
+        toast.error(data?.error || t("Failed to generate risk suggestions"));
         return;
       }
 
@@ -200,12 +200,12 @@ export default function RiskIdentificationPage() {
 
       toast.success(
         total_risks
-          ? `Generated ${total_risks} risk(s) successfully`
-          : "Risk assessment completed (no risks generated)"
+          ? `${t("Generated")} ${total_risks} ${t("risk(s) successfully")}`
+          : t("Risk assessment completed (no risks generated)")
       );
     } catch (error) {
       console.error("Suggest risks error:", error);
-      toast.error("Failed to generate risk suggestions");
+      toast.error(t("Failed to generate risk suggestions"));
     } finally {
       setLoading(false);
     }
@@ -472,7 +472,7 @@ export default function RiskIdentificationPage() {
         </div>
 
         {/* Footer with Submit */}
-        <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex justify-end">
+        <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex ltr:justify-end rtl:justify-start">
           <Button
             size="sm"
             onClick={handleSuggestRisks}
@@ -551,7 +551,7 @@ export default function RiskIdentificationPage() {
                                         : "bg-slate-100 text-slate-600"
                                   }`}
                                 >
-                                  {r.level}
+                                  {t(r.level)}
                                 </Badge>
                                 {r.inherent_likelihood && (
                                   <span className="text-xs text-slate-500">{t("Likelihood")}: <span className="font-medium text-slate-700">{r.inherent_likelihood}</span></span>

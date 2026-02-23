@@ -829,7 +829,7 @@ export default function EditRiskPage() {
           </div>
 
           {/* Form Actions */}
-          <div className="flex flex-row justify-end gap-3 sm:gap-4 pt-4 border-t">
+          <div className="flex flex-row ltr:justify-end rtl:justify-start gap-3 sm:gap-4 pt-4 border-t">
             <Button
               type="button"
               variant="outline"

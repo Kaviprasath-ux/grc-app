@@ -74,7 +74,7 @@ interface DocumentsResponse {
 const POLLING_INTERVAL = 3000;
 
 export default function DocumentLibraryPage() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [activeTab, setActiveTab] = useState("smart-search");
   const [query, setQuery] = useState("");
@@ -381,7 +381,7 @@ export default function DocumentLibraryPage() {
 
     if (isIngesting) {
       return (
-        <div className="flex items-center gap-1 text-blue-500" title={t("Ingesting...")}>
+        <div className={`flex items-center gap-1 text-blue-500 ${isRTL ? "flex-row-reverse" : ""}`} title={t("Ingesting...")}>
           <Loader2 className="h-4 w-4 animate-spin" />
           <span className="text-xs">{t("Ingesting")}</span>
         </div>
@@ -393,14 +393,14 @@ export default function DocumentLibraryPage() {
       const latestJob = doc.ingestJobs[0];
       if (latestJob.status === 'completed') {
         return (
-          <div className="flex items-center gap-1 text-green-500" title={t("Ingested")}>
+          <div className={`flex items-center gap-1 text-green-500 ${isRTL ? "flex-row-reverse" : ""}`} title={t("Ingested")}>
             <CheckCircle2 className="h-4 w-4" />
             <span className="text-xs">{t("Ingested")}</span>
           </div>
         );
       } else if (latestJob.status === 'failed') {
         return (
-          <div className="flex items-center gap-1 text-red-500" title={latestJob.error || t("Ingestion failed")}>
+          <div className={`flex items-center gap-1 text-red-500 ${isRTL ? "flex-row-reverse" : ""}`} title={latestJob.error || t("Ingestion failed")}>
             <AlertCircle className="h-4 w-4" />
             <span className="text-xs">{t("Failed")}</span>
           </div>
@@ -474,11 +474,11 @@ export default function DocumentLibraryPage() {
     return {
       items: paginatedItems,
       pagination: items.length > 0 && (
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+        <div className={`flex items-center justify-between mt-4 pt-4 border-t border-slate-100 ${isRTL ? "flex-row-reverse" : ""}`}>
           <span className="text-xs text-slate-500">
             {startIndex + 1} {t("to")} {endIndex} {t("of")} {items.length}
           </span>
-          <div className="flex items-center gap-1">
+          <div className={`flex items-center gap-1 ${isRTL ? "flex-row-reverse" : ""}`}>
             <Button
               variant="ghost"
               size="icon"
@@ -552,14 +552,14 @@ export default function DocumentLibraryPage() {
           {items.map((doc) => (
             <div
               key={doc.id}
-              className="flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-slate-50 transition-colors"
+              className={`flex items-center justify-between p-3 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-slate-50 transition-colors ${isRTL ? "flex-row-reverse" : ""}`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className={`flex items-center gap-3 min-w-0 ${isRTL ? "flex-row-reverse" : ""}`}>
                 {getFileIcon(doc.fileType)}
                 <span className="text-sm text-slate-700 truncate">{doc.fileName}</span>
                 {getIngestStatusIcon(doc)}
               </div>
-              <div className="flex items-center gap-0.5 shrink-0">
+              <div className={`flex items-center gap-0.5 shrink-0 ${isRTL ? "flex-row-reverse" : ""}`}>
                 {/* Re-ingest button for failed or not ingested documents */}
                 {!ingestingDocs.has(doc.id) && (
                   <Button
@@ -600,31 +600,31 @@ export default function DocumentLibraryPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-slate-500">
+      <nav className={`flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         {canViewDashboard && (
           <>
             <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
               {t("Dashboard")}
             </Link>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+            <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           </>
         )}
         <span className="text-primary-700 font-medium">{t("Document Library")}</span>
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className={isRTL ? "text-right" : ""}>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Document Library")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <div className="overflow-x-auto">
-        <TabsList className="">
+        <div className={`overflow-x-auto ${isRTL ? "flex justify-end" : ""}`}>
+        <TabsList className={`${isRTL ? "flex-row-reverse" : ""}`}>
           <TabsTrigger value="smart-search" className="whitespace-nowrap">{t("Smart Search")}</TabsTrigger>
           <TabsTrigger value="policies" className="whitespace-nowrap">{t("Company's Policies and Procedures")}</TabsTrigger>
           <TabsTrigger value="regulations" className="whitespace-nowrap">{t("Standard Regulations")}</TabsTrigger>
@@ -636,7 +636,7 @@ export default function DocumentLibraryPage() {
         <TabsContent value="smart-search" className="space-y-6">
           {/* Smart Document Query */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+            <div className={`px-4 sm:px-6 py-4 border-b border-slate-100 ${isRTL ? "text-right" : ""}`}>
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Smart Document Query")}
               </h3>
@@ -648,13 +648,14 @@ export default function DocumentLibraryPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="resize-none min-h-[120px] bg-white border-slate-300 pr-14 pb-12"
+                  className={`resize-none min-h-[120px] bg-white border-slate-300 pb-12 ${isRTL ? "pl-14 text-right" : "pr-14"}`}
+                  dir={isRTL ? "rtl" : "ltr"}
                   rows={4}
                 />
                 <Button
                   onClick={handleSmartSearch}
                   disabled={searching || !query.trim()}
-                  className="absolute bottom-3 right-3 bg-primary-600 hover:bg-primary-700 h-9 w-9 p-0 rounded-lg"
+                  className={`absolute bottom-3 bg-primary-600 hover:bg-primary-700 h-9 w-9 p-0 rounded-lg ${isRTL ? "left-3" : "right-3"}`}
                 >
                   {searching ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -668,7 +669,7 @@ export default function DocumentLibraryPage() {
 
           {/* Recent Searches */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className={`px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between ${isRTL ? "flex-row-reverse" : ""}`}>
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Recent Searches")}
               </h3>
@@ -692,12 +693,12 @@ export default function DocumentLibraryPage() {
                       key={search.id}
                       className="py-4 first:pt-0 last:pb-0"
                     >
-                      <div className="flex items-start gap-3">
+                      <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
                         <div className="w-8 h-8 rounded-full bg-primary-50 border border-primary-100 flex items-center justify-center flex-shrink-0">
                           <Clock className="h-3.5 w-3.5 text-primary-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-4">
+                          <div className={`flex items-center justify-between gap-4 ${isRTL ? "flex-row-reverse" : ""}`}>
                             <p className="text-sm font-semibold text-slate-800 truncate">
                               {search.query}
                             </p>
@@ -729,7 +730,7 @@ export default function DocumentLibraryPage() {
         {/* Company Policies Tab */}
         <TabsContent value="policies">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className={`px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between ${isRTL ? "flex-row-reverse" : ""}`}>
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Company's Policies and Procedures")}
               </h3>
@@ -747,7 +748,7 @@ export default function DocumentLibraryPage() {
         {/* Standard Regulations Tab */}
         <TabsContent value="regulations">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className={`px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between ${isRTL ? "flex-row-reverse" : ""}`}>
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Standard Regulations")}
               </h3>
@@ -770,7 +771,7 @@ export default function DocumentLibraryPage() {
         {/* Previous Audit Reports Tab */}
         <TabsContent value="reports">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className={`px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between ${isRTL ? "flex-row-reverse" : ""}`}>
               <h3 className="text-base font-semibold text-slate-800">
                 {t("Previous Audit Reports")}
               </h3>

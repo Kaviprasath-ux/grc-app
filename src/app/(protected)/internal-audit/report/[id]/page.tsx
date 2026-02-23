@@ -300,7 +300,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
   const fieldworkPeriod = `${formatDate(report.engagement.actualStartDate || report.engagement.plannedStartDate)} to ${formatDate(report.engagement.actualEndDate || report.engagement.plannedEndDate)}`;
   const reportDate = formatDate(report.updatedAt);
-  const distribution = "Audit Committee, CFO, Controller, IT Head";
+  const distribution = t("Audit Committee, CFO, Controller, IT Head");
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -584,12 +584,12 @@ export default function AuditReportViewPage({ params }: PageProps) {
                           finding.severity === "Medium" ? "bg-yellow-100 text-yellow-700" :
                           "bg-green-100 text-green-700"
                         }`}>
-                          {finding.severity}
+                          {t(finding.severity)}
                         </span>
                       </td>
                       <td className="px-4 py-2">{finding.finding}</td>
                       <td className="px-4 py-2">{finding.description || "-"}</td>
-                      <td className="px-4 py-2">{finding.status}</td>
+                      <td className="px-4 py-2">{t(finding.status)}</td>
                     </tr>
                   ))
                 ) : (
@@ -671,7 +671,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
       </div>
 
       {/* Footer with Action Buttons */}
-      <div className="flex flex-row flex-wrap justify-end items-center gap-3 pt-4 border-t border-slate-200">
+      <div className="flex flex-row flex-wrap ltr:justify-end rtl:justify-start items-center gap-3 pt-4 border-t border-slate-200">
         <Button
           className="bg-primary-600 hover:bg-primary-700"
           onClick={handleDownloadReport}

@@ -805,7 +805,7 @@ export default function AddRiskPage() {
           </div>
 
           {/* Form Actions */}
-          <div className="flex flex-row justify-end gap-2 pt-4 border-t border-slate-100">
+          <div className="flex flex-row ltr:justify-end rtl:justify-start gap-2 pt-4 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"

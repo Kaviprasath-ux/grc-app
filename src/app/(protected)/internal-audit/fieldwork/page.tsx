@@ -387,7 +387,7 @@ export default function FieldworkPage() {
                   <TableCell className="py-3 text-sm text-slate-700">{getAuditorName(engagement)}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(engagement.startDate)}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(engagement.endDate)}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{engagement.status}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{t(engagement.status)}</TableCell>
                   <TableCell className="py-3 pr-5">
                     <div className="flex items-center gap-0.5">
                       {engagement.status === "Completed" ? (

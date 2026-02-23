@@ -619,7 +619,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => setGenerateDialogOpen(false)}
@@ -707,7 +707,7 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center">
                     <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Distribution")}:</span>
-                    <span className="text-primary-600">Audit Committee, CFO, Controller, IT Head</span>
+                    <span className="text-primary-600">{t("Audit Committee, CFO, Controller, IT Head")}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center">
                     <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Auditee")}:</span>
@@ -925,12 +925,12 @@ export default function ReportsPage() {
                                   finding.severity === "Medium" ? "bg-yellow-100 text-yellow-700" :
                                   "bg-green-100 text-green-700"
                                 }`}>
-                                  {finding.severity}
+                                  {t(finding.severity)}
                                 </span>
                               </td>
                               <td className="px-4 py-2 text-slate-700">{finding.finding}</td>
                               <td className="px-4 py-2 text-slate-700">{finding.description || "-"}</td>
-                              <td className="px-4 py-2 text-slate-700">{finding.status}</td>
+                              <td className="px-4 py-2 text-slate-700">{t(finding.status)}</td>
                             </tr>
                           ))
                         ) : (
@@ -1016,7 +1016,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end items-center gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start items-center gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80">
             {report && (
               <Button
                 variant="outline"

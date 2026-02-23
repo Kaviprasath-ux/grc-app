@@ -103,7 +103,7 @@ function ReportPreviewContent() {
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header with Download button */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center ltr:justify-end rtl:justify-start">
         <Button
           onClick={handleDownload}
           disabled={downloading}

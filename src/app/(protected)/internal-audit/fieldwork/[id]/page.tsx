@@ -198,13 +198,13 @@ export default function FieldworkDetailsPage() {
   const getAIReviewStatusIcon = (status: string | null | undefined) => {
     const s = (status || "").toLowerCase();
     if (s === "irrelevant") {
-      return <span title="Irrelevant"><XCircle className="h-4 w-4 flex-shrink-0 text-red-500" /></span>;
+      return <span title={t("Irrelevant")}><XCircle className="h-4 w-4 flex-shrink-0 text-red-500" /></span>;
     }
     if (s === "relevant") {
-      return <span title="Relevant"><Check className="h-4 w-4 flex-shrink-0 text-emerald-500" /></span>;
+      return <span title={t("Relevant")}><Check className="h-4 w-4 flex-shrink-0 text-emerald-500" /></span>;
     }
     if (s === "partial" || s === "needs_attention" || s === "needs attention") {
-      return <span title="Needs Attention"><AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-500" /></span>;
+      return <span title={t("Needs Attention")}><AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-500" /></span>;
     }
     if (s) {
       return <span title={status || ""}><HelpCircle className="h-4 w-4 flex-shrink-0 text-slate-500" /></span>;
@@ -1897,7 +1897,7 @@ export default function FieldworkDetailsPage() {
       >
         <div className="space-y-4">
           {isAuditHead && (
-            <div className="flex justify-end">
+            <div className="flex ltr:justify-end rtl:justify-start">
               <Button
                 size="sm"
                 onClick={() => {
@@ -1983,7 +1983,7 @@ export default function FieldworkDetailsPage() {
       >
         <div className="space-y-4">
           {isAuditHead && (
-            <div className="flex justify-end">
+            <div className="flex ltr:justify-end rtl:justify-start">
               <Button
                 size="sm"
                 onClick={handleGenerateAIWorkpapers}
@@ -2125,7 +2125,7 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setTaskListOpen(!taskListOpen)}
       >
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex ltr:justify-end rtl:justify-start">
             <Button
               size="sm"
               onClick={handleAddTask}
@@ -2443,7 +2443,7 @@ export default function FieldworkDetailsPage() {
                 ))}
                 {/* Single Submit Response Button for all pending requests */}
                 {filteredEvidenceRequests.some((er) => er.status === 'Pending') && (
-                  <div className="flex justify-end mt-4">
+                  <div className="flex ltr:justify-end rtl:justify-start mt-4">
                     <Button
                       className="bg-primary-600 hover:bg-primary-700 text-white"
                       onClick={() => {
@@ -2598,7 +2598,7 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setOtherDocsOpen(!otherDocsOpen)}
       >
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex ltr:justify-end rtl:justify-start">
             <Button
               size="sm"
               onClick={() => {
@@ -2698,7 +2698,7 @@ export default function FieldworkDetailsPage() {
         <div className="space-y-4">
           {/* Hide Add Finding button for auditees - they can only view findings */}
           {!isAuditeeOnly && (
-          <div className="flex justify-end">
+          <div className="flex ltr:justify-end rtl:justify-start">
             <Button
               size="sm"
               onClick={() => setAddFullFindingDialogOpen(true)}
@@ -2861,7 +2861,7 @@ export default function FieldworkDetailsPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setCommentsDialogOpen(false)}>
               {t("Close")}
             </Button>
@@ -2945,7 +2945,7 @@ export default function FieldworkDetailsPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3023,7 +3023,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setAddFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3237,7 +3237,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setAddFullFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3320,7 +3320,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setAddEvidenceDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3342,7 +3342,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3478,7 +3478,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -3519,7 +3519,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3560,7 +3560,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3646,7 +3646,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -3686,7 +3686,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -3792,7 +3792,7 @@ export default function FieldworkDetailsPage() {
               </div>
             )}
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -3923,7 +3923,7 @@ export default function FieldworkDetailsPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -4201,7 +4201,7 @@ export default function FieldworkDetailsPage() {
             )}
             {/* Comments button for auditee when there's a clarification request */}
             {!isEditingEvidence && isAuditeeOnly && selectedEvidence?.clarificationComment && (
-              <div className="flex justify-end mt-4">
+              <div className="flex ltr:justify-end rtl:justify-start mt-4">
                 <Button
                   size="sm"
                   onClick={() => {
@@ -4324,7 +4324,7 @@ export default function FieldworkDetailsPage() {
               </div>
             </div>
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4387,7 +4387,7 @@ export default function FieldworkDetailsPage() {
               </p>
             </div>
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4455,7 +4455,7 @@ export default function FieldworkDetailsPage() {
               </div>
             </div>
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4492,7 +4492,7 @@ export default function FieldworkDetailsPage() {
               </DialogDescription>
             </DialogHeader>
           </div>
-          <div className="px-4 sm:px-6 py-4 flex justify-end gap-2">
+          <div className="px-4 sm:px-6 py-4 flex ltr:justify-end rtl:justify-start gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -4549,7 +4549,7 @@ export default function FieldworkDetailsPage() {
               </div>
             )}
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4625,7 +4625,7 @@ export default function FieldworkDetailsPage() {
               )}
             </div>
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex ltr:justify-end rtl:justify-start gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -4771,7 +4771,7 @@ export default function FieldworkDetailsPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
+              <div className="flex ltr:justify-end rtl:justify-start gap-2 pt-4 border-t">
                 <Button
                   variant="outline"
                   onClick={() => {

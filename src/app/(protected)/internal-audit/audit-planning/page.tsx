@@ -1352,7 +1352,7 @@ export default function AuditPlanningPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
-        <div className="w-full sm:w-auto grid grid-cols-1 sm:flex sm:items-center sm:justify-end gap-2">
+        <div className="w-full sm:w-auto grid grid-cols-1 sm:flex sm:items-center sm:ltr:justify-end sm:rtl:justify-start gap-2">
           <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExport}>
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
@@ -1453,7 +1453,7 @@ export default function AuditPlanningPage() {
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{t(engagement.status)}</TableCell>
                   <TableCell className="py-3 pr-5">
-                    <div className="flex items-center justify-end gap-0.5">
+                    <div className="flex items-center ltr:justify-end rtl:justify-start gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1497,7 +1497,7 @@ export default function AuditPlanningPage() {
               {t("Are you sure you want to delete this engagement?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
@@ -1582,7 +1582,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1617,7 +1617,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1656,7 +1656,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setEditDialogOpen(false); setEditingEngagementId(null); }}>
               {t("Cancel")}
             </Button>
@@ -1769,7 +1769,7 @@ export default function AuditPlanningPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1913,7 +1913,7 @@ export default function AuditPlanningPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setReportPreviewOpen(false)}>
               {t("Close")}
             </Button>

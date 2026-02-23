@@ -1082,7 +1082,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                 engagement.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
                                 'bg-slate-100 text-slate-800'
                               }`}>
-                                {engagement.status}
+                                {t(engagement.status)}
                               </span>
                             </div>
                           </div>
@@ -1420,7 +1420,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                   </div>
                                 </div>
                                 {er.status === 'Pending' && (
-                                  <div className="flex justify-end mt-4">
+                                  <div className="flex ltr:justify-end rtl:justify-start mt-4">
                                     <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setAuditeeClariEvidence(er); setRespondDialogOpen(true); }}>{t("Submit Response")}</Button>
                                   </div>
                                 )}
@@ -1460,7 +1460,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                     <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
                                     <TableCell>{er.auditee || "-"}</TableCell>
                                     <TableCell>{er.numberOfSamples || "-"}</TableCell>
-                                    <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' : er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' : er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-100 text-slate-800'}`}>{er.status}</span></TableCell>
+                                    <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' : er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' : er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-100 text-slate-800'}`}>{t(er.status)}</span></TableCell>
                                     <TableCell>
                                       {(er.aiReviewStatus || er.aiReviewComment) ? (
                                         <div className="flex items-start gap-2 max-w-[280px]"><div className="flex-shrink-0 mt-0.5">{getAIReviewStatusIcon(er.aiReviewStatus)}</div><div className="min-w-0 flex-1">{er.aiReviewStatus && <span className="text-xs font-medium text-slate-600 block mb-0.5 capitalize">{er.aiReviewStatus}</span>}{er.aiReviewComment && <p className="text-xs text-slate-600 line-clamp-3">{er.aiReviewComment}</p>}</div></div>
@@ -1570,10 +1570,10 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                 <TableRow key={finding.id} className="border-b border-slate-100 last:border-0">
                                   <TableCell className="py-3 ps-5 font-medium text-sm text-slate-800">{finding.findingId || '-'}</TableCell>
                                   <TableCell className="py-3 max-w-[200px] truncate text-sm text-slate-700">{finding.title}</TableCell>
-                                  <TableCell className="py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${finding.severity === 'Critical' ? 'bg-red-100 text-red-800' : finding.severity === 'High' ? 'bg-orange-100 text-orange-800' : finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800'}`}>{finding.severity}</span></TableCell>
+                                  <TableCell className="py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${finding.severity === 'Critical' ? 'bg-red-100 text-red-800' : finding.severity === 'High' ? 'bg-orange-100 text-orange-800' : finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800'}`}>{t(finding.severity)}</span></TableCell>
                                   <TableCell className="py-3 text-sm text-slate-700">{finding.responsiblePerson || '-'}</TableCell>
                                   <TableCell className="py-3 text-sm text-slate-700">{formatDate(finding.targetDate || null)}</TableCell>
-                                  <TableCell className="py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' : finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{finding.status}</span></TableCell>
+                                  <TableCell className="py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' : finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{t(finding.status)}</span></TableCell>
                                   <TableCell className="py-3 pe-5">
                                     <div className="flex items-center gap-0.5">
                                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("view"); fetchFindingDetails(finding.id); setFindingDetailDialogOpen(true); }} title={t("View")}><Eye className="h-4 w-4" /></Button>
@@ -2210,7 +2210,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                             />
                           </div>
                         </div>
-                        <div className="flex justify-end gap-2 pt-2">
+                        <div className="flex ltr:justify-end rtl:justify-start gap-2 pt-2">
                           <Button variant="outline" size="sm" onClick={() => setEditingGeneratedId(null)}>{t("Cancel")}</Button>
                           <Button size="sm" onClick={() => {
                             const serializeField = (field: string) => { const lines = field.split('\n').map(line => line.trim()).filter(line => line.length > 0); return JSON.stringify(lines); };
@@ -2362,7 +2362,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             )}
             {!isEditingEvidence && (
               <>
-                <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Status")}</Label><div className="p-3 bg-slate-50 rounded-md border"><span className={`px-2 py-1 rounded text-xs font-medium ${selectedEvidence?.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' : selectedEvidence?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{selectedEvidence?.status || "-"}</span></div></div>
+                <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Status")}</Label><div className="p-3 bg-slate-50 rounded-md border"><span className={`px-2 py-1 rounded text-xs font-medium ${selectedEvidence?.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' : selectedEvidence?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{selectedEvidence?.status ? t(selectedEvidence.status) : "-"}</span></div></div>
                 {selectedEvidence?.aiReviewStatus && (
                   <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("AI Review Result")}</Label><div className={`p-3 rounded-md border ${selectedEvidence.aiReviewStatus === 'Satisfactory' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}><div className="flex items-center gap-2 mb-2">{selectedEvidence.aiReviewStatus === 'Satisfactory' ? (<><div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center"><span className="text-white text-xs">✓</span></div><span className="font-medium text-green-700">{t("Satisfactory")}</span></>) : (<><div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center"><span className="text-white text-xs">✕</span></div><span className="font-medium text-red-700">{t("Needs Attention")}</span></>)}</div>{selectedEvidence.aiReviewComment && <p className={`text-sm ${selectedEvidence.aiReviewStatus === 'Satisfactory' ? 'text-green-600' : 'text-red-600'}`}>{selectedEvidence.aiReviewComment}</p>}</div></div>
                 )}
@@ -2375,7 +2375,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Uploaded Attachments")}</Label><div className="p-3 bg-slate-50 rounded-md border text-slate-500 text-sm">{t("No attachments uploaded yet")}</div></div>
             )}
             {!isEditingEvidence && isAuditeeOnly && selectedEvidence?.clarificationComment && (
-              <div className="flex justify-end mt-4"><Button size="sm" onClick={() => { setAuditeeClariEvidence(selectedEvidence); setAuditeeClariDialogOpen(true); }}>{t("Comments")}</Button></div>
+              <div className="flex ltr:justify-end rtl:justify-start mt-4"><Button size="sm" onClick={() => { setAuditeeClariEvidence(selectedEvidence); setAuditeeClariDialogOpen(true); }}>{t("Comments")}</Button></div>
             )}
           </div>
           <div dir="ltr" className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
@@ -2654,7 +2654,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                         selectedFindingData.status === "Under Review" ? "bg-blue-100 text-blue-800" :
                         "bg-slate-100 text-slate-800"
                       }`}>
-                        {selectedFindingData.status}
+                        {t(selectedFindingData.status)}
                       </span>
                     </div>
                   </div>

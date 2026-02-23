@@ -800,7 +800,7 @@ export default function AddEngagementPage() {
             {procedureOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
-            <div className="flex justify-end mb-4">
+            <div className="flex ltr:justify-end rtl:justify-start mb-4">
               <Button type="button" onClick={addTaskRow} className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="h-4 w-4 mr-2" />
                 {t("Add Task Row")}
@@ -928,7 +928,7 @@ export default function AddEngagementPage() {
         </Collapsible>
 
         {/* Action Buttons */}
-        <div className="flex flex-row justify-end gap-3 sm:gap-4 pt-4">
+        <div className="flex flex-row ltr:justify-end rtl:justify-start gap-3 sm:gap-4 pt-4">
           <Button
             type="button"
             variant="outline"

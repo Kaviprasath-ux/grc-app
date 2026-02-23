@@ -495,7 +495,7 @@ export default function AddFindingPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-row justify-end gap-3 pt-6">
+          <div className="flex flex-row ltr:justify-end rtl:justify-start gap-3 pt-6">
             <Button
               variant="outline"
               onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}`)}

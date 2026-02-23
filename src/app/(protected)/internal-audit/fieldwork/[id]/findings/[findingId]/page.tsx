@@ -722,7 +722,7 @@ function ViewFindingContent() {
 
           {/* Action Buttons */}
           {isEditing && (
-            <div className="flex flex-row justify-end gap-3 pt-6 border-t">
+            <div className="flex flex-row ltr:justify-end rtl:justify-start gap-3 pt-6 border-t">
               <Button
                 variant="outline"
                 onClick={() => {

@@ -883,7 +883,7 @@ export default function RiskRegisterPage() {
     };
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[priority] || "bg-slate-100 text-slate-600"}`}>
-        {priority}
+        {t(priority)}
       </span>
     );
   };
@@ -901,7 +901,7 @@ export default function RiskRegisterPage() {
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[level] || "bg-slate-100 text-slate-600"}`}>
-        {level}
+        {t(level)}
       </span>
     );
   };
@@ -915,7 +915,7 @@ export default function RiskRegisterPage() {
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || "bg-slate-100 text-slate-600"}`}>
-        {status}
+        {t(status)}
       </span>
     );
   };
@@ -950,21 +950,21 @@ export default function RiskRegisterPage() {
 
     eligibleRisks.forEach((risk) => {
       const deptKey = risk.departmentId || "unassigned";
-      const deptName = risk.department?.name || "Unassigned";
+      const deptName = risk.department?.name || t("Unassigned");
 
       if (!grouped[deptKey]) {
         grouped[deptKey] = {
-          department: risk.department || { id: "unassigned", name: "Unassigned" },
+          department: risk.department || { id: "unassigned", name: t("Unassigned") },
           risks: [],
         };
       }
       grouped[deptKey].risks.push(risk);
     });
 
-    // Sort departments alphabetically, but put "Unassigned" at the end
+    // Sort departments alphabetically, but put t("Unassigned") at the end
     return Object.values(grouped).sort((a, b) => {
-      if (a.department.name === "Unassigned") return 1;
-      if (b.department.name === "Unassigned") return -1;
+      if (a.department.name === t("Unassigned")) return 1;
+      if (b.department.name === t("Unassigned")) return -1;
       return a.department.name.localeCompare(b.department.name);
     });
   };
@@ -1261,7 +1261,7 @@ export default function RiskRegisterPage() {
               {t("Are you sure you want to delete this risk? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
@@ -1323,7 +1323,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1441,7 +1441,7 @@ export default function RiskRegisterPage() {
                           )}
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex ltr:justify-end rtl:justify-start">
                           <Button
                             size="sm"
                             onClick={() => {
@@ -1476,7 +1476,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setAiDialogOpen(false)}>
               {t("Close")}
             </Button>
@@ -1604,7 +1604,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex ltr:justify-end rtl:justify-start">
             <Button
               variant="outline"
               onClick={() => setAiAuditSelectionOpen(false)}
@@ -1680,7 +1680,7 @@ export default function RiskRegisterPage() {
                                 <li key={si}>{s}</li>
                               ))}
                               {task.audit_steps.length > 3 && (
-                                <li>…and {task.audit_steps.length - 3} more</li>
+                                <li>…{t("and")} {task.audit_steps.length - 3} {t("more")}</li>
                               )}
                             </ul>
                           )}
@@ -1699,7 +1699,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setFieldworkPlanDialogOpen(false)}>
               {t("Close")}
             </Button>
@@ -2115,7 +2115,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeAddRiskModal}>
               {t("Cancel")}
             </Button>
@@ -2547,7 +2547,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeEditRiskModal}>
               {t("Cancel")}
             </Button>
@@ -2692,7 +2692,7 @@ export default function RiskRegisterPage() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Effectiveness")}</label>
-                        <p className="text-sm text-slate-700">{viewingRisk.controlEffectiveness || "-"}</p>
+                        <p className="text-sm text-slate-700">{viewingRisk.controlEffectiveness ? t(viewingRisk.controlEffectiveness) : "-"}</p>
                       </div>
                     </div>
                   </div>
@@ -2735,7 +2735,7 @@ export default function RiskRegisterPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={closeViewRiskModal}>
               {t("Close")}
             </Button>
