@@ -65,12 +65,18 @@ export function DatePicker({
           {dateValue ? format(dateValue, "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 z-[100]" align="start" sideOffset={4}>
+      <PopoverContent
+        className="w-auto p-0 z-[100]"
+        align="start"
+        sideOffset={4}
+        onFocusOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <Calendar
           mode="single"
           selected={dateValue}
           onSelect={handleSelect}
-          initialFocus
+          autoFocus
         />
       </PopoverContent>
     </Popover>

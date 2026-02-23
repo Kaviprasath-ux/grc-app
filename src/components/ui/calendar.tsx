@@ -2,12 +2,47 @@
 
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { DayPicker, useDayPicker } from "react-day-picker"
+import { format } from "date-fns"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
+
+function CustomMonthCaption({ calendarMonth }: { calendarMonth: { date: Date }; displayIndex: number }) {
+  const { goToMonth, previousMonth, nextMonth } = useDayPicker()
+
+  return (
+    <div className="flex items-center justify-center gap-1 h-10 w-full">
+      <button
+        type="button"
+        disabled={!previousMonth}
+        onClick={() => previousMonth && goToMonth(previousMonth)}
+        className={cn(
+          buttonVariants({ variant: "ghost" }),
+          "h-8 w-8 p-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+        )}
+      >
+        <ChevronLeft className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+      </button>
+      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 px-1">
+        {format(calendarMonth.date, "MMMM yyyy")}
+      </span>
+      <button
+        type="button"
+        disabled={!nextMonth}
+        onClick={() => nextMonth && goToMonth(nextMonth)}
+        className={cn(
+          buttonVariants({ variant: "ghost" }),
+          "h-8 w-8 p-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+        )}
+      >
+        <ChevronRight className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+      </button>
+    </div>
+  )
+}
 
 function Calendar({
   className,
@@ -25,19 +60,11 @@ function Calendar({
       classNames={{
         months: "flex flex-col sm:flex-row gap-4",
         month: "flex flex-col gap-4",
-        month_caption:
-          "flex items-center justify-center gap-2 h-10 w-full relative",
-        caption_label:
-          "text-sm font-semibold text-slate-800 dark:text-slate-100",
-        nav: "absolute inset-x-0 flex justify-between px-2",
-        button_previous: cn(
-          buttonVariants({ variant: "ghost" }),
-          "h-8 w-8 p-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-        ),
-        button_next: cn(
-          buttonVariants({ variant: "ghost" }),
-          "h-8 w-8 p-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-        ),
+        month_caption: "h-10 w-full",
+        caption_label: "text-sm font-semibold text-slate-800 dark:text-slate-100",
+        nav: "hidden",
+        button_previous: "hidden",
+        button_next: "hidden",
         month_grid: "w-full border-collapse",
         weekdays: "flex w-full",
         weekday:
@@ -69,10 +96,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Chevron: ({ orientation }) => {
-          const Icon = orientation === "left" ? ChevronLeft : ChevronRight
-          return <Icon className="h-4 w-4 text-slate-600 dark:text-slate-300" />
-        },
+        MonthCaption: CustomMonthCaption,
       }}
       {...props}
     />
