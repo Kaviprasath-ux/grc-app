@@ -210,16 +210,21 @@ function hashText(text: string): string {
  * Translate a record's fields and upsert translations to DB.
  * Fire-and-forget safe — errors are logged but don't throw.
  *
+ * Translates to ALL languages EXCEPT the sourceLocale. If the user entered
+ * data in Arabic, translations are generated for English and Latvian (and vice versa).
+ *
  * @param customerAccountId - Tenant ID
  * @param modelName - e.g. "Risk", "Control"
  * @param recordId - ID of the source record
  * @param fields - Object of { fieldName: fieldValue } to translate
+ * @param sourceLocale - The language the user entered the data in (default: 'en')
  */
 export async function translateRecord(
   customerAccountId: string,
   modelName: string,
   recordId: string,
-  fields: FieldValues
+  fields: FieldValues,
+  sourceLocale: string = 'en'
 ): Promise<void> {
   const translationProvider = getProvider();
 
@@ -249,23 +254,29 @@ export async function translateRecord(
     return;
   }
 
+  // Build target locales: all languages EXCEPT the source locale
+  // Always include 'en' + TARGET_LOCALES, then exclude the source
+  const allLocales: string[] = ['en', ...TARGET_LOCALES];
+  const targetLocales = allLocales.filter(l => l !== sourceLocale);
+
   logInfo(`Starting translation for ${modelName}/${recordId}`, {
     modelName,
     recordId,
+    sourceLocale,
     fields: fieldsToTranslate.map(f => ({
       fieldName: f.name,
       textLength: f.value.length,
       preview: f.value.substring(0, 60) + (f.value.length > 60 ? '...' : ''),
     })),
-    targetLocales: [...TARGET_LOCALES],
+    targetLocales,
   });
 
   const overallStart = Date.now();
   let totalSuccess = 0;
   let totalErrors = 0;
 
-  // Translate for each target locale
-  for (const locale of TARGET_LOCALES) {
+  // Translate for each target locale (all languages except the source)
+  for (const locale of targetLocales) {
     try {
       const textsToTranslate = fieldsToTranslate.map(f => f.value);
       const translations = await translationProvider.translate(textsToTranslate, locale);
@@ -317,7 +328,8 @@ export async function translateRecord(
   logInfo(`Translation complete for ${modelName}/${recordId}`, {
     totalSuccess,
     totalErrors,
-    localesProcessed: TARGET_LOCALES.length,
+    sourceLocale,
+    localesProcessed: targetLocales.length,
     totalTimeMs: overallElapsed,
   });
 }

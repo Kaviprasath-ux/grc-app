@@ -5,8 +5,9 @@
  *
  * Frontend hooks for dynamic data translation.
  *
- * - If locale is "en" → returns original data unchanged (zero API calls)
- * - Otherwise → fetches translations and overlays translated fields onto data
+ * - Fetches translations for ALL locales (including "en") because records
+ *   may have been entered in any language. The translation API returns
+ *   empty results when no translations exist for a given locale.
  * - In-memory cache with 5-min TTL to avoid redundant requests
  * - AbortController cleanup on unmount
  *
@@ -122,8 +123,8 @@ export function useTranslatedData<T extends object>(
   useEffect(() => {
     const currentData = dataRef.current;
 
-    // No translation needed for English or empty data
-    if (locale === "en" || !currentData || currentData.length === 0) {
+    // No translation needed for empty data
+    if (!currentData || currentData.length === 0) {
       setTranslatedData(currentData ?? []);
       setIsLoading(false);
       return;
@@ -218,7 +219,7 @@ export function useTranslatedRecord<T extends object>(
   useEffect(() => {
     const currentRecord = recordRef.current;
 
-    if (locale === "en" || !currentRecord) {
+    if (!currentRecord) {
       setTranslatedRecord(currentRecord ?? null);
       setIsLoading(false);
       return;
@@ -284,6 +285,10 @@ export function useTranslatedRecord<T extends object>(
  * Trigger translation for a record after create or edit.
  * Fire-and-forget — does not block UI.
  *
+ * Automatically detects the current UI locale from localStorage and passes
+ * it as `sourceLocale` so the backend knows which language the user typed in.
+ * This ensures translations are generated for ALL other languages including English.
+ *
  * @param modelName - e.g. "Risk", "Control"
  * @param recordId - ID of the created/edited record
  * @param fields - { fieldName: value } of the fields that were saved
@@ -303,6 +308,9 @@ export function triggerTranslation(
 
   if (Object.keys(cleanFields).length === 0) return;
 
+  // Auto-detect the current UI locale (the language the user is typing in)
+  const sourceLocale = (typeof window !== "undefined" && localStorage.getItem("locale")) || "en";
+
   // Invalidate cache entries for this record across all locales
   for (const [key] of translationCache) {
     if (key.startsWith(`${modelName}:`) && key.includes(recordId)) {
@@ -314,7 +322,7 @@ export function triggerTranslation(
   fetch("/api/translations/translate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ modelName, recordId, fields: cleanFields }),
+    body: JSON.stringify({ modelName, recordId, fields: cleanFields, sourceLocale }),
   }).catch((err) => {
     console.error("Failed to trigger translation:", err);
   });

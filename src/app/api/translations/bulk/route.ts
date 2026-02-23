@@ -5,6 +5,9 @@
  * Body: { modelName: string, recordIds: string[], locale: string }
  *
  * Returns { translations: { [recordId]: { [fieldName]: translatedText } } }
+ *
+ * Works for ALL locales including "en" — records may have been entered
+ * in any language, so English translations may exist in the DB.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,11 +26,6 @@ export const POST = withAuthOnly(async (req: NextRequest, _context, session) => 
         { error: 'Missing required fields: modelName, recordIds, locale' },
         { status: 400 }
       );
-    }
-
-    if (locale === 'en') {
-      // English is the source language — no translations needed
-      return NextResponse.json({ translations: {} });
     }
 
     if (!isTranslatable(modelName)) {

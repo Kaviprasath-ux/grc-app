@@ -4,7 +4,10 @@
  * Trigger translation for a single record (fire-and-forget).
  * Called after creating or editing a record.
  *
- * Body: { modelName: string, recordId: string, fields: { [fieldName]: value } }
+ * Body: { modelName: string, recordId: string, fields: { [fieldName]: value }, sourceLocale?: string }
+ *
+ * The `sourceLocale` indicates which language the user entered the data in.
+ * Translations are generated for all OTHER languages (including English if source is non-English).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,7 +18,7 @@ import { isTranslatable } from '@/lib/translation-config';
 export const POST = withAuthOnly(async (req: NextRequest, _context, session) => {
   try {
     const body = await req.json();
-    const { modelName, recordId, fields } = body;
+    const { modelName, recordId, fields, sourceLocale } = body;
 
     // Validate required fields
     if (!modelName || !recordId || !fields) {
@@ -43,8 +46,8 @@ export const POST = withAuthOnly(async (req: NextRequest, _context, session) => 
     await markTranslationsStale(session.customerAccountId, modelName, recordId, fields);
 
     // Fire-and-forget: translate in background, don't block response
-    // Using void to explicitly ignore the promise
-    void translateRecord(session.customerAccountId, modelName, recordId, fields);
+    // Pass sourceLocale so the service translates to all OTHER languages
+    void translateRecord(session.customerAccountId, modelName, recordId, fields, sourceLocale || 'en');
 
     return NextResponse.json({ success: true, message: 'Translation triggered' });
   } catch (error) {

@@ -3,6 +3,9 @@
  *
  * Get translations for a single record (detail pages).
  * Returns { fieldName: translatedText } for the requested locale.
+ *
+ * Works for ALL locales including "en" — records may have been entered
+ * in any language, so English translations may exist in the DB.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -24,11 +27,6 @@ export const GET = withAuthOnly(async (req: NextRequest, context: RouteContext, 
         { error: 'Missing required query parameter: locale' },
         { status: 400 }
       );
-    }
-
-    if (locale === 'en') {
-      // English is the source language — no translations needed
-      return NextResponse.json({ translations: {} });
     }
 
     if (!isTranslatable(modelName)) {

@@ -280,6 +280,55 @@ export default function MyPage() {
 }
 ```
 
+### Dynamic Data Translation (User-Entered Data)
+
+The app also translates **user-entered data** (risk names, control descriptions, etc.) dynamically using a Python backend API. This is separate from the static `t()` function above.
+
+**Architecture:**
+- **Translation service**: `src/lib/translation-service.ts` — Calls Python backend API for translations
+- **Frontend hooks**: `src/hooks/useTranslatedData.ts` — `useTranslatedData()`, `useTranslatedRecord()`, `triggerTranslation()`
+- **Translation config**: `src/lib/translation-config.ts` — Registry of all translatable models and fields
+- **DB storage**: `DynamicTranslation` table stores translations per record/field/locale
+
+**IMPORTANT: Multi-Language Data Entry Support**
+
+Users can create/edit records in ANY language (not just English). The system:
+1. Auto-detects which language the user is currently using (from `localStorage`)
+2. Translates to ALL OTHER languages (including English if data was entered in Arabic/Latvian)
+3. The `useTranslatedData` hook fetches translations for ALL locales (no early-return for English)
+
+**DO NOT** add `locale === 'en'` early-returns in translation hooks or API routes — records may contain non-English text that needs English translations.
+
+**Adding Dynamic Translation to a New Page:**
+
+1. **Import the hooks:**
+```typescript
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+```
+
+2. **Add translation hook for list data:**
+```typescript
+const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'Risk' });
+// Use translatedRisks instead of risks for display
+```
+
+3. **Add triggerTranslation after create/edit:**
+```typescript
+// After successful API response
+triggerTranslation('Risk', savedRisk.id, { name: savedRisk.name, description: savedRisk.description });
+```
+
+4. **Register new models** in `src/lib/translation-config.ts` if not already listed.
+
+**Key Rules:**
+- `triggerTranslation()` auto-reads the current locale from `localStorage` — no need to pass it manually
+- The Python backend API auto-detects source language and translates accordingly
+- For lookup helpers (e.g., showing translated names in dropdowns), use the `useCallback` pattern:
+```typescript
+const tCat = useCallback((id: string) => translatedCategories.find(c => c.id === id)?.name, [translatedCategories]);
+// Usage: {tCat(item.categoryId) || item.categoryName}
+```
+
 ## Test Credentials
 
 Default seeded users (from `prisma/seed.ts`):
