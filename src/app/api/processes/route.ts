@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all processes - filtered by tenant
 export async function GET() {
@@ -137,6 +138,8 @@ export async function POST(request: NextRequest) {
         owner: true,
       },
     });
+
+    if (customerAccountId) void translateRecord(customerAccountId, 'Process', process.id, { name: process.name, description: process.description });
 
     // Helper to send process assignment notification
     const notifyProcessAssignment = async (userId: string, role: string) => {

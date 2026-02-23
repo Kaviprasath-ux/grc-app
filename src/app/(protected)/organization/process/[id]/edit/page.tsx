@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { DatePicker } from "@/components/ui/date-picker";
+import { triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -357,6 +358,7 @@ export default function EditProcessPage() {
       });
 
       if (res.ok) {
+        triggerTranslation('Process', processId, { name: formData.name, description: formData.description });
         toast({ title: t("Success"), description: t("Process updated successfully") });
         router.push("/organization/process");
       } else {

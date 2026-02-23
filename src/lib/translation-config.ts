@@ -67,9 +67,19 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'Department', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
   { modelName: 'Process', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
   { modelName: 'Asset', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
-  { modelName: 'Service', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
+  { modelName: 'Service', fields: [{ name: 'title' }, { name: 'description' }], priority: 5 },
   { modelName: 'Stakeholder', fields: [{ name: 'name' }], priority: 5 },
   { modelName: 'Issue', fields: [{ name: 'title' }, { name: 'description' }], priority: 5 },
+
+  // Priority 6 — Organization settings
+  { modelName: 'OrganizationLocation', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'ProcessFrequency', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'NatureOfImplementation', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'Designation', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'BIACategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
+  { modelName: 'BIARating', fields: [{ name: 'label' }, { name: 'description' }], priority: 6 },
+  { modelName: 'BIAScoringRange', fields: [{ name: 'label' }], priority: 6 },
+  { modelName: 'BCPLabel', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
 
   // Priority 6 — Master data / settings
   { modelName: 'ControlDomain', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },

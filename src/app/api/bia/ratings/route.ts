@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all BIA ratings
 export const GET = withAuth(
@@ -56,6 +57,10 @@ export const POST = withAuth(
           customerAccountId,
         },
       });
+
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'BIARating', rating.id, { label: rating.label, description: rating.description ?? undefined });
+      }
 
       return NextResponse.json(rating, { status: 201 });
     } catch (error: unknown) {

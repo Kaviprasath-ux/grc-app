@@ -21,6 +21,7 @@ import { useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { DatePicker } from "@/components/ui/date-picker";
+import { triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -284,6 +285,7 @@ export default function AddProcessPage() {
           await uploadFiles(process.id);
         }
 
+        triggerTranslation('Process', process.id, { name: process.name, description: process.description });
         toast({ title: t("Success"), description: t("Process created successfully") });
         router.push("/organization/process");
       } else {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all organization-level nature of implementations (auditHeadId = null)
 export const GET = withAuth(
@@ -63,6 +64,8 @@ export const POST = withAuth(
           auditHeadId: null,
         },
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'NatureOfImplementation', implementation.id, { name: implementation.name });
 
       return NextResponse.json(implementation, { status: 201 });
     } catch (error) {

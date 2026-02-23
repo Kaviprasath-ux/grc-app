@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Home, Plus, Pencil, Trash2, Search, Clock, Database } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
@@ -101,6 +102,8 @@ export default function BCPLabelsPage() {
         }),
       });
       if (res.ok) {
+        const created = await res.json();
+        triggerTranslation('BCPLabel', created.id, { name: formData.name, description: formData.description || undefined });
         await fetchLabels();
         setIsAddOpen(false);
         resetForm();
@@ -126,6 +129,7 @@ export default function BCPLabelsPage() {
         body: JSON.stringify(formData),
       });
       if (res.ok) {
+        triggerTranslation('BCPLabel', editingItem.id, { name: formData.name, description: formData.description || undefined });
         await fetchLabels();
         setIsEditOpen(false);
         setEditingItem(null);
@@ -179,7 +183,9 @@ export default function BCPLabelsPage() {
     setIsEditOpen(true);
   };
 
-  const filteredData = labels.filter((item) =>
+  const { data: translatedLabels } = useTranslatedData(labels, { modelName: 'BCPLabel' });
+
+  const filteredData = translatedLabels.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

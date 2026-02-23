@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
 import { validateEmail } from "@/lib/validations/email";
 import {
@@ -124,6 +125,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [reportingManagers, setReportingManagers] = useState<ReportingManager[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
 
   // Check if user is DeptReviewer or DeptContributor (read-only department view)
   const userRoles = session?.user?.roles || [];
@@ -324,6 +327,7 @@ export default function UsersPage() {
       if (res.ok) {
         const user = await res.json();
         setUsers([...users, user]);
+        triggerTranslation('User', user.id, { fullName: user.fullName });
         resetForm();
         setIsAddUserOpen(false);
       } else {
@@ -377,6 +381,7 @@ export default function UsersPage() {
       if (res.ok) {
         const updated = await res.json();
         setUsers(users.map((u) => (u.id === updated.id ? updated : u)));
+        triggerTranslation('User', updated.id, { fullName: updated.fullName });
         setIsEditUserOpen(false);
         setEditingUser(null);
         toast({ title: t("Success"), description: t("User updated successfully") });
@@ -507,7 +512,7 @@ export default function UsersPage() {
   const handleExport = () => {
     const csv = [
       ["User ID", "Username", "Email", "First Name", "Last Name", "Full Name", "Designation", "Function", "Role", "Department", "Language", "Timezone", "Active", "Blocked"],
-      ...users.map((u) => [
+      ...translatedUsers.map((u) => [
         u.id?.slice(0, 8) || "",
         u.userName,
         u.email,
@@ -644,7 +649,7 @@ export default function UsersPage() {
     )
     .map((dept) => ({
       ...dept,
-      users: users.filter((user) => user.department?.name === dept.name),
+      users: translatedUsers.filter((user) => user.department?.name === dept.name),
     }));
 
   // User columns for User Management grid
@@ -749,7 +754,7 @@ export default function UsersPage() {
   ];
 
   // Filter users
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = translatedUsers.filter((user) => {
     const matchesRole = roleFilter === "all" || user.role === roleFilter;
     const matchesDepartment = departmentFilter === "all" || user.department?.name === departmentFilter;
     const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -758,7 +763,7 @@ export default function UsersPage() {
   });
 
   // Users filtered to current user's department (for DeptReviewer/DeptContributor)
-  const departmentUsers = users.filter((user) =>
+  const departmentUsers = translatedUsers.filter((user) =>
     user.departmentId === currentUserDepartmentId
   );
 

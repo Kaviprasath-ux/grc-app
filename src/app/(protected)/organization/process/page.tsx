@@ -46,6 +46,7 @@ import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { useRiskSemanticMatch } from "@/hooks/useRiskSemanticMatch";
 import { DatePicker } from "@/components/ui/date-picker";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -461,6 +462,8 @@ export default function ProcessPage() {
   const kpiYears = ["2029", "2028", "2027", "2026", "2025", "2024", "2023"];
   const kpiMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+  const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -559,8 +562,8 @@ export default function ProcessPage() {
 
   // Filter processes - DepartmentReviewer and DepartmentContributor can only see processes in their department
   const departmentFilteredProcesses = (isDepartmentReviewer || isDepartmentContributor) && userDepartmentId
-    ? processes.filter((p) => p.departmentId === userDepartmentId)
-    : processes;
+    ? translatedProcesses.filter((p) => p.departmentId === userDepartmentId)
+    : translatedProcesses;
 
   // Only show users who are assigned as owners to at least one process
   const processOwners = useMemo(() =>

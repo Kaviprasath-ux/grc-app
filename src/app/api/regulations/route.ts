@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { isValidName } from "@/lib/validations";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all regulations
 export async function GET() {
@@ -68,6 +69,8 @@ export async function POST(request: NextRequest) {
       },
       include: { attachments: true },
     });
+
+    if (customerAccountId) void translateRecord(customerAccountId, 'Regulation', regulation.id, { name: regulation.name });
 
     return NextResponse.json(regulation, { status: 201 });
   } catch (error: unknown) {

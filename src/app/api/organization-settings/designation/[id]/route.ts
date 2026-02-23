@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -41,6 +42,8 @@ export const PUT = withAuth(
         data: { name },
       });
 
+      if (designation.customerAccountId) void translateRecord(designation.customerAccountId, 'Designation', updated.id, { name: updated.name });
+
       return NextResponse.json(updated);
     } catch (error) {
       console.error("Error updating designation:", error);
@@ -75,6 +78,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.designation.delete({ where: { id } });
+
+      if (designation.customerAccountId) void deleteRecordTranslations(designation.customerAccountId, 'Designation', id);
 
       return NextResponse.json({ success: true });
     } catch (error) {

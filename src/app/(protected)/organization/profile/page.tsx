@@ -39,6 +39,7 @@ import { OrgChart } from "@/components/organization/org-chart";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Branch {
   id?: string;
@@ -201,6 +202,11 @@ function ProfilePageContent() {
   const [isEditRegulationOpen, setIsEditRegulationOpen] = useState(false);
   const [editingRegulation, setEditingRegulation] = useState<Regulation | null>(null);
 
+  // Dynamic data translation
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedServices } = useTranslatedData(services, { modelName: 'Service' });
+  const { data: translatedRegulations } = useTranslatedData(regulations, { modelName: 'Regulation' });
+
   // Fetch data on mount
   useEffect(() => {
     fetchData();
@@ -252,6 +258,7 @@ function ProfilePageContent() {
         setDepartments([...departments, dept]);
         setNewDepartmentName("");
         setIsAddDepartmentOpen(false);
+        triggerTranslation('Department', dept.id, { name: dept.name });
       }
     } catch (error) {
       console.error("Error adding department:", error);
@@ -291,6 +298,7 @@ function ProfilePageContent() {
         setDepartments(departments.map((d) => (d.id === updated.id ? updated : d)));
         setIsEditDepartmentOpen(false);
         setEditingDepartment(null);
+        triggerTranslation('Department', updated.id, { name: updated.name });
       }
     } catch (error) {
       console.error("Error updating department:", error);
@@ -327,6 +335,7 @@ function ProfilePageContent() {
           serviceItem: "",
         });
         setIsAddServiceOpen(false);
+        triggerTranslation('Service', service.id, { title: service.title, description: service.description });
       }
     } catch (error) {
       console.error("Error adding service:", error);
@@ -351,6 +360,7 @@ function ProfilePageContent() {
         setServices(services.map((s) => (s.id === updated.id ? updated : s)));
         setIsEditServiceOpen(false);
         setEditingService(null);
+        triggerTranslation('Service', updated.id, { title: updated.title, description: updated.description });
       }
     } catch (error) {
       console.error("Error updating service:", error);
@@ -460,6 +470,7 @@ function ProfilePageContent() {
         setDocumentFiles([]);
         setCertificateFiles([]);
         setIsAddRegulationOpen(false);
+        triggerTranslation('Regulation', reg.id, { name: reg.name });
       }
     } catch (error) {
       console.error("Error adding regulation:", error);
@@ -485,6 +496,7 @@ function ProfilePageContent() {
         setRegulations(regulations.map((r) => (r.id === updated.id ? updated : r)));
         setIsEditRegulationOpen(false);
         setEditingRegulation(null);
+        triggerTranslation('Regulation', updated.id, { name: updated.name });
       }
     } catch (error) {
       console.error("Error updating regulation:", error);
@@ -881,7 +893,7 @@ function ProfilePageContent() {
               </div>
               {/* Table rows */}
               {(() => {
-                const filtered = services.filter((s) =>
+                const filtered = translatedServices.filter((s) =>
                   s.title.toLowerCase().includes(serviceSearch.toLowerCase()) ||
                   s.serviceCategory?.toLowerCase().includes(serviceSearch.toLowerCase()) ||
                   s.serviceUser?.toLowerCase().includes(serviceSearch.toLowerCase())
@@ -961,7 +973,7 @@ function ProfilePageContent() {
               </div>
               {/* Pagination */}
               {(() => {
-                const filtered = services.filter((s) =>
+                const filtered = translatedServices.filter((s) =>
                   s.title.toLowerCase().includes(serviceSearch.toLowerCase()) ||
                   s.serviceCategory?.toLowerCase().includes(serviceSearch.toLowerCase()) ||
                   s.serviceUser?.toLowerCase().includes(serviceSearch.toLowerCase())
@@ -1055,7 +1067,7 @@ function ProfilePageContent() {
               </div>
               {/* Table rows */}
               {(() => {
-                const filtered = regulations.filter((r) =>
+                const filtered = translatedRegulations.filter((r) =>
                   r.name.toLowerCase().includes(regulationSearch.toLowerCase()) ||
                   r.version?.toLowerCase().includes(regulationSearch.toLowerCase())
                 );
@@ -1125,7 +1137,7 @@ function ProfilePageContent() {
               </div>
               {/* Pagination */}
               {(() => {
-                const filtered = regulations.filter((r) =>
+                const filtered = translatedRegulations.filter((r) =>
                   r.name.toLowerCase().includes(regulationSearch.toLowerCase()) ||
                   r.version?.toLowerCase().includes(regulationSearch.toLowerCase())
                 );
@@ -1212,7 +1224,7 @@ function ProfilePageContent() {
               </div>
               {/* Table rows */}
               {(() => {
-                const filtered = departments.filter((dept) =>
+                const filtered = translatedDepartments.filter((dept) =>
                   dept.name.toLowerCase().includes(departmentSearch.toLowerCase())
                 );
                 const paginated = filtered.slice(

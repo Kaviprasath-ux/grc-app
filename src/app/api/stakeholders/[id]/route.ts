@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -33,6 +34,8 @@ export const PUT = withAuth(
         data: { name, email, type, status, departmentId },
         include: { department: true },
       });
+
+      if (existing.customerAccountId) void translateRecord(existing.customerAccountId, 'Stakeholder', stakeholder.id, { name: stakeholder.name });
 
       return NextResponse.json(stakeholder);
     } catch (error: unknown) {
@@ -67,6 +70,9 @@ export const DELETE = withAuth(
       }
 
       await prisma.stakeholder.delete({ where: { id } });
+
+      if (existing.customerAccountId) void deleteRecordTranslations(existing.customerAccountId, 'Stakeholder', id);
+
       return NextResponse.json({ message: "Stakeholder deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting stakeholder:", error);

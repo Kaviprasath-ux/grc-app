@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -152,6 +153,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (existingProcess.customerAccountId) void translateRecord(existingProcess.customerAccountId, 'Process', process.id, { name: process.name, description: process.description });
+
       // Helper to send process assignment notification for changed assignments
       const notifyIfChanged = async (newUserId: string | undefined, oldUserId: string | null, role: string) => {
         if (newUserId && newUserId !== oldUserId && newUserId !== session.id && session.customerAccountId) {
@@ -299,6 +302,8 @@ export const DELETE = withAuth(
       await prisma.process.delete({
         where: { id },
       });
+
+      if (existingProcess.customerAccountId) void deleteRecordTranslations(existingProcess.customerAccountId, 'Process', id);
 
       return NextResponse.json({ success: true });
     } catch (error) {

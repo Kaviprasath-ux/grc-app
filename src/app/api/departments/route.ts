@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all departments - filtered by customer account
 // Uses organization.department (basic view) instead of organization.settings.departments (admin)
@@ -56,6 +57,8 @@ export const POST = withAuth(
           headId: headId || null,
         },
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'Department', department.id, { name: department.name, description: department.description });
 
       return NextResponse.json(department, { status: 201 });
     } catch (error: unknown) {

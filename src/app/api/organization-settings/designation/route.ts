@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all designations
 export const GET = withAuth(
@@ -61,6 +62,8 @@ export const POST = withAuth(
           customerAccountId,
         },
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'Designation', designation.id, { name: designation.name });
 
       return NextResponse.json(designation, { status: 201 });
     } catch (error) {

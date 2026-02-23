@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Home, Plus, Pencil, Trash2, Search, Settings } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -198,6 +199,8 @@ export default function BIAMethodologyPage() {
         body: JSON.stringify(ratingForm),
       });
       if (res.ok) {
+        const created = await res.json();
+        triggerTranslation('BIARating', created.id, { label: ratingForm.label, description: ratingForm.description || undefined });
         await fetchRatings();
         setIsAddRatingOpen(false);
         resetRatingForm();
@@ -227,6 +230,7 @@ export default function BIAMethodologyPage() {
         body: JSON.stringify(ratingForm),
       });
       if (res.ok) {
+        triggerTranslation('BIARating', editingRating.id, { label: ratingForm.label, description: ratingForm.description || undefined });
         await fetchRatings();
         setIsEditRatingOpen(false);
         setEditingRating(null);
@@ -316,6 +320,8 @@ export default function BIAMethodologyPage() {
         }),
       });
       if (res.ok) {
+        const created = await res.json();
+        triggerTranslation('BIAScoringRange', created.id, { label: rangeForm.label });
         await fetchScoringRanges();
         setIsAddRangeOpen(false);
         resetRangeForm();
@@ -343,6 +349,7 @@ export default function BIAMethodologyPage() {
         }),
       });
       if (res.ok) {
+        triggerTranslation('BIAScoringRange', editingRange.id, { label: rangeForm.label });
         await fetchScoringRanges();
         setIsEditRangeOpen(false);
         setEditingRange(null);
@@ -420,7 +427,10 @@ export default function BIAMethodologyPage() {
     setIsEditRangeOpen(true);
   };
 
-  const filteredRatings = ratings.filter((item) =>
+  const { data: translatedRatings } = useTranslatedData(ratings, { modelName: 'BIARating' });
+  const { data: translatedScoringRanges } = useTranslatedData(scoringRanges, { modelName: 'BIAScoringRange' });
+
+  const filteredRatings = translatedRatings.filter((item) =>
     item.label.toLowerCase().includes(searchRatings.toLowerCase())
   );
 
@@ -655,7 +665,7 @@ export default function BIAMethodologyPage() {
               {loadingRanges ? (
                 <p className="text-muted-foreground">{t("Loading...")}</p>
               ) : (
-                <DataGrid columns={rangeColumns} data={scoringRanges} searchPlaceholder={t("Search...")} />
+                <DataGrid columns={rangeColumns} data={translatedScoringRanges} searchPlaceholder={t("Search...")} />
               )}
             </CardContent>
           </Card>

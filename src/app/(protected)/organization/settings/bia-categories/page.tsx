@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Home, Plus, Pencil, Trash2, Search } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +91,8 @@ export default function BIACategoriesPage() {
         body: JSON.stringify(formData),
       });
       if (res.ok) {
+        const created = await res.json();
+        triggerTranslation('BIACategory', created.id, { name: formData.name, description: formData.description || undefined });
         await fetchCategories();
         setIsAddOpen(false);
         resetForm();
@@ -122,6 +125,7 @@ export default function BIACategoriesPage() {
         body: JSON.stringify(formData),
       });
       if (res.ok) {
+        triggerTranslation('BIACategory', editingItem.id, { name: formData.name, description: formData.description || undefined });
         await fetchCategories();
         setIsEditOpen(false);
         setEditingItem(null);
@@ -173,7 +177,9 @@ export default function BIACategoriesPage() {
     setIsEditOpen(true);
   };
 
-  const filteredData = categories.filter((item) =>
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'BIACategory' });
+
+  const filteredData = translatedCategories.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

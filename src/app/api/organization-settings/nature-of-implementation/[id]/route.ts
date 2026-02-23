@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -41,6 +42,8 @@ export const PUT = withAuth(
         data: { name },
       });
 
+      if (implementation.customerAccountId) void translateRecord(implementation.customerAccountId, 'NatureOfImplementation', updated.id, { name: updated.name });
+
       return NextResponse.json(updated);
     } catch (error) {
       console.error("Error updating nature of implementation:", error);
@@ -75,6 +78,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.natureOfImplementation.delete({ where: { id } });
+
+      if (implementation.customerAccountId) void deleteRecordTranslations(implementation.customerAccountId, 'NatureOfImplementation', id);
 
       return NextResponse.json({ success: true });
     } catch (error) {

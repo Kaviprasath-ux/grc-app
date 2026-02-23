@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all BCP labels
 export const GET = withAuth(
@@ -68,6 +69,10 @@ export const POST = withAuth(
         customerAccountId,
       },
     });
+
+    if (customerAccountId) {
+      void translateRecord(customerAccountId, 'BCPLabel', label.id, { name: label.name, description: label.description ?? undefined });
+    }
 
     return NextResponse.json(label, { status: 201 });
   } catch (error: unknown) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -42,6 +43,8 @@ export const PUT = withAuth(
         data: { name },
       });
 
+      if (frequency.customerAccountId) void translateRecord(frequency.customerAccountId, 'ProcessFrequency', updated.id, { name: updated.name });
+
       return NextResponse.json(updated);
     } catch (error) {
       console.error("Error updating process frequency:", error);
@@ -77,6 +80,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.processFrequency.delete({ where: { id } });
+
+      if (frequency.customerAccountId) void deleteRecordTranslations(frequency.customerAccountId, 'ProcessFrequency', id);
 
       return NextResponse.json({ success: true });
     } catch (error) {

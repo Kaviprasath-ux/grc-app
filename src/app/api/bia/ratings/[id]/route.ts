@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // GET single BIA rating
 export async function GET(
@@ -58,6 +60,12 @@ export async function PUT(
       },
     });
 
+    const session = await auth();
+    const customerAccountId = (session as any)?.customerAccountId;
+    if (customerAccountId) {
+      void translateRecord(customerAccountId, 'BIARating', id, { label: rating.label, description: rating.description ?? undefined });
+    }
+
     return NextResponse.json(rating);
   } catch (error: unknown) {
     console.error("Error updating BIA rating:", error);
@@ -90,6 +98,12 @@ export async function DELETE(
     await prisma.bIARating.delete({
       where: { id },
     });
+
+    const session = await auth();
+    const customerAccountId = (session as any)?.customerAccountId;
+    if (customerAccountId) {
+      void deleteRecordTranslations(customerAccountId, 'BIARating', id);
+    }
 
     return NextResponse.json({ message: "BIA rating deleted successfully" });
   } catch (error: unknown) {

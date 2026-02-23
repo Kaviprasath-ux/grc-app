@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRoles } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 
 interface Department {
@@ -348,6 +349,10 @@ export default function ContextPage() {
   const [newNeedExpectation, setNewNeedExpectation] = useState("");
   const [customNeedExpectations, setCustomNeedExpectations] = useState<string[]>([]);
 
+  // Dynamic data translation
+  const { data: translatedIssues } = useTranslatedData(issues, { modelName: 'Issue' });
+  const { data: translatedStakeholders } = useTranslatedData(stakeholders, { modelName: 'Stakeholder' });
+
   // Handlers for adding new options
   const handleAddDomain = () => {
     if (!newDomain.trim()) { setDomainError(t("Please enter domain name")); return; }
@@ -426,7 +431,7 @@ export default function ContextPage() {
     }
   };
 
-  const filteredStakeholdersByType = stakeholders.filter((s) => s.type === stakeholderType);
+  const filteredStakeholdersByType = translatedStakeholders.filter((s) => s.type === stakeholderType);
   const allNeedExpectations = [...needExpectationOptions, ...customNeedExpectations];
 
   // Edit Process dialog handlers
@@ -448,7 +453,7 @@ export default function ContextPage() {
   );
 
   // Edit Stakeholder step 4 handlers
-  const filteredEditStakeholdersByType = stakeholders.filter((s) => s.type === editStakeholderType);
+  const filteredEditStakeholdersByType = translatedStakeholders.filter((s) => s.type === editStakeholderType);
 
   const handleAddEditStakeholderNeed = () => {
     if (editSelectedStakeholderId && editSelectedNeedExpectation) {
@@ -651,7 +656,7 @@ export default function ContextPage() {
   };
 
   // Filter stakeholders
-  const filteredStakeholders = stakeholders.filter((s) => {
+  const filteredStakeholders = translatedStakeholders.filter((s) => {
     const matchesSearch = s.name.toLowerCase().includes(stakeholderSearch.toLowerCase());
     const matchesType = stakeholderTypeFilter === "all" || s.type === stakeholderTypeFilter;
     const matchesStatus = stakeholderStatusFilter === "all" || s.status === stakeholderStatusFilter;
@@ -659,7 +664,7 @@ export default function ContextPage() {
   });
 
   // Filter issues (role-based filtering is done server-side in API)
-  const filteredIssues = issues.filter((i) => {
+  const filteredIssues = translatedIssues.filter((i) => {
     const matchesSearch = i.title.toLowerCase().includes(issueSearch.toLowerCase()) ||
       (i.description && i.description.toLowerCase().includes(issueSearch.toLowerCase()));
     const matchesDomain = issueDomainFilter === "all" || i.domain === issueDomainFilter;
@@ -695,6 +700,7 @@ export default function ContextPage() {
       if (res.ok) {
         const stakeholder = await res.json();
         setStakeholders([...stakeholders, stakeholder]);
+        triggerTranslation('Stakeholder', stakeholder.id, { name: stakeholder.name });
         setNewStakeholder({
           name: "",
           type: "Internal",
@@ -756,6 +762,7 @@ export default function ContextPage() {
       if (res.ok) {
         const updated = await res.json();
         setStakeholders(stakeholders.map((s) => (s.id === updated.id ? updated : s)));
+        triggerTranslation('Stakeholder', updated.id, { name: updated.name });
         setShowEditStakeholder(false);
         setEditingStakeholder(null);
         toast({
@@ -821,6 +828,7 @@ export default function ContextPage() {
       if (res.ok) {
         const issue = await res.json();
         setIssues([...issues, issue]);
+        triggerTranslation('Issue', issue.id, { title: issue.title, description: issue.description });
         setNewIssue({
           title: "",
           description: "",
@@ -968,6 +976,7 @@ export default function ContextPage() {
       if (res.ok) {
         const updatedIssue = await res.json();
         setIssues(issues.map((i) => (i.id === editingIssue.id ? updatedIssue : i)));
+        triggerTranslation('Issue', updatedIssue.id, { title: updatedIssue.title, description: updatedIssue.description });
         setIsEditIssueOpen(false);
         setEditingIssue(null);
         setEditCurrentStep(1);
@@ -1426,8 +1435,8 @@ export default function ContextPage() {
   };
 
   // Get unique categories and domains from issues
-  const uniqueCategories = [...new Set(issues.map((i) => i.category))];
-  const uniqueDomains = [...new Set(issues.map((i) => i.domain))];
+  const uniqueCategories = [...new Set(translatedIssues.map((i) => i.category))];
+  const uniqueDomains = [...new Set(translatedIssues.map((i) => i.domain))];
 
   if (loading) {
     return (
@@ -1869,7 +1878,7 @@ export default function ContextPage() {
                         </thead>
                         <tbody>
                           {stakeholderNeeds.map((item, index) => {
-                            const stakeholder = stakeholders.find((s) => s.id === item.stakeholderId);
+                            const stakeholder = translatedStakeholders.find((s) => s.id === item.stakeholderId);
                             return (
                               <tr key={index} className="border-b last:border-b-0">
                                 <td className="p-3">{stakeholder?.name || "-"}</td>
@@ -1973,7 +1982,7 @@ export default function ContextPage() {
                       <p className="text-xs text-slate-500 mb-1">{t("Stakeholder Needs and Expectations")}</p>
                       <div className="mt-1 space-y-1">
                         {stakeholderNeeds.map((item, index) => {
-                          const stakeholder = stakeholders.find((s) => s.id === item.stakeholderId);
+                          const stakeholder = translatedStakeholders.find((s) => s.id === item.stakeholderId);
                           return (
                             <div key={index} className="text-sm text-slate-700">
                               <span className="font-medium text-slate-800">{stakeholder?.name}</span>: {item.needExpectation}
@@ -2689,7 +2698,7 @@ export default function ContextPage() {
                         </thead>
                         <tbody>
                           {editStakeholderNeeds.map((item, index) => {
-                            const stakeholder = stakeholders.find((s) => s.id === item.stakeholderId);
+                            const stakeholder = translatedStakeholders.find((s) => s.id === item.stakeholderId);
                             return (
                               <tr key={index} className="border-b last:border-b-0">
                                 <td className="p-3">{stakeholder?.name || "-"}</td>
@@ -2793,7 +2802,7 @@ export default function ContextPage() {
                       <p className="text-xs text-slate-500 mb-1">{t("Stakeholder Needs and Expectations")}</p>
                       <div className="mt-1 space-y-1">
                         {editStakeholderNeeds.map((item, index) => {
-                          const stakeholder = stakeholders.find((s) => s.id === item.stakeholderId);
+                          const stakeholder = translatedStakeholders.find((s) => s.id === item.stakeholderId);
                           return (
                             <div key={index} className="text-sm text-slate-700">
                               <span className="font-medium text-slate-800">{stakeholder?.name}</span>: {item.needExpectation}
@@ -3287,7 +3296,7 @@ export default function ContextPage() {
                 )}
               </div>
             </div>
-            {stakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
+            {translatedStakeholders.length > 0 || stakeholderSearch || stakeholderTypeFilter !== "all" || stakeholderStatusFilter !== "all" ? (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
                 {/* Search & Filters */}
                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
@@ -3446,7 +3455,7 @@ export default function ContextPage() {
                 )}
               </div>
             </div>
-            {issues.length > 0 || issueSearch || issueDepartmentFilter !== "all" || issueCategoryFilter !== "all" || issueDomainFilter !== "all" ? (
+            {translatedIssues.length > 0 || issueSearch || issueDepartmentFilter !== "all" || issueCategoryFilter !== "all" || issueDomainFilter !== "all" ? (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
                 {/* Search & Filters */}
                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">

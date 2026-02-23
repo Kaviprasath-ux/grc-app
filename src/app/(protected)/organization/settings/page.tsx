@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { Switch } from "@/components/ui/switch";
 import { isValidName } from "@/lib/validations";
 
@@ -191,6 +192,17 @@ export default function OrganizationSettingsPage() {
   const currentCategory = settingCategories.find((c) => c.id === activeCategory);
   const currentData = activeCategory ? settingsData[activeCategory] || [] : [];
 
+  // Category-to-model mapping for dynamic translations
+  const categoryModelMap: Record<string, string> = {
+    designation: "Designation",
+    location: "OrganizationLocation",
+    frequency: "ProcessFrequency",
+    implementation: "NatureOfImplementation",
+    "document-types": "UserDocumentType",
+  };
+  const currentModelName = activeCategory ? categoryModelMap[activeCategory] || "" : "";
+  const { data: translatedData } = useTranslatedData(currentData, { modelName: currentModelName });
+
   // Table columns
   const settingColumns: ColumnDef<SettingItem>[] = [
     {
@@ -260,6 +272,10 @@ export default function OrganizationSettingsPage() {
           body: JSON.stringify({ name: newItem.name }),
         });
         if (res.ok) {
+          const created = await res.json();
+          if (currentModelName && created?.id) {
+            triggerTranslation(currentModelName, created.id, { name: newItem.name, description: newItem.description });
+          }
           setNewItem({ name: "", description: "" });
           setIsAddItemOpen(false);
           toast({ title: t("Success"), description: t("Item added successfully") });
@@ -273,6 +289,9 @@ export default function OrganizationSettingsPage() {
       }
     } else {
       const newId = Date.now().toString();
+      if (currentModelName) {
+        triggerTranslation(currentModelName, newId, { name: newItem.name, description: newItem.description });
+      }
       setSettingsData({
         ...settingsData,
         [activeCategory]: [...currentData, { id: newId, ...newItem }],
@@ -304,6 +323,9 @@ export default function OrganizationSettingsPage() {
           body: JSON.stringify({ name: editingItem.name }),
         });
         if (res.ok) {
+          if (currentModelName) {
+            triggerTranslation(currentModelName, editingItem.id, { name: editingItem.name, description: editingItem.description });
+          }
           setIsEditItemOpen(false);
           setEditingItem(null);
           toast({ title: t("Success"), description: t("Item updated successfully") });
@@ -316,6 +338,9 @@ export default function OrganizationSettingsPage() {
         toast({ title: t("Error"), description: t("Failed to update item"), variant: "destructive" });
       }
     } else {
+      if (currentModelName) {
+        triggerTranslation(currentModelName, editingItem.id, { name: editingItem.name, description: editingItem.description });
+      }
       setSettingsData({
         ...settingsData,
         [activeCategory]: currentData.map((item) =>
@@ -397,9 +422,9 @@ export default function OrganizationSettingsPage() {
         {/* Table */}
         <DataGrid
           columns={settingColumns}
-          data={currentData}
+          data={translatedData}
           searchPlaceholder={`${t("Search")} ${currentCategory ? t(currentCategory.title).toLowerCase() : ""}...`}
-          hideSearch={currentData.length === 0}
+          hideSearch={translatedData.length === 0}
         />
 
         {/* Add Item Dialog */}

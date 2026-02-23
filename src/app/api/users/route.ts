@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 import { isValidEmailFormat } from '@/lib/validations/email';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all users (with optional role and department filters)
 // Note: User model doesn't have auditHeadId or reportingManagerId fields - those filters removed
@@ -255,6 +256,8 @@ export async function POST(request: NextRequest) {
         console.error("Failed to send user creation notification:", err);
       });
     }
+
+    if (customerAccountId) void translateRecord(customerAccountId, 'User', user.id, { fullName: user.fullName });
 
     return NextResponse.json(safeUser, { status: 201 });
   } catch (error: unknown) {

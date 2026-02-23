@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all organization locations - accessible to anyone who can view processes
 export const GET = withAuth(
@@ -61,6 +62,8 @@ export const POST = withAuth(
           customerAccountId,
         },
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'OrganizationLocation', location.id, { name: location.name });
 
       return NextResponse.json(location, { status: 201 });
     } catch (error) {

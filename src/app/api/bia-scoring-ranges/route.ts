@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all BIA scoring ranges - filtered by customer account
 export const GET = withAuth(
@@ -150,6 +151,8 @@ export const POST = withAuth(
           sortOrder: order,
         },
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'BIAScoringRange', range.id, { label: range.label });
 
       return NextResponse.json(range, { status: 201 });
     } catch (error: unknown) {

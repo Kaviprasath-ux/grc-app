@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import { isValidEmailFormat } from "@/lib/validations/email";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -120,6 +121,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (existingUser.customerAccountId) void translateRecord(existingUser.customerAccountId, 'User', user.id, { fullName: user.fullName });
+
       const { password: _, ...safeUser } = user;
       return NextResponse.json(safeUser);
     } catch (error: unknown) {
@@ -159,6 +162,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.user.delete({ where: { id } });
+
+      if (existingUser.customerAccountId) void deleteRecordTranslations(existingUser.customerAccountId, 'User', id);
 
       // Decrement accountsUsed in active subscription plan
       if (existingUser.customerAccountId) {

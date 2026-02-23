@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all stakeholders - filtered by customer account
 export const GET = withAuth(
@@ -57,6 +58,8 @@ export const POST = withAuth(
           department: true,
         },
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'Stakeholder', stakeholder.id, { name: stakeholder.name });
 
       return NextResponse.json(stakeholder, { status: 201 });
     } catch (error) {

@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { ColumnDef } from "@tanstack/react-table";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNumber } from "@/lib/validations";
 
 interface BIACategory {
@@ -159,6 +160,11 @@ export default function BIASettingsPage() {
       });
 
       if (res.ok) {
+        const saved = await res.json();
+        const savedId = saved?.id || editingCategory?.id;
+        if (savedId) {
+          triggerTranslation("BIACategory", savedId, { name: (data as { name?: string }).name || "", description: (data as { description?: string }).description || "" });
+        }
         toast({ title: t("Success"), description: isEditing ? t("Category updated successfully") : t("Category created successfully") });
         fetchAllData();
         setIsCategoryDialogOpen(false);
@@ -201,6 +207,11 @@ export default function BIASettingsPage() {
       });
 
       if (res.ok) {
+        const saved = await res.json();
+        const savedId = saved?.id || editingRating?.id;
+        if (savedId) {
+          triggerTranslation("BIARating", savedId, { label: (data as { label?: string }).label || "", description: (data as { description?: string }).description || "" });
+        }
         toast({ title: t("Success"), description: isEditing ? t("Rating updated successfully") : t("Rating created successfully") });
         fetchAllData();
         setIsRatingDialogOpen(false);
@@ -264,6 +275,11 @@ export default function BIASettingsPage() {
       });
 
       if (res.ok) {
+        const saved = await res.json();
+        const savedId = saved?.id || editingRange?.id;
+        if (savedId) {
+          triggerTranslation("BIAScoringRange", savedId, { label: (data as { label?: string }).label || "" });
+        }
         toast({ title: t("Success"), description: isEditing ? t("Scoring range updated successfully") : t("Scoring range created successfully") });
         fetchAllData();
         setIsRangeDialogOpen(false);
@@ -303,6 +319,11 @@ export default function BIASettingsPage() {
       });
 
       if (res.ok) {
+        const saved = await res.json();
+        const savedId = saved?.id || editingBcp?.id;
+        if (savedId) {
+          triggerTranslation("BCPLabel", savedId, { name: (data as { name?: string }).name || "", description: (data as { description?: string }).description || "" });
+        }
         toast({ title: t("Success"), description: isEditing ? t("BCP label updated successfully") : t("BCP label created successfully") });
         fetchAllData();
         setIsBcpDialogOpen(false);
@@ -550,8 +571,14 @@ export default function BIASettingsPage() {
     },
   ];
 
+  // Dynamic data translation hooks
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: "BIACategory" });
+  const { data: translatedRatings } = useTranslatedData(ratings, { modelName: "BIARating" });
+  const { data: translatedScoringRanges } = useTranslatedData(scoringRanges, { modelName: "BIAScoringRange" });
+  const { data: translatedBcpLabels } = useTranslatedData(bcpLabels, { modelName: "BCPLabel" });
+
   // Filter scoring ranges by calculation type (business logic, not search)
-  const filteredScoringRanges = scoringRanges.filter((r) => r.calculationType === calculationType);
+  const filteredScoringRanges = translatedScoringRanges.filter((r) => r.calculationType === calculationType);
 
   if (loading) {
     return (
@@ -617,7 +644,7 @@ export default function BIASettingsPage() {
               {t("Add Category")}
             </Button>
           </div>
-          <DataGrid columns={categoryColumns} data={categories} searchPlaceholder={t("Search categories...")} />
+          <DataGrid columns={categoryColumns} data={translatedCategories} searchPlaceholder={t("Search categories...")} />
         </TabsContent>
 
         {/* BIA Methodology Tab */}
@@ -641,7 +668,7 @@ export default function BIASettingsPage() {
                 {t("Add Rating")}
               </Button>
             </div>
-            <DataGrid columns={ratingColumns} data={ratings} searchPlaceholder={t("Search ratings...")} />
+            <DataGrid columns={ratingColumns} data={translatedRatings} searchPlaceholder={t("Search ratings...")} />
           </div>
 
           {/* BIA Calculation Section */}
@@ -707,7 +734,7 @@ export default function BIASettingsPage() {
               {t("Add BCP Label")}
             </Button>
           </div>
-          <DataGrid columns={bcpColumns} data={bcpLabels} searchPlaceholder={t("Search BCP labels...")} />
+          <DataGrid columns={bcpColumns} data={translatedBcpLabels} searchPlaceholder={t("Search BCP labels...")} />
         </TabsContent>
       </Tabs>
 

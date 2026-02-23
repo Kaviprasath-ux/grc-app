@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // Helper function to check for overlapping ranges
 async function checkOverlappingRanges(
@@ -148,6 +149,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (existing.customerAccountId) void translateRecord(existing.customerAccountId, 'BIAScoringRange', range.id, { label: range.label });
+
       return NextResponse.json(range);
     } catch (error: unknown) {
       console.error("Error updating BIA scoring range:", error);
@@ -188,6 +191,8 @@ export const DELETE = withAuth(
       await prisma.bIAScoringRange.delete({
         where: { id },
       });
+
+      if (existing.customerAccountId) void deleteRecordTranslations(existing.customerAccountId, 'BIAScoringRange', id);
 
       return NextResponse.json({ message: "BIA scoring range deleted successfully" });
     } catch (error) {

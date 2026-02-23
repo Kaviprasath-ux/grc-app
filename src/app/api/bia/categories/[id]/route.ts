@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // GET single BIA category
 export async function GET(
@@ -56,6 +58,12 @@ export async function PUT(
       },
     });
 
+    const session = await auth();
+    const customerAccountId = (session as any)?.customerAccountId;
+    if (customerAccountId) {
+      void translateRecord(customerAccountId, 'BIACategory', id, { name: category.name, description: category.description ?? undefined });
+    }
+
     return NextResponse.json(category);
   } catch (error: unknown) {
     console.error("Error updating BIA category:", error);
@@ -88,6 +96,12 @@ export async function DELETE(
     await prisma.bIACategory.delete({
       where: { id },
     });
+
+    const session = await auth();
+    const customerAccountId = (session as any)?.customerAccountId;
+    if (customerAccountId) {
+      void deleteRecordTranslations(customerAccountId, 'BIACategory', id);
+    }
 
     return NextResponse.json({ message: "BIA category deleted successfully" });
   } catch (error: unknown) {

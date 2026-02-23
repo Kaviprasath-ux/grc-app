@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET organization profile with related data
 export const GET = withAuth(
@@ -194,6 +195,8 @@ export const PUT = withAuth(
           },
         });
       });
+
+      if (customerAccountId && result) void translateRecord(customerAccountId, 'Organization', result.id, { name: result.name, description: result.description });
 
       return NextResponse.json(result);
     } catch (error) {

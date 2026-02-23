@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -69,6 +70,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (existing.customerAccountId) void translateRecord(existing.customerAccountId, 'BCPLabel', label.id, { name: label.name, description: label.description });
+
       return NextResponse.json(label);
     } catch (error: unknown) {
       console.error("Error updating BCP label:", error);
@@ -109,6 +112,8 @@ export const DELETE = withAuth(
       await prisma.bCPLabel.delete({
         where: { id },
       });
+
+      if (existing.customerAccountId) void deleteRecordTranslations(existing.customerAccountId, 'BCPLabel', id);
 
       return NextResponse.json({ message: "BCP label deleted successfully" });
     } catch (error) {

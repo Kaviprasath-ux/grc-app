@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // GET single BIA scoring range
 export async function GET(
@@ -58,6 +60,12 @@ export async function PUT(
       },
     });
 
+    const session = await auth();
+    const customerAccountId = (session as any)?.customerAccountId;
+    if (customerAccountId) {
+      void translateRecord(customerAccountId, 'BIAScoringRange', id, { label: range.label });
+    }
+
     return NextResponse.json(range);
   } catch (error: unknown) {
     console.error("Error updating BIA scoring range:", error);
@@ -90,6 +98,12 @@ export async function DELETE(
     await prisma.bIAScoringRange.delete({
       where: { id },
     });
+
+    const session = await auth();
+    const customerAccountId = (session as any)?.customerAccountId;
+    if (customerAccountId) {
+      void deleteRecordTranslations(customerAccountId, 'BIAScoringRange', id);
+    }
 
     return NextResponse.json({ message: "BIA scoring range deleted successfully" });
   } catch (error: unknown) {

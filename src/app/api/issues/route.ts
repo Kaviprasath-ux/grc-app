@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all issues
 export const GET = withAuth(
@@ -174,6 +175,8 @@ export const POST = withAuth(
         },
       },
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'Issue', issue.id, { title: issue.title, description: issue.description });
 
       // Notify owner if different from creator
       if (ownerId && ownerId !== session.id && session.customerAccountId) {

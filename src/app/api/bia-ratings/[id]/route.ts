@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -69,6 +70,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (existing.customerAccountId) void translateRecord(existing.customerAccountId, 'BIARating', rating.id, { label: rating.label, description: rating.description });
+
       return NextResponse.json(rating);
     } catch (error: unknown) {
       console.error("Error updating BIA rating:", error);
@@ -109,6 +112,8 @@ export const DELETE = withAuth(
       await prisma.bIARating.delete({
         where: { id },
       });
+
+      if (existing.customerAccountId) void deleteRecordTranslations(existing.customerAccountId, 'BIARating', id);
 
       return NextResponse.json({ message: "BIA rating deleted successfully" });
     } catch (error) {

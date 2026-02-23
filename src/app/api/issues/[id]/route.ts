@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -129,6 +130,8 @@ export const PUT = withAuth(
           },
         });
       });
+
+      if (existingIssue.customerAccountId) void translateRecord(existingIssue.customerAccountId, 'Issue', issue.id, { title: issue.title, description: issue.description });
 
       // Send notifications for issue changes
       if (session.customerAccountId) {
@@ -287,6 +290,9 @@ export const DELETE = withAuth(
       }
 
       await prisma.issue.delete({ where: { id } });
+
+      if (existingIssue.customerAccountId) void deleteRecordTranslations(existingIssue.customerAccountId, 'Issue', id);
+
       return NextResponse.json({ message: "Issue deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting issue:", error);

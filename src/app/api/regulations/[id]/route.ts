@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { isValidName } from "@/lib/validations";
+import { auth } from "@/lib/auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // PUT update regulation
 export async function PUT(
@@ -32,6 +34,9 @@ export async function PUT(
       include: { attachments: { orderBy: { uploadedAt: "desc" } } },
     });
 
+    const session = await auth();
+    if (session?.user?.customerAccountId) void translateRecord(session.user.customerAccountId, 'Regulation', regulation.id, { name: regulation.name });
+
     return NextResponse.json(regulation);
   } catch (error: unknown) {
     console.error("Error updating regulation:", error);
@@ -50,6 +55,10 @@ export async function DELETE(
   try {
     const { id } = await params;
     await prisma.regulation.delete({ where: { id } });
+
+    const session = await auth();
+    if (session?.user?.customerAccountId) void deleteRecordTranslations(session.user.customerAccountId, 'Regulation', id);
+
     return NextResponse.json({ message: "Regulation deleted successfully" });
   } catch (error: unknown) {
     console.error("Error deleting regulation:", error);
