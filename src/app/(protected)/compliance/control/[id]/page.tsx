@@ -33,6 +33,8 @@ import { Badge } from "@/components/ui/badge";
 import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X, Home, ChevronRight, Search, Eye } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSession } from "next-auth/react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Control {
   id: string;
@@ -165,6 +167,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
+  const { data: session } = useSession();
 
   // Context from framework navigation
   const fromFramework = searchParams.get("from") === "framework";
@@ -188,6 +191,12 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
   const [inlineNotApplicable, setInlineNotApplicable] = useState<boolean>(false);
   const [selectedRiskIds, setSelectedRiskIds] = useState<string[]>([]);
   const [isRiskDialogOpen, setIsRiskDialogOpen] = useState(false);
+
+  // Exception dialog state
+  const [isExceptionDialogOpen, setIsExceptionDialogOpen] = useState(false);
+  const [exceptionForm, setExceptionForm] = useState({ name: "", description: "", departmentId: "", endDate: undefined as Date | undefined });
+  const [exceptionFieldErrors, setExceptionFieldErrors] = useState<Record<string, string>>({});
+  const [exceptionSaving, setExceptionSaving] = useState(false);
 
   // Filter options for edit
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -336,6 +345,44 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
       fetchControl();
     } catch (error) {
       console.error("Error removing risk:", error);
+    }
+  };
+
+  const handleCreateException = async () => {
+    const errors: Record<string, string> = {};
+    if (!exceptionForm.name.trim()) errors.name = t("Name is required");
+    if (!exceptionForm.description.trim()) errors.description = t("Description is required");
+    if (!exceptionForm.endDate) errors.endDate = t("End date is required");
+    if (Object.keys(errors).length > 0) {
+      setExceptionFieldErrors(errors);
+      return;
+    }
+    setExceptionFieldErrors({});
+    setExceptionSaving(true);
+    try {
+      const response = await fetch("/api/exceptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: exceptionForm.name.trim(),
+          description: exceptionForm.description.trim(),
+          category: "Control",
+          controlId: id,
+          departmentId: exceptionForm.departmentId || undefined,
+          requesterId: (session?.user as { id?: string })?.id || undefined,
+          status: "Pending",
+          endDate: exceptionForm.endDate?.toISOString(),
+        }),
+      });
+      if (response.ok) {
+        setIsExceptionDialogOpen(false);
+        setExceptionForm({ name: "", description: "", departmentId: "", endDate: undefined });
+        fetchControl();
+      }
+    } catch (error) {
+      console.error("Error creating exception:", error);
+    } finally {
+      setExceptionSaving(false);
     }
   };
 
@@ -554,19 +601,19 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </TabsTrigger>
               <TabsTrigger value="governance" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                {t("Governance")} ({control.policyControls?.length || 0})
+                {t("Linked Governance")} ({control.policyControls?.length || 0})
               </TabsTrigger>
               <TabsTrigger value="evidence" className="flex items-center gap-2">
                 <ClipboardCheck className="h-4 w-4" />
-                {t("Evidence")} ({(control.evidences?.length || 0) + (control.evidenceControls?.length || 0)})
+                {t("Linked Evidence")} ({(control.evidences?.length || 0) + (control.evidenceControls?.length || 0)})
               </TabsTrigger>
               <TabsTrigger value="exceptions" className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                {t("Exception")} ({control.exceptions?.length || 0})
+                {t("Linked Exception")} ({control.exceptions?.length || 0})
               </TabsTrigger>
               <TabsTrigger value="risks" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
-                {t("Risk")} ({control.controlRisks?.length || 0})
+                {t("Linked Risk")} ({control.controlRisks?.length || 0})
               </TabsTrigger>
             </TabsList>
           </div>
@@ -711,6 +758,22 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
           </TabsContent>
 
           <TabsContent value="exceptions" className="p-0">
+            <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-slate-100">
+              <p className="text-sm font-medium text-slate-700">{t("Exceptions")}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-3 text-xs"
+                onClick={() => {
+                  setExceptionForm({ name: "", description: "", departmentId: "", endDate: undefined });
+                  setExceptionFieldErrors({});
+                  setIsExceptionDialogOpen(true);
+                }}
+              >
+                <Plus className="h-3 w-3 ltr:mr-1 rtl:ml-1" />
+                {t("Add Exception")}
+              </Button>
+            </div>
             <div className="overflow-x-auto">
             <Table className="min-w-[600px]">
               <TableHeader>
@@ -1120,6 +1183,112 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </Button>
             <Button onClick={handleUpdateControl} className="w-full sm:w-auto">
               {t("Save Changes")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Exception Dialog */}
+      <Dialog open={isExceptionDialogOpen} onOpenChange={setIsExceptionDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Add Exception")}</DialogTitle>
+          </div>
+
+          <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5 space-y-4">
+            {/* Exception Code - read only */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Exception Code")}</Label>
+                <Input value={t("Auto-generated")} disabled className="h-9 text-sm bg-slate-50" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Status")}</Label>
+                <Input value={t("Pending")} disabled className="h-9 text-sm bg-slate-50" />
+              </div>
+            </div>
+
+            {/* Exception Name */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500">{t("Exception Name")} *</Label>
+              <Input
+                value={exceptionForm.name}
+                onChange={(e) => setExceptionForm({ ...exceptionForm, name: e.target.value })}
+                placeholder={t("Enter exception name")}
+                className="h-9 text-sm"
+              />
+              {exceptionFieldErrors.name && <p className="text-xs text-semantic-error">{exceptionFieldErrors.name}</p>}
+            </div>
+
+            {/* Category & Control info - read only */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Category")}</Label>
+                <Input value={t("Control")} disabled className="h-9 text-sm bg-slate-50" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Control Code")}</Label>
+                <Input value={control.controlCode} disabled className="h-9 text-sm bg-slate-50" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Control Name")}</Label>
+                <Input value={control.name} disabled className="h-9 text-sm bg-slate-50" />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500">{t("Description/Justification")} *</Label>
+              <Textarea
+                value={exceptionForm.description}
+                onChange={(e) => setExceptionForm({ ...exceptionForm, description: e.target.value })}
+                placeholder={t("Enter description or justification")}
+                rows={3}
+                className="text-sm resize-none"
+              />
+              {exceptionFieldErrors.description && <p className="text-xs text-semantic-error">{exceptionFieldErrors.description}</p>}
+            </div>
+
+            {/* Department & Requester */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Department")}</Label>
+                <Select value={exceptionForm.departmentId} onValueChange={(v) => setExceptionForm({ ...exceptionForm, departmentId: v })}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder={t("Select department")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500">{t("Requester")}</Label>
+                <Input value={(session?.user as { fullName?: string })?.fullName || (session?.user?.name ?? "-")} disabled className="h-9 text-sm bg-slate-50" />
+              </div>
+            </div>
+
+            {/* End Date */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500">{t("End Date")} *</Label>
+              <DatePicker
+                value={exceptionForm.endDate}
+                onChange={(date) => setExceptionForm({ ...exceptionForm, endDate: date })}
+                placeholder={t("Select end date")}
+                className="h-9 text-sm"
+              />
+              {exceptionFieldErrors.endDate && <p className="text-xs text-semantic-error">{exceptionFieldErrors.endDate}</p>}
+            </div>
+          </div>
+
+          <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => setIsExceptionDialogOpen(false)} className="w-full sm:w-auto">
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleCreateException} disabled={exceptionSaving} className="w-full sm:w-auto">
+              {exceptionSaving ? t("Saving...") : t("Create Exception")}
             </Button>
           </div>
         </DialogContent>
