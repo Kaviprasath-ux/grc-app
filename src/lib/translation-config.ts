@@ -76,6 +76,9 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'AssetCategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
   { modelName: 'AssetSubCategory', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'AssetGroup', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'AssetLifecycleStatus', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
+  { modelName: 'AssetSensitivity', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
+  { modelName: 'CIARating', fields: [{ name: 'label' }], priority: 6 },
 
   // Priority 6 — Risk settings / rating scales
   { modelName: 'RiskLikelihood', fields: [{ name: 'title' }, { name: 'timeFrame' }, { name: 'probability' }], priority: 6 },

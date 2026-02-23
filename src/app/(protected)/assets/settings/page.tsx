@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Plus, Pencil, Trash2, Search, Upload, Download, FolderTree, Clock, Settings2, Lock, CheckCircle, RefreshCw, Layers, FolderOpen, Group, Home, ChevronRight, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNumber } from "@/lib/validations";
 
 interface AssetCategory {
@@ -253,6 +255,24 @@ export default function AssetSettingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Translation hooks for dynamic data
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'AssetCategory' });
+  const { data: translatedSubCategories } = useTranslatedData(subCategories, { modelName: 'AssetSubCategory' });
+  const { data: translatedGroups } = useTranslatedData(groups, { modelName: 'AssetGroup' });
+  const { data: translatedLifecycleStatuses } = useTranslatedData(lifecycleStatuses, { modelName: 'AssetLifecycleStatus' });
+  const { data: translatedSensitivities } = useTranslatedData(sensitivities, { modelName: 'AssetSensitivity' });
+  const { data: translatedAssets } = useTranslatedData(assets, { modelName: 'Asset' });
+  const { data: translatedCiaRatings } = useTranslatedData(ciaRatings, { modelName: 'CIARating' });
+
+  // Translation lookup helpers
+  const tCat = useCallback((id: string) => translatedCategories.find(c => c.id === id)?.name, [translatedCategories]);
+  const tSubCat = useCallback((id: string) => translatedSubCategories.find(c => c.id === id)?.name, [translatedSubCategories]);
+  const tGroup = useCallback((id: string) => translatedGroups.find(g => g.id === id)?.name, [translatedGroups]);
+  const tLifecycle = useCallback((id: string) => translatedLifecycleStatuses.find(l => l.id === id)?.name, [translatedLifecycleStatuses]);
+  const tSensitivity = useCallback((id: string) => translatedSensitivities.find(s => s.id === id)?.name, [translatedSensitivities]);
+  const tAsset = useCallback((id: string) => translatedAssets.find(a => a.id === id)?.name, [translatedAssets]);
+  const tCia = useCallback((id: string) => translatedCiaRatings.find(c => c.id === id)?.label, [translatedCiaRatings]);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
@@ -351,6 +371,7 @@ export default function AssetSettingsPage() {
         setCategories([...categories, created]);
         setCategoryForm({ name: "", description: "", status: "Active" });
         setIsAddOpen(false);
+        triggerTranslation('AssetCategory', created.id, { name: created.name, description: created.description });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to create category"), variant: "destructive" });
@@ -396,6 +417,7 @@ export default function AssetSettingsPage() {
         setCategories(categories.map((c) => (c.id === updated.id ? updated : c)));
         setIsEditOpen(false);
         setSelectedItem(null);
+        triggerTranslation('AssetCategory', updated.id, { name: updated.name, description: updated.description });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to update category"), variant: "destructive" });
@@ -457,6 +479,7 @@ export default function AssetSettingsPage() {
         setSubCategories([...subCategories, created]);
         setSubCategoryForm({ name: "", description: "", categoryId: "", status: "Active" });
         setIsAddOpen(false);
+        triggerTranslation('AssetSubCategory', created.id, { name: created.name });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to create sub-category"), variant: "destructive" });
@@ -501,6 +524,7 @@ export default function AssetSettingsPage() {
         setSubCategories(subCategories.map((c) => (c.id === updated.id ? updated : c)));
         setIsEditOpen(false);
         setSelectedItem(null);
+        triggerTranslation('AssetSubCategory', updated.id, { name: updated.name });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to update sub-category"), variant: "destructive" });
@@ -558,6 +582,7 @@ export default function AssetSettingsPage() {
         setGroups([...groups, created]);
         setGroupForm({ name: "", description: "", status: "Active", subCategoryId: "" });
         setIsAddOpen(false);
+        triggerTranslation('AssetGroup', created.id, { name: created.name });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to create group"), variant: "destructive" });
@@ -599,6 +624,7 @@ export default function AssetSettingsPage() {
         setGroups(groups.map((g) => (g.id === updated.id ? updated : g)));
         setIsEditOpen(false);
         setSelectedItem(null);
+        triggerTranslation('AssetGroup', updated.id, { name: updated.name });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to update group"), variant: "destructive" });
@@ -656,6 +682,7 @@ export default function AssetSettingsPage() {
         setLifecycleStatuses([...lifecycleStatuses, created]);
         setLifecycleForm({ name: "", description: "", order: 0 });
         setIsAddOpen(false);
+        triggerTranslation('AssetLifecycleStatus', created.id, { name: created.name, description: created.description });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to create lifecycle status"), variant: "destructive" });
@@ -697,6 +724,7 @@ export default function AssetSettingsPage() {
         setLifecycleStatuses(lifecycleStatuses.map((l) => (l.id === updated.id ? updated : l)));
         setIsEditOpen(false);
         setSelectedItem(null);
+        triggerTranslation('AssetLifecycleStatus', updated.id, { name: updated.name, description: updated.description });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to update lifecycle status"), variant: "destructive" });
@@ -793,6 +821,7 @@ export default function AssetSettingsPage() {
           policies: "",
         });
         setIsAddOpen(false);
+        triggerTranslation('Asset', created.id, { name: created.name, description: created.description });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to create asset"), variant: "destructive" });
@@ -830,6 +859,7 @@ export default function AssetSettingsPage() {
         setSensitivities([...sensitivities, created]);
         setSensitivityForm({ name: "", description: "" });
         setIsAddOpen(false);
+        triggerTranslation('AssetSensitivity', created.id, { name: created.name, description: created.description });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to create sensitivity"), variant: "destructive" });
@@ -868,6 +898,7 @@ export default function AssetSettingsPage() {
         setSensitivities(sensitivities.map((s) => (s.id === updated.id ? updated : s)));
         setIsEditOpen(false);
         setSelectedItem(null);
+        triggerTranslation('AssetSensitivity', updated.id, { name: updated.name, description: updated.description });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to update sensitivity"), variant: "destructive" });
@@ -931,6 +962,7 @@ export default function AssetSettingsPage() {
         setCiaRatings([...ciaRatings, created]);
         setCiaRatingForm({ label: "", value: 0 });
         setIsCiaAddOpen(false);
+        triggerTranslation('CIARating', created.id, { label: created.label });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to create CIA rating"), variant: "destructive" });
@@ -978,6 +1010,7 @@ export default function AssetSettingsPage() {
         setCiaRatings(ciaRatings.map((r) => (r.id === updated.id ? updated : r)));
         setIsCiaEditOpen(false);
         setSelectedCiaRating(null);
+        triggerTranslation('CIARating', updated.id, { label: updated.label });
       } else {
         const error = await res.json();
         toast({ title: t("Error"), description: error.error || t("Failed to update CIA rating"), variant: "destructive" });
@@ -1959,18 +1992,18 @@ export default function AssetSettingsPage() {
               ) : entitySubTab === "asset-list" ? (
                 (paginatedData as Asset[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{tAsset(item.id) || item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.assetId}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.location || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.value || "-"}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{item.lifecycleStatus?.name || "-"}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700 pe-5">{item.sensitivity?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{(item.lifecycleStatus?.id ? tLifecycle(item.lifecycleStatus.id) : null) || item.lifecycleStatus?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700 pe-5">{(item.sensitivity?.id ? tSensitivity(item.sensitivity.id) : null) || item.sensitivity?.name || "-"}</TableCell>
                   </TableRow>
                 ))
               ) : entitySubTab === "categories" ? (
                 (paginatedData as AssetCategory[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{tCat(item.id) || item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       <Badge variant={item.status === "Active" ? "default" : "secondary"}>{t(item.status)}</Badge>
                     </TableCell>
@@ -1997,8 +2030,8 @@ export default function AssetSettingsPage() {
               ) : entitySubTab === "subcategories" ? (
                 (paginatedData as AssetSubCategory[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.category?.name || "-"}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{(item.category?.id ? tCat(item.category.id) : null) || item.category?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{tSubCat(item.id) || item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.description || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       <Badge variant={item.status === "Active" ? "default" : "secondary"}>{t(item.status)}</Badge>
@@ -2026,7 +2059,7 @@ export default function AssetSettingsPage() {
               ) : entitySubTab === "groups" ? (
                 (paginatedData as AssetGroup[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{tGroup(item.id) || item.name}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{item.description || "-"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       <Badge variant={(item as any).status === "Active" ? "default" : "secondary"}>{t((item as any).status || "Active")}</Badge>
@@ -2054,7 +2087,7 @@ export default function AssetSettingsPage() {
               ) : entitySubTab === "sensitivity" ? (
                 (paginatedData as AssetSensitivity[]).map((item) => (
                   <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{tSensitivity(item.id) || item.name}</TableCell>
                     <TableCell className="py-3 pe-5">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
@@ -2231,7 +2264,7 @@ export default function AssetSettingsPage() {
                       <SelectContent>
                         {lifecycleStatuses.map((ls) => (
                           <SelectItem key={ls.id} value={ls.id}>
-                            {ls.name}
+                            {tLifecycle(ls.id) || ls.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2376,7 +2409,7 @@ export default function AssetSettingsPage() {
                       <SelectContent>
                         {sensitivities.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.name}
+                            {tSensitivity(s.id) || s.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2404,7 +2437,7 @@ export default function AssetSettingsPage() {
                       <SelectContent>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
+                            {tCat(cat.id) || cat.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2536,7 +2569,7 @@ export default function AssetSettingsPage() {
                       <SelectContent>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
+                            {tCat(cat.id) || cat.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2639,7 +2672,7 @@ export default function AssetSettingsPage() {
                       <SelectContent>
                         {subCategories.map((subCat) => (
                           <SelectItem key={subCat.id} value={subCat.id}>
-                            {subCat.name}
+                            {tSubCat(subCat.id) || subCat.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2774,7 +2807,7 @@ export default function AssetSettingsPage() {
                       <SelectContent>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
+                            {tCat(cat.id) || cat.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2877,7 +2910,7 @@ export default function AssetSettingsPage() {
                       <SelectContent>
                         {subCategories.map((subCat) => (
                           <SelectItem key={subCat.id} value={subCat.id}>
-                            {subCat.name}
+                            {tSubCat(subCat.id) || subCat.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -3118,7 +3151,7 @@ export default function AssetSettingsPage() {
                 </TableRow>
               ) : lcPaginatedData.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{item.name}</TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ps-5">{tLifecycle(item.id) || item.name}</TableCell>
                   <TableCell className="py-3 pe-5">
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => {
@@ -3339,7 +3372,7 @@ export default function AssetSettingsPage() {
                   <tbody>
                     {ratingsList.map((r) => (
                       <tr key={r.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                        <td className="ps-3 sm:ps-5 pe-3 py-3 text-sm font-medium text-slate-800">{t(r.label)}</td>
+                        <td className="ps-3 sm:ps-5 pe-3 py-3 text-sm font-medium text-slate-800">{tCia(r.id) || r.label}</td>
                         <td className="px-3 py-3 text-sm text-slate-700">{r.value}</td>
                         <td className="ps-3 pe-3 sm:pe-5 py-3">
                           <div className="flex justify-end gap-1">
@@ -4050,7 +4083,7 @@ export default function AssetSettingsPage() {
                     <SelectContent>
                       {categories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
+                          {tCat(cat.id) || cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -4153,7 +4186,7 @@ export default function AssetSettingsPage() {
                     <SelectContent>
                       {subCategories.map((subCat) => (
                         <SelectItem key={subCat.id} value={subCat.id}>
-                          {subCat.name}
+                          {tSubCat(subCat.id) || subCat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -4320,7 +4353,7 @@ export default function AssetSettingsPage() {
                     <SelectContent>
                       {categories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
+                          {tCat(cat.id) || cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -4419,7 +4452,7 @@ export default function AssetSettingsPage() {
                     <SelectContent>
                       {subCategories.map((subCat) => (
                         <SelectItem key={subCat.id} value={subCat.id}>
-                          {subCat.name}
+                          {tSubCat(subCat.id) || subCat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
