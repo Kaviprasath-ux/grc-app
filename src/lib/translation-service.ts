@@ -204,6 +204,28 @@ function hashText(text: string): string {
   return createHash('md5').update(text).digest('hex');
 }
 
+// ==================== LANGUAGE DETECTION ====================
+
+/**
+ * Auto-detect the source language of the given texts.
+ * Uses Unicode character ranges to identify Arabic script and Latvian diacritics.
+ */
+function detectSourceLocale(texts: string[]): string {
+  const combined = texts.join(' ');
+  // Check for Arabic script (covers standard Arabic, supplements, and presentation forms)
+  const arabicChars = (combined.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g) || []).length;
+  // Check for Latvian-specific diacritics (ā, č, ē, ģ, ī, ķ, ļ, ņ, š, ū, ž)
+  const latvianChars = (combined.match(/[āčēģīķļņšūž]/gi) || []).length;
+  const latinChars = (combined.match(/[a-zA-Z]/g) || []).length;
+
+  // If significant Arabic characters present, source is Arabic
+  if (arabicChars > 2) return 'ar';
+  // If Latvian diacritics present with Latin text, source is Latvian
+  if (latvianChars > 0 && latinChars > 0) return 'lv';
+  // Default to English
+  return 'en';
+}
+
 // ==================== CORE FUNCTIONS ====================
 
 /**
@@ -213,18 +235,20 @@ function hashText(text: string): string {
  * Translates to ALL languages EXCEPT the sourceLocale. If the user entered
  * data in Arabic, translations are generated for English and Latvian (and vice versa).
  *
+ * When sourceLocale is not provided, auto-detects the language from the text content.
+ *
  * @param customerAccountId - Tenant ID
  * @param modelName - e.g. "Risk", "Control"
  * @param recordId - ID of the source record
  * @param fields - Object of { fieldName: fieldValue } to translate
- * @param sourceLocale - The language the user entered the data in (default: 'en')
+ * @param sourceLocale - The language the user entered the data in (auto-detected if omitted)
  */
 export async function translateRecord(
   customerAccountId: string,
   modelName: string,
   recordId: string,
   fields: FieldValues,
-  sourceLocale: string = 'en'
+  sourceLocale?: string
 ): Promise<void> {
   const translationProvider = getProvider();
 
@@ -254,15 +278,19 @@ export async function translateRecord(
     return;
   }
 
+  // Auto-detect source language from content if not explicitly provided
+  const effectiveSourceLocale = sourceLocale ?? detectSourceLocale(fieldsToTranslate.map(f => f.value));
+
   // Build target locales: all languages EXCEPT the source locale
   // Always include 'en' + TARGET_LOCALES, then exclude the source
   const allLocales: string[] = ['en', ...TARGET_LOCALES];
-  const targetLocales = allLocales.filter(l => l !== sourceLocale);
+  const targetLocales = allLocales.filter(l => l !== effectiveSourceLocale);
 
   logInfo(`Starting translation for ${modelName}/${recordId}`, {
     modelName,
     recordId,
-    sourceLocale,
+    sourceLocale: effectiveSourceLocale,
+    autoDetected: !sourceLocale,
     fields: fieldsToTranslate.map(f => ({
       fieldName: f.name,
       textLength: f.value.length,
@@ -328,7 +356,7 @@ export async function translateRecord(
   logInfo(`Translation complete for ${modelName}/${recordId}`, {
     totalSuccess,
     totalErrors,
-    sourceLocale,
+    sourceLocale: effectiveSourceLocale,
     localesProcessed: targetLocales.length,
     totalTimeMs: overallElapsed,
   });

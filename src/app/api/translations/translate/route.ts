@@ -47,7 +47,8 @@ export const POST = withAuthOnly(async (req: NextRequest, _context, session) => 
 
     // Fire-and-forget: translate in background, don't block response
     // Pass sourceLocale so the service translates to all OTHER languages
-    void translateRecord(session.customerAccountId, modelName, recordId, fields, sourceLocale || 'en');
+    // If not provided, translateRecord auto-detects from text content
+    void translateRecord(session.customerAccountId, modelName, recordId, fields, sourceLocale || undefined);
 
     return NextResponse.json({ success: true, message: 'Translation triggered' });
   } catch (error) {
