@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -189,6 +190,19 @@ export default function AssetInventoryPage() {
   const [lifecycleStatuses, setLifecycleStatuses] = useState<AssetLifecycleStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Dynamic data translations
+  const { data: translatedAssets } = useTranslatedData(assets, { modelName: 'Asset' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'AssetCategory' });
+  const { data: translatedSubCategories } = useTranslatedData(subCategories, { modelName: 'AssetSubCategory' });
+  const { data: translatedGroups } = useTranslatedData(groups, { modelName: 'AssetGroup' });
+  const { data: translatedSensitivities } = useTranslatedData(sensitivities, { modelName: 'AssetSensitivity' });
+  const { data: translatedLifecycleStatuses } = useTranslatedData(lifecycleStatuses, { modelName: 'AssetLifecycleStatus' });
+
+  // Lookup maps for translated names of related entities
+  const categoryNameMap = new Map(translatedCategories.map(c => [c.id, c.name]));
+  const subCategoryNameMap = new Map(translatedSubCategories.map(sc => [sc.id, sc.name]));
+  const groupNameMap = new Map(translatedGroups.map(g => [g.id, g.name]));
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -245,21 +259,21 @@ export default function AssetInventoryPage() {
   // Field errors state for inline validation
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
-  // Filtered subcategories based on selected category
-  const filteredSubCategories = subCategories.filter(
+  // Filtered subcategories based on selected category (using translated data)
+  const filteredSubCategories = translatedSubCategories.filter(
     (sc) => !newAsset.categoryId || sc.categoryId === newAsset.categoryId
   );
 
-  const editFilteredSubCategories = subCategories.filter(
+  const editFilteredSubCategories = translatedSubCategories.filter(
     (sc) => !editingAsset?.categoryId || sc.categoryId === editingAsset?.categoryId
   );
 
-  // Filtered groups based on selected sub-category
-  const filteredGroups = groups.filter(
+  // Filtered groups based on selected sub-category (using translated data)
+  const filteredGroups = translatedGroups.filter(
     (g) => !newAsset.subCategoryId || g.subCategoryId === newAsset.subCategoryId
   );
 
-  const editFilteredGroups = groups.filter(
+  const editFilteredGroups = translatedGroups.filter(
     (g) => !editingAsset?.subCategoryId || g.subCategoryId === editingAsset?.subCategoryId
   );
 
@@ -307,19 +321,22 @@ export default function AssetInventoryPage() {
     setLoading(false);
   };
 
-  // Filter assets
-  const filteredAssets = assets.filter((a) => {
+  // Filter assets (use translatedAssets for display with translated name field)
+  const filteredAssets = translatedAssets.filter((a) => {
     // Department-scoped filtering for DepartmentReviewer/DepartmentContributor
     if (isDepartmentRole && userDepartmentId && a.departmentId !== userDepartmentId) {
       return false;
     }
+    const catName = categoryNameMap.get(a.categoryId || "") || a.category?.name || "";
+    const subCatName = subCategoryNameMap.get(a.subCategoryId || "") || a.subCategory?.name || "";
+    const grpName = groupNameMap.get(a.groupId || "") || a.group?.name || "";
     const matchesSearch =
       a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (a.owner?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (a.category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (a.subCategory?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (a.group?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
+      (catName.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (subCatName.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (grpName.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     const matchesCategory = categoryFilter === "all" || a.categoryId === categoryFilter;
     const matchesDepartment = departmentFilter === "all" || a.departmentId === departmentFilter;
     const matchesLifecycle = lifecycleFilter === "all" || a.lifecycleStatusId === lifecycleFilter;
@@ -449,6 +466,7 @@ export default function AssetInventoryPage() {
       if (res.ok) {
         const asset = await res.json();
         setAssets([...assets, asset]);
+        triggerTranslation('Asset', asset.id, { name: asset.name, description: asset.description });
         resetForm();
         setIsAddAssetOpen(false);
       } else {
@@ -535,6 +553,7 @@ export default function AssetInventoryPage() {
       if (res.ok) {
         const updated = await res.json();
         setAssets(assets.map((a) => (a.id === updated.id ? updated : a)));
+        triggerTranslation('Asset', updated.id, { name: updated.name, description: updated.description });
         setIsEditAssetOpen(false);
         setEditingAsset(null);
       } else {
@@ -595,6 +614,7 @@ export default function AssetInventoryPage() {
       if (res.ok) {
         const cat = await res.json();
         setCategories([...categories, cat]);
+        triggerTranslation('AssetCategory', cat.id, { name: cat.name });
         setNewAsset({ ...newAsset, categoryId: cat.id });
         setNewCategoryName("");
         setIsAddCategoryOpen(false);
@@ -619,6 +639,7 @@ export default function AssetInventoryPage() {
       if (res.ok) {
         const subCat = await res.json();
         setSubCategories([...subCategories, subCat]);
+        triggerTranslation('AssetSubCategory', subCat.id, { name: subCat.name });
         setNewAsset({ ...newAsset, subCategoryId: subCat.id });
         setNewSubCategoryName("");
         setIsAddSubCategoryOpen(false);
@@ -639,6 +660,7 @@ export default function AssetInventoryPage() {
       if (res.ok) {
         const group = await res.json();
         setGroups([...groups, group]);
+        triggerTranslation('AssetGroup', group.id, { name: group.name });
         setNewAsset({ ...newAsset, groupId: group.id });
         setNewGroupName("");
         setIsAddGroupOpen(false);
@@ -659,6 +681,7 @@ export default function AssetInventoryPage() {
       if (res.ok) {
         const lifecycle = await res.json();
         setLifecycleStatuses([...lifecycleStatuses, lifecycle]);
+        triggerTranslation('AssetLifecycleStatus', lifecycle.id, { name: lifecycle.name });
         setNewAsset({ ...newAsset, lifecycleStatusId: lifecycle.id });
         setNewLifecycleName("");
         setIsAddLifecycleOpen(false);
@@ -676,9 +699,9 @@ export default function AssetInventoryPage() {
       asset.assetId,
       asset.name,
       asset.owner?.fullName || "",
-      asset.category?.name || "",
-      asset.subCategory?.name || "",
-      asset.group?.name || "",
+      categoryNameMap.get(asset.categoryId || "") || asset.category?.name || "",
+      subCategoryNameMap.get(asset.subCategoryId || "") || asset.subCategory?.name || "",
+      groupNameMap.get(asset.groupId || "") || asset.group?.name || "",
       asset.department?.name || "",
       asset.custodian?.fullName || "",
       asset.lifecycleStatus?.name || "",
@@ -1044,7 +1067,7 @@ export default function AssetInventoryPage() {
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                 <SelectItem value="all">{t("All Categories")}</SelectItem>
-                {categories.map((cat) => (
+                {translatedCategories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
                   </SelectItem>
@@ -1070,7 +1093,7 @@ export default function AssetInventoryPage() {
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                 <SelectItem value="all">{t("All Status")}</SelectItem>
-                {lifecycleStatuses.map((ls) => (
+                {translatedLifecycleStatuses.map((ls) => (
                   <SelectItem key={ls.id} value={ls.id}>
                     {ls.name}
                   </SelectItem>
@@ -1108,9 +1131,9 @@ export default function AssetInventoryPage() {
                   </div>
                 </TableCell>
                 <TableCell className="py-3.5 text-sm text-slate-600">{asset.owner?.fullName || "-"}</TableCell>
-                <TableCell className="py-3.5 text-sm text-slate-600">{asset.category?.name || "-"}</TableCell>
-                <TableCell className="py-3.5 text-sm text-slate-600">{asset.subCategory?.name || "-"}</TableCell>
-                <TableCell className="py-3.5 text-sm text-slate-600">{asset.group?.name || "-"}</TableCell>
+                <TableCell className="py-3.5 text-sm text-slate-600">{categoryNameMap.get(asset.categoryId || "") || asset.category?.name || "-"}</TableCell>
+                <TableCell className="py-3.5 text-sm text-slate-600">{subCategoryNameMap.get(asset.subCategoryId || "") || asset.subCategory?.name || "-"}</TableCell>
+                <TableCell className="py-3.5 text-sm text-slate-600">{groupNameMap.get(asset.groupId || "") || asset.group?.name || "-"}</TableCell>
                 <TableCell className="py-3.5 pe-5">
                   <div className="flex items-center gap-0.5">
                     {canEdit && (
@@ -1319,7 +1342,7 @@ export default function AssetInventoryPage() {
                         <SelectValue placeholder={t("Select Category")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {categories.map((cat) => (
+                        {translatedCategories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
                           </SelectItem>
@@ -1461,7 +1484,7 @@ export default function AssetInventoryPage() {
                         <SelectValue placeholder={t("Select Status")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {lifecycleStatuses.map((ls) => (
+                        {translatedLifecycleStatuses.map((ls) => (
                           <SelectItem key={ls.id} value={ls.id}>
                             {ls.name}
                           </SelectItem>
@@ -1674,7 +1697,7 @@ export default function AssetInventoryPage() {
                           <SelectValue placeholder={t("Select Category")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
-                          {categories.map((cat) => (
+                          {translatedCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
                             </SelectItem>
@@ -1816,7 +1839,7 @@ export default function AssetInventoryPage() {
                           <SelectValue placeholder={t("Select Status")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
-                          {lifecycleStatuses.map((ls) => (
+                          {translatedLifecycleStatuses.map((ls) => (
                             <SelectItem key={ls.id} value={ls.id}>
                               {ls.name}
                             </SelectItem>
