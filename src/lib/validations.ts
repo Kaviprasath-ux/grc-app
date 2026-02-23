@@ -30,8 +30,8 @@ export const isAlphaWithSpaces = (str: string): boolean => {
   return /^[\p{L}\s]+$/u.test(str);
 };
 
-// For username fields
+// For username fields - allows letters, numbers, underscores, dots, hyphens
 export const isAlphanumeric = (str: string): boolean => {
   if (!str.trim()) return true;
-  return /^[a-zA-Z0-9_]+$/.test(str);
+  return /^[a-zA-Z0-9_.\-]+$/.test(str);
 };

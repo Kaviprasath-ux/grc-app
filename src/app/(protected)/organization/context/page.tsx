@@ -2038,10 +2038,6 @@ export default function ContextPage() {
                 setIssueErrors({});
                 setCurrentStep(2);
               } else if (currentStep === 2) {
-                if (newIssue.selectedRegulations.length === 0) {
-                  setIssueStepError(t("Please link a regulation for this Issue"));
-                  return;
-                }
                 setCurrentStep(3);
               } else {
                 setCurrentStep(currentStep + 1);

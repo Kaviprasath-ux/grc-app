@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { isValidName } from "@/lib/validations";
 
 // GET all regulations
 export async function GET() {
@@ -34,6 +35,10 @@ export async function POST(request: NextRequest) {
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    }
+
+    if (!isValidName(name.trim())) {
+      return NextResponse.json({ error: "Only letters, spaces, and hyphens are allowed" }, { status: 400 });
     }
 
     // Check for duplicate within the same tenant

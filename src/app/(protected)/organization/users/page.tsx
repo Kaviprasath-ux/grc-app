@@ -379,9 +379,14 @@ export default function UsersPage() {
         setUsers(users.map((u) => (u.id === updated.id ? updated : u)));
         setIsEditUserOpen(false);
         setEditingUser(null);
+        toast({ title: t("Success"), description: t("User updated successfully") });
+      } else {
+        const error = await res.json().catch(() => ({ error: "Failed to update user" }));
+        toast({ title: t("Error"), description: error.error || t("Failed to update user"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating user:", error);
+      toast({ title: t("Error"), description: t("Failed to update user"), variant: "destructive" });
     }
   };
 
@@ -1525,46 +1530,58 @@ export default function UsersPage() {
               </div>
 
               {/* First Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
-                <Label htmlFor="editFirstName" className="sm:text-end">{t("First Name")}</Label>
-                <Input
-                  id="editFirstName"
-                  value={editingUser.firstName}
-                  onChange={(e) => {
-                    const newFirstName = e.target.value;
-                    const autoFullName = `${newFirstName} ${editingUser.lastName}`.trim();
-                    setEditingUser({ ...editingUser, firstName: newFirstName, fullName: autoFullName });
-                  }}
-                  className="bg-white"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-start gap-1 sm:gap-4">
+                <Label htmlFor="editFirstName" className="sm:text-end mt-2">{t("First Name")}</Label>
+                <div>
+                  <Input
+                    id="editFirstName"
+                    value={editingUser.firstName}
+                    onChange={(e) => {
+                      const newFirstName = e.target.value;
+                      const autoFullName = `${newFirstName} ${editingUser.lastName}`.trim();
+                      setEditingUser({ ...editingUser, firstName: newFirstName, fullName: autoFullName });
+                      if (editUserFormErrors.firstName) setEditUserFormErrors((prev) => ({ ...prev, firstName: "" }));
+                    }}
+                    className={`bg-white ${editUserFormErrors.firstName ? "border-red-500" : ""}`}
+                  />
+                  {editUserFormErrors.firstName && <p className="text-sm text-red-500 mt-1">{editUserFormErrors.firstName}</p>}
+                </div>
               </div>
 
               {/* Last Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
-                <Label htmlFor="editLastName" className="sm:text-end">{t("Last Name")}</Label>
-                <Input
-                  id="editLastName"
-                  value={editingUser.lastName}
-                  onChange={(e) => {
-                    const newLastName = e.target.value;
-                    const autoFullName = `${editingUser.firstName} ${newLastName}`.trim();
-                    setEditingUser({ ...editingUser, lastName: newLastName, fullName: autoFullName });
-                  }}
-                  className="bg-white"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-start gap-1 sm:gap-4">
+                <Label htmlFor="editLastName" className="sm:text-end mt-2">{t("Last Name")}</Label>
+                <div>
+                  <Input
+                    id="editLastName"
+                    value={editingUser.lastName}
+                    onChange={(e) => {
+                      const newLastName = e.target.value;
+                      const autoFullName = `${editingUser.firstName} ${newLastName}`.trim();
+                      setEditingUser({ ...editingUser, lastName: newLastName, fullName: autoFullName });
+                      if (editUserFormErrors.lastName) setEditUserFormErrors((prev) => ({ ...prev, lastName: "" }));
+                    }}
+                    className={`bg-white ${editUserFormErrors.lastName ? "border-red-500" : ""}`}
+                  />
+                  {editUserFormErrors.lastName && <p className="text-sm text-red-500 mt-1">{editUserFormErrors.lastName}</p>}
+                </div>
               </div>
 
               {/* Full Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
-                <Label htmlFor="editFullName" className="sm:text-end">{t("Full Name")}</Label>
-                <Input
-                  id="editFullName"
-                  value={editingUser.fullName}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, fullName: e.target.value })
-                  }
-                  className="bg-white"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-start gap-1 sm:gap-4">
+                <Label htmlFor="editFullName" className="sm:text-end mt-2">{t("Full Name")}</Label>
+                <div>
+                  <Input
+                    id="editFullName"
+                    value={editingUser.fullName}
+                    onChange={(e) => {
+                      setEditingUser({ ...editingUser, fullName: e.target.value });
+                      if (editUserFormErrors.fullName) setEditUserFormErrors((prev) => ({ ...prev, fullName: "" }));
+                    }}
+                    className={`bg-white ${editUserFormErrors.fullName ? "border-red-500" : ""}`}
+                  />
+                  {editUserFormErrors.fullName && <p className="text-sm text-red-500 mt-1">{editUserFormErrors.fullName}</p>}
+                </div>
               </div>
 
               {/* Email */}
@@ -1615,16 +1632,20 @@ export default function UsersPage() {
               </div>
 
               {/* Name (Username) */}
-              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
-                <Label htmlFor="editUserName" className="sm:text-end">{t("Name")}</Label>
-                <Input
-                  id="editUserName"
-                  value={editingUser.userName}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, userName: e.target.value })
-                  }
-                  className="bg-white"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-start gap-1 sm:gap-4">
+                <Label htmlFor="editUserName" className="sm:text-end mt-2">{t("Name")}</Label>
+                <div>
+                  <Input
+                    id="editUserName"
+                    value={editingUser.userName}
+                    onChange={(e) => {
+                      setEditingUser({ ...editingUser, userName: e.target.value });
+                      if (editUserFormErrors.userName) setEditUserFormErrors((prev) => ({ ...prev, userName: "" }));
+                    }}
+                    className={`bg-white ${editUserFormErrors.userName ? "border-red-500" : ""}`}
+                  />
+                  {editUserFormErrors.userName && <p className="text-sm text-red-500 mt-1">{editUserFormErrors.userName}</p>}
+                </div>
               </div>
 
               {/* Function */}
