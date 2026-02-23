@@ -51,6 +51,7 @@ import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Framework {
   id: string;
@@ -172,8 +173,11 @@ export default function FrameworkOverviewPage() {
     }
   };
 
+  // Translate framework names/descriptions for non-English locales
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+
   // Filter and sort frameworks
-  const filteredFrameworks = frameworks.filter(
+  const filteredFrameworks = translatedFrameworks.filter(
     (f) =>
       f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       f.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -278,6 +282,12 @@ export default function FrameworkOverviewPage() {
         });
 
         if (response.ok) {
+          triggerTranslation('Framework', editingFramework.id, {
+            name: formData.name.trim(),
+            description: formData.description || null,
+            country: formData.country || null,
+            industry: formData.industry || null,
+          });
           setIsCreateDialogOpen(false);
           resetForm();
           fetchFrameworks();
@@ -396,6 +406,14 @@ export default function FrameworkOverviewPage() {
 
         if (response.ok) {
           const newFramework = await response.json();
+          if (newFramework?.id) {
+            triggerTranslation('Framework', newFramework.id, {
+              name: formData.name.trim(),
+              description: formData.description || null,
+              country: formData.country || null,
+              industry: formData.industry || null,
+            });
+          }
           setIsCreateDialogOpen(false);
           resetForm();
           fetchFrameworks();

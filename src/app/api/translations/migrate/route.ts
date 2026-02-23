@@ -24,7 +24,7 @@ export const POST = withAuth(
     try {
       if (!isTranslationConfigured()) {
         return NextResponse.json(
-          { error: 'Translation service is not configured. Set AZURE_TRANSLATOR_KEY and AZURE_TRANSLATOR_REGION.' },
+          { error: 'Translation service is not configured. Set AI_API_BASE_URL and PYTHON_API_SECRET.' },
           { status: 503 }
         );
       }

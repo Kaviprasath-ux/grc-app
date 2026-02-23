@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // GET single control domain
 export async function GET(
@@ -56,6 +58,15 @@ export async function PUT(
       data: { name: name.trim() },
     });
 
+    // Fire-and-forget translation
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+    if (customerAccountId) {
+      void translateRecord(customerAccountId, 'ControlDomain', domain.id, {
+        name: domain.name,
+      });
+    }
+
     return NextResponse.json(domain);
   } catch (error: unknown) {
     console.error("Error updating control domain:", error);
@@ -85,9 +96,19 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+
+    // Get customerAccountId before deleting
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     await prisma.controlDomain.delete({
       where: { id },
     });
+
+    // Fire-and-forget translation cleanup
+    if (customerAccountId) {
+      void deleteRecordTranslations(customerAccountId, 'ControlDomain', id);
+    }
 
     return NextResponse.json({ message: "Control domain deleted successfully" });
   } catch (error: unknown) {

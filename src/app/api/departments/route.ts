@@ -58,7 +58,13 @@ export const POST = withAuth(
         },
       });
 
-      if (customerAccountId) void translateRecord(customerAccountId, 'Department', department.id, { name: department.name, description: department.description });
+      // Fire-and-forget translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'Department', department.id, {
+          name: department.name,
+          description: department.description,
+        });
+      }
 
       return NextResponse.json(department, { status: 201 });
     } catch (error: unknown) {

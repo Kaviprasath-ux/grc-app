@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all control domains
 export async function GET() {
@@ -89,6 +90,13 @@ export async function POST(request: NextRequest) {
         ...(customerAccountId ? { customerAccountId } : {}),
       },
     });
+
+    // Fire-and-forget translation
+    if (customerAccountId) {
+      void translateRecord(customerAccountId, 'ControlDomain', domain.id, {
+        name: domain.name,
+      });
+    }
 
     return NextResponse.json(domain, { status: 201 });
   } catch (error: unknown) {

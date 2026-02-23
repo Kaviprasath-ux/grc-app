@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all controls with filters - filtered by customer account
 export const GET = withAuth(
@@ -190,6 +191,15 @@ export const POST = withAuth(
           controlCode: control.controlCode,
           controlName: control.name,
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+        });
+      }
+
+      // Fire-and-forget translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'Control', control.id, {
+          name: control.name,
+          description: control.description,
+          controlQuestion: control.controlQuestion,
         });
       }
 

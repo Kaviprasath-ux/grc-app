@@ -241,6 +241,13 @@ export async function POST(request: NextRequest) {
     // Remove password from response BEFORE sending notification
     const { password: _, ...safeUser } = user;
 
+    // Fire-and-forget translation
+    if (customerAccountId) {
+      void translateRecord(customerAccountId, 'User', user.id, {
+        fullName: user.fullName,
+      });
+    }
+
     // Send welcome notification ONLY after transaction succeeds
     // This is outside the transaction to ensure DB operations completed successfully
     if (customerAccountId && createdById) {

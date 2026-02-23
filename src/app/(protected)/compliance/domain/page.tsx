@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import {
   Dialog,
   DialogContent,
@@ -160,6 +161,7 @@ export default function DomainPage() {
           body: JSON.stringify({ name: formData.name.trim() }),
         });
         if (response.ok) {
+          triggerTranslation('ControlDomain', editingDomain.id, { name: formData.name.trim() });
           toast({ title: t("Success"), description: t("Domain updated successfully") });
           fetchDomains();
           setIsDialogOpen(false);
@@ -174,6 +176,10 @@ export default function DomainPage() {
           body: JSON.stringify({ name: formData.name.trim() }),
         });
         if (response.ok) {
+          const created = await response.json();
+          if (created?.id) {
+            triggerTranslation('ControlDomain', created.id, { name: formData.name.trim() });
+          }
           toast({ title: t("Success"), description: t("Domain created successfully") });
           fetchDomains();
           setIsDialogOpen(false);
@@ -210,8 +216,11 @@ export default function DomainPage() {
     }
   };
 
+  // Translate domain names for non-English locales
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+
   // Filter and paginate
-  const filteredDomains = domains.filter(
+  const filteredDomains = translatedDomains.filter(
     (d) =>
       d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (d.code && d.code.toLowerCase().includes(searchTerm.toLowerCase()))

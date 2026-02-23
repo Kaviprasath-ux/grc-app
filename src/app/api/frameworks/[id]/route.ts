@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // Types for the complex nested structure from Prisma
 interface PolicyControlWithPolicy {
@@ -326,6 +327,16 @@ export const PUT = withAuth(
         },
       });
 
+      // Fire-and-forget translation
+      if (session.customerAccountId) {
+        void translateRecord(session.customerAccountId, 'Framework', framework.id, {
+          name: framework.name,
+          description: framework.description,
+          country: framework.country,
+          industry: framework.industry,
+        });
+      }
+
       return NextResponse.json(framework);
     } catch (error: unknown) {
       console.error("Error updating framework:", error);
@@ -480,6 +491,11 @@ export const DELETE = withAuth(
           where: { id },
         });
       });
+
+      // Fire-and-forget translation cleanup
+      if (session.customerAccountId) {
+        void deleteRecordTranslations(session.customerAccountId, 'Framework', id);
+      }
 
       // Decrement frameworksUsed in the active subscription plan
       if (existingFramework.customerAccountId && existingFramework.status === "Subscribed") {

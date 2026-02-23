@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId, getTenantFilter } from "@/lib/api-auth";
 import { calculateMultipleFrameworkCharts } from "@/services/FrameworkChartService";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all frameworks
 export const GET = withAuth(
@@ -283,6 +284,16 @@ export const POST = withAuth(
           customerAccountId,
         },
       });
+
+      // Fire-and-forget translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'Framework', framework.id, {
+          name: framework.name,
+          description: framework.description,
+          country: framework.country,
+          industry: framework.industry,
+        });
+      }
 
       // Increment frameworksUsed in the active subscription plan
       if (status === "Subscribed" && activePlan) {

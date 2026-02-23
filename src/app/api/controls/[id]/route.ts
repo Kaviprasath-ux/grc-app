@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -306,6 +307,15 @@ export const PUT = withAuth(
       }
     }
 
+      // Fire-and-forget translation
+      if (session.customerAccountId) {
+        void translateRecord(session.customerAccountId, 'Control', control.id, {
+          name: control.name,
+          description: control.description,
+          controlQuestion: control.controlQuestion,
+        });
+      }
+
       return NextResponse.json(control);
     } catch (error: unknown) {
       console.error("Error updating control:", error);
@@ -350,6 +360,11 @@ export const DELETE = withAuth(
       await prisma.control.delete({
         where: { id },
       });
+
+      // Fire-and-forget translation cleanup
+      if (session.customerAccountId) {
+        void deleteRecordTranslations(session.customerAccountId, 'Control', id);
+      }
 
       return NextResponse.json({ message: "Control deleted successfully" });
     } catch (error: unknown) {

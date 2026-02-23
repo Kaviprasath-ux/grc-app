@@ -28,8 +28,8 @@ export interface TranslatableModel {
 export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   // Priority 1 — Core GRC items visible on dashboards
   { modelName: 'Risk', fields: [{ name: 'name' }, { name: 'description' }, { name: 'riskSources' }], priority: 1 },
-  { modelName: 'Control', fields: [{ name: 'name' }, { name: 'description' }], priority: 1 },
-  { modelName: 'Framework', fields: [{ name: 'name' }, { name: 'description' }], priority: 1 },
+  { modelName: 'Control', fields: [{ name: 'name' }, { name: 'description' }, { name: 'controlQuestion' }], priority: 1 },
+  { modelName: 'Framework', fields: [{ name: 'name' }, { name: 'description' }, { name: 'country' }, { name: 'industry' }], priority: 1 },
   { modelName: 'Policy', fields: [{ name: 'title' }, { name: 'description' }], priority: 1 },
 
   // Priority 2 — Compliance & governance
@@ -82,7 +82,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'BCPLabel', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
 
   // Priority 6 — Master data / settings
-  { modelName: 'ControlDomain', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
+  { modelName: 'ControlDomain', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'AssetCategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
   { modelName: 'AssetSubCategory', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'AssetGroup', fields: [{ name: 'name' }], priority: 6 },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -84,6 +84,7 @@ import {
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Control {
   id: string;
@@ -389,7 +390,39 @@ function ControlListPageContent() {
     }
   };
 
-  const sortedControls = [...controls].sort((a, b) => {
+  // Translate dynamic data for non-English locales
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+
+  // Lookup maps for translated nested data in table rows
+  const domainNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDomains.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDomains]);
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedUsers.forEach(u => map.set(u.id, u.fullName));
+    return map;
+  }, [translatedUsers]);
+
+  const frameworkNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedFrameworks.forEach(f => map.set(f.id, f.name));
+    return map;
+  }, [translatedFrameworks]);
+
+  const departmentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDepartments.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDepartments]);
+
+  const sortedControls = [...translatedControls].sort((a, b) => {
     let aValue = "";
     let bValue = "";
 
@@ -411,8 +444,8 @@ function ControlListPageContent() {
         bValue = b.status || "";
         break;
       case "domain":
-        aValue = a.domain?.name || "";
-        bValue = b.domain?.name || "";
+        aValue = (a.domain?.id ? domainNameMap.get(a.domain.id) : null) || a.domain?.name || "";
+        bValue = (b.domain?.id ? domainNameMap.get(b.domain.id) : null) || b.domain?.name || "";
         break;
       default:
         aValue = a.name || "";
@@ -512,18 +545,18 @@ function ControlListPageContent() {
   const handleExport = () => {
     const csv = [
       ["Control Code", "Name", "Description", "Control Question", "Functional Grouping", "Status", "Domain", "Framework", "Department", "Owner", "Assignee"],
-      ...controls.map((c) => [
+      ...translatedControls.map((c) => [
         c.controlCode,
         c.name,
         c.description || "",
         c.controlQuestion || "",
-        c.functionalGrouping || "",
-        c.status,
-        c.domain?.name || "",
-        c.framework?.name || "",
-        c.department?.name || "",
-        c.owner?.fullName || "",
-        c.assignee?.fullName || "",
+        c.functionalGrouping ? t(c.functionalGrouping) : "",
+        c.status ? t(c.status) : "",
+        (c.domain?.id ? domainNameMap.get(c.domain.id) : null) || c.domain?.name || "",
+        (c.framework?.id ? frameworkNameMap.get(c.framework.id) : null) || c.framework?.name || "",
+        (c.department?.id ? departmentNameMap.get(c.department.id) : null) || c.department?.name || "",
+        (c.owner?.id ? userNameMap.get(c.owner.id) : null) || c.owner?.fullName || "",
+        (c.assignee?.id ? userNameMap.get(c.assignee.id) : null) || c.assignee?.fullName || "",
       ]),
     ]
       .map((row) => row.map((cell) => `"${cell}"`).join(","))
@@ -546,6 +579,14 @@ function ControlListPageContent() {
         body: JSON.stringify(newControl),
       });
       if (response.ok) {
+        const responseData = await response.json().catch(() => null);
+        if (responseData?.id) {
+          triggerTranslation('Control', responseData.id, {
+            name: newControl.name,
+            description: newControl.description || null,
+            controlQuestion: newControl.controlQuestion || null,
+          });
+        }
         toast({ title: t("Success"), description: t("Control created successfully") });
         setIsCreateDialogOpen(false);
         setCreateStep(1);
@@ -632,15 +673,15 @@ function ControlListPageContent() {
 
   // The /api/users and /api/departments endpoints already apply tenant filtering,
   // so data is already scoped to the user's customerAccountId.
-  const getCustomerScopedUsers = () => users;
+  const getCustomerScopedUsers = () => translatedUsers;
 
-  const getCustomerScopedDepartments = () => departments;
+  const getCustomerScopedDepartments = () => translatedDepartments;
 
   // Filter users for Assignee dropdown: only DepartmentReviewers and DepartmentContributors from the selected department
   const getFilteredUsersForAssignee = () => {
     if (!newControl.departmentId) return [];
 
-    return users.filter((u) => {
+    return translatedUsers.filter((u) => {
       if (u.departmentId !== newControl.departmentId) return false;
       return u.userRoles?.some((ur) =>
         ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
@@ -944,7 +985,7 @@ function ControlListPageContent() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-                    {frameworks.map((f) => (
+                    {translatedFrameworks.map((f) => (
                       <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -955,7 +996,7 @@ function ControlListPageContent() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     <SelectItem value="all">{t("All Departments")}</SelectItem>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -966,7 +1007,7 @@ function ControlListPageContent() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     <SelectItem value="all">{t("All Assignees")}</SelectItem>
-                    {users.map((u) => (
+                    {translatedUsers.map((u) => (
                       <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                     ))}
                   </SelectContent>
@@ -977,7 +1018,7 @@ function ControlListPageContent() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     <SelectItem value="all">{t("All Domains")}</SelectItem>
-                    {domains.map((d) => (
+                    {translatedDomains.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1085,7 +1126,7 @@ function ControlListPageContent() {
                     <TableCell className="py-3.5 text-sm text-slate-600">{control.controlCode}</TableCell>
                   )}
                   {visibleColumns.functionalGrouping && (
-                    <TableCell className="py-3.5 text-sm text-slate-600">{control.functionalGrouping || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{control.functionalGrouping ? t(control.functionalGrouping) : "-"}</TableCell>
                   )}
                   {visibleColumns.status && (
                     <TableCell className="py-3.5">
@@ -1095,10 +1136,10 @@ function ControlListPageContent() {
                     </TableCell>
                   )}
                   {visibleColumns.assignee && (
-                    <TableCell className="py-3.5 text-sm text-slate-600">{control.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{(control.assignee?.id ? userNameMap.get(control.assignee.id) : null) || control.assignee?.fullName || "-"}</TableCell>
                   )}
                   {visibleColumns.domain && (
-                    <TableCell className="py-3.5 text-sm text-slate-600">{control.domain?.name || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{(control.domain?.id ? domainNameMap.get(control.domain.id) : null) || control.domain?.name || "-"}</TableCell>
                   )}
                   <TableCell className="py-3.5 pe-5">
                     <div className="flex items-center gap-1">
@@ -1216,7 +1257,7 @@ function ControlListPageContent() {
                             <SelectValue placeholder={t("Select domain")} />
                           </SelectTrigger>
                           <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                            {domains.map((d) => (
+                            {translatedDomains.map((d) => (
                               <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1362,7 +1403,7 @@ function ControlListPageContent() {
                     <div className="grid grid-cols-1 sm:grid-cols-2">
                       <div className="px-4 py-3 border-b border-slate-100">
                         <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Domain")}</span>
-                        <p className="text-sm font-medium text-slate-800 mt-0.5">{domains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
+                        <p className="text-sm font-medium text-slate-800 mt-0.5">{translatedDomains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
                       </div>
                       <div className="px-4 py-3 border-b border-slate-100 ltr:border-l rtl:border-r border-slate-100">
                         <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("Control Name")}</span>
