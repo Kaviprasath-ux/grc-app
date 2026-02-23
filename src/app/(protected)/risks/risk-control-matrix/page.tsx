@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface LinkedControl {
   id: string;
@@ -208,6 +209,13 @@ export default function RiskControlMatrixPage() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+  // Translate dynamic data — use Risk model since name/description come from Risk records
+  const riskItems = useMemo(() =>
+    paginatedEntries.filter(e => e.risk).map(e => ({ id: e.risk!.id, name: e.name, description: e.description })),
+    [paginatedEntries]
+  );
+  const { data: translatedRisks } = useTranslatedData(riskItems, { modelName: 'Risk' });
+
   const showActions = isCustomerAdmin && canDelete;
 
   const gridCols = showActions
@@ -383,7 +391,7 @@ export default function RiskControlMatrixPage() {
 
                 {/* Risk Name */}
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm text-slate-700 truncate">{entry.name}</span>
+                  <span className="text-sm text-slate-700 truncate">{translatedRisks.find(r => r.id === entry.risk?.id)?.name || entry.name}</span>
                   {!entry.riskId && (
                     <Badge variant="outline" className="text-[10px] text-slate-400 border-dashed border-slate-300 flex-shrink-0 px-1.5 py-0">
                       {t("Deleted")}
@@ -392,13 +400,13 @@ export default function RiskControlMatrixPage() {
                 </div>
 
                 {/* Inherent Risk Rating */}
-                <span className="text-sm text-slate-600">{entry.riskRating || "--"}</span>
+                <span className="text-sm text-slate-600">{entry.riskRating ? t(entry.riskRating) : "--"}</span>
 
                 {/* Residual Risk Rating */}
-                <span className="text-sm text-slate-600">{entry.residualRiskRating || "--"}</span>
+                <span className="text-sm text-slate-600">{entry.residualRiskRating ? t(entry.residualRiskRating) : "--"}</span>
 
                 {/* Status */}
-                <span className="text-sm text-slate-600">{entry.status}</span>
+                <span className="text-sm text-slate-600">{t(entry.status)}</span>
 
                 {/* Controls Count */}
                 <div className="flex items-center gap-1.5">

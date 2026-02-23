@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedRecord, useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Risk {
   id: string;
@@ -260,6 +261,16 @@ export default function RiskDetailPage() {
     fetchReferenceData();
   }, [fetchRisk, fetchReferenceData]);
 
+  // Translate dynamic data
+  const { data: translatedRisk } = useTranslatedRecord(risk, { modelName: 'Risk' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'RiskCategory' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const controlsList = useMemo(() =>
+    risk?.controlRisks?.map(cr => ({ id: cr.control.id, name: cr.control.name })) || [],
+    [risk?.controlRisks]
+  );
+  const { data: translatedControls } = useTranslatedData(controlsList, { modelName: 'Control' });
+
   const calculateRiskRating = (likelihood: number, impact: number): string => {
     const score = likelihood * impact;
     if (score >= 20) return "Critical";
@@ -411,10 +422,10 @@ export default function RiskDetailPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{risk.riskId}</h1>
           <Badge variant="outline" className={riskRatingColors[risk.riskRating || "Low"]}>
-            {risk.riskRating || "Low"}
+            {t(risk.riskRating || "Low")}
           </Badge>
           <Badge variant="outline" className={statusColors[risk.status] || "bg-slate-50 text-slate-600 border-slate-200"}>
-            {risk.status}
+            {t(risk.status)}
           </Badge>
         </div>
 
@@ -580,7 +591,7 @@ export default function RiskDetailPage() {
                       <SelectContent>
                         {mitigationStatuses.map((s) => (
                           <SelectItem key={s} value={s}>
-                            {s}
+                            {t(s)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -663,7 +674,7 @@ export default function RiskDetailPage() {
                 <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Rating")}</p>
                 <div className="mt-2">
                   <Badge variant="outline" className={riskRatingColors[risk.riskRating || "Low"]}>
-                    {risk.riskRating || "Low"}
+                    {t(risk.riskRating || "Low")}
                   </Badge>
                 </div>
               </div>
@@ -699,7 +710,7 @@ export default function RiskDetailPage() {
                   <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{t("Rating")}</p>
                   <div className="mt-2">
                     <Badge variant="outline" className={riskRatingColors[risk.residualRiskRating || "Low"]}>
-                      {risk.residualRiskRating || "Low"}
+                      {t(risk.residualRiskRating || "Low")}
                     </Badge>
                   </div>
                 </div>
@@ -729,25 +740,25 @@ export default function RiskDetailPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-slate-50">
                 <span className="text-sm text-slate-500">{t("Category")}</span>
-                <span className="text-sm font-medium text-slate-800">{risk.category?.name || "-"}</span>
+                <span className="text-sm font-medium text-slate-800">{risk.category ? (translatedCategories.find(c => c.id === risk.category?.id)?.name || risk.category.name) : "-"}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-50">
                 <span className="text-sm text-slate-500">{t("Mitigation Status")}</span>
-                <span className="text-sm font-medium text-slate-800">{risk.mitigationStatus || "-"}</span>
+                <span className="text-sm font-medium text-slate-800">{risk.mitigationStatus ? t(risk.mitigationStatus) : "-"}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-50">
                 <div className="flex items-center gap-2 text-sm text-slate-500">
-                  
+
                   <span>{t("Owner")}</span>
                 </div>
-                <span className="text-sm font-medium text-slate-800">{risk.owner?.fullName || "-"}</span>
+                <span className="text-sm font-medium text-slate-800">{translatedRisk?.owner?.fullName || risk.owner?.fullName || "-"}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-50">
                 <div className="flex items-center gap-2 text-sm text-slate-500">
-                  
+
                   <span>{t("Department")}</span>
                 </div>
-                <span className="text-sm font-medium text-slate-800">{risk.department?.name || "-"}</span>
+                <span className="text-sm font-medium text-slate-800">{risk.department ? (translatedDepartments.find(d => d.id === risk.department?.id)?.name || risk.department.name) : "-"}</span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -771,8 +782,8 @@ export default function RiskDetailPage() {
               <h3 className="text-sm font-semibold text-slate-800">{t("Description")}</h3>
             </div>
             <div className="p-5">
-              {risk.description ? (
-                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{risk.description}</p>
+              {(translatedRisk?.description || risk.description) ? (
+                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{translatedRisk?.description || risk.description}</p>
               ) : (
                 <p className="text-sm text-slate-400 italic">{t("No description provided")}</p>
               )}
@@ -913,11 +924,11 @@ export default function RiskDetailPage() {
                   className="grid grid-cols-[100px_1.5fr_1fr_100px_60px] gap-2 sm:gap-4 px-3 sm:px-5 py-3 items-center hover:bg-slate-50/60 transition-colors min-w-[500px]"
                 >
                   <span className="text-sm font-medium text-slate-800">{cr.control.controlId}</span>
-                  <span className="text-sm text-slate-600 truncate">{cr.control.name}</span>
+                  <span className="text-sm text-slate-600 truncate">{translatedControls.find(c => c.id === cr.control.id)?.name || cr.control.name}</span>
                   <span className="text-sm text-slate-500 truncate">{cr.control.domain?.name || "-"}</span>
                   <div>
                     <Badge variant="outline" className={`text-[11px] ${controlStatusColors[cr.control.status] || "bg-slate-50 text-slate-600 border-slate-200"}`}>
-                      {cr.control.status}
+                      {t(cr.control.status)}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-end gap-1">
