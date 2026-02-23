@@ -881,19 +881,21 @@ export default function UsersPage() {
         <TabsContent value="account-overview" className="mt-4 sm:mt-6">
           <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
-            <div className={`grid grid-cols-2 sm:flex sm:items-center gap-2 ${isRTL ? "sm:justify-start" : "sm:justify-end"}`}>
-              <Button variant="outline" size="sm" onClick={handleExport} className={isRTL ? "flex-row-reverse" : ""}>
-                <Upload className="h-4 w-4 me-2" />
-                {t("Export")}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
-                <Download className="h-4 w-4 me-2" />
-                {t("Import")}
-              </Button>
-              <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={handleNewAccountClick}>
-                <Plus className="h-4 w-4 me-2" />
-                {t("New User")}
-              </Button>
+            <div className="flex">
+              <div className="ml-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExport} className={isRTL ? "flex-row-reverse" : ""}>
+                  <Upload className="h-4 w-4 me-2" />
+                  {t("Export")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
+                  <Download className="h-4 w-4 me-2" />
+                  {t("Import")}
+                </Button>
+                <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={handleNewAccountClick}>
+                  <Plus className="h-4 w-4 me-2" />
+                  {t("New User")}
+                </Button>
+              </div>
             </div>
 
             {/* Card Container */}
@@ -1033,19 +1035,21 @@ export default function UsersPage() {
         <TabsContent value="user-management" className="mt-4 sm:mt-6">
           <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
-            <div className={`grid grid-cols-2 sm:flex sm:items-center gap-2 ${isRTL ? "sm:justify-start" : "sm:justify-end"}`}>
-              <Button variant="outline" size="sm" onClick={handleExport} className={isRTL ? "flex-row-reverse" : ""}>
-                <Upload className="h-4 w-4 me-2" />
-                {t("Export")}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
-                <Download className="h-4 w-4 me-2" />
-                {t("Import")}
-              </Button>
-              <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={handleNewAccountClick}>
-                <Plus className="h-4 w-4 me-2" />
-                {t("New User")}
-              </Button>
+            <div className="flex">
+              <div className="ml-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExport} className={isRTL ? "flex-row-reverse" : ""}>
+                  <Upload className="h-4 w-4 me-2" />
+                  {t("Export")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
+                  <Download className="h-4 w-4 me-2" />
+                  {t("Import")}
+                </Button>
+                <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={handleNewAccountClick}>
+                  <Plus className="h-4 w-4 me-2" />
+                  {t("New User")}
+                </Button>
+              </div>
             </div>
             {/* Table Card with Integrated Filters */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
@@ -1481,7 +1485,7 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg" style={{ direction: 'ltr' }}>
             <Button variant="outline" onClick={() => {
               setIsAddUserOpen(false);
               setUserFormErrors({});
@@ -1876,7 +1880,7 @@ export default function UsersPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg" style={{ direction: 'ltr' }}>
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2073,7 +2077,7 @@ export default function UsersPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg" style={{ direction: 'ltr' }}>
             <Button variant="outline" onClick={() => setIsViewUserOpen(false)}>
               {t("Close")}
             </Button>
@@ -2150,7 +2154,7 @@ export default function UsersPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg" style={{ direction: 'ltr' }}>
             <Button
               variant="outline"
               onClick={() => {
@@ -2207,7 +2211,7 @@ export default function UsersPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end" style={{ direction: 'ltr' }}>
             <Button size="sm" onClick={() => setShowSubscriptionErrorDialog(false)}>
               {t("OK")}
             </Button>

@@ -448,7 +448,7 @@ export default function OrganizationSettingsPage() {
             </div>
 
             {/* Fixed Footer */}
-            <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
               <Button variant="outline" onClick={() => { setAddNameError(""); setIsAddItemOpen(false); }}>
                 {t("Cancel")}
               </Button>
@@ -503,7 +503,7 @@ export default function OrganizationSettingsPage() {
             )}
 
             {/* Fixed Footer */}
-            <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
               <Button variant="outline" onClick={() => { setEditNameError(""); setIsEditItemOpen(false); }}>
                 {t("Cancel")}
               </Button>
@@ -527,7 +527,7 @@ export default function OrganizationSettingsPage() {
                 {t("Are you sure you want to delete this item? This action cannot be undone.")}
               </p>
             </div>
-            <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+            <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
               <Button variant="outline" onClick={() => setDeletingItemId(null)}>
                 {t("Cancel")}
               </Button>

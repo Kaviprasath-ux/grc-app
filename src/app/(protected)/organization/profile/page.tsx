@@ -926,7 +926,7 @@ function ProfilePageContent() {
                               <span className="text-sm text-slate-600 truncate">{service.serviceItem || "—"}</span>
 
                               {/* Actions */}
-                              <div className={`flex items-center gap-0.5 ${isRTL ? "justify-start" : "justify-end"}`}>
+                              <div className={`flex items-center gap-0.5 justify-end [direction:ltr]`}>
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -1090,7 +1090,7 @@ function ProfilePageContent() {
                           </div>
 
                           {/* Actions */}
-                          <div className={`flex items-center gap-0.5 ${isRTL ? "justify-start" : "justify-end"}`}>
+                          <div className={`flex items-center gap-0.5 justify-end [direction:ltr]`}>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1236,7 +1236,7 @@ function ProfilePageContent() {
                           </div>
 
                           {/* Actions */}
-                          <div className={`flex items-center gap-0.5 ${isRTL ? "justify-start" : "justify-end"}`}>
+                          <div className={`flex items-center gap-0.5 justify-end [direction:ltr]`}>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1354,7 +1354,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex flex-row gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setIsAddDepartmentOpen(false); setDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
@@ -1392,7 +1392,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex flex-row gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setIsEditDepartmentOpen(false); setEditDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
@@ -1539,7 +1539,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex flex-row gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setIsAddServiceOpen(false); setServiceErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -1673,7 +1673,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex flex-row gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setIsEditServiceOpen(false); setEditServiceErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -1852,7 +1852,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex-shrink-0 flex flex-row gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setIsAddRegulationOpen(false); setRegulationErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -2051,7 +2051,7 @@ function ProfilePageContent() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex-shrink-0 flex flex-row gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setIsEditRegulationOpen(false); setEditRegulationErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -2087,7 +2087,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex flex-row gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setIsAddCategoryOpen(false); setCategoryNameError(""); }}>
               {t("Cancel")}
             </Button>
@@ -2123,7 +2123,7 @@ function ProfilePageContent() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-row justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className={`flex flex-row gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setIsAddItemOpen(false); setItemNameError(""); }}>
               {t("Cancel")}
             </Button>

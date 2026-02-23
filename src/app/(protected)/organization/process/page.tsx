@@ -1758,23 +1758,25 @@ export default function ProcessPage() {
         {/* Repository Tab */}
         <TabsContent value="repository" className="mt-6">
           {/* Action Buttons */}
-          <div className={`grid grid-cols-2 sm:flex sm:items-center gap-2 mb-4 ${isRTL ? "sm:justify-start" : "sm:justify-end"}`}>
-            <Button variant="outline" size="sm" onClick={handleExportRepository} className={isRTL ? "flex-row-reverse" : ""}>
-              <Upload className="h-4 w-4 me-2" />
-              {t("Export")}
-            </Button>
-            {!isDepartmentContributor && (
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
-                <Download className="h-4 w-4 me-2" />
-                {t("Import")}
+          <div className="flex mb-4">
+            <div className="ml-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportRepository} className={isRTL ? "flex-row-reverse" : ""}>
+                <Upload className="h-4 w-4 me-2" />
+                {t("Export")}
               </Button>
-            )}
-            {canAddProcess && (
-              <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={() => setIsAddProcessOpen(true)}>
-                <Plus className="h-4 w-4 me-2" />
-                {t("Add Process")}
-              </Button>
-            )}
+              {!isDepartmentContributor && (
+                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)} className={isRTL ? "flex-row-reverse" : ""}>
+                  <Download className="h-4 w-4 me-2" />
+                  {t("Import")}
+                </Button>
+              )}
+              {canAddProcess && (
+                <Button size="sm" className={`col-span-2 sm:col-span-1 ${isRTL ? "flex-row-reverse" : ""}`} onClick={() => setIsAddProcessOpen(true)}>
+                  <Plus className="h-4 w-4 me-2" />
+                  {t("Add Process")}
+                </Button>
+              )}
+            </div>
           </div>
           {/* Table Card with Integrated Filters */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
@@ -1845,7 +1847,7 @@ export default function ProcessPage() {
         {/* Business Impact Analysis Tab */}
         <TabsContent value="bia" className="mt-6">
           {/* Action Buttons */}
-          <div className={`flex items-center gap-2 mb-4 ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center gap-2 mb-4 justify-end [direction:ltr]`}>
             <Button variant="outline" size="sm" onClick={handleExportBIA} className={isRTL ? "flex-row-reverse" : ""}>
               <Upload className="h-4 w-4 me-2" />
               {t("Export")}
@@ -2150,7 +2152,7 @@ export default function ProcessPage() {
               {t("Are you sure you want to delete this process? This action cannot be undone.")}
             </p>
           </div>
-          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2349,7 +2351,7 @@ export default function ProcessPage() {
               </div>
             )}
           </div>
-          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button
               variant="outline"
               onClick={() => {
@@ -2597,7 +2599,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setIsBIAFormOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -2956,7 +2958,7 @@ export default function ProcessPage() {
             </div>
           </div>
           {/* Fixed Footer */}
-          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setIsAddProcessOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3394,7 +3396,7 @@ export default function ProcessPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setIsEditProcessOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -3613,7 +3615,7 @@ export default function ProcessPage() {
             </div>
           )}
           {/* Fixed Footer */}
-          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => { setKpiErrors({}); setIsKPIModalOpen(false); }}>
               {t("Close")}
             </Button>

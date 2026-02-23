@@ -603,7 +603,7 @@ export default function BIASettingsPage() {
 
         {/* Category Tab */}
         <TabsContent value="category" className="mt-4 sm:mt-6 space-y-4">
-          <div className={`flex items-center ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center justify-end [direction:ltr]`}>
             <Button
               size="sm"
               onClick={() => {
@@ -693,7 +693,7 @@ export default function BIASettingsPage() {
 
         {/* BCP Labels Tab */}
         <TabsContent value="bcp" className="mt-4 sm:mt-6 space-y-4">
-          <div className={`flex items-center ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center justify-end [direction:ltr]`}>
             <Button
               size="sm"
               onClick={() => {
@@ -764,7 +764,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -848,7 +848,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setIsRatingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -951,7 +951,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setIsRangeDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1046,7 +1046,7 @@ export default function BIASettingsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setIsBcpDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1068,7 +1068,7 @@ export default function BIASettingsPage() {
               {t("Are you sure you want to delete this item? This action cannot be undone.")}
             </p>
           </div>
-          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t("Cancel")}</Button>
             <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
           </div>
@@ -1088,7 +1088,7 @@ export default function BIASettingsPage() {
               {t("Please add BIA rating before adding scoring ranges.")}
             </p>
           </div>
-          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "justify-start" : "justify-end"}`}>
+          <div className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
             <Button onClick={() => setIsRatingWarningOpen(false)}>{t("OK")}</Button>
           </div>
         </DialogContent>
