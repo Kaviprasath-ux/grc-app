@@ -11,6 +11,7 @@
     "lint": "eslint",
     "db:seed": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
     "db:seed-bts": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-customer-bts.ts",
+    "db:seed-artifacts": "npx tsx prisma/seed-artifacts.ts",
     "db:reset": "npx prisma migrate reset --force",
     "db:migrate-audit-head": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/migrate-audit-head-data.ts",
     "test:e2e": "playwright test",

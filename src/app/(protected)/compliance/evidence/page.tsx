@@ -734,19 +734,21 @@ export default function EvidencePage() {
     setSelectedEvidenceIdsForLink([]);
   };
 
-  // AI Review Artifacts - processes each artifact file for its linked evidences
+  // AI Review Artifacts - processes all artifacts in one step
+  // Smart detection: automatically skips already-ingested artifacts (no duplicates)
   const handleAIReviewArtifacts = async () => {
     console.log("[AI Review] Button clicked");
     console.log("[AI Review] Total artifacts:", artifacts.length);
-    console.log("[AI Review] Artifacts:", artifacts);
 
     // Count total artifact-evidence pairs to process
     let totalPairs = 0;
-    artifacts.forEach((artifact) => {
-      console.log(`[AI Review] Artifact: ${artifact.fileName}, linkedEvidences:`, artifact.linkedEvidences);
-      totalPairs += artifact.linkedEvidences?.length || 0;
+    const artifactsWithLinks = artifacts.filter((artifact) => {
+      const linkCount = artifact.linkedEvidences?.length || 0;
+      totalPairs += linkCount;
+      return linkCount > 0;
     });
 
+    console.log("[AI Review] Artifacts with links:", artifactsWithLinks.length);
     console.log("[AI Review] Total pairs to process:", totalPairs);
 
     if (totalPairs === 0) {
@@ -755,66 +757,39 @@ export default function EvidencePage() {
     }
 
     setAiReviewLoading(true);
-    toast.info(t("Starting AI Review for") + ` ${artifacts.length} ` + t("artifacts") + `...`);
-
-    let successCount = 0;
-    let failCount = 0;
+    toast.info(
+      t("Starting AI Review for") +
+      ` ${artifactsWithLinks.length} ` +
+      t("artifacts") +
+      `...`
+    );
 
     try {
-      // FOR EACH Artifact
-      for (const artifact of artifacts) {
-        const linkedEvidences = artifact.linkedEvidences || [];
+      // Call the all-in-one endpoint (backend handles duplicate prevention)
+      const response = await fetch("/api/ai/artifact/review-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artifactIds: artifactsWithLinks.map((a) => a.id),
+        }),
+      });
 
-        if (linkedEvidences.length === 0) {
-          console.log(`[AI Review] Skipping artifact ${artifact.fileName} - no linked evidences`);
-          continue;
-        }
+      const data = await response.json();
+      console.log("[AI Review] Response:", data);
 
-        // FOR EACH Linked Evidence
-        for (const link of linkedEvidences) {
-          try {
-            console.log(`[AI Review] Processing: ${artifact.fileName} → Evidence ${link.evidence.evidenceCode}`);
-            console.log(`[AI Review] Calling API with:`, { artifactId: artifact.id, evidenceId: link.evidenceId });
-
-            const response = await fetch("/api/ai/evidence/vault-query", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                artifactId: artifact.id,
-                evidenceId: link.evidenceId,
-              }),
-            });
-
-            console.log(`[AI Review] Response status:`, response.status);
-            const responseData = await response.json();
-            console.log(`[AI Review] Response data:`, responseData);
-
-            if (response.ok) {
-              successCount++;
-              console.log(`[AI Review] Success: ${artifact.fileName} → ${link.evidence.evidenceCode}`);
-            } else {
-              console.error(`[AI Review] Failed: ${artifact.fileName} → ${link.evidence.evidenceCode}:`, responseData.error);
-              failCount++;
-            }
-          } catch (error) {
-            console.error(`[AI Review] Error: ${artifact.fileName} → ${link.evidenceId}:`, error);
-            failCount++;
-          }
-        }
-      }
-
-      if (successCount > 0 && failCount === 0) {
-        toast.success(t("AI Review completed successfully for") + ` ${successCount} ` + t("artifact-evidence pairs"));
-      } else if (successCount > 0 && failCount > 0) {
-        toast.warning(`${successCount} ` + t("succeeded") + `, ${failCount} ` + t("failed"));
+      if (response.ok && data.success) {
+        toast.success(t("AI Review completed successfully"));
       } else {
-        toast.error(t("AI Review failed for all artifacts"));
+        console.error("[AI Review] Failed:", data.error);
+        toast.error(data.error || t("Failed to perform AI Review"));
       }
     } catch (error) {
       console.error("[AI Review] Error:", error);
       toast.error(t("Failed to perform AI Review"));
     } finally {
       setAiReviewLoading(false);
+      // Refresh artifacts list to show updated status
+      fetchArtifacts();
     }
   };
 
@@ -1128,12 +1103,11 @@ export default function EvidencePage() {
           {/* Add Artifact Header and AI Review Button */}
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold text-slate-800">{t("Add Artifact")}</h3>
-            {/* AI Review Artifacts button - hidden for now
             <Button
               variant="outline"
               size="sm"
               className="gap-2"
-              onClick={handleAIReviewArtifacts}
+              onClick={() => handleAIReviewArtifacts()}
               disabled={aiReviewLoading || artifacts.length === 0}
             >
               {aiReviewLoading ? (
@@ -1148,7 +1122,6 @@ export default function EvidencePage() {
                 </>
               )}
             </Button>
-            */}
           </div>
 
           {/* File Upload Area */}
