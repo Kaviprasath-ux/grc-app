@@ -2614,6 +2614,7 @@ model AuditEngagement {
   evidenceRequests    FieldworkEvidenceRequest[]
   linkedRisks         InternalAuditRisk[]
   aiWorkpapers        AiWorkpaper[]
+  tasks               AuditEngagementTask[]
   comments            EngagementComment[]
 
   @@unique([customerAccountId, auditId])
@@ -2691,6 +2692,23 @@ model AiWorkpaper {
 
   @@index([engagementId])
   @@map("AIWorkpaper")
+}
+
+// Audit Engagement Task List (manual audit tasks for fieldwork)
+model AuditEngagementTask {
+  id              String          @id @default(cuid())
+  engagementId    String
+  engagement      AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  refNo           Int             // Sequential reference number within engagement
+  task            String          @default("") // Task description
+  document        String?         // File path for attached document
+  documentName    String?         // Original filename of attached document
+  executed        Boolean         @default(false) // Whether task has been executed
+  comments        String          @default("") // Task comments
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([engagementId])
 }
 
 // Fieldwork Evidence Request (requests for evidence during audit fieldwork)

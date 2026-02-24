@@ -64,7 +64,7 @@ import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
-import { isValidName } from "@/lib/validations";
+import { isValidName, isValidNameWithNumbers } from "@/lib/validations";
 import { DatePicker } from "@/components/ui/date-picker";
 import Link from "next/link";
 
@@ -1540,6 +1540,10 @@ export default function FieldworkDetailsPage() {
   };
 
   const handleUpdateTask = async (taskId: string, field: string, value: string | boolean) => {
+    if (field === "task" && typeof value === "string" && value && !isValidNameWithNumbers(value)) {
+      toast.error(t("Special characters are not allowed"));
+      return;
+    }
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, {
         method: "PATCH",
@@ -1614,6 +1618,10 @@ export default function FieldworkDetailsPage() {
   };
 
   const handleSaveTask = async (task: TaskItem) => {
+    if (task.task && !isValidNameWithNumbers(task.task)) {
+      toast.error(t("Special characters are not allowed"));
+      return;
+    }
     setSavingTask(task.id);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, {

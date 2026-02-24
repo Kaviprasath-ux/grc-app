@@ -59,7 +59,7 @@ import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
-import { isValidName } from "@/lib/validations";
+import { isValidName, isValidNameWithNumbers } from "@/lib/validations";
 import { DatePicker } from "@/components/ui/date-picker";
 import { formatLocalDate } from "@/lib/utils";
 
@@ -234,11 +234,9 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [savingFullFinding, setSavingFullFinding] = useState(false);
   const [findingStep, setFindingStep] = useState(1); // Multi-step wizard state (1, 2, or 3)
   const [uploadingTaskDocument, setUploadingTaskDocument] = useState<string | null>(null);
-  // Task dialog states
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
-  const [taskForm, setTaskForm] = useState({ task: "", comments: "", executed: false });
-  const [savingTaskDialog, setSavingTaskDialog] = useState(false);
+  // Task inline editing states
+  const [addingTask, setAddingTask] = useState(false);
+  const [savingTask, setSavingTask] = useState<string | null>(null);
   const [addEvidenceDialogOpen, setAddEvidenceDialogOpen] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
   const [deleteFindingDialogOpen, setDeleteFindingDialogOpen] = useState(false);
@@ -879,56 +877,58 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     } catch (error) { console.error("Error generating AI review:", error); toast.error(t("Failed to generate AI review")); } finally { setGeneratingAIReview(false); }
   };
 
-  const openAddTaskDialog = () => {
-    setEditingTask(null);
-    setTaskForm({ task: "", comments: "", executed: false });
-    setTaskDialogOpen(true);
-  };
-
-  const openEditTaskDialog = (task: TaskItem) => {
-    setEditingTask(task);
-    setTaskForm({ task: task.task, comments: task.comments, executed: task.executed });
-    setTaskDialogOpen(true);
-  };
-
-  const handleSaveTaskDialog = async () => {
-    if (!taskForm.task.trim()) return;
-    setSavingTaskDialog(true);
+  const handleAddTask = async () => {
+    setAddingTask(true);
     try {
-      if (editingTask) {
-        // Update existing task
-        const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ taskId: editingTask.id, task: taskForm.task, executed: taskForm.executed, comments: taskForm.comments }),
-        });
-        if (response.ok) {
-          setTaskList((prev) => prev.map((t) => t.id === editingTask.id ? { ...t, task: taskForm.task, executed: taskForm.executed, comments: taskForm.comments } : t));
-          toast.success(t("Task saved successfully"));
-        } else toast.error(t("Failed to save task"));
-      } else {
-        // Create new task then update with form data
-        const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, { method: "POST" });
-        if (response.ok) {
-          const newTask = await response.json();
-          const taskId = newTask.id || newTask?.data?.id;
-          if (taskId && (taskForm.task || taskForm.comments || taskForm.executed)) {
-            await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ taskId, task: taskForm.task, executed: taskForm.executed, comments: taskForm.comments }),
-            });
-          }
-          fetchTaskList();
-          toast.success(t("Task added successfully"));
-        } else toast.error(t("Failed to add task"));
-      }
-      setTaskDialogOpen(false);
-      setEditingTask(null);
+      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, { method: "POST" });
+      if (response.ok) {
+        fetchTaskList();
+      } else toast.error(t("Failed to add task"));
+    } catch (error) {
+      toast.error(t("Failed to add task"));
+    } finally {
+      setAddingTask(false);
+    }
+  };
+
+  const handleUpdateTask = async (taskId: string, field: string, value: string | boolean) => {
+    if (field === "task" && typeof value === "string" && value && !isValidNameWithNumbers(value)) {
+      toast.error(t("Special characters are not allowed"));
+      return;
+    }
+    try {
+      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, [field]: value }),
+      });
+      if (response.ok) {
+        setTaskList((prev) => prev.map((t) => t.id === taskId ? { ...t, [field]: value } : t));
+      } else toast.error(t("Failed to update task"));
+    } catch (error) {
+      toast.error(t("Failed to update task"));
+    }
+  };
+
+  const handleSaveTask = async (task: TaskItem) => {
+    if (task.task && !isValidNameWithNumbers(task.task)) {
+      toast.error(t("Special characters are not allowed"));
+      return;
+    }
+    setSavingTask(task.id);
+    try {
+      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/tasks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId: task.id, task: task.task, executed: task.executed, comments: task.comments }),
+      });
+      if (response.ok) {
+        toast.success(t("Task saved successfully"));
+      } else toast.error(t("Failed to save task"));
     } catch (error) {
       toast.error(t("Failed to save task"));
     } finally {
-      setSavingTaskDialog(false);
+      setSavingTask(null);
     }
   };
 
@@ -1285,83 +1285,94 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-semibold text-slate-800">{t("Audit Engagement Task List")}</h3>
                           {!isReadOnly && (
-                            <Button size="sm" onClick={openAddTaskDialog}>
+                            <Button size="sm" onClick={handleAddTask} disabled={addingTask}>
+                              {addingTask ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : null}
                               {t("Add Task")}
                             </Button>
                           )}
                         </div>
-                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                          <Table>
+                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden overflow-x-auto">
+                          <Table className="min-w-[700px]">
                             <TableHeader>
                               <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 w-[60px]">#</TableHead>
-                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Task Description")}</TableHead>
-                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[100px] text-center">{t("Status")}</TableHead>
-                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[160px]">{t("Document")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 w-[70px]">{t("Ref No")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Task")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[180px]">{t("Document")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[90px] text-center">{t("Executed")}</TableHead>
                                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Comments")}</TableHead>
-                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[120px]">{t("Actions")}</TableHead>
+                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {taskList.length > 0 ? taskList.map((task, idx) => (
+                              {taskList.length > 0 ? taskList.map((task) => (
                                 <TableRow key={task.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                                  <TableCell className="py-3 ps-5 text-sm text-slate-500 font-medium">{task.refNo || idx + 1}</TableCell>
-                                  <TableCell className="py-3 text-sm text-slate-700 max-w-[250px]">
-                                    <span className="line-clamp-2">{task.task || <span className="text-slate-400 italic">{t("No description")}</span>}</span>
+                                  <TableCell className="py-2 ps-5">
+                                    <Input value={task.refNo} readOnly className="w-14 bg-slate-50 text-center text-sm" />
                                   </TableCell>
-                                  <TableCell className="py-3 text-center">
-                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                      task.executed
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-amber-100 text-amber-700"
-                                    }`}>
-                                      {task.executed ? t("Done") : t("Pending")}
-                                    </span>
+                                  <TableCell className="py-2">
+                                    <Input
+                                      value={task.task}
+                                      onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)}
+                                      placeholder={t("Enter task description")}
+                                      className="border-slate-300 text-sm"
+                                      readOnly={isReadOnly}
+                                    />
                                   </TableCell>
-                                  <TableCell className="py-3">
+                                  <TableCell className="py-2">
                                     {task.document ? (
-                                      <a href={`/api${task.document}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm truncate max-w-[120px] inline-block" title={task.documentName || t("Document")}>
-                                        <span className="flex items-center gap-1">
-                                          <Paperclip className="h-3.5 w-3.5 shrink-0" />
-                                          <span className="truncate">{task.documentName || t("View")}</span>
-                                        </span>
-                                      </a>
+                                      <div className="flex items-center gap-2">
+                                        <a href={`/api${task.document}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm truncate max-w-[100px]" title={task.documentName || t("Document")}>
+                                          {task.documentName || t("View")}
+                                        </a>
+                                        {!isReadOnly && (
+                                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                                            const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
+                                            input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click();
+                                          }}>
+                                            <Upload className="h-3 w-3" />
+                                          </Button>
+                                        )}
+                                      </div>
                                     ) : (
-                                      <span className="text-xs text-slate-400">{t("No document")}</span>
+                                      <Button
+                                        variant="outline" size="sm" className="text-xs"
+                                        disabled={uploadingTaskDocument === task.id || isReadOnly}
+                                        onClick={() => {
+                                          const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
+                                          input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click();
+                                        }}
+                                      >
+                                        {uploadingTaskDocument === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Upload className="h-3 w-3 ltr:mr-1 rtl:ml-1" />{t("Upload")}</>}
+                                      </Button>
                                     )}
                                   </TableCell>
-                                  <TableCell className="py-3 text-sm text-slate-600 max-w-[200px]">
-                                    <span className="line-clamp-1">{task.comments || "-"}</span>
+                                  <TableCell className="py-2 text-center">
+                                    <Checkbox
+                                      checked={task.executed}
+                                      onCheckedChange={(checked) => handleUpdateTask(task.id, "executed", checked === true)}
+                                      disabled={isReadOnly}
+                                    />
                                   </TableCell>
-                                  <TableCell className="py-3 pe-5">
-                                    <div className="flex items-center gap-0.5">
-                                      {!isReadOnly && (
-                                        <>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditTaskDialog(task)} title={t("Edit")}>
-                                            <Pencil className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            variant="ghost" size="icon"
-                                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                                            disabled={uploadingTaskDocument === task.id}
-                                            title={t("Upload Document")}
-                                            onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click(); }}
-                                          >
-                                            {uploadingTaskDocument === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                                          </Button>
-                                        </>
-                                      )}
-                                      {isReadOnly && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditTaskDialog(task)} title={t("View")}>
-                                          <Eye className="h-4 w-4" />
+                                  <TableCell className="py-2">
+                                    <Input
+                                      value={task.comments}
+                                      onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
+                                      placeholder={t("Enter comments")}
+                                      className="border-slate-300 text-sm"
+                                      readOnly={isReadOnly}
+                                    />
+                                  </TableCell>
+                                  <TableCell className="py-2 pe-5">
+                                    {!isReadOnly && (
+                                      <div className="flex items-center gap-1">
+                                        <Button variant="ghost" size="icon" onClick={() => handleSaveTask(task)} disabled={savingTask === task.id} title={t("Save task")}>
+                                          {savingTask === task.id ? <Loader2 className="h-4 w-4 animate-spin text-green-600" /> : <Save className="h-4 w-4 text-green-600" />}
                                         </Button>
-                                      )}
-                                      {isAuditHead && !isReadOnly && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => handleDeleteTask(task.id)} title={t("Delete")}>
-                                          <Trash2 className="h-4 w-4" />
+                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(task.id)} title={t("Delete task")} disabled={isReadOnly}>
+                                          <Trash2 className="h-4 w-4 text-red-600" />
                                         </Button>
-                                      )}
-                                    </div>
+                                      </div>
+                                    )}
                                   </TableCell>
                                 </TableRow>
                               )) : (
@@ -2689,78 +2700,6 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         </DialogContent>
       </Dialog>
 
-      {/* Add/Edit Task Dialog */}
-      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-6 py-5 border-b border-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-base font-semibold text-slate-800">
-                {editingTask ? (isReadOnly ? t("View Task") : t("Edit Task")) : t("Add Task")}
-              </DialogTitle>
-            </DialogHeader>
-          </div>
-
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Task Description")} *</Label>
-              <Textarea
-                value={taskForm.task}
-                onChange={(e) => setTaskForm({ ...taskForm, task: e.target.value })}
-                placeholder={t("Enter task description")}
-                className="mt-1.5 min-h-[80px]"
-                readOnly={isReadOnly}
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Checkbox
-                id="task-executed"
-                checked={taskForm.executed}
-                onCheckedChange={(checked) => setTaskForm({ ...taskForm, executed: checked === true })}
-                disabled={isReadOnly}
-              />
-              <Label htmlFor="task-executed" className="text-sm font-medium text-slate-700 cursor-pointer">
-                {t("Mark as Executed")}
-              </Label>
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Comments")}</Label>
-              <Textarea
-                value={taskForm.comments}
-                onChange={(e) => setTaskForm({ ...taskForm, comments: e.target.value })}
-                placeholder={t("Enter comments")}
-                className="mt-1.5 min-h-[60px]"
-                readOnly={isReadOnly}
-              />
-            </div>
-
-            {editingTask && editingTask.document && (
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Attached Document")}</Label>
-                <div className="mt-1.5 flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                  <Paperclip className="h-4 w-4 text-slate-400 shrink-0" />
-                  <a href={`/api${editingTask.document}`} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 hover:underline truncate">
-                    {editingTask.documentName || t("View Document")}
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>
-              {isReadOnly ? t("Close") : t("Cancel")}
-            </Button>
-            {!isReadOnly && (
-              <Button onClick={handleSaveTaskDialog} disabled={savingTaskDialog || !taskForm.task.trim()}>
-                {savingTaskDialog ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : null}
-                {editingTask ? t("Save Changes") : t("Add Task")}
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

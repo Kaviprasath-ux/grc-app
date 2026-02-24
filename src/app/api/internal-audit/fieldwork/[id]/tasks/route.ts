@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
-import { writeFile, mkdir, unlink } from 'fs/promises';
+import { unlink } from 'fs/promises';
 import path from 'path';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
-
-// In-memory store for tasks (would be database in production)
-const taskStore: Record<string, Array<{
-  id: string;
-  refNo: number;
-  task: string;
-  document: string | null;
-  documentName: string | null;
-  executed: boolean;
-  comments: string;
-  createdAt: string;
-}>> = {};
 
 // GET /api/internal-audit/fieldwork/[id]/tasks - Get tasks for an engagement
 export const GET = withAuth(
@@ -38,8 +26,12 @@ export const GET = withAuth(
         );
       }
 
-      // Return tasks from store (or empty array)
-      const tasks = taskStore[engagementId] || [];
+      // Fetch tasks from database ordered by refNo
+      const tasks = await prisma.auditEngagementTask.findMany({
+        where: { engagementId },
+        orderBy: { refNo: 'asc' },
+      });
+
       return NextResponse.json(tasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -70,30 +62,25 @@ export const POST = withAuth(
         );
       }
 
-      // Initialize store for this engagement if needed
-      if (!taskStore[engagementId]) {
-        taskStore[engagementId] = [];
-      }
-
       // Calculate next ref number
-      const existingTasks = taskStore[engagementId];
-      const nextRefNo = existingTasks.length > 0
-        ? Math.max(...existingTasks.map(t => t.refNo)) + 1
-        : 1;
+      const lastTask = await prisma.auditEngagementTask.findFirst({
+        where: { engagementId },
+        orderBy: { refNo: 'desc' },
+      });
+      const nextRefNo = lastTask ? lastTask.refNo + 1 : 1;
 
-      // Create task with new structure
-      const newTask = {
-        id: Date.now().toString(),
-        refNo: nextRefNo,
-        task: '',
-        document: null,
-        documentName: null,
-        executed: false,
-        comments: '',
-        createdAt: new Date().toISOString(),
-      };
-
-      taskStore[engagementId].push(newTask);
+      // Create task in database
+      const newTask = await prisma.auditEngagementTask.create({
+        data: {
+          engagementId,
+          refNo: nextRefNo,
+          task: '',
+          document: null,
+          documentName: null,
+          executed: false,
+          comments: '',
+        },
+      });
 
       return NextResponse.json(newTask, { status: 201 });
     } catch (error) {
@@ -134,23 +121,32 @@ export const PATCH = withAuth(
         );
       }
 
-      // Find and update task
-      const tasks = taskStore[engagementId] || [];
-      const taskIndex = tasks.findIndex(t => t.id === taskId);
+      // Verify task exists and belongs to this engagement
+      const existingTask = await prisma.auditEngagementTask.findFirst({
+        where: { id: taskId, engagementId },
+      });
 
-      if (taskIndex === -1) {
+      if (!existingTask) {
         return NextResponse.json(
           { error: 'Task not found' },
           { status: 404 }
         );
       }
 
-      // Update task fields
-      if (updates.task !== undefined) tasks[taskIndex].task = updates.task;
-      if (updates.executed !== undefined) tasks[taskIndex].executed = updates.executed;
-      if (updates.comments !== undefined) tasks[taskIndex].comments = updates.comments;
+      // Build update data from allowed fields
+      const updateData: Record<string, string | boolean> = {};
+      if (updates.task !== undefined) updateData.task = updates.task;
+      if (updates.executed !== undefined) updateData.executed = updates.executed;
+      if (updates.comments !== undefined) updateData.comments = updates.comments;
+      if (updates.document !== undefined) updateData.document = updates.document;
+      if (updates.documentName !== undefined) updateData.documentName = updates.documentName;
 
-      return NextResponse.json(tasks[taskIndex]);
+      const updatedTask = await prisma.auditEngagementTask.update({
+        where: { id: taskId },
+        data: updateData,
+      });
+
+      return NextResponse.json(updatedTask);
     } catch (error) {
       console.error('Error updating task:', error);
       return NextResponse.json(
@@ -189,19 +185,19 @@ export const DELETE = withAuth(
         );
       }
 
-      // Find and delete task
-      const tasks = taskStore[engagementId] || [];
-      const taskIndex = tasks.findIndex(t => t.id === taskId);
+      // Find the task to delete
+      const task = await prisma.auditEngagementTask.findFirst({
+        where: { id: taskId, engagementId },
+      });
 
-      if (taskIndex === -1) {
+      if (!task) {
         return NextResponse.json(
           { error: 'Task not found' },
           { status: 404 }
         );
       }
 
-      // Delete associated document if exists
-      const task = tasks[taskIndex];
+      // Delete associated document file if exists
       if (task.document) {
         try {
           const filePath = path.join(process.cwd(), task.document);
@@ -211,13 +207,25 @@ export const DELETE = withAuth(
         }
       }
 
-      // Remove task
-      tasks.splice(taskIndex, 1);
-
-      // Renumber remaining tasks
-      tasks.forEach((t, idx) => {
-        t.refNo = idx + 1;
+      // Delete the task from database
+      await prisma.auditEngagementTask.delete({
+        where: { id: taskId },
       });
+
+      // Renumber remaining tasks for this engagement
+      const remainingTasks = await prisma.auditEngagementTask.findMany({
+        where: { engagementId },
+        orderBy: { refNo: 'asc' },
+      });
+
+      for (let i = 0; i < remainingTasks.length; i++) {
+        if (remainingTasks[i].refNo !== i + 1) {
+          await prisma.auditEngagementTask.update({
+            where: { id: remainingTasks[i].id },
+            data: { refNo: i + 1 },
+          });
+        }
+      }
 
       return NextResponse.json({ message: 'Task deleted successfully' });
     } catch (error) {

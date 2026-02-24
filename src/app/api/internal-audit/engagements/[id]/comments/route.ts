@@ -35,7 +35,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "internal-audit.fieldwork", action: "view" }
+  { resource: "audit.fieldwork", action: "view" }
 );
 
 // POST /api/internal-audit/engagements/[id]/comments - Add a new comment
@@ -78,5 +78,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "internal-audit.fieldwork", action: "edit" }
+  { resource: "audit.fieldwork", action: "edit" }
 );

@@ -9,25 +9,6 @@ interface RouteContext {
   params: Promise<{ id: string; taskId: string }>;
 }
 
-// Reference to the task store from parent route
-// In production, this would be a database
-const taskStore: Record<string, Array<{
-  id: string;
-  refNo: number;
-  task: string;
-  document: string | null;
-  documentName: string | null;
-  executed: boolean;
-  comments: string;
-  createdAt: string;
-}>> = {};
-
-// Helper to get task store (shared with parent route)
-function getTaskStore() {
-  // @ts-expect-error - accessing global store
-  return global.fieldworkTaskStore || taskStore;
-}
-
 // POST /api/internal-audit/fieldwork/[id]/tasks/[taskId]/document - Upload document for a task
 export const POST = withAuth(
   async (req: NextRequest, context: RouteContext) => {
@@ -46,6 +27,18 @@ export const POST = withAuth(
         );
       }
 
+      // Verify task exists and belongs to this engagement
+      const task = await prisma.auditEngagementTask.findFirst({
+        where: { id: taskId, engagementId },
+      });
+
+      if (!task) {
+        return NextResponse.json(
+          { error: 'Task not found' },
+          { status: 404 }
+        );
+      }
+
       // Parse form data
       const formData = await req.formData();
       const file = formData.get('file') as File | null;
@@ -57,16 +50,34 @@ export const POST = withAuth(
         );
       }
 
+      // Delete old document file if replacing
+      if (task.document) {
+        try {
+          const baseDir = getUploadBaseDir();
+          const relativePath = task.document.replace(/^\/uploads\//, '');
+          const oldFilePath = path.join(baseDir, relativePath);
+          await unlink(oldFilePath);
+        } catch (err) {
+          console.warn('Could not delete old task document:', err);
+        }
+      }
+
       const subDir = `fieldwork/${engagementId}/tasks`;
       const { urlPath } = await saveUploadedFile(file, subDir);
       const originalName = file.name;
 
-      // Return file info (task update is done separately via PATCH)
-      const documentPath = urlPath;
+      // Update the task record with document info
+      const updatedTask = await prisma.auditEngagementTask.update({
+        where: { id: taskId },
+        data: {
+          document: urlPath,
+          documentName: originalName,
+        },
+      });
 
       return NextResponse.json({
-        document: documentPath,
-        documentName: originalName,
+        document: updatedTask.document,
+        documentName: updatedTask.documentName,
       }, { status: 201 });
     } catch (error) {
       console.error('Error uploading task document:', error);
@@ -84,15 +95,6 @@ export const DELETE = withAuth(
   async (req: NextRequest, context: RouteContext) => {
     try {
       const { id: engagementId, taskId } = await context.params;
-      const { searchParams } = new URL(req.url);
-      const documentPath = searchParams.get('path');
-
-      if (!documentPath) {
-        return NextResponse.json(
-          { error: 'Document path is required' },
-          { status: 400 }
-        );
-      }
 
       // Verify engagement exists
       const engagement = await prisma.auditEngagement.findUnique({
@@ -106,15 +108,38 @@ export const DELETE = withAuth(
         );
       }
 
-      // Delete the file
-      try {
-        const baseDir = getUploadBaseDir();
-        const relativePath = documentPath.replace(/^\/uploads\//, '');
-        const filePath = path.join(baseDir, relativePath);
-        await unlink(filePath);
-      } catch (err) {
-        console.warn('Could not delete document file:', err);
+      // Verify task exists and belongs to this engagement
+      const task = await prisma.auditEngagementTask.findFirst({
+        where: { id: taskId, engagementId },
+      });
+
+      if (!task) {
+        return NextResponse.json(
+          { error: 'Task not found' },
+          { status: 404 }
+        );
       }
+
+      // Delete the file from disk
+      if (task.document) {
+        try {
+          const baseDir = getUploadBaseDir();
+          const relativePath = task.document.replace(/^\/uploads\//, '');
+          const filePath = path.join(baseDir, relativePath);
+          await unlink(filePath);
+        } catch (err) {
+          console.warn('Could not delete document file:', err);
+        }
+      }
+
+      // Clear document fields in database
+      await prisma.auditEngagementTask.update({
+        where: { id: taskId },
+        data: {
+          document: null,
+          documentName: null,
+        },
+      });
 
       return NextResponse.json({ message: 'Document deleted successfully' });
     } catch (error) {
