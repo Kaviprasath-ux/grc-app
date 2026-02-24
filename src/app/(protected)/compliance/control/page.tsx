@@ -502,7 +502,7 @@ function ControlListPageContent() {
 
       if (response.ok) {
         const result = await response.json();
-        toast({ title: t("Success"), description: `${t("Successfully imported")} ${result.imported} ${t("control(s)")}` });
+        toast({ title: t("Success"), description: `${t("Import completed")}: ${result.imported} ${t("controls imported")}${result.skipped ? `, ${result.skipped} ${t("skipped")}` : ""}` });
         setIsImportDialogOpen(false);
         setImportFile(null);
         fetchControls();
@@ -997,6 +997,7 @@ function ControlListPageContent() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                    <SelectItem value="none">{t("No Framework")}</SelectItem>
                     {translatedFrameworks.map((f) => (
                       <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                     ))}

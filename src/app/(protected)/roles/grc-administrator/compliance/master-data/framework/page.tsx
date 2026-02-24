@@ -41,6 +41,7 @@ import {
 import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home, FileText } from "lucide-react";
 import Link from "next/link";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Framework {
   id: string;
@@ -120,6 +121,12 @@ export default function FrameworkMasterDataPage() {
       });
 
       if (response.ok) {
+        triggerTranslation('Framework', selectedFramework.id, {
+          name: formData.name,
+          description: formData.description || '',
+          country: formData.country || '',
+          industry: formData.industry || '',
+        });
         setEditDialogOpen(false);
         setSelectedFramework(null);
         resetForm();
@@ -238,6 +245,12 @@ export default function FrameworkMasterDataPage() {
 
       if (response.ok) {
         const framework = await response.json();
+        triggerTranslation('Framework', framework.id, {
+          name: formData.name,
+          description: formData.description || '',
+          country: formData.country || '',
+          industry: formData.industry || '',
+        });
 
         // If file is selected, upload requirements
         if (selectedFile) {
@@ -295,7 +308,10 @@ export default function FrameworkMasterDataPage() {
     a.click();
   };
 
-  const filteredFrameworks = frameworks.filter((f) => {
+  // Translate framework names/descriptions
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+
+  const filteredFrameworks = translatedFrameworks.filter((f) => {
     const matchesSearch = f.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === "all" || f.type === typeFilter;
     const matchesStatus = statusFilter === "all" || f.status === statusFilter;

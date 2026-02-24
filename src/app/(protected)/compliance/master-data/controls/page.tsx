@@ -520,64 +520,29 @@ export default function ControlsMasterDataPage() {
 
     setImporting(true);
     try {
-      const text = await importFile.text();
-      const lines = text.split("\n").filter((line) => line.trim());
-      const dataLines = lines.slice(1);
+      const formData = new FormData();
+      formData.append("file", importFile);
 
-      let successCount = 0;
-      let errorCount = 0;
+      const response = await fetch("/api/controls/import", {
+        method: "POST",
+        body: formData,
+      });
 
-      for (const line of dataLines) {
-        const matches = line.match(/("([^"]*)"|[^,]+)/g) || [];
-        const values = matches.map((v) => v.replace(/^"|"$/g, "").trim());
-
-        if (values.length >= 2) {
-          const [
-            name,
-            domainName,
-            controlCode,
-            description,
-            controlQuestion,
-            functionalGrouping,
-            entities,
-            status,
-          ] = values;
-
-          const domain = domains.find(
-            (d) => d.name.toLowerCase() === domainName?.toLowerCase()
-          );
-
-          try {
-            const response = await fetch("/api/controls", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                controlCode: controlCode || `CTRL-${Date.now()}-${successCount}`,
-                name,
-                description: description || null,
-                controlQuestion: controlQuestion || null,
-                domainId: domain?.id || null,
-                functionalGrouping: functionalGrouping || null,
-                entities: entities || "Organization Wide",
-                status: status || "Non Compliant",
-              }),
-            });
-
-            if (response.ok) {
-              successCount++;
-            } else {
-              errorCount++;
-            }
-          } catch {
-            errorCount++;
-          }
-        }
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: t("Success"),
+          description: `${t("Import completed")}: ${result.imported} ${t("controls imported")}${result.skipped ? `, ${result.skipped} ${t("skipped")}` : ""}`,
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: t("Error"),
+          description: `${t("Import failed")}: ${error.message || t("Unknown error")}`,
+          variant: "destructive",
+        });
       }
 
-      toast({
-        title: t("Success"),
-        description: `${t("Import completed")}: ${successCount} ${t("controls imported")}, ${errorCount} ${t("errors")}`,
-      });
       setImportDialogOpen(false);
       setImportFile(null);
       if (fileInputRef.current) {

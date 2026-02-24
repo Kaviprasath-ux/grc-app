@@ -964,6 +964,25 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
             <DialogTitle>{t("Select Risks")}</DialogTitle>
           </DialogHeader>
           <div className="max-h-64 overflow-y-auto">
+            {allRisks.length > 0 && (
+              <div className="flex items-center space-x-2 py-2 border-b mb-1">
+                <Checkbox
+                  id="risk-select-all"
+                  checked={allRisks.length > 0 && allRisks.every(r => selectedRiskIds.includes(r.id))}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedRiskIds([...new Set([...selectedRiskIds, ...allRisks.map(r => r.id)])]);
+                    } else {
+                      const allRiskIdSet = new Set(allRisks.map(r => r.id));
+                      setSelectedRiskIds(selectedRiskIds.filter(id => !allRiskIdSet.has(id)));
+                    }
+                  }}
+                />
+                <Label htmlFor="risk-select-all" className="cursor-pointer font-medium">
+                  {t("Select All")}
+                </Label>
+              </div>
+            )}
             {allRisks.map((risk) => (
               <div key={risk.id} className="flex items-center space-x-2 py-2">
                 <Checkbox

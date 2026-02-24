@@ -41,6 +41,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Framework {
   id: string;
@@ -158,8 +159,11 @@ export default function CustomerAdminFrameworkPage() {
     }
   };
 
+  // Translate framework names/descriptions
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+
   // Apply filters
-  const filteredFrameworks = frameworks.filter((fw) => {
+  const filteredFrameworks = translatedFrameworks.filter((fw) => {
     // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -377,6 +381,12 @@ export default function CustomerAdminFrameworkPage() {
 
       if (response.ok) {
         const newFramework = await response.json();
+        triggerTranslation('Framework', newFramework.id, {
+          name: formData.name.trim(),
+          description: formData.description.trim(),
+          country: formData.country.trim(),
+          industry: formData.industry.trim(),
+        });
         setIsCreateDialogOpen(false);
         resetForm();
         fetchFrameworks();

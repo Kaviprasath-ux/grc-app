@@ -37,7 +37,11 @@ export const GET = withAuth(
       }
 
       if (status) where.status = status;
-      if (frameworkId) where.frameworkId = frameworkId;
+      if (frameworkId === "none") {
+        where.frameworkId = null;
+      } else if (frameworkId) {
+        where.frameworkId = frameworkId;
+      }
       if (domainId) where.domainId = domainId;
       if (assigneeId) where.assigneeId = assigneeId;
       if (functionalGrouping) where.functionalGrouping = functionalGrouping;
@@ -120,22 +124,10 @@ export const POST = withAuth(
         assigneeId,
       } = body;
 
-      // Validation - Required fields based on discovered validation rules
+      // Validation - Only name is strictly required
       if (!name) {
         return NextResponse.json(
           { error: "Control Name is required" },
-          { status: 400 }
-        );
-      }
-      if (!controlQuestion) {
-        return NextResponse.json(
-          { error: "Control Question is required" },
-          { status: 400 }
-        );
-      }
-      if (!functionalGrouping) {
-        return NextResponse.json(
-          { error: "Functional Grouping is required" },
           { status: 400 }
         );
       }

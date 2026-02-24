@@ -207,7 +207,6 @@ export default function AssetInventoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [lifecycleFilter, setLifecycleFilter] = useState("all");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -339,8 +338,7 @@ export default function AssetInventoryPage() {
       (grpName.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     const matchesCategory = categoryFilter === "all" || a.categoryId === categoryFilter;
     const matchesDepartment = departmentFilter === "all" || a.departmentId === departmentFilter;
-    const matchesLifecycle = lifecycleFilter === "all" || a.lifecycleStatusId === lifecycleFilter;
-    return matchesSearch && matchesCategory && matchesDepartment && matchesLifecycle;
+    return matchesSearch && matchesCategory && matchesDepartment;
   });
 
   // Pagination
@@ -353,7 +351,7 @@ export default function AssetInventoryPage() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter, departmentFilter, lifecycleFilter]);
+  }, [searchTerm, categoryFilter, departmentFilter]);
 
   // Generate next asset ID (ASSET prefix format matching UAT)
   const generateAssetId = () => {
@@ -1083,19 +1081,6 @@ export default function AssetInventoryPage() {
                 {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-              <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
-                <SelectValue placeholder={t("All Status")} />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                <SelectItem value="all">{t("All Status")}</SelectItem>
-                {translatedLifecycleStatuses.map((ls) => (
-                  <SelectItem key={ls.id} value={ls.id}>
-                    {ls.name}
                   </SelectItem>
                 ))}
               </SelectContent>

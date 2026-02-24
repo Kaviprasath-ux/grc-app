@@ -1,7 +1,7 @@
 "use client";
 
 import * as XLSX from "xlsx";
-import { useEffect, useState, use, useRef, Fragment } from "react";
+import { useEffect, useState, use, useRef, Fragment, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Framework {
   id: string;
@@ -838,6 +839,37 @@ export default function CustomerAdminFrameworkDetailPage({
   const [auditLogPage, setAuditLogPage] = useState(1);
   const AUDIT_LOG_PAGE_SIZE = 10;
 
+  // --- Translation hooks ---
+  const { data: translatedFramework } = useTranslatedRecord(framework, { modelName: 'Framework' });
+
+  const allRequirements = useMemo(() => framework?.requirements || [], [framework?.requirements]);
+  const { data: translatedRequirements } = useTranslatedData(allRequirements, { modelName: 'Requirement' });
+
+  const allCategories = useMemo(() => framework?.requirementCategories || [], [framework?.requirementCategories]);
+  const { data: translatedCategories } = useTranslatedData(allCategories, { modelName: 'RequirementCategory' });
+
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+
+  const tReq = useCallback((reqId: string, fallback?: string) => {
+    const found = translatedRequirements.find(r => r.id === reqId);
+    return found?.name || fallback || '';
+  }, [translatedRequirements]);
+
+  const tReqDesc = useCallback((reqId: string, fallback?: string) => {
+    const found = translatedRequirements.find(r => r.id === reqId);
+    return found?.description || fallback || '';
+  }, [translatedRequirements]);
+
+  const tCat = useCallback((catId: string, fallback?: string) => {
+    const found = translatedCategories.find(c => c.id === catId);
+    return found?.name || fallback || '';
+  }, [translatedCategories]);
+
+  const tControl = useCallback((controlId: string, fallback?: string) => {
+    const found = translatedControls.find(c => c.id === controlId);
+    return found?.name || fallback || '';
+  }, [translatedControls]);
+
   useEffect(() => {
     fetchFramework();
     fetchControls();
@@ -989,6 +1021,11 @@ export default function CustomerAdminFrameworkDetailPage({
       });
 
       if (response.ok) {
+        const created = await response.json();
+        triggerTranslation('Requirement', created.id, {
+          name: newRequirement.name.trim(),
+          description: newRequirement.description.trim(),
+        });
         setIsAddRequirementOpen(false);
         setNewRequirement({
           name: "",
@@ -1009,9 +1046,9 @@ export default function CustomerAdminFrameworkDetailPage({
   const handleOpenUpdateRequirement = (requirement: Requirement) => {
     setUpdateRequirement({
       id: requirement.id,
-      name: requirement.name,
+      name: tReq(requirement.id, requirement.name),
       code: requirement.code,
-      description: requirement.description || "",
+      description: tReqDesc(requirement.id, requirement.description || ""),
       requirementType: requirement.requirementType || "Mandatory",
       chapterType: requirement.chapterType || "Domain",
       applicability: requirement.applicability || "",
@@ -1039,6 +1076,10 @@ export default function CustomerAdminFrameworkDetailPage({
       });
 
       if (response.ok) {
+        triggerTranslation('Requirement', updateRequirement.id, {
+          name: updateRequirement.name,
+          description: updateRequirement.description,
+        });
         setIsUpdateRequirementOpen(false);
         setUpdateRequirement({
           id: "",
@@ -1273,6 +1314,11 @@ export default function CustomerAdminFrameworkDetailPage({
       });
 
       if (response.ok) {
+        const exData = await response.json();
+        triggerTranslation('Exception', exData.id, {
+          name: newException.name.trim(),
+          description: newException.description.trim(),
+        });
         setIsAddExceptionOpen(false);
         setExcErrors({});
         setNewException({
@@ -1552,12 +1598,12 @@ export default function CustomerAdminFrameworkDetailPage({
           {t("Integrated Frameworks")}
         </Link>
         <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
-        <span className="text-primary-700 font-medium truncate">{framework.name}</span>
+        <span className="text-primary-700 font-medium truncate">{translatedFramework?.name || framework.name}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1" style={isRTL ? { direction: 'rtl' } : undefined}>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{framework.name}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{translatedFramework?.name || framework.name}</h1>
       </div>
 
       {/* Tabs */}
@@ -1603,7 +1649,7 @@ export default function CustomerAdminFrameworkDetailPage({
                 <SelectItem value="all">{t("All Categories")}</SelectItem>
                 {filteredHierarchy.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
-                    {cat.code} - {cat.name}
+                    {cat.code} - {tCat(cat.id, cat.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1646,7 +1692,7 @@ export default function CustomerAdminFrameworkDetailPage({
                     >
                       <ChevronRight className={`h-4 w-4 text-slate-400 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
                       <span className="text-sm font-semibold text-slate-800 flex-1">
-                        {cat.code}. {cat.name}
+                        {cat.code}. {tCat(cat.id, cat.name)}
                       </span>
                       <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
                         {totalCount}
@@ -1707,7 +1753,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                 <span className="text-sm font-bold text-primary-600 shrink-0">{req.code}</span>
 
                                 {/* Name */}
-                                <span className="text-sm text-slate-700 flex-1 truncate">{req.name}</span>
+                                <span className="text-sm text-slate-700 flex-1 truncate">{tReq(req.id, req.name)}</span>
 
                                 {/* Implementation status */}
                                 <span className={`text-[11px] font-medium shrink-0 ${
@@ -1736,7 +1782,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                     {/* Description */}
                                     {req.description && (
                                       <div className="px-3 sm:px-4 py-3 border-b border-slate-100">
-                                        <p className="text-sm text-slate-600 leading-relaxed">{req.description}</p>
+                                        <p className="text-sm text-slate-600 leading-relaxed">{tReqDesc(req.id, req.description)}</p>
                                       </div>
                                     )}
 
@@ -1815,7 +1861,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                                   <FileText className="h-3 w-3 text-primary-500" />
                                                 </div>
                                                 <span className="text-sm font-medium text-primary-600">{rc.control.controlCode}</span>
-                                                <span className="text-xs text-slate-400 truncate">{rc.control.name}</span>
+                                                <span className="text-xs text-slate-400 truncate">{tControl(rc.control.id, rc.control.name)}</span>
                                               </div>
                                               <div className="flex items-center gap-2 shrink-0">
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
@@ -1926,7 +1972,7 @@ export default function CustomerAdminFrameworkDetailPage({
                     className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/60 transition-colors"
                   >
                     <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? "" : "-rotate-90"}`} />
-                    <span className="text-sm font-semibold text-slate-800">{cat.name}</span>
+                    <span className="text-sm font-semibold text-slate-800">{tCat(cat.id, cat.name)}</span>
                     <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                       {requirements.length}
                     </span>
@@ -1950,7 +1996,7 @@ export default function CustomerAdminFrameworkDetailPage({
                         {requirements.map((req) => (
                           <div key={req.id} className="grid grid-cols-[70px_1fr_100px_1fr_120px_120px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]">
                             <span className="text-sm font-medium text-slate-800">{req.code}</span>
-                            <span className="text-sm text-slate-700 leading-snug">{req.name}</span>
+                            <span className="text-sm text-slate-700 leading-snug">{tReq(req.id, req.name)}</span>
                             <Select
                               value={req.applicability || ""}
                               onValueChange={(value) => handleSOAUpdate(req.id, "applicability", value)}
@@ -2435,7 +2481,7 @@ export default function CustomerAdminFrameworkDetailPage({
                 </div>
                 <div>
                   <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">{t("Framework")}</span>
-                  <p className="text-sm font-medium text-slate-700 mt-0.5">{framework.name}</p>
+                  <p className="text-sm font-medium text-slate-700 mt-0.5">{translatedFramework?.name || framework.name}</p>
                 </div>
                 <div>
                   <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">{t("Requirement")}</span>

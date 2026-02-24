@@ -756,7 +756,8 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 ps-5">{t("Code")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Name")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Type")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 pe-5">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider h-auto py-3 pe-5 text-end">{t("Actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -765,14 +766,19 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                     <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{pc.policy.code}</TableCell>
                     <TableCell className="py-3.5 text-sm text-slate-600">{translatedPolicies.find(p => p.id === pc.policy.id)?.name || pc.policy.name}</TableCell>
                     <TableCell className="py-3.5 text-sm text-slate-600">{t(pc.policy.documentType)}</TableCell>
-                    <TableCell className="py-3.5 pe-5">
+                    <TableCell className="py-3.5">
                       <Badge variant="outline">{t(pc.policy.status)}</Badge>
+                    </TableCell>
+                    <TableCell className="py-3.5 pe-5 text-end">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => router.push(`/compliance/governance/${pc.policy.id}`)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
                 {(!control.policyControls || control.policyControls.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-12">
+                    <TableCell colSpan={5} className="py-12">
                       <div className="flex flex-col items-center justify-center">
                         <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-2">
                           <FileText className="h-5 w-5 text-primary-400" />
@@ -1396,6 +1402,25 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             <DialogTitle>{t("Select Risks")}</DialogTitle>
           </div>
           <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5">
+            {allRisks.length > 0 && (
+              <div className="flex items-center space-x-2 py-2 border-b mb-1">
+                <Checkbox
+                  id="risk-select-all"
+                  checked={allRisks.length > 0 && allRisks.every(r => selectedRiskIds.includes(r.id))}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedRiskIds([...new Set([...selectedRiskIds, ...allRisks.map(r => r.id)])]);
+                    } else {
+                      const allRiskIdSet = new Set(allRisks.map(r => r.id));
+                      setSelectedRiskIds(selectedRiskIds.filter(id => !allRiskIdSet.has(id)));
+                    }
+                  }}
+                />
+                <Label htmlFor="risk-select-all" className="cursor-pointer font-medium">
+                  {t("Select All")}
+                </Label>
+              </div>
+            )}
             {translatedAllRisks.map((risk) => (
               <div key={risk.id} className="flex items-center space-x-2 py-2">
                 <Checkbox

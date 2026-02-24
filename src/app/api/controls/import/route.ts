@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 // POST import controls from CSV
 export const POST = withAuth(
@@ -35,19 +36,21 @@ export const POST = withAuth(
       headerMap[header.toLowerCase().trim()] = index;
     });
 
-    // Get reference data for lookups
-    const departments = await prisma.department.findMany();
-    const users = await prisma.user.findMany();
-    const frameworks = await prisma.framework.findMany();
-    const controlDomains = await prisma.controlDomain.findMany();
+    // Get reference data for lookups (tenant-scoped)
+    const tenantWhere = customerAccountId ? { customerAccountId } : {};
+    const departments = await prisma.department.findMany({ where: tenantWhere });
+    const users = await prisma.user.findMany({ where: tenantWhere });
+    const frameworks = await prisma.framework.findMany({ where: tenantWhere });
+    const controlDomains = await prisma.controlDomain.findMany({ where: tenantWhere });
 
     const departmentMap = new Map(departments.map((d) => [d.name.toLowerCase(), d.id]));
     const userMap = new Map(users.map((u) => [u.fullName.toLowerCase(), u.id]));
     const frameworkMap = new Map(frameworks.map((f) => [f.name.toLowerCase(), f.id]));
     const domainMap = new Map(controlDomains.map((d) => [d.name.toLowerCase(), d.id]));
 
-    // Get existing control codes to avoid duplicates
+    // Get existing control codes to avoid duplicates (tenant-scoped)
     const existingControls = await prisma.control.findMany({
+      where: tenantWhere,
       select: { controlCode: true },
     });
     const existingCodes = new Set(existingControls.map((c) => c.controlCode));
@@ -55,6 +58,7 @@ export const POST = withAuth(
     let imported = 0;
     let skipped = 0;
     const errors: string[] = [];
+    const importedControls: Array<{ id: string; name: string; description: string | null; controlQuestion: string | null }> = [];
 
     // Parse data rows
     for (let i = 1; i < lines.length; i++) {
@@ -66,23 +70,18 @@ export const POST = withAuth(
 
         // Skip if no name
         if (!name) {
-          skipped++;
-          continue;
-        }
-
-        // Skip if control code already exists
-        if (controlCode && existingCodes.has(controlCode)) {
+          errors.push(`Row ${i + 1}: Missing control name`);
           skipped++;
           continue;
         }
 
         const description = getValue(values, headerMap, "description");
         const controlQuestion = getValue(values, headerMap, "control question");
-        const functionalGrouping = getValue(values, headerMap, "functional grouping");
+        const functionalGrouping = getValue(values, headerMap, "functional grouping") || getValue(values, headerMap, "function grouping");
         const status = getValue(values, headerMap, "status") || "Non Compliant";
         const entities = getValue(values, headerMap, "entities") || "Organization Wide";
         const scope = getValue(values, headerMap, "scope");
-        const domainName = getValue(values, headerMap, "domain");
+        const domainName = getValue(values, headerMap, "domain") || getValue(values, headerMap, "control domain");
         const departmentName = getValue(values, headerMap, "department");
         const ownerName = getValue(values, headerMap, "owner");
         const assigneeName = getValue(values, headerMap, "assignee");
@@ -95,11 +94,13 @@ export const POST = withAuth(
         const frameworkId = frameworkName ? frameworkMap.get(frameworkName.toLowerCase()) : null;
         const domainId = domainName ? domainMap.get(domainName.toLowerCase()) : null;
 
-        // Generate control code if not provided
-        const newControlCode = controlCode || `CTRL-${Date.now()}-${i}`;
+        // Use provided code if unique, otherwise generate a new one
+        const newControlCode = (controlCode && !existingCodes.has(controlCode))
+          ? controlCode
+          : `CTRL-${Date.now()}-${i}`;
 
         // Create control with tenant isolation
-        await prisma.control.create({
+        const control = await prisma.control.create({
           data: {
             customerAccountId,
             controlCode: newControlCode,
@@ -118,6 +119,13 @@ export const POST = withAuth(
           },
         });
 
+        importedControls.push({
+          id: control.id,
+          name: control.name,
+          description: control.description,
+          controlQuestion: control.controlQuestion,
+        });
+
         existingCodes.add(newControlCode);
         imported++;
       } catch (rowError) {
@@ -125,6 +133,19 @@ export const POST = withAuth(
         skipped++;
       }
     }
+
+    // Fire-and-forget translations in background (don't block response)
+    if (customerAccountId && importedControls.length > 0) {
+      for (const c of importedControls) {
+        void translateRecord(customerAccountId, 'Control', c.id, {
+          name: c.name,
+          description: c.description,
+          controlQuestion: c.controlQuestion,
+        });
+      }
+    }
+
+    console.log(`[IMPORT] Controls import complete: ${imported} imported, ${skipped} skipped, ${errors.length} errors`, errors);
 
     return NextResponse.json({
       imported,
