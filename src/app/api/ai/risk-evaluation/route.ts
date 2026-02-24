@@ -139,13 +139,19 @@ async function handler(
         // 5. If persist=false, return raw AI response for semantic matching
         if (!persist) {
             // Transform AI response to format expected by semantic matching
+            // Include threats with their associated vulnerabilities for proper display
             const generatedRisks = (result.risks || []).map(aiRisk => ({
                 name: aiRisk.Risk_name,
                 description: aiRisk.Risk_description,
                 risk_rating: aiRisk.Inherent_risk_rating || "Medium",
                 risk_sources: "AI-Generated (v2)",
                 category: process.department?.name || "General",
-                threats: aiRisk.Threats?.map(t => t.threat_name) || [],
+                // Map threats with their vulnerabilities for UI display
+                threats: aiRisk.Threats?.map(t => ({
+                    name: t.threat_name,
+                    vulnerabilities: (t as any).Vulnerabilities || [],
+                })) || [],
+                // Flatten controls from all threats
                 controls: aiRisk.Threats?.flatMap(t =>
                     t.controls?.map(c => c.ControlName) || []
                 ) || [],

@@ -2309,16 +2309,38 @@ export default function ProcessPage() {
                       </div>
                       <p className="text-sm text-slate-600">{risk.description}</p>
 
-                      {/* Handle both formats: from DB (threats array) and from AI (threats string array) */}
+                      {/* Handle both formats: from DB (threats array) and from AI (threats with vulnerabilities) */}
                       {(risk.threats?.length > 0) && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-bold text-slate-400 uppercase">{t("Threats")}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {risk.threats.map((tm: any, tIdx: number) => (
-                              <Badge key={tIdx} variant="outline" className="text-[10px] py-0">
-                                {typeof tm === "string" ? tm : (tm.threat?.name || tm.threatId)}
-                              </Badge>
-                            ))}
+                        <div className="space-y-2">
+                          <p className="text-xs font-bold text-slate-400 uppercase">{t("Threats & Vulnerabilities")}</p>
+                          <div className="space-y-2">
+                            {risk.threats.map((tm: any, tIdx: number) => {
+                              // Get threat name - handle string, object with name, or object with threat.name
+                              const threatName = typeof tm === "string"
+                                ? tm
+                                : (tm.name || tm.threat?.name || tm.threatId || "Unknown Threat");
+                              // Get vulnerabilities - they're nested in the threat object
+                              const vulnerabilities = tm.vulnerabilities || [];
+
+                              return (
+                                <div key={tIdx} className="bg-slate-50 rounded-md p-2 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-[10px] py-0 bg-orange-50 text-orange-700 border-orange-200">
+                                      {threatName}
+                                    </Badge>
+                                  </div>
+                                  {vulnerabilities.length > 0 && (
+                                    <div className="ltr:pl-3 rtl:pr-3 flex flex-wrap gap-1">
+                                      {vulnerabilities.map((vuln: string, vIdx: number) => (
+                                        <Badge key={vIdx} variant="outline" className="text-[9px] py-0 bg-red-50 text-red-600 border-red-200">
+                                          {vuln}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
