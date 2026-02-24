@@ -897,10 +897,22 @@ export default function CustomerAdminFrameworkPage() {
               onClick={openAICreateDialog}
               variant="outline"
               size="sm"
+              disabled={isAISubmitting}
               className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
             >
-              <Sparkles className="h-4 w-4 me-2" />
-              {t("New Framework (AI)")}
+              {isAISubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                  {aiJobStatus === "queued" || aiJobStatus === "processing"
+                    ? t("Generating...")
+                    : t("Submitting...")}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 me-2" />
+                  {t("New Framework (AI)")}
+                </>
+              )}
             </Button>
             <Button
               onClick={openCreateDialog}
@@ -1131,7 +1143,11 @@ export default function CustomerAdminFrameworkPage() {
       </div>
 
       {/* AI Create Framework Dialog */}
-      <Dialog open={isAICreateDialogOpen} onOpenChange={setIsAICreateDialogOpen}>
+      <Dialog open={isAICreateDialogOpen} onOpenChange={(open) => {
+        // Prevent closing during AI processing
+        if (!open && isAISubmitting) return;
+        setIsAICreateDialogOpen(open);
+      }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()} style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* Sticky Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 shrink-0">
