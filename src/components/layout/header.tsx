@@ -17,9 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format, formatDistanceToNow } from "date-fns";
+import { ar, lv, enUS } from "date-fns/locale";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Locale } from "@/i18n/config";
 import { useNotifications, getNotificationStyle, Notification } from "@/hooks/useNotifications";
+import { useTranslatedRecord } from "@/hooks/useTranslatedData";
+
+const dateFnsLocales: Record<string, typeof enUS> = { en: enUS, ar, lv };
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -56,6 +60,16 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
   const router = useRouter();
   const { locale, setLocale, t, locales, localeNames, localeFlags } = useLanguage();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const dateFnsLocale = dateFnsLocales[locale] || enUS;
+
+  // Translate current user name
+  const userRecord = session?.user?.id ? { id: session.user.id, fullName: session.user.name || "" } : null;
+  const { data: translatedUser } = useTranslatedRecord(userRecord, { modelName: 'User' });
+  const displayName = translatedUser?.fullName || session?.user?.name || t("User");
+
+  // Format role name for display
+  const rawRole = session?.user?.roles?.[0]?.replace(/([A-Z])/g, ' $1').trim() || "";
+  const displayRole = rawRole ? t(rawRole) : t("User");
 
   // Notifications hook
   const {
@@ -155,7 +169,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-500 font-medium">{t("Date")}</span>
               <span className="text-sm text-slate-700 font-semibold">
-                {currentTime ? format(currentTime, "dd MMM yyyy") : "--"}
+                {currentTime ? format(currentTime, "dd MMM yyyy", { locale: dateFnsLocale }) : "--"}
               </span>
             </div>
           </div>
@@ -164,7 +178,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-500 font-medium">{t("Time")}</span>
               <span className="text-sm text-slate-700 font-semibold">
-                {currentTime ? format(currentTime, "h:mm a") : "--"}
+                {currentTime ? format(currentTime, "h:mm a", { locale: dateFnsLocale }) : "--"}
               </span>
             </div>
           </div>
@@ -314,10 +328,10 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
               </Avatar>
               <div className="hidden xl:flex flex-col items-start">
                 <span className="text-sm font-semibold text-slate-800">
-                  {session?.user?.name || t("User")}
+                  {displayName}
                 </span>
                 <span className="text-xs text-slate-500">
-                  {session?.user?.roles?.[0]?.replace(/([A-Z])/g, ' $1').trim() || t("User")}
+                  {displayRole}
                 </span>
               </div>
               <ChevronDown className="hidden xl:block h-4 w-4 text-slate-400" />
@@ -326,7 +340,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="py-3">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-semibold text-slate-800">{session?.user?.name || t("User")}</p>
+                <p className="text-sm font-semibold text-slate-800">{displayName}</p>
                 <p className="text-xs text-slate-500">{session?.user?.email || ""}</p>
                 {session?.user?.customerAccountName && (
                   <p className="text-xs text-primary-600 font-medium">{session.user.customerAccountName}</p>

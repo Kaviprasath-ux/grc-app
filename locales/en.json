@@ -3186,5 +3186,12 @@
   "Failed to update range. Please try again.": "Failed to update range. Please try again.",
   "Failed to create label": "Failed to create label",
   "Failed to update label": "Failed to update label",
-  "Select Process Type": "Select Process Type"
+  "Select Process Type": "Select Process Type",
+  "G R C Administrator": "G R C Administrator",
+  "Customer Administrator": "Customer Administrator",
+  "Audit Manager": "Audit Manager",
+  "Reviewer": "Reviewer",
+  "Contributor": "Contributor",
+  "Department Reviewer": "Department Reviewer",
+  "Department Contributor": "Department Contributor"
 }

@@ -3186,5 +3186,12 @@
   "Failed to update range. Please try again.": "Neizdevās atjaunināt diapazonu. Lūdzu, mēģiniet vēlreiz.",
   "Failed to create label": "Neizdevās izveidot etiķeti",
   "Failed to update label": "Neizdevās atjaunināt etiķeti",
-  "Select Process Type": "Izvēlieties procesa veidu"
+  "Select Process Type": "Izvēlieties procesa veidu",
+  "G R C Administrator": "GRC administrators",
+  "Customer Administrator": "Klienta administrators",
+  "Audit Manager": "Audita menedžeris",
+  "Reviewer": "Pārskatītājs",
+  "Contributor": "Līdzstrādnieks",
+  "Department Reviewer": "Nodaļas pārskatītājs",
+  "Department Contributor": "Nodaļas līdzstrādnieks"
 }

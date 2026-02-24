@@ -3186,5 +3186,12 @@
   "Failed to update range. Please try again.": "فشل في تحديث النطاق. يرجى المحاولة مرة أخرى.",
   "Failed to create label": "فشل في إنشاء التسمية",
   "Failed to update label": "فشل في تحديث التسمية",
-  "Select Process Type": "اختر نوع العملية"
+  "Select Process Type": "اختر نوع العملية",
+  "G R C Administrator": "مسؤول GRC",
+  "Customer Administrator": "مسؤول العميل",
+  "Audit Manager": "مدير التدقيق",
+  "Reviewer": "مراجع",
+  "Contributor": "مساهم",
+  "Department Reviewer": "مراجع القسم",
+  "Department Contributor": "مساهم القسم"
 }
