@@ -1653,6 +1653,11 @@ export default function FieldworkDetailsPage() {
       return;
     }
 
+    if (evidenceRequests.some((er) => er.title.trim().toLowerCase() === newEvidence.title.trim().toLowerCase())) {
+      toast.error(t("Evidence request with this title already exists"));
+      return;
+    }
+
     if (!newEvidence.auditeeId || !newEvidence.auditeeId.trim()) {
       toast.error(t("Auditee is required"));
       return;

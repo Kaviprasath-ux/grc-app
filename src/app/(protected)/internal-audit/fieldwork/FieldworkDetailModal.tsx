@@ -954,6 +954,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleAddEvidence = async () => {
     if (!newEvidence.title.trim()) { setNewEvidenceTitleError(t("Evidence title is required")); return; }
+    if (evidenceRequests.some((er) => er.title.trim().toLowerCase() === newEvidence.title.trim().toLowerCase())) { setNewEvidenceTitleError(t("Evidence request with this title already exists")); return; }
     setNewEvidenceTitleError("");
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: newEvidence.title, description: newEvidence.description, auditee: newEvidence.auditee, auditeeId: newEvidence.auditeeId || null, numberOfSamples: newEvidence.numberOfSamples || null, status: "Pending" }) });
