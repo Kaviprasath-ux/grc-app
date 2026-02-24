@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle, Settings2 } from "lucide-react";
 import Link from "next/link";
@@ -463,6 +463,18 @@ export default function ProcessPage() {
   const kpiMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+
+  const tDeptName = useCallback((id: string | null | undefined) => {
+    if (!id) return undefined;
+    return translatedDepartments.find(d => d.id === id)?.name;
+  }, [translatedDepartments]);
+
+  const tOwnerName = useCallback((id: string | null | undefined) => {
+    if (!id) return undefined;
+    return translatedUsers.find(u => u.id === id)?.fullName;
+  }, [translatedUsers]);
 
   useEffect(() => {
     fetchData();
@@ -1192,8 +1204,8 @@ export default function ProcessPage() {
         process.processCode || "",
         process.name || "",
         (process.description || "").replace(/,/g, ";").replace(/\n/g, " "),
-        process.department?.name || "",
-        process.owner?.fullName || "",
+        tDeptName(process.departmentId) || process.department?.name || "",
+        tOwnerName(process.ownerId) || process.owner?.fullName || "",
         process.processFrequency || process.frequency || "",
         process.natureOfImplementation || "",
         process.status || "",
@@ -1264,8 +1276,8 @@ export default function ProcessPage() {
         process.processCode || "",
         process.name || "",
         process.description || "",
-        process.department?.name || "",
-        process.owner?.fullName || "",
+        tDeptName(process.departmentId) || process.department?.name || "",
+        tOwnerName(process.ownerId) || process.owner?.fullName || "",
         process.processFrequency || process.frequency || "",
         process.natureOfImplementation || "",
         ...categoryValues,
@@ -1490,12 +1502,12 @@ export default function ProcessPage() {
     {
       accessorKey: "department.name",
       header: t("Department"),
-      cell: ({ row }) => row.original.department?.name || "-",
+      cell: ({ row }) => tDeptName(row.original.departmentId) || row.original.department?.name || "-",
     },
     {
       accessorKey: "owner.fullName",
       header: t("Process Owner"),
-      cell: ({ row }) => row.original.owner?.fullName || "-",
+      cell: ({ row }) => tOwnerName(row.original.ownerId) || row.original.owner?.fullName || "-",
     },
     {
       accessorKey: "processFrequency",
@@ -1625,12 +1637,12 @@ export default function ProcessPage() {
     {
       accessorKey: "department.name",
       header: t("Department"),
-      cell: ({ row }) => row.original.department?.name || "-",
+      cell: ({ row }) => tDeptName(row.original.departmentId) || row.original.department?.name || "-",
     },
     {
       accessorKey: "owner.fullName",
       header: t("Process Owner"),
-      cell: ({ row }) => row.original.owner?.fullName || "-",
+      cell: ({ row }) => tOwnerName(row.original.ownerId) || row.original.owner?.fullName || "-",
     },
     {
       accessorKey: "processFrequency",
@@ -1703,7 +1715,7 @@ export default function ProcessPage() {
     {
       accessorKey: "department.name",
       header: t("Department Name"),
-      cell: ({ row }) => row.original.department?.name || "-",
+      cell: ({ row }) => tDeptName(row.original.departmentId) || row.original.department?.name || "-",
     },
     {
       id: "actions",
@@ -1802,7 +1814,7 @@ export default function ProcessPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="all">{t("All Departments")}</SelectItem>
-                    {departments.map((dept) => (
+                    {translatedDepartments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
                       </SelectItem>
@@ -1817,7 +1829,7 @@ export default function ProcessPage() {
                     <SelectItem value="all">{t("All Owners")}</SelectItem>
                     {processOwners.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.fullName}
+                        {tOwnerName(user.id) || user.fullName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1876,7 +1888,7 @@ export default function ProcessPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="all">{t("All Departments")}</SelectItem>
-                    {departments.map((dept) => (
+                    {translatedDepartments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
                       </SelectItem>
@@ -1891,7 +1903,7 @@ export default function ProcessPage() {
                     <SelectItem value="all">{t("All Owners")}</SelectItem>
                     {processOwners.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.fullName}
+                        {tOwnerName(user.id) || user.fullName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -2018,7 +2030,7 @@ export default function ProcessPage() {
                   // Group by department
                   const deptCounts: Record<string, number> = {};
                   kpiProcesses.forEach((p) => {
-                    const deptName = p.department?.name || t("Unassigned");
+                    const deptName = tDeptName(p.departmentId) || p.department?.name || t("Unassigned");
                     deptCounts[deptName] = (deptCounts[deptName] || 0) + 1;
                   });
                   const colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
@@ -2108,7 +2120,7 @@ export default function ProcessPage() {
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           <SelectItem value="all">{t("All Departments")}</SelectItem>
-                          {departments.map((dept) => (
+                          {translatedDepartments.map((dept) => (
                             <SelectItem key={dept.id} value={dept.id}>
                               {dept.name}
                             </SelectItem>
@@ -2458,7 +2470,7 @@ export default function ProcessPage() {
                       <SelectValue placeholder={t("Select Department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {departments.map((dept) => (
+                      {translatedDepartments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
                         </SelectItem>
@@ -2477,7 +2489,7 @@ export default function ProcessPage() {
                         .filter((user) => user.departmentId === biaDepartment && user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer"))
                         .map((user) => (
                           <SelectItem key={user.id} value={user.id}>
-                            {user.fullName}
+                            {tOwnerName(user.id) || user.fullName}
                           </SelectItem>
                         ))}
                     </SelectContent>
@@ -2686,7 +2698,7 @@ export default function ProcessPage() {
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {departments.map((dept) => (
+                        {translatedDepartments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -2708,7 +2720,7 @@ export default function ProcessPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {users.filter((user) => user.departmentId === processForm.departmentId && user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")).map((user) => (
-                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -2863,7 +2875,7 @@ export default function ProcessPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
-                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -2876,7 +2888,7 @@ export default function ProcessPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
-                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -2889,7 +2901,7 @@ export default function ProcessPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
-                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -2902,7 +2914,7 @@ export default function ProcessPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
-                        <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                        <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -3058,7 +3070,7 @@ export default function ProcessPage() {
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {departments.map((dept) => (
+                        {translatedDepartments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -3079,7 +3091,7 @@ export default function ProcessPage() {
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {users.filter((user) => user.departmentId === editingProcess.departmentId && user.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")).map((user) => (
-                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                          <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -3234,7 +3246,7 @@ export default function ProcessPage() {
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
-                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                          <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -3247,7 +3259,7 @@ export default function ProcessPage() {
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
-                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                          <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -3260,7 +3272,7 @@ export default function ProcessPage() {
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
-                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                          <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -3273,7 +3285,7 @@ export default function ProcessPage() {
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {users.filter((u) => !u.userRoles?.some((ur) => ur.role.name === "CustomerAdministrator")).map((user) => (
-                          <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                          <SelectItem key={user.id} value={user.id}>{tOwnerName(user.id) || user.fullName}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

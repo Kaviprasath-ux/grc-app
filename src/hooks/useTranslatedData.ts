@@ -123,8 +123,8 @@ export function useTranslatedData<T extends object>(
   useEffect(() => {
     const currentData = dataRef.current;
 
-    // No translation needed for empty data
-    if (!currentData || currentData.length === 0) {
+    // No translation needed for empty data or missing model name
+    if (!currentData || currentData.length === 0 || !modelName) {
       setTranslatedData(currentData ?? []);
       setIsLoading(false);
       return;
@@ -239,7 +239,7 @@ export function useTranslatedRecord<T extends object>(
   useEffect(() => {
     const currentRecord = recordRef.current;
 
-    if (!currentRecord) {
+    if (!currentRecord || !modelName) {
       setTranslatedRecord(currentRecord ?? null);
       setIsLoading(false);
       return;
