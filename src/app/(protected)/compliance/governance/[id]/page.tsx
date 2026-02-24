@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -78,6 +78,7 @@ import {
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { toast } from "sonner";
 
 interface Policy {
@@ -452,6 +453,46 @@ export default function GovernanceDetailPage() {
   }>>([]);
   const [selectedExceptionId, setSelectedExceptionId] = useState("");
 
+  // Dynamic translation hooks
+  const { data: translatedPolicy } = useTranslatedRecord(policy, { modelName: 'Policy' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedControls } = useTranslatedData(availableControls, { modelName: 'Control' });
+  const { data: translatedDomains } = useTranslatedData(controlDomains, { modelName: 'ControlDomain' });
+  const { data: translatedExceptions } = useTranslatedData(availableExceptions, { modelName: 'Exception' });
+
+  // Lookup maps for translated nested data
+  const departmentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDepartments.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDepartments]);
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedUsers.forEach(u => map.set(u.id, u.fullName));
+    return map;
+  }, [translatedUsers]);
+
+  const frameworkNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedFrameworks.forEach(f => map.set(f.id, f.name));
+    return map;
+  }, [translatedFrameworks]);
+
+  const controlNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedControls.forEach(c => map.set(c.id, c.name));
+    return map;
+  }, [translatedControls]);
+
+  const domainNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDomains.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDomains]);
+
   const fetchPolicy = useCallback(async () => {
     try {
       const response = await fetch(`/api/policies/${id}`);
@@ -571,7 +612,7 @@ export default function GovernanceDetailPage() {
 
   // Filtered user lists for role-based assignment restrictions
   // Assignees: Only DepartmentContributor and DepartmentReviewer from the selected department
-  const filteredAssigneeUsers = users.filter((u) => {
+  const filteredAssigneeUsers = translatedUsers.filter((u) => {
     // Must be in the same department as the governance document
     if (selectedDepartmentId && u.departmentId !== selectedDepartmentId) return false;
     // Must have DepartmentContributor or DepartmentReviewer role
@@ -581,7 +622,7 @@ export default function GovernanceDetailPage() {
   });
 
   // Approvers: Only DepartmentReviewer from the selected department
-  const filteredApproverUsers = users.filter((u) => {
+  const filteredApproverUsers = translatedUsers.filter((u) => {
     // Must be in the same department as the governance document
     if (selectedDepartmentId && u.departmentId !== selectedDepartmentId) return false;
     // Must have DepartmentReviewer role only
@@ -619,6 +660,7 @@ export default function GovernanceDetailPage() {
       });
 
       if (response.ok) {
+        triggerTranslation('Policy', id, { name: editForm.name });
         setEditDialogOpen(false);
         fetchPolicy();
       }
@@ -707,7 +749,7 @@ export default function GovernanceDetailPage() {
 
   // Filter controls for the link dialog
   const getFilteredControlsForLinking = () => {
-    return availableControls
+    return translatedControls
       .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
       .filter((c) => {
         // Search filter
@@ -1334,7 +1376,7 @@ export default function GovernanceDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{policy.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{translatedPolicy?.name || policy.name}</h1>
           <Badge className={statusColors[policy.status] || "bg-slate-100 text-slate-600"}>
             {t(policy.status)}
           </Badge>
@@ -1500,7 +1542,7 @@ export default function GovernanceDetailPage() {
                         <SelectValue placeholder={t("Select framework")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {frameworks.map((f) => (
+                        {translatedFrameworks.map((f) => (
                           <SelectItem key={f.id} value={f.id}>
                             {f.name}
                           </SelectItem>
@@ -1520,7 +1562,7 @@ export default function GovernanceDetailPage() {
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((d) => (
+                        {translatedDepartments.map((d) => (
                           <SelectItem key={d.id} value={d.id}>
                             {d.name}
                           </SelectItem>
@@ -1629,7 +1671,7 @@ export default function GovernanceDetailPage() {
                   <div className="space-y-1">
                     <p className="font-medium text-xs text-slate-300">{t("Linked Frameworks")}:</p>
                     {linkedFrameworks.map((fw) => (
-                      <p key={fw.id} className="text-sm">{fw.name}</p>
+                      <p key={fw.id} className="text-sm">{frameworkNameMap.get(fw.id) || fw.name}</p>
                     ))}
                   </div>
                 </TooltipContent>
@@ -1661,13 +1703,13 @@ export default function GovernanceDetailPage() {
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="text-sm text-slate-700">{policy.department?.name || "-"}</p>
+                <p className="text-sm text-slate-700">{(policy.department?.id ? departmentNameMap.get(policy.department.id) : null) || policy.department?.name || "-"}</p>
               )}
             </div>
 
@@ -1675,7 +1717,7 @@ export default function GovernanceDetailPage() {
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Assigned To")}</Label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-700">{policy.assignee?.fullName || "-"}</span>
+                <span className="text-sm text-slate-700">{(policy.assignee?.id ? userNameMap.get(policy.assignee.id) : null) || policy.assignee?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
                   <Dialog open={assigneeDialogOpen} onOpenChange={setAssigneeDialogOpen}>
                     <DialogTrigger asChild>
@@ -1727,7 +1769,7 @@ export default function GovernanceDetailPage() {
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approvers")}</Label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-700">{policy.approver?.fullName || "-"}</span>
+                <span className="text-sm text-slate-700">{(policy.approver?.id ? userNameMap.get(policy.approver.id) : null) || policy.approver?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
                   <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
                     <DialogTrigger asChild>
@@ -2070,15 +2112,15 @@ export default function GovernanceDetailPage() {
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approved By")}</Label>
                   {policy.approver ? (
                     <div className="p-3 bg-slate-50 rounded-lg space-y-1">
-                      <p className="text-sm font-medium text-slate-700">{policy.approver.fullName}</p>
+                      <p className="text-sm font-medium text-slate-700">{(policy.approver.id ? userNameMap.get(policy.approver.id) : null) || policy.approver.fullName}</p>
                       {(() => {
                         // Find the approver in users array to get full details
-                        const approverUser = users.find(u => u.id === policy.approverId);
+                        const approverUser = translatedUsers.find(u => u.id === policy.approverId);
                         return (
                           <>
                             {approverUser?.department && (
                               <p className="text-sm text-slate-400">
-                                {t("Department")}: {approverUser.department.name}
+                                {t("Department")}: {(approverUser.department.id ? departmentNameMap.get(approverUser.department.id) : null) || approverUser.department.name}
                               </p>
                             )}
                             {approverUser?.designation && (
@@ -2425,7 +2467,7 @@ export default function GovernanceDetailPage() {
                                         <Badge variant="outline" className="text-xs font-mono">
                                           {pc.control.controlCode}
                                         </Badge>
-                                        <span className="text-sm">{pc.control.name}</span>
+                                        <span className="text-sm">{controlNameMap.get(pc.control.id) || pc.control.name}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -2945,7 +2987,7 @@ export default function GovernanceDetailPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">{t("All Domains")}</SelectItem>
-                          {controlDomains.map((d) => (
+                          {translatedDomains.map((d) => (
                             <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -2967,7 +3009,7 @@ export default function GovernanceDetailPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-                          {frameworks.map((f) => (
+                          {translatedFrameworks.map((f) => (
                             <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -3092,7 +3134,7 @@ export default function GovernanceDetailPage() {
                       className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
                     >
                       <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{pc.control.controlCode}</TableCell>
-                      <TableCell className="py-3 text-sm text-slate-700">{pc.control.name}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{controlNameMap.get(pc.control.id) || pc.control.name}</TableCell>
                       <TableCell className="py-3 text-sm text-slate-700">{pc.control.domain?.name || "-"}</TableCell>
                       <TableCell className="py-3">
                         <Badge className={statusColors[pc.control.status] || "bg-slate-100 text-slate-600"}>
@@ -3158,7 +3200,7 @@ export default function GovernanceDetailPage() {
                           <SelectValue placeholder={t("Select an exception")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableExceptions
+                          {translatedExceptions
                             .filter((e) => !linkedExceptions.find((le) => le.exception.id === e.id))
                             .map((exception) => (
                               <SelectItem key={exception.id} value={exception.id}>

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+
+// Allow larger file uploads (up to 50MB)
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 // GET all vault documents - filtered by customer account
 export const GET = withAuth(
@@ -80,18 +86,20 @@ export const POST = withAuth(
         );
       }
 
-      // Generate document code (VD-001, VD-002, etc.)
-      const lastDocument = await prisma.governanceVaultDocument.findFirst({
+      // Generate document code (Gov-001, Gov-002, etc.)
+      const existingDocs = await prisma.governanceVaultDocument.findMany({
         where: { customerAccountId },
-        orderBy: { documentCode: "desc" },
         select: { documentCode: true },
       });
 
       let nextNum = 1;
-      if (lastDocument?.documentCode) {
-        const match = lastDocument.documentCode.match(/Gov-(\d+)/);
+      for (const doc of existingDocs) {
+        const match = doc.documentCode.match(/Gov-(\d+)/);
         if (match) {
-          nextNum = parseInt(match[1]) + 1;
+          const num = parseInt(match[1]);
+          if (num >= nextNum) {
+            nextNum = num + 1;
+          }
         }
       }
       const documentCode = `Gov-${nextNum.toString().padStart(3, "0")}`;
@@ -101,15 +109,18 @@ export const POST = withAuth(
       const fileType = fileName.split(".").pop()?.toLowerCase() || "unknown";
       const fileSize = file.size;
 
-      // Read file into buffer for database storage
+      // Read file into buffer
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Store a virtual path for reference
+      // Save file to disk
       const uniqueFileName = `${documentCode}_${Date.now()}_${fileName}`;
+      const uploadDir = join(process.cwd(), "uploads", "vault", customerAccountId);
+      await mkdir(uploadDir, { recursive: true });
+      await writeFile(join(uploadDir, uniqueFileName), buffer);
       const relativePath = `/uploads/vault/${customerAccountId}/${uniqueFileName}`;
 
-      // Create document record with file data stored in DB
+      // Create document record in DB (fileData stored on disk, not in DB)
       const document = await prisma.governanceVaultDocument.create({
         data: {
           customerAccountId,
@@ -118,7 +129,6 @@ export const POST = withAuth(
           fileType,
           fileSize,
           filePath: relativePath,
-          fileData: buffer,
           status: "Active",
         },
         include: {
@@ -136,10 +146,11 @@ export const POST = withAuth(
         filePath: document.filePath,
         linkedGovernanceIds: [],
       }, { status: 201 });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error uploading vault document:", error);
+      const message = error instanceof Error ? error.message : "Failed to upload document";
       return NextResponse.json(
-        { error: "Failed to upload document" },
+        { error: message },
         { status: 500 }
       );
     }

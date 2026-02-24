@@ -30,16 +30,16 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'Risk', fields: [{ name: 'name' }, { name: 'description' }, { name: 'riskSources' }], priority: 1 },
   { modelName: 'Control', fields: [{ name: 'name' }, { name: 'description' }, { name: 'controlQuestion' }], priority: 1 },
   { modelName: 'Framework', fields: [{ name: 'name' }, { name: 'description' }, { name: 'country' }, { name: 'industry' }], priority: 1 },
-  { modelName: 'Policy', fields: [{ name: 'title' }, { name: 'description' }], priority: 1 },
+  { modelName: 'Policy', fields: [{ name: 'name' }], priority: 1 },
 
   // Priority 2 — Compliance & governance
   { modelName: 'Evidence', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
-  { modelName: 'Exception', fields: [{ name: 'title' }, { name: 'description' }, { name: 'justification' }], priority: 2 },
-  { modelName: 'KPI', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
+  { modelName: 'Exception', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
+  { modelName: 'KPI', fields: [{ name: 'objective' }, { name: 'description' }], priority: 2 },
   { modelName: 'Requirement', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
   { modelName: 'RequirementCategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
-  { modelName: 'GovernanceVaultDocument', fields: [{ name: 'title' }, { name: 'description' }], priority: 2 },
-  { modelName: 'Regulation', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
+  { modelName: 'GovernanceVaultDocument', fields: [{ name: 'fileName' }], priority: 2 },
+  { modelName: 'Regulation', fields: [{ name: 'name' }], priority: 2 },
 
   // Priority 3 — Risk management details
   { modelName: 'RiskAssessment', fields: [{ name: 'notes' }], priority: 3 },

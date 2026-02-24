@@ -1303,7 +1303,6 @@ model GovernanceVaultDocument {
   fileType          String?                       // pdf, docx, xlsx, etc.
   fileSize          Int?
   filePath          String
-  fileData          Bytes?                        // Store file binary for serverless (Vercel) compatibility
   status            String                        @default("Active") // Active, Archived
   uploadedAt        DateTime                      @default(now())
   createdAt         DateTime                      @default(now())

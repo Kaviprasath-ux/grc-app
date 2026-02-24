@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,7 @@ import {
   Eye,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Policy {
   id: string;
@@ -241,6 +242,28 @@ export default function GovernancePage() {
     total: 0,
   });
 
+  // Dynamic translation hooks
+  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'Policy' });
+  const { data: translatedAllPolicies } = useTranslatedData(allPolicies, { modelName: 'Policy' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+
+  // Lookup maps for translated nested data
+  const departmentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDepartments.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDepartments]);
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedUsers.forEach(u => map.set(u.id, u.fullName));
+    return map;
+  }, [translatedUsers]);
+
   useEffect(() => {
     fetchFilterOptions();
   }, [session?.user?.id]);
@@ -408,6 +431,10 @@ export default function GovernancePage() {
         }),
       });
       if (response.ok) {
+        const responseData = await response.json().catch(() => null);
+        if (responseData?.id) {
+          triggerTranslation('Policy', responseData.id, { name: newPolicy.name });
+        }
         setIsCreateDialogOpen(false);
         resetCreateDialog();
         fetchPolicies();
@@ -489,15 +516,15 @@ export default function GovernancePage() {
   const handleExport = () => {
     const csv = [
       ["Code", "Name", "Document Type", "Status", "Assignee", "Approver", "Department", "Recurrence"],
-      ...policies.map((p) => [
+      ...translatedPolicies.map((p) => [
         p.code,
         p.name,
-        p.documentType,
-        p.status,
-        p.assignee?.fullName || "",
-        p.approver?.fullName || "",
-        p.department?.name || "",
-        p.recurrence || "",
+        t(p.documentType),
+        t(p.status),
+        (p.assignee?.id ? userNameMap.get(p.assignee.id) : null) || p.assignee?.fullName || "",
+        (p.approver?.id ? userNameMap.get(p.approver.id) : null) || p.approver?.fullName || "",
+        (p.department?.id ? departmentNameMap.get(p.department.id) : null) || p.department?.name || "",
+        p.recurrence ? t(p.recurrence) : "",
       ]),
     ]
       .map((row) => row.map((cell) => `"${cell}"`).join(","))
@@ -553,6 +580,7 @@ export default function GovernancePage() {
 
   const uploadVaultFile = async (file: File) => {
     try {
+      setVaultLoading(true);
       const formData = new FormData();
       formData.append("file", file);
 
@@ -562,9 +590,16 @@ export default function GovernancePage() {
       });
       if (response.ok) {
         fetchVaultDocuments();
+      } else {
+        const errData = await response.json().catch(() => null);
+        console.error("Upload failed:", response.status, errData);
+        alert(errData?.error || `Upload failed (${response.status})`);
+        setVaultLoading(false);
       }
     } catch (error) {
       console.error("Error uploading vault file:", error);
+      alert("Error uploading file. Please try again.");
+      setVaultLoading(false);
     }
   };
 
@@ -635,7 +670,7 @@ export default function GovernancePage() {
   };
 
   // Filter controls for Step 2
-  const filteredControls = controls.filter((control) => {
+  const filteredControls = translatedControls.filter((control) => {
     const matchesSearch = !controlSearch ||
       control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
       control.controlCode.toLowerCase().includes(controlSearch.toLowerCase());
@@ -645,7 +680,7 @@ export default function GovernancePage() {
   });
 
   // Filter governance for link dialog
-  const filteredGovernanceForLink = allPolicies.filter((p) => {
+  const filteredGovernanceForLink = translatedAllPolicies.filter((p) => {
     const matchesSearch = !linkSearch ||
       p.name.toLowerCase().includes(linkSearch.toLowerCase()) ||
       p.code.toLowerCase().includes(linkSearch.toLowerCase());
@@ -653,12 +688,12 @@ export default function GovernancePage() {
     return matchesSearch && matchesType;
   });
 
-  const getCustomerScopedUsers = () => users;
-  const getCustomerScopedDepartments = () => departments;
+  const getCustomerScopedUsers = () => translatedUsers;
+  const getCustomerScopedDepartments = () => translatedDepartments;
 
   const filteredUsers = (() => {
     if (!newPolicy.departmentId) return [];
-    return users.filter((u) => {
+    return translatedUsers.filter((u) => {
       if (u.departmentId !== newPolicy.departmentId) return false;
       return u.userRoles?.some((ur) =>
         ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
@@ -668,7 +703,7 @@ export default function GovernancePage() {
 
   const filteredEditUsers = (() => {
     if (!editData.departmentId) return [];
-    return users.filter((u) => {
+    return translatedUsers.filter((u) => {
       if (u.departmentId !== editData.departmentId) return false;
       return u.userRoles?.some((ur) =>
         ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
@@ -703,6 +738,7 @@ export default function GovernancePage() {
         body: JSON.stringify(editData),
       });
       if (response.ok) {
+        triggerTranslation('Policy', editingPolicy.id, { name: editData.name });
         setIsEditDialogOpen(false);
         setEditingPolicy(null);
         fetchPolicies();
@@ -882,7 +918,7 @@ export default function GovernancePage() {
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                         <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-                        {frameworks.map((f) => (
+                        {translatedFrameworks.map((f) => (
                           <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -923,7 +959,7 @@ export default function GovernancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {policies.map((policy) => (
+                      {translatedPolicies.map((policy) => (
                         <TableRow
                           key={policy.id}
                           className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
@@ -933,9 +969,9 @@ export default function GovernancePage() {
                           <TableCell className="py-3">
                             <Badge className={getStatusBadgeColor(policy.status)}>{t(policy.status)}</Badge>
                           </TableCell>
-                          <TableCell className="py-3 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{(policy.assignee?.id ? userNameMap.get(policy.assignee.id) : null) || policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{(policy.approver?.id ? userNameMap.get(policy.approver.id) : null) || policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{(policy.department?.id ? departmentNameMap.get(policy.department.id) : null) || policy.department?.name || "-"}</TableCell>
                           <TableCell className="py-3 pe-5">
                             <div className="flex items-center gap-0.5">
                               <Button
@@ -972,7 +1008,7 @@ export default function GovernancePage() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {policies.length === 0 && (
+                      {translatedPolicies.length === 0 && (
                         <TableRow className="hover:bg-transparent">
                           <TableCell colSpan={7} className="py-16 text-center">
                             <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
@@ -1047,6 +1083,8 @@ export default function GovernancePage() {
                     if (files && files.length > 0) {
                       uploadVaultFile(files[0]);
                     }
+                    // Reset so same file can be re-selected
+                    e.target.value = "";
                   }}
                 />
               </div>
@@ -1196,7 +1234,7 @@ export default function GovernancePage() {
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                         <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-                        {frameworks.map((f) => (
+                        {translatedFrameworks.map((f) => (
                           <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -1237,7 +1275,7 @@ export default function GovernancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {policies.map((policy) => (
+                      {translatedPolicies.map((policy) => (
                         <TableRow
                           key={policy.id}
                           className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
@@ -1247,9 +1285,9 @@ export default function GovernancePage() {
                           <TableCell className="py-3">
                             <Badge className={getStatusBadgeColor(policy.status)}>{t(policy.status)}</Badge>
                           </TableCell>
-                          <TableCell className="py-3 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{(policy.assignee?.id ? userNameMap.get(policy.assignee.id) : null) || policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{(policy.approver?.id ? userNameMap.get(policy.approver.id) : null) || policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{(policy.department?.id ? departmentNameMap.get(policy.department.id) : null) || policy.department?.name || "-"}</TableCell>
                           <TableCell className="py-3 pe-5">
                             <div className="flex items-center gap-0.5">
                               <Button
@@ -1290,7 +1328,7 @@ export default function GovernancePage() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {policies.length === 0 && (
+                      {translatedPolicies.length === 0 && (
                         <TableRow className="hover:bg-transparent">
                           <TableCell colSpan={7} className="py-16 text-center">
                             <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
@@ -1611,7 +1649,7 @@ export default function GovernancePage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">{t("All Domains")}</SelectItem>
-                      {domains.map((d) => (
+                      {translatedDomains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1657,7 +1695,7 @@ export default function GovernancePage() {
                           </TableCell>
                           <TableCell className="py-3 text-sm font-medium text-slate-900">{control.controlCode}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-700">{control.name}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{(control.domain?.id ? translatedDomains.find(d => d.id === control.domain?.id)?.name : null) || control.domain?.name || "-"}</TableCell>
                           <TableCell className="py-3">
                             <Badge className={getStatusBadgeColor(control.status)}>
                               {t(control.status)}
@@ -1718,7 +1756,7 @@ export default function GovernancePage() {
                     <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Controls")}:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedControlIds.map((id) => {
-                        const control = controls.find((c) => c.id === id);
+                        const control = translatedControls.find((c) => c.id === id);
                         return control ? (
                           <Badge key={id} variant="outline">
                             {control.controlCode}
