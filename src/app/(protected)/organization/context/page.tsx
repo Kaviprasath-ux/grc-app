@@ -517,7 +517,8 @@ export default function ContextPage() {
         return;
       }
 
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const stripQuotes = (s: string) => s.replace(/^"|"$/g, '');
+      const headers = lines[0].split(',').map(h => stripQuotes(h.trim()).toLowerCase());
 
       if (activeTab === "stakeholder") {
         // Import stakeholders
@@ -533,7 +534,7 @@ export default function ContextPage() {
         const newStakeholders: Stakeholder[] = [];
 
         for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
+          const values = lines[i].split(',').map(v => stripQuotes(v.trim()));
           const name = values[nameIndex];
 
           if (!name) continue;
@@ -578,7 +579,7 @@ export default function ContextPage() {
         const newIssues: Issue[] = [];
 
         for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
+          const values = lines[i].split(',').map(v => stripQuotes(v.trim()));
           const title = values[titleIndex];
 
           if (!title) continue;
