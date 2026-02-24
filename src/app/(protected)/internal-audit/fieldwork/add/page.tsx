@@ -5,6 +5,7 @@ import { formatLocalDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { triggerTranslation } from "@/hooks/useTranslatedData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -227,6 +228,8 @@ export default function AddEvidenceRequestPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('FieldworkEvidenceRequest', savedData.id, { title: formData.title, description: formData.description });
         toast.success(t("Evidence Request created successfully"));
         router.push("/internal-audit/fieldwork");
       } else {

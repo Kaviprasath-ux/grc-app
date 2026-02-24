@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
 import { isValidEmailFormat } from "@/lib/validations/email";
+import { translateRecord } from "@/lib/translation-service";
 
 // Audit-related roles that can be assigned in Internal Audit user management
 const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditee"];
@@ -289,6 +290,9 @@ export const POST = withAuth(
           },
         },
       });
+
+      // Trigger translation for the new user
+      if (customerAccountId) void translateRecord(customerAccountId, 'User', user.id, { fullName: user.fullName });
 
       // Remove password from response
       const { password: _, ...safeUser } = user;

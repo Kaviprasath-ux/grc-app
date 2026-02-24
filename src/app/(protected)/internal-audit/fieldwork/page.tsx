@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Table,
@@ -58,7 +59,7 @@ interface Engagement {
 }
 
 export default function FieldworkPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { canView, isLoading: permissionsLoading } = usePermissions('audit.fieldwork');
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [engagements, setEngagements] = useState<Engagement[]>([]);
@@ -79,6 +80,10 @@ export default function FieldworkPage() {
   // Sorting
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // Dynamic translation hooks
+  const { data: translatedEngagements } = useTranslatedData(engagements, { modelName: 'AuditEngagement' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
 
   // Detail Modal
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -145,9 +150,10 @@ export default function FieldworkPage() {
     }
   };
 
+  const dateLocaleMap: Record<string, string> = { en: "en-GB", ar: "ar-SA", lv: "lv-LV" };
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-GB", {
+    return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -174,7 +180,7 @@ export default function FieldworkPage() {
   };
 
   // Filter by search and auditor (client-side) then sort
-  const filteredEngagements = engagements.filter((engagement) => {
+  const filteredEngagements = translatedEngagements.filter((engagement) => {
     // Search filter
     if (searchFilter) {
       const search = searchFilter.toLowerCase();
@@ -354,7 +360,7 @@ export default function FieldworkPage() {
               </SelectTrigger>
               <SelectContent className="bg-white">
                 <SelectItem value="all">{t("All Departments")}</SelectItem>
-                {departments.map((dept) => (
+                {translatedDepartments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all audit types
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -76,6 +77,8 @@ export const POST = withAuth(
           auditHeadId: auditHeadId,
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditType', auditType.id, { name: auditType.name });
 
       return NextResponse.json(auditType, { status: 201 });
     } catch (error) {

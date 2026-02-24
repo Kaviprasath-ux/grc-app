@@ -64,6 +64,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -238,6 +239,17 @@ export default function AuditPlanningPage() {
 
   const isAuditHead = session?.user?.roles?.includes("AuditHead");
 
+  // Dynamic translation for engagements list
+  const { data: translatedEngagements } = useTranslatedData(engagements, { modelName: 'AuditEngagement' });
+
+  // Translated reference data for dropdowns
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
+  const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
+  const { data: translatedAuditRatings } = useTranslatedData(auditRatings, { modelName: 'AuditScoringRange' });
+  const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'InternalAuditRisk' });
+  const { data: translatedHistoricalRisks } = useTranslatedData(historicalRisks, { modelName: 'InternalAuditRisk' });
+
   useEffect(() => {
     fetchDepartments();
     fetchEngagements();
@@ -341,9 +353,12 @@ export default function AuditPlanningPage() {
       }
       if (scoringRangesRes.ok) {
         const scoringRangesData = await scoringRangesRes.json();
-        // Get unique labels from scoring ranges for audit ratings
-        const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
-        setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
+        // Deduplicate by label but keep real IDs for translation lookup
+        const uniqueMap = new Map<string, ScoringRange>();
+        for (const r of scoringRangesData) {
+          if (!uniqueMap.has(r.label)) uniqueMap.set(r.label, r);
+        }
+        setAuditRatings(Array.from(uniqueMap.values()));
       }
       if (processesRes.ok) {
         const processesData = await processesRes.json();
@@ -384,10 +399,12 @@ export default function AuditPlanningPage() {
       const response = await fetch(`/api/internal-audit/engagements/${engagement.id}`);
       if (response.ok) {
         const data = await response.json();
+        // Use translated fields from the translatedEngagements item (already translated by useTranslatedData)
+        const te = engagement as unknown as Record<string, unknown>;
         setEngagementForm({
-          engagementTitle: data.engagementTitle || "",
-          engagementObjective: data.engagementObjective || "",
-          engagementScope: data.engagementScope || "",
+          engagementTitle: (te.engagementTitle as string) || data.engagementTitle || "",
+          engagementObjective: (te.engagementObjective as string) || data.engagementObjective || "",
+          engagementScope: (te.engagementScope as string) || data.engagementScope || "",
           departmentId: data.departmentId || "",
           linkedRiskIds: data.linkedRiskIds || [],
           auditRating: data.auditRating || "",
@@ -397,8 +414,8 @@ export default function AuditPlanningPage() {
           processId: data.processId || "",
           startDate: data.plannedStartDate ? data.plannedStartDate.split("T")[0] : "",
           targetDate: data.plannedEndDate ? data.plannedEndDate.split("T")[0] : "",
-          initialObservation: data.initialObservation || "",
-          relatedPolicies: data.relatedPolicies || "",
+          initialObservation: (te.initialObservation as string) || data.initialObservation || "",
+          relatedPolicies: (te.relatedPolicies as string) || data.relatedPolicies || "",
         });
 
         // Fetch risks for the department
@@ -563,6 +580,8 @@ export default function AuditPlanningPage() {
       });
 
       if (response.ok) {
+        const savedEngagement = await response.json();
+        triggerTranslation('AuditEngagement', savedEngagement.id, { engagementTitle: savedEngagement.engagementTitle, engagementObjective: savedEngagement.engagementObjective, engagementScope: savedEngagement.engagementScope, initialObservation: savedEngagement.initialObservation, relatedPolicies: savedEngagement.relatedPolicies });
         toast.success(t("Engagement created successfully"));
         setAddDialogOpen(false);
         resetFormState();
@@ -595,6 +614,8 @@ export default function AuditPlanningPage() {
       });
 
       if (response.ok) {
+        const savedEngagement = await response.json();
+        triggerTranslation('AuditEngagement', savedEngagement.id, { engagementTitle: savedEngagement.engagementTitle, engagementObjective: savedEngagement.engagementObjective, engagementScope: savedEngagement.engagementScope, initialObservation: savedEngagement.initialObservation, relatedPolicies: savedEngagement.relatedPolicies });
         toast.success(t("Engagement updated successfully"));
         setEditDialogOpen(false);
         setEditingEngagementId(null);
@@ -643,10 +664,10 @@ export default function AuditPlanningPage() {
   const handleExport = async () => {
     try {
       const headers = ["Audit ID", "Engagement Title", "Department", "Audit Type", "Assigned Auditors", "Status"];
-      const rows = engagements.map(e => [
+      const rows = translatedEngagements.map(e => [
         e.auditId,
         e.engagementTitle,
-        e.department?.name || "",
+        translatedDepartments.find(d => d.id === e.department?.id)?.name || e.department?.name || "",
         e.auditType || "",
         e.assignedAuditors.join("; "),
         e.status
@@ -830,7 +851,7 @@ export default function AuditPlanningPage() {
             <SelectValue placeholder={t("Select department")} />
           </SelectTrigger>
           <SelectContent>
-            {departments.map((dept) => (
+            {translatedDepartments.map((dept) => (
               <SelectItem key={dept.id} value={dept.id}>
                 {dept.name}
               </SelectItem>
@@ -855,8 +876,8 @@ export default function AuditPlanningPage() {
             <SelectValue placeholder={t("Select risk")} />
           </SelectTrigger>
           <SelectContent>
-            {risks.length > 0 ? (
-              risks.map((risk) => (
+            {translatedRisks.length > 0 ? (
+              translatedRisks.map((risk) => (
                 <SelectItem key={risk.id} value={risk.id}>
                   {risk.riskId} - {risk.riskName}
                 </SelectItem>
@@ -874,9 +895,9 @@ export default function AuditPlanningPage() {
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700">{t("Historical Risks (For reference, last year)")}</Label>
         <div className="border border-slate-200 rounded-xl px-4 py-3 min-h-[60px] bg-slate-50/50">
-          {historicalRisks.length > 0 ? (
+          {translatedHistoricalRisks.length > 0 ? (
             <ul className="space-y-2">
-              {historicalRisks.map((risk) => (
+              {translatedHistoricalRisks.map((risk) => (
                 <li key={risk.id} className="text-sm text-slate-600 flex items-start gap-2">
                   <span className="text-slate-400 mt-0.5">•</span>
                   <span className="flex-1">{risk.riskId} - {risk.riskName} ({risk.riskLevel || t("N/A")})</span>
@@ -900,8 +921,8 @@ export default function AuditPlanningPage() {
             <SelectValue placeholder={t("Select Process")} />
           </SelectTrigger>
           <SelectContent>
-            {processes.length > 0 ? (
-              processes.map((process) => (
+            {translatedProcesses.length > 0 ? (
+              translatedProcesses.map((process) => (
                 <SelectItem key={process.id} value={process.id}>
                   {process.name}
                 </SelectItem>
@@ -928,11 +949,14 @@ export default function AuditPlanningPage() {
             </SelectTrigger>
             <SelectContent>
               {auditRatings.length > 0 ? (
-                auditRatings.map((rating) => (
-                  <SelectItem key={rating.id} value={rating.label}>
-                    {rating.label}
-                  </SelectItem>
-                ))
+                auditRatings.map((rating) => {
+                  const translated = translatedAuditRatings.find(r => r.id === rating.id);
+                  return (
+                    <SelectItem key={rating.id} value={rating.label}>
+                      {translated?.label || rating.label}
+                    </SelectItem>
+                  );
+                })
               ) : (
                 <SelectItem value="none" disabled>
                   {t("No ratings configured")}
@@ -952,11 +976,14 @@ export default function AuditPlanningPage() {
             </SelectTrigger>
             <SelectContent>
               {auditTypes.length > 0 ? (
-                auditTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.name}>
-                    {type.name}
-                  </SelectItem>
-                ))
+                auditTypes.map((type) => {
+                  const translated = translatedAuditTypes.find(t => t.id === type.id);
+                  return (
+                    <SelectItem key={type.id} value={type.name}>
+                      {translated?.name || type.name}
+                    </SelectItem>
+                  );
+                })
               ) : (
                 <SelectItem value="none" disabled>
                   {t("No audit types configured")}
@@ -1391,7 +1418,7 @@ export default function AuditPlanningPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("All Departments")}</SelectItem>
-                {departments.map((dept) => (
+                {translatedDepartments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -1439,12 +1466,12 @@ export default function AuditPlanningPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {engagements.length > 0 ? (
-              engagements.map((engagement) => (
+            {translatedEngagements.length > 0 ? (
+              translatedEngagements.map((engagement) => (
                 <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{engagement.auditId}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{engagement.engagementTitle}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{engagement.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{translatedDepartments.find(d => d.id === engagement.department?.id)?.name || engagement.department?.name || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{engagement.auditType || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">
                     {engagement.assignedAuditors.length > 0

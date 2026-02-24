@@ -63,6 +63,7 @@ import {
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 import { DatePicker } from "@/components/ui/date-picker";
 import Link from "next/link";
@@ -177,7 +178,7 @@ export default function FieldworkDetailsPage() {
   const searchParams = useSearchParams();
   const engagementId = params.id as string;
   const { data: session } = useSession();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const currentUserId = session?.user?.id;
   const isAuditHead = useHasRole("AuditHead");
   const isAuditManager = useHasRole("AuditManager");
@@ -395,6 +396,12 @@ export default function FieldworkDetailsPage() {
     numberOfSamples: "",
   });
 
+  // Dynamic translation hooks
+  const { data: translatedEngagement } = useTranslatedRecord(engagement, { modelName: 'AuditEngagement' });
+  const displayEngagement = translatedEngagement || engagement;
+  const { data: translatedFindings } = useTranslatedData(findings, { modelName: 'InternalAuditFinding' });
+  const { data: translatedEvidenceRequests } = useTranslatedData(evidenceRequests, { modelName: 'FieldworkEvidenceRequest' });
+
   useEffect(() => {
     if (engagementId) {
       fetchEngagementDetails();
@@ -579,9 +586,10 @@ export default function FieldworkDetailsPage() {
     }
   };
 
+  const dateLocaleMap: Record<string, string> = { en: "en-GB", ar: "ar-SA", lv: "lv-LV" };
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-GB", {
+    return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -598,8 +606,8 @@ export default function FieldworkDetailsPage() {
 
   // Filter evidence requests for auditees - they only see requests assigned to them
   const filteredEvidenceRequests = isAuditee && !isAuditHead
-    ? evidenceRequests.filter(er => er.auditeeId === currentUserId)
-    : evidenceRequests;
+    ? translatedEvidenceRequests.filter(er => er.auditeeId === currentUserId)
+    : translatedEvidenceRequests;
 
   const getAuditorName = () => {
     if (!engagement) return "-";
@@ -894,6 +902,12 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
+        const savedFinding = await response.json();
+        triggerTranslation('InternalAuditFinding', savedFinding.id, {
+          title: newFinding.title,
+          description: newFinding.description,
+          recommendation: newFinding.recommendation,
+        });
         toast.success(t("Finding added successfully"));
         setAddFindingDialogOpen(false);
         setNewFinding({ title: "", description: "", severity: "Medium", recommendation: "" });
@@ -943,6 +957,15 @@ export default function FieldworkDetailsPage() {
 
       if (response.ok) {
         const newFinding = await response.json();
+        triggerTranslation('InternalAuditFinding', newFinding.id, {
+          title: fullFinding.findingTitle,
+          description: fullFinding.condition,
+          recommendation: fullFinding.recommendation,
+          criteria: fullFinding.criteria,
+          condition: fullFinding.condition,
+          cause: fullFinding.cause,
+          effect: fullFinding.effect,
+        });
 
         // Upload attachments if any
         if (findingAttachments.length > 0) {
@@ -1211,6 +1234,9 @@ export default function FieldworkDetailsPage() {
       );
 
       if (response.ok) {
+        if (selectedEvidence) {
+          triggerTranslation('FieldworkEvidenceRequest', selectedEvidence.id, { title: editEvidence.title, description: editEvidence.description });
+        }
         toast.success(t("Evidence request updated successfully"));
         setViewEditEvidenceDialogOpen(false);
         setSelectedEvidence(null);
@@ -1641,6 +1667,8 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
+        const savedEvidence = await response.json();
+        triggerTranslation('FieldworkEvidenceRequest', savedEvidence.id, { title: newEvidence.title, description: newEvidence.description });
         toast.success(t("Evidence request added successfully"));
         setAddEvidenceDialogOpen(false);
         setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", numberOfSamples: "" });
@@ -1803,7 +1831,7 @@ export default function FieldworkDetailsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{engagement.engagementTitle}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{displayEngagement?.engagementTitle || engagement.engagementTitle}</h1>
           <p className="text-sm text-slate-500">{engagement.auditId}</p>
         </div>
         {isCompleted && (
@@ -1816,7 +1844,7 @@ export default function FieldworkDetailsPage() {
 
       {/* Engagement Details Section */}
       <CollapsibleSection
-        title={`${t("Engagement Details")} : ${engagement.auditId} - ${engagement.engagementTitle}`}
+        title={`${t("Engagement Details")} : ${engagement.auditId} - ${displayEngagement?.engagementTitle || engagement.engagementTitle}`}
         isOpen={engagementDetailsOpen}
         onToggle={() => setEngagementDetailsOpen(!engagementDetailsOpen)}
         headerAction={
@@ -1865,7 +1893,7 @@ export default function FieldworkDetailsPage() {
           </div>
           <div>
             <Label className="text-slate-700 font-medium">{t("Title")}</Label>
-            <p className="mt-1">{engagement.engagementTitle}</p>
+            <p className="mt-1">{displayEngagement?.engagementTitle || engagement.engagementTitle}</p>
           </div>
           <div>
             <Label className="text-slate-700 font-medium">{t("Auditor")}</Label>
@@ -2724,7 +2752,7 @@ export default function FieldworkDetailsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {findings.map((finding) => (
+                  {translatedFindings.map((finding) => (
                     <TableRow key={finding.id} className="hover:bg-slate-50">
                       <TableCell className="font-medium">{finding.findingId || '-'}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{finding.title}</TableCell>

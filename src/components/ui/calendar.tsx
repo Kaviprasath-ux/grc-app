@@ -3,15 +3,22 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { DayPicker, useDayPicker } from "react-day-picker"
-import { format } from "date-fns"
+import { format, Locale } from "date-fns"
+import { arSA } from "date-fns/locale/ar-SA"
+import { lv } from "date-fns/locale/lv"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { useLanguage } from "@/contexts/LanguageContext"
+
+const dateFnsLocaleMap: Record<string, Locale> = { ar: arSA, lv }
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
 function CustomMonthCaption({ calendarMonth }: { calendarMonth: { date: Date }; displayIndex: number }) {
   const { goToMonth, previousMonth, nextMonth } = useDayPicker()
+  const { locale } = useLanguage()
+  const dateFnsLocale = dateFnsLocaleMap[locale]
 
   return (
     <div className="flex items-center justify-center gap-1 h-10 w-full">
@@ -27,7 +34,7 @@ function CustomMonthCaption({ calendarMonth }: { calendarMonth: { date: Date }; 
         <ChevronLeft className="h-4 w-4 text-slate-600 dark:text-slate-300" />
       </button>
       <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 px-1">
-        {format(calendarMonth.date, "MMMM yyyy")}
+        {format(calendarMonth.date, "MMMM yyyy", { locale: dateFnsLocale })}
       </span>
       <button
         type="button"

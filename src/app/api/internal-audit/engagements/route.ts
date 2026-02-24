@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET /api/internal-audit/engagements - Get all audit engagements
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -221,6 +222,8 @@ export const POST = withAuth(
           }
         }
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'AuditEngagement', engagement.id, { engagementTitle: engagement.engagementTitle, engagementObjective: engagement.engagementObjective, engagementScope: engagement.engagementScope, initialObservation: engagement.initialObservation, relatedPolicies: engagement.relatedPolicies });
 
       // Link risks to engagement if provided
       if (linkedRiskIds && linkedRiskIds.length > 0) {

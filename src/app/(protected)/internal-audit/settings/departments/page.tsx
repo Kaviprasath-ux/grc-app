@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -163,6 +164,11 @@ export default function DepartmentsPage() {
       });
 
       if (response.ok) {
+        const savedItem = await response.json().catch(() => null);
+        const recordId = editItem ? editItem.id : savedItem?.id;
+        if (recordId) {
+          triggerTranslation('Department', recordId, { name: formData.name, description: formData.description || null });
+        }
         setDialogOpen(false);
         fetchItems();
       }
@@ -197,7 +203,10 @@ export default function DepartmentsPage() {
     }
   };
 
-  const filteredItems = items.filter((item) =>
+  // Dynamic data translation — must be before early returns (React hooks rule)
+  const { data: translatedItems } = useTranslatedData(items, { modelName: 'Department' });
+
+  const filteredItems = translatedItems.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

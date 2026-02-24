@@ -36,6 +36,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface AuditType {
   id: string;
@@ -124,6 +125,11 @@ export default function AuditTypesPage() {
       });
 
       if (response.ok) {
+        const savedItem = await response.json().catch(() => null);
+        const recordId = editItem ? editItem.id : savedItem?.id;
+        if (recordId) {
+          triggerTranslation('AuditType', recordId, { name: formData.name });
+        }
         setDialogOpen(false);
         fetchItems();
         toast({
@@ -178,7 +184,10 @@ export default function AuditTypesPage() {
     }
   };
 
-  const filteredItems = items.filter((item) =>
+  // Dynamic data translation — must be before early returns (React hooks rule)
+  const { data: translatedItems } = useTranslatedData(items, { modelName: 'AuditType' });
+
+  const filteredItems = translatedItems.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

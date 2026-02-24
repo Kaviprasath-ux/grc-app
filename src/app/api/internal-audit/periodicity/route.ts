@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 // GET all periodicities
 // Note: AuditPeriodicity model doesn't have customerAccountId field yet - tenant filtering disabled
@@ -26,7 +27,7 @@ export const GET = withAuth(
 // POST create a new periodicity
 // Note: AuditPeriodicity model doesn't have customerAccountId field yet - tenant assignment disabled
 export const POST = withAuth(
-  async (req: NextRequest) => {
+  async (req: NextRequest, context, session) => {
     try {
       const body = await req.json();
       const { interval, months } = body;
@@ -56,6 +57,8 @@ export const POST = withAuth(
           months: months || 1,
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditPeriodicity', periodicity.id, { interval: periodicity.interval });
 
       return NextResponse.json(periodicity, { status: 201 });
     } catch (error) {

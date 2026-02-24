@@ -48,6 +48,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { formatLocalDate } from "@/lib/utils";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Process {
   id: string;
@@ -157,13 +158,16 @@ export default function ProcessPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Process | null>(null);
 
+  // Dynamic data translation — must be before early returns (React hooks rule)
+  const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
+
   useEffect(() => {
     fetchData();
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [processes, searchQuery, filterDepartment, filterOwner, filterFrequency]);
+  }, [translatedProcesses, searchQuery, filterDepartment, filterOwner, filterFrequency]);
 
   const fetchData = async () => {
     try {
@@ -202,7 +206,7 @@ export default function ProcessPage() {
   };
 
   const applyFilters = () => {
-    let filtered = [...processes];
+    let filtered = [...translatedProcesses];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -408,6 +412,11 @@ export default function ProcessPage() {
       });
 
       if (response.ok) {
+        const savedItem = await response.json().catch(() => null);
+        const recordId = editItem ? editItem.id : savedItem?.id;
+        if (recordId) {
+          triggerTranslation('Process', recordId, { name: formData.name, description: formData.description || null });
+        }
         toast({ title: t("Success"), description: t("Process saved successfully!") });
         setDialogOpen(false);
         setCurrentStep(1);

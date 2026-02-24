@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all internal audit risks with filters - filtered by customer account
 export const GET = withAuth(
@@ -146,6 +147,8 @@ export const POST = withAuth(
           auditType: true,
         },
       });
+
+      if (customerAccountId) void translateRecord(customerAccountId, 'InternalAuditRisk', risk.id, { riskName: risk.riskName, riskDescription: risk.riskDescription });
 
       return NextResponse.json(risk, { status: 201 });
     } catch (error) {

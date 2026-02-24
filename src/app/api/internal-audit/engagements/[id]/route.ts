@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // GET /api/internal-audit/engagements/[id] - Get a single engagement
 // Uses audit.fieldwork:view to allow auditees to view engagement details
@@ -118,6 +119,8 @@ export const PUT = withAuth(
         }
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditEngagement', engagement.id, { engagementTitle: engagement.engagementTitle, engagementObjective: engagement.engagementObjective, engagementScope: engagement.engagementScope, initialObservation: engagement.initialObservation, relatedPolicies: engagement.relatedPolicies });
+
       // Notify assigned auditor only if assignment actually changed
       if (auditorId && auditorId !== existingEngagement.assignedAuditorId && auditorId !== session.id && session.customerAccountId) {
         await notificationService.notifyEngagementAssigned({
@@ -233,6 +236,8 @@ export const DELETE = withAuth(
       await prisma.auditEngagement.delete({
         where: { id }
       });
+
+      if (existingEngagement.customerAccountId) void deleteRecordTranslations(existingEngagement.customerAccountId, 'AuditEngagement', id);
 
       return NextResponse.json({ success: true });
     } catch (error) {

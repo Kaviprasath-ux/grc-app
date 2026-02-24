@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { isValidName, isValidNumber } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Periodicity {
   id: string;
@@ -146,6 +147,11 @@ export default function PeriodicityPage() {
       });
 
       if (response.ok) {
+        const savedItem = await response.json().catch(() => null);
+        const recordId = editItem ? editItem.id : savedItem?.id;
+        if (recordId) {
+          triggerTranslation('AuditPeriodicity', recordId, { interval: formData.interval });
+        }
         setDialogOpen(false);
         fetchItems();
         toast({
@@ -210,7 +216,10 @@ export default function PeriodicityPage() {
     }
   };
 
-  const filteredItems = items.filter((item) =>
+  // Dynamic data translation — must be before early returns (React hooks rule)
+  const { data: translatedItems } = useTranslatedData(items, { modelName: 'AuditPeriodicity' });
+
+  const filteredItems = translatedItems.filter((item) =>
     item.interval.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

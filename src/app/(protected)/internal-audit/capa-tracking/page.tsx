@@ -51,6 +51,7 @@ import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface FindingAttachment {
   id: string;
@@ -113,7 +114,7 @@ interface Pagination {
 }
 
 export default function CAPATrackingPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const isAuditHead = useHasRole("AuditHead");
   const isAuditManager = useHasRole("AuditManager");
@@ -164,6 +165,16 @@ export default function CAPATrackingPage() {
   });
   const [saving, setSaving] = useState(false);
   const [auditEngagements, setAuditEngagements] = useState<AuditEngagement[]>([]);
+
+  // Dynamic translation hooks
+  const { data: translatedFindings } = useTranslatedData(findings, { modelName: 'InternalAuditFinding' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedEngagements } = useTranslatedData(auditEngagements, { modelName: 'AuditEngagement' });
+  const { data: translatedViewFinding } = useTranslatedRecord(findingToView, { modelName: 'InternalAuditFinding' });
+
+  // Lookup helpers for translated names
+  const tDept = (id: string | null) => translatedDepartments.find(d => d.id === id)?.name;
+  const tEngagement = (id: string) => translatedEngagements.find(e => e.id === id)?.engagementTitle;
 
   // File upload for Edit CAPA
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -271,19 +282,21 @@ export default function CAPATrackingPage() {
     console.log('[CAPA-Edit] AI Review Description:', finding.aiReviewDescription);
     console.log('[CAPA-Edit] AI Review Approved:', finding.aiReviewApproved);
 
+    // Use translated finding if available
+    const tf = translatedFindings.find(f => f.id === finding.id) || finding;
     setFindingToEdit(finding);
     setEditForm({
       engagementId: finding.engagementId,
-      finding: finding.finding,
+      finding: tf.finding,
       severity: finding.severity,
-      criteria: finding.criteria || "",
-      condition: finding.condition || "",
-      cause: finding.cause || "",
-      effect: finding.effect || "",
-      recommendation: finding.recommendation || "",
+      criteria: tf.criteria || "",
+      condition: tf.condition || "",
+      cause: tf.cause || "",
+      effect: tf.effect || "",
+      recommendation: tf.recommendation || "",
       status: finding.status,
       targetDate: finding.targetDate ? finding.targetDate.split("T")[0] : "",
-      auditeeComment: finding.auditeeComment || "",
+      auditeeComment: tf.auditeeComment || "",
     });
     setUploadedFiles([]);
     setExistingAttachments(finding.attachments || []);
@@ -395,6 +408,17 @@ export default function CAPATrackingPage() {
       );
 
       if (response.ok) {
+        // Trigger dynamic translation for edited fields
+        triggerTranslation('InternalAuditFinding', findingToEdit.id, {
+          title: editForm.finding,
+          description: editForm.criteria,
+          recommendation: editForm.recommendation,
+          criteria: editForm.criteria,
+          condition: editForm.condition,
+          cause: editForm.cause,
+          effect: editForm.effect,
+        });
+
         // For auditee submission, trigger AI review
         if (isAuditeeOnly) {
           setAiReviewing(true);
@@ -434,9 +458,10 @@ export default function CAPATrackingPage() {
     }
   };
 
+  const dateLocaleMap: Record<string, string> = { en: "en-GB", ar: "ar-SA", lv: "lv-LV" };
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-GB", {
+    return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -546,7 +571,7 @@ export default function CAPATrackingPage() {
               </SelectTrigger>
               <SelectContent className="bg-white">
                 <SelectItem value="all">{t("All Departments")}</SelectItem>
-                {departments.map((dept) => (
+                {translatedDepartments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -586,8 +611,8 @@ export default function CAPATrackingPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : findings.length > 0 ? (
-              findings.map((finding) => (
+            ) : translatedFindings.length > 0 ? (
+              translatedFindings.map((finding) => (
                 <TableRow key={finding.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-4 pl-5 text-sm font-medium text-slate-800 whitespace-nowrap">{finding.findingId}</TableCell>
                   <TableCell className="py-4 text-sm text-slate-700 max-w-[200px] truncate">
@@ -597,9 +622,9 @@ export default function CAPATrackingPage() {
                     {getSeverityBadge(finding.severity)}
                   </TableCell>
                   <TableCell className="py-4 text-sm text-slate-700 max-w-[200px] truncate">
-                    {finding.auditPlan}
+                    {tEngagement(finding.engagementId) || finding.auditPlan}
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{finding.departmentName}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{tDept(finding.departmentId) || finding.departmentName}</TableCell>
                   <TableCell className="py-4 text-sm text-slate-700">{finding.responsiblePerson}</TableCell>
                   <TableCell className="py-4 text-sm text-slate-700 whitespace-nowrap">{formatDate(finding.targetDate)}</TableCell>
                   <TableCell className="py-4">
@@ -769,13 +794,13 @@ export default function CAPATrackingPage() {
             {/* Audit Plan */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Audit plan")}</Label>
-              <Input value={findingToView?.auditPlan || ""} readOnly className="bg-slate-50" />
+              <Input value={(findingToView ? tEngagement(findingToView.engagementId) : undefined) || findingToView?.auditPlan || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Finding Title */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Finding title")}</Label>
-              <Input value={findingToView?.finding || ""} readOnly className="bg-slate-50" />
+              <Input value={(translatedViewFinding as Finding | null)?.finding || findingToView?.finding || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Severity */}
@@ -800,31 +825,31 @@ export default function CAPATrackingPage() {
             {/* Criteria */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Criteria")}</Label>
-              <Input value={findingToView?.criteria || ""} readOnly className="bg-slate-50" />
+              <Input value={(translatedViewFinding as Finding | null)?.criteria || findingToView?.criteria || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Condition */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Condition")}</Label>
-              <Input value={findingToView?.condition || ""} readOnly className="bg-slate-50" />
+              <Input value={(translatedViewFinding as Finding | null)?.condition || findingToView?.condition || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Cause */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Cause")}</Label>
-              <Input value={findingToView?.cause || ""} readOnly className="bg-slate-50" />
+              <Input value={(translatedViewFinding as Finding | null)?.cause || findingToView?.cause || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Effect */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Effect")}</Label>
-              <Input value={findingToView?.effect || ""} readOnly className="bg-slate-50" />
+              <Input value={(translatedViewFinding as Finding | null)?.effect || findingToView?.effect || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Recommendation */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium">{t("Recommendation")}</Label>
-              <Input value={findingToView?.recommendation || ""} readOnly className="bg-slate-50" />
+              <Input value={(translatedViewFinding as Finding | null)?.recommendation || findingToView?.recommendation || ""} readOnly className="bg-slate-50" />
             </div>
 
             {/* Status */}
@@ -860,7 +885,7 @@ export default function CAPATrackingPage() {
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
               <Label className="text-slate-800 font-medium pt-2">{t("Auditee Comment")}</Label>
               <Textarea
-                value={findingToView?.auditeeComment || ""}
+                value={(translatedViewFinding as Finding | null)?.auditeeComment || findingToView?.auditeeComment || ""}
                 readOnly
                 className="bg-slate-50"
                 rows={3}
@@ -944,7 +969,7 @@ export default function CAPATrackingPage() {
                   <SelectValue placeholder={t("Select audit plan")} />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  {auditEngagements.map((engagement) => (
+                  {translatedEngagements.map((engagement) => (
                     <SelectItem key={engagement.id} value={engagement.id}>
                       {engagement.engagementTitle}
                     </SelectItem>

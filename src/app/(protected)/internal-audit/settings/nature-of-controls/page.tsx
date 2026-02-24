@@ -36,6 +36,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface NatureOfControl {
   id: string;
@@ -124,6 +125,11 @@ export default function NatureOfControlsPage() {
       });
 
       if (response.ok) {
+        const savedItem = await response.json().catch(() => null);
+        const recordId = editItem ? editItem.id : savedItem?.id;
+        if (recordId) {
+          triggerTranslation('AuditNatureOfControl', recordId, { label: formData.label });
+        }
         setDialogOpen(false);
         fetchItems();
         toast({
@@ -193,7 +199,10 @@ export default function NatureOfControlsPage() {
     }
   };
 
-  const filteredItems = items.filter((item) =>
+  // Dynamic data translation — must be before early returns (React hooks rule)
+  const { data: translatedItems } = useTranslatedData(items, { modelName: 'AuditNatureOfControl' });
+
+  const filteredItems = translatedItems.filter((item) =>
     item.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

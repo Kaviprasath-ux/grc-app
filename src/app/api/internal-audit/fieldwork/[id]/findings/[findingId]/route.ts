@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string; findingId: string }>;
@@ -152,6 +153,9 @@ export const PATCH = withAuth(
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
+
+      // Fire-and-forget: translate finding fields
+      if (existingFinding.customerAccountId) void translateRecord(existingFinding.customerAccountId, 'InternalAuditFinding', updatedFinding.id, { title: updatedFinding.finding, description: updatedFinding.description, recommendation: updatedFinding.recommendation });
 
       return NextResponse.json({
         id: updatedFinding.id,

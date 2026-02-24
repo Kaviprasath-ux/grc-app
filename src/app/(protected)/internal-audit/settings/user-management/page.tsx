@@ -47,6 +47,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { isAlphaWithSpaces } from "@/lib/validations";
 import { validateEmail } from "@/lib/validations/email";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface User {
   id: string;
@@ -391,6 +392,11 @@ export default function UserManagementPage() {
       });
 
       if (response.ok) {
+        const savedItem = await response.json().catch(() => null);
+        const recordId = editItem ? editItem.id : savedItem?.id;
+        if (recordId) {
+          triggerTranslation('User', recordId, { fullName: body.fullName });
+        }
         setDialogOpen(false);
         fetchData();
         toast({ title: t("Success"), description: t("User saved successfully!") });
@@ -443,7 +449,10 @@ export default function UserManagementPage() {
     return roleString ? roleString.split(",").map((r) => r.trim()).filter(Boolean) : [];
   };
 
-  const filteredUsers = users.filter((user) =>
+  // Dynamic data translation — must be before early returns (React hooks rule)
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+
+  const filteredUsers = translatedUsers.filter((user) =>
     user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );

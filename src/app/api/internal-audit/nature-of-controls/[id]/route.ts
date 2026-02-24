@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // GET a single nature of control
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -87,6 +88,8 @@ export const PUT = withAuth(
         data: { label },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditNatureOfControl', id, { label: control.label });
+
       return NextResponse.json(control);
     } catch (error) {
       console.error("Error updating nature of control:", error);
@@ -124,6 +127,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.auditNatureOfControl.delete({ where: { id } });
+
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'AuditNatureOfControl', id);
 
       return NextResponse.json({ message: "Nature of control deleted successfully" });
     } catch (error) {

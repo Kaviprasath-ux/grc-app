@@ -19,6 +19,7 @@ import { ArrowLeft, ChevronRight, Home, Upload, X, FileText } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -73,6 +74,13 @@ export default function AddRiskPage() {
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
   const [probabilities, setProbabilities] = useState<Probability[]>([]);
   const [impacts, setImpacts] = useState<Impact[]>([]);
+
+  // Translated reference data for dropdowns
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'AuditCategory' });
+  const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
+  const { data: translatedProbabilities } = useTranslatedData(probabilities, { modelName: 'AuditProbability' });
+  const { data: translatedImpacts } = useTranslatedData(impacts, { modelName: 'AuditImpact' });
 
   // Form data
   const [formData, setFormData] = useState({
@@ -303,6 +311,8 @@ export default function AddRiskPage() {
       });
 
       if (response.ok) {
+        const savedRisk = await response.json();
+        triggerTranslation('InternalAuditRisk', savedRisk.id, { riskName: savedRisk.riskName, riskDescription: savedRisk.riskDescription });
         toast({
           title: t("Success"),
           description: t("Risk created successfully."),
@@ -443,7 +453,7 @@ export default function AddRiskPage() {
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    {departments.map((dept) => (
+                    {translatedDepartments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
                       </SelectItem>
@@ -461,7 +471,7 @@ export default function AddRiskPage() {
                     <SelectValue placeholder={t("Select category")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    {categories.map((cat) => (
+                    {translatedCategories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
@@ -479,7 +489,7 @@ export default function AddRiskPage() {
                     <SelectValue placeholder={t("Select audit type")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    {auditTypes.map((type) => (
+                    {translatedAuditTypes.map((type) => (
                       <SelectItem key={type.id} value={type.id}>
                         {type.name}
                       </SelectItem>
@@ -558,7 +568,7 @@ export default function AddRiskPage() {
                     <SelectValue placeholder={t("Select likelihood")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    {probabilities.map((prob) => (
+                    {translatedProbabilities.map((prob) => (
                       <SelectItem key={prob.id} value={prob.value.toString()}>
                         {prob.label} ({prob.value})
                       </SelectItem>
@@ -584,7 +594,7 @@ export default function AddRiskPage() {
                     <SelectValue placeholder={t("Select impact")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    {impacts.map((imp) => (
+                    {translatedImpacts.map((imp) => (
                       <SelectItem key={imp.id} value={imp.value.toString()}>
                         {imp.label} ({imp.value})
                       </SelectItem>
@@ -651,7 +661,7 @@ export default function AddRiskPage() {
                     <SelectValue placeholder={t("Select likelihood")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    {probabilities.map((prob) => (
+                    {translatedProbabilities.map((prob) => (
                       <SelectItem key={prob.id} value={prob.value.toString()}>
                         {prob.label} ({prob.value})
                       </SelectItem>
@@ -677,7 +687,7 @@ export default function AddRiskPage() {
                     <SelectValue placeholder={t("Select impact")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    {impacts.map((imp) => (
+                    {translatedImpacts.map((imp) => (
                       <SelectItem key={imp.id} value={imp.value.toString()}>
                         {imp.label} ({imp.value})
                       </SelectItem>

@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -192,7 +193,7 @@ export default function RiskRegisterPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [risks, setRisks] = useState<InternalAuditRisk[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -260,6 +261,25 @@ export default function RiskRegisterPage() {
   const [probabilities, setProbabilities] = useState<Probability[]>([]);
   const [impacts, setImpacts] = useState<Impact[]>([]);
 
+  // Translated reference data for dropdowns
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'AuditCategory' });
+  const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
+  const { data: translatedProbabilities } = useTranslatedData(probabilities, { modelName: 'AuditProbability' });
+  const { data: translatedImpacts } = useTranslatedData(impacts, { modelName: 'AuditImpact' });
+
+  // Lookup helpers for translated names in table/view
+  const tDept = (id: string | null) => translatedDepartments.find(d => d.id === id)?.name;
+  const tCat = (id: string | null) => translatedCategories.find(c => c.id === id)?.name;
+
+  // Raw risk data for translation in edit modal
+  const [rawEditRisk, setRawEditRisk] = useState<{ id: string; riskName: string; riskDescription: string | null } | null>(null);
+  const editTranslationApplied = useRef(false);
+  const { data: translatedEditRisk } = useTranslatedRecord(rawEditRisk, { modelName: 'InternalAuditRisk' });
+
+  // Translated data for view modal
+  const { data: translatedViewRisk } = useTranslatedRecord(viewingRisk, { modelName: 'InternalAuditRisk' });
+
   // File upload states
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -296,12 +316,15 @@ export default function RiskRegisterPage() {
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
+  // Dynamic translation for risk list
+  const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'InternalAuditRisk' });
+
   // Pagination calculations
-  const totalItems = risks.length;
+  const totalItems = translatedRisks.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalItems);
-  const paginatedRisks = risks.slice(startIndex, endIndex);
+  const paginatedRisks = translatedRisks.slice(startIndex, endIndex);
   const startItem = startIndex + 1;
   const endItem = endIndex;
 
@@ -315,6 +338,18 @@ export default function RiskRegisterPage() {
     fetchRisks();
     setCurrentPage(1);
   }, [yearFilter, departmentFilter, searchFilter]);
+
+  // Update edit form fields when translated data arrives
+  useEffect(() => {
+    if (translatedEditRisk && !editTranslationApplied.current) {
+      editTranslationApplied.current = true;
+      setFormData(prev => ({
+        ...prev,
+        riskName: translatedEditRisk.riskName || prev.riskName,
+        riskDescription: (translatedEditRisk.riskDescription as string) || prev.riskDescription,
+      }));
+    }
+  }, [translatedEditRisk]);
 
   // Fetch next Risk ID when Add Risk modal opens
   useEffect(() => {
@@ -514,11 +549,13 @@ export default function RiskRegisterPage() {
     setEditingRisk(risk);
     setFormLoading(true);
     setIsEditRiskOpen(true);
+    editTranslationApplied.current = false;
 
     try {
       const response = await fetch(`/api/internal-audit/risks/${risk.id}`);
       if (response.ok) {
         const data = await response.json();
+        setRawEditRisk({ id: data.id, riskName: data.riskName, riskDescription: data.riskDescription });
         setFormData({
           riskId: data.riskId || "",
           riskName: data.riskName || "",
@@ -555,6 +592,7 @@ export default function RiskRegisterPage() {
   const closeEditRiskModal = () => {
     setIsEditRiskOpen(false);
     setEditingRisk(null);
+    setRawEditRisk(null);
     setFormData(initialFormData);
     setFieldErrors({});
   };
@@ -751,6 +789,8 @@ export default function RiskRegisterPage() {
       });
 
       if (response.ok) {
+        const savedRisk = await response.json();
+        triggerTranslation('InternalAuditRisk', savedRisk.id, { riskName: savedRisk.riskName, riskDescription: savedRisk.riskDescription });
         toast({
           title: t("Success"),
           description: t("Risk created successfully."),
@@ -849,6 +889,8 @@ export default function RiskRegisterPage() {
       });
 
       if (response.ok) {
+        const savedRisk = await response.json();
+        triggerTranslation('InternalAuditRisk', savedRisk.id, { riskName: savedRisk.riskName, riskDescription: savedRisk.riskDescription });
         toast({
           title: t("Success"),
           description: t("Risk updated successfully."),
@@ -920,8 +962,9 @@ export default function RiskRegisterPage() {
     );
   };
 
+  const dateLocaleMap: Record<string, string> = { en: "en-US", ar: "ar-SA", lv: "lv-LV" };
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -1168,7 +1211,7 @@ export default function RiskRegisterPage() {
               </SelectTrigger>
               <SelectContent className="bg-white" position="popper" sideOffset={4}>
                 <SelectItem value="all">{t("All Departments")}</SelectItem>
-                {departments.map((dept) => (
+                {translatedDepartments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -1198,9 +1241,9 @@ export default function RiskRegisterPage() {
                 <TableRow key={risk.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5 whitespace-nowrap">{risk.riskId}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 max-w-[250px] truncate">{risk.riskDescription || risk.riskName}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{tDept(risk.departmentId) || risk.department?.name || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(risk.creationDate)}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.category?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{tCat(risk.categoryId) || risk.category?.name || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.inherentScore ?? "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.residualScore ?? "-"}</TableCell>
                   <TableCell className="py-3 whitespace-nowrap">{getRiskLevelBadge(risk.riskLevel)}</TableCell>
@@ -1760,7 +1803,7 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {departments.map((dept) => (
+                        {translatedDepartments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
                           </SelectItem>
@@ -1778,7 +1821,7 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {categories.map((cat) => (
+                        {translatedCategories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
                           </SelectItem>
@@ -1796,7 +1839,7 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select audit type")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {auditTypes.map((type) => (
+                        {translatedAuditTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id}>
                             {type.name}
                           </SelectItem>
@@ -1871,7 +1914,7 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select likelihood")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {probabilities.map((prob) => (
+                        {translatedProbabilities.map((prob) => (
                           <SelectItem key={prob.id} value={prob.value.toString()}>
                             {prob.label} ({prob.value})
                           </SelectItem>
@@ -1897,7 +1940,7 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select impact")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {impacts.map((imp) => (
+                        {translatedImpacts.map((imp) => (
                           <SelectItem key={imp.id} value={imp.value.toString()}>
                             {imp.label} ({imp.value})
                           </SelectItem>
@@ -1961,7 +2004,7 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select likelihood")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {probabilities.map((prob) => (
+                        {translatedProbabilities.map((prob) => (
                           <SelectItem key={prob.id} value={prob.value.toString()}>
                             {prob.label} ({prob.value})
                           </SelectItem>
@@ -1987,7 +2030,7 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select impact")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {impacts.map((imp) => (
+                        {translatedImpacts.map((imp) => (
                           <SelectItem key={imp.id} value={imp.value.toString()}>
                             {imp.label} ({imp.value})
                           </SelectItem>
@@ -2191,7 +2234,7 @@ export default function RiskRegisterPage() {
                           <SelectValue placeholder={t("Select department")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {departments.map((dept) => (
+                          {translatedDepartments.map((dept) => (
                             <SelectItem key={dept.id} value={dept.id}>
                               {dept.name}
                             </SelectItem>
@@ -2209,7 +2252,7 @@ export default function RiskRegisterPage() {
                           <SelectValue placeholder={t("Select category")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {categories.map((cat) => (
+                          {translatedCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
                             </SelectItem>
@@ -2227,7 +2270,7 @@ export default function RiskRegisterPage() {
                           <SelectValue placeholder={t("Select audit type")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {auditTypes.map((type) => (
+                          {translatedAuditTypes.map((type) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.name}
                             </SelectItem>
@@ -2302,7 +2345,7 @@ export default function RiskRegisterPage() {
                           <SelectValue placeholder={t("Select likelihood")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {probabilities.map((prob) => (
+                          {translatedProbabilities.map((prob) => (
                             <SelectItem key={prob.id} value={prob.value.toString()}>
                               {prob.label} ({prob.value})
                             </SelectItem>
@@ -2328,7 +2371,7 @@ export default function RiskRegisterPage() {
                           <SelectValue placeholder={t("Select impact")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {impacts.map((imp) => (
+                          {translatedImpacts.map((imp) => (
                             <SelectItem key={imp.id} value={imp.value.toString()}>
                               {imp.label} ({imp.value})
                             </SelectItem>
@@ -2392,7 +2435,7 @@ export default function RiskRegisterPage() {
                           <SelectValue placeholder={t("Select likelihood")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {probabilities.map((prob) => (
+                          {translatedProbabilities.map((prob) => (
                             <SelectItem key={prob.id} value={prob.value.toString()}>
                               {prob.label} ({prob.value})
                             </SelectItem>
@@ -2418,7 +2461,7 @@ export default function RiskRegisterPage() {
                           <SelectValue placeholder={t("Select impact")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {impacts.map((imp) => (
+                          {translatedImpacts.map((imp) => (
                             <SelectItem key={imp.id} value={imp.value.toString()}>
                               {imp.label} ({imp.value})
                             </SelectItem>
@@ -2595,19 +2638,19 @@ export default function RiskRegisterPage() {
                       </div>
                       <div className="col-span-2">
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Risk Name")}</label>
-                        <p className="text-sm font-semibold text-slate-900">{viewingRisk.riskName}</p>
+                        <p className="text-sm font-semibold text-slate-900">{(translatedViewRisk as InternalAuditRiskDetail | null)?.riskName || viewingRisk.riskName}</p>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Department")}</label>
-                        <p className="text-sm text-slate-700">{viewingRisk.department?.name || "-"}</p>
+                        <p className="text-sm text-slate-700">{tDept(viewingRisk.departmentId) || viewingRisk.department?.name || "-"}</p>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Category")}</label>
-                        <p className="text-sm text-slate-700">{viewingRisk.category?.name || "-"}</p>
+                        <p className="text-sm text-slate-700">{tCat(viewingRisk.categoryId) || viewingRisk.category?.name || "-"}</p>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Audit Type")}</label>
-                        <p className="text-sm text-slate-700">{viewingRisk.auditType?.name || "-"}</p>
+                        <p className="text-sm text-slate-700">{translatedAuditTypes.find(at => at.id === viewingRisk.auditTypeId)?.name || viewingRisk.auditType?.name || "-"}</p>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Section/Process")}</label>
@@ -2625,7 +2668,7 @@ export default function RiskRegisterPage() {
                     {viewingRisk.riskDescription && (
                       <div className="mt-5 pt-5 border-t border-slate-200">
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Risk Description")}</label>
-                        <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.riskDescription}</p>
+                        <p className="text-sm text-slate-700 leading-relaxed">{(translatedViewRisk as InternalAuditRiskDetail | null)?.riskDescription || viewingRisk.riskDescription}</p>
                       </div>
                     )}
                   </div>

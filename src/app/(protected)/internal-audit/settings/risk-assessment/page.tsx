@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { isValidName, isValidNumber } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface RiskFactor {
   id: string;
@@ -94,6 +95,12 @@ export default function RiskAssessmentConfigPage() {
   const [impacts, setImpacts] = useState<Impact[]>([]);
   const [scoringRanges, setScoringRanges] = useState<ScoringRange[]>([]);
   const [scoringConfig, setScoringConfig] = useState<ScoringConfig | null>(null);
+
+  // Dynamic data translation — must be before early returns (React hooks rule)
+  const { data: translatedFactors } = useTranslatedData(factors, { modelName: 'AuditRiskFactor' });
+  const { data: translatedProbabilities } = useTranslatedData(probabilities, { modelName: 'AuditProbability' });
+  const { data: translatedImpacts } = useTranslatedData(impacts, { modelName: 'AuditImpact' });
+  const { data: translatedScoringRanges } = useTranslatedData(scoringRanges, { modelName: 'AuditScoringRange' });
 
   // Sort states
   const [factorSortOrder, setFactorSortOrder] = useState<"asc" | "desc">("asc");
@@ -299,6 +306,20 @@ export default function RiskAssessmentConfigPage() {
       });
 
       if (response.ok) {
+        const savedItem = await response.json().catch(() => null);
+        const recordId = editItem ? editItem.id : savedItem?.id;
+        if (recordId) {
+          const modelMap: Record<string, string> = {
+            factor: 'AuditRiskFactor',
+            probability: 'AuditProbability',
+            impact: 'AuditImpact',
+            scoringRange: 'AuditScoringRange',
+          };
+          const modelName = modelMap[dialogType!];
+          if (modelName) {
+            triggerTranslation(modelName, recordId, { label: formData.label });
+          }
+        }
         setDialogOpen(false);
         fetchAllData();
       }
@@ -461,7 +482,7 @@ export default function RiskAssessmentConfigPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {factors.map((item) => (
+              {translatedFactors.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                   <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
@@ -476,7 +497,7 @@ export default function RiskAssessmentConfigPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {factors.length === 0 && (
+              {translatedFactors.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={2} className="h-24 text-center text-sm text-slate-500">
                     {t("No factors found")}
@@ -505,7 +526,7 @@ export default function RiskAssessmentConfigPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {probabilities.map((item) => (
+              {translatedProbabilities.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{item.value}</TableCell>
@@ -521,7 +542,7 @@ export default function RiskAssessmentConfigPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {probabilities.length === 0 && (
+              {translatedProbabilities.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="h-24 text-center text-sm text-slate-500">
                     {t("No probabilities found")}
@@ -550,7 +571,7 @@ export default function RiskAssessmentConfigPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {impacts.map((item) => (
+              {translatedImpacts.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{item.value}</TableCell>
@@ -566,7 +587,7 @@ export default function RiskAssessmentConfigPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {impacts.length === 0 && (
+              {translatedImpacts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="h-24 text-center text-sm text-slate-500">
                     {t("No impacts found")}
@@ -683,7 +704,7 @@ export default function RiskAssessmentConfigPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {scoringRanges
+                    {translatedScoringRanges
                       .filter((item) => item.calculationType === scoringConfig?.riskRatingCalcType)
                       .map((item) => (
                         <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
@@ -704,7 +725,7 @@ export default function RiskAssessmentConfigPage() {
                           </TableCell>
                         </TableRow>
                       ))}
-                    {scoringRanges.filter((item) => item.calculationType === scoringConfig?.riskRatingCalcType).length === 0 && (
+                    {translatedScoringRanges.filter((item) => item.calculationType === scoringConfig?.riskRatingCalcType).length === 0 && (
                       <TableRow>
                         <TableCell colSpan={scoringConfig?.riskRatingCalcType === "High of all" ? 3 : 4} className="h-24 text-center text-sm text-slate-500">
                           {t("No scoring ranges found")}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight, Home, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 
 interface InternalAuditRisk {
   id: string;
@@ -43,9 +44,10 @@ interface InternalAuditRisk {
 export default function ViewRiskPage() {
   const router = useRouter();
   const params = useParams();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [risk, setRisk] = useState<InternalAuditRisk | null>(null);
   const [loading, setLoading] = useState(true);
+  const { data: translatedRisk } = useTranslatedRecord(risk, { modelName: 'InternalAuditRisk' });
 
   useEffect(() => {
     fetchRisk();
@@ -91,8 +93,9 @@ export default function ViewRiskPage() {
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
+  const dateLocaleMap: Record<string, string> = { en: "en-US", ar: "ar-SA", lv: "lv-LV" };
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -134,6 +137,8 @@ export default function ViewRiskPage() {
     return null;
   }
 
+  const displayRisk = translatedRisk || risk;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
@@ -157,10 +162,10 @@ export default function ViewRiskPage() {
           </Button>
           <div>
             <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
-            <h1 className="text-xl sm:text-2xl font-semibold">{t("Risk Details")} - {risk.riskId}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold">{t("Risk Details")} - {displayRisk.riskId}</h1>
           </div>
         </div>
-        <Button onClick={() => router.push(`/internal-audit/risk-register/${risk.id}/edit`)}>
+        <Button onClick={() => router.push(`/internal-audit/risk-register/${displayRisk.id}/edit`)}>
           <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Edit")}
         </Button>
@@ -174,44 +179,44 @@ export default function ViewRiskPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">{t("Risk ID")}</p>
-              <p className="font-medium">{risk.riskId}</p>
+              <p className="font-medium">{displayRisk.riskId}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Risk Name")}</p>
-              <p className="font-medium">{risk.riskName}</p>
+              <p className="font-medium">{displayRisk.riskName}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Department")}</p>
-              <p className="font-medium">{risk.department?.name || "-"}</p>
+              <p className="font-medium">{displayRisk.department?.name || "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Category")}</p>
-              <p className="font-medium">{risk.category?.name || "-"}</p>
+              <p className="font-medium">{displayRisk.category?.name || "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Audit Type")}</p>
-              <p className="font-medium">{risk.auditType?.name || "-"}</p>
+              <p className="font-medium">{displayRisk.auditType?.name || "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Creation Date")}</p>
-              <p className="font-medium">{formatDate(risk.creationDate)}</p>
+              <p className="font-medium">{formatDate(displayRisk.creationDate)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Section/Process")}</p>
-              <p className="font-medium">{risk.sectionProcess || "-"}</p>
+              <p className="font-medium">{displayRisk.sectionProcess || "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Sub Process")}</p>
-              <p className="font-medium">{risk.subProcess || "-"}</p>
+              <p className="font-medium">{displayRisk.subProcess || "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Activity")}</p>
-              <p className="font-medium">{risk.activity || "-"}</p>
+              <p className="font-medium">{displayRisk.activity || "-"}</p>
             </div>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">{t("Risk Description")}</p>
-            <p className="font-medium">{risk.riskDescription || "-"}</p>
+            <p className="font-medium">{displayRisk.riskDescription || "-"}</p>
           </div>
         </div>
 
@@ -221,15 +226,15 @@ export default function ViewRiskPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">{t("Likelihood")}</p>
-              <p className="font-medium">{risk.inherentLikelihood ?? "-"}</p>
+              <p className="font-medium">{displayRisk.inherentLikelihood ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Impact")}</p>
-              <p className="font-medium">{risk.inherentImpact ?? "-"}</p>
+              <p className="font-medium">{displayRisk.inherentImpact ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Inherent Score")}</p>
-              <p className="font-medium">{risk.inherentScore ?? "-"}</p>
+              <p className="font-medium">{displayRisk.inherentScore ?? "-"}</p>
             </div>
           </div>
         </div>
@@ -240,11 +245,11 @@ export default function ViewRiskPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">{t("Control Description")}</p>
-              <p className="font-medium">{risk.controlDescription || "-"}</p>
+              <p className="font-medium">{displayRisk.controlDescription || "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Control Effectiveness")}</p>
-              <p className="font-medium">{risk.controlEffectiveness || "-"}</p>
+              <p className="font-medium">{displayRisk.controlEffectiveness || "-"}</p>
             </div>
           </div>
         </div>
@@ -255,19 +260,19 @@ export default function ViewRiskPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">{t("Likelihood")}</p>
-              <p className="font-medium">{risk.residualLikelihood ?? "-"}</p>
+              <p className="font-medium">{displayRisk.residualLikelihood ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Impact")}</p>
-              <p className="font-medium">{risk.residualImpact ?? "-"}</p>
+              <p className="font-medium">{displayRisk.residualImpact ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Residual Score")}</p>
-              <p className="font-medium">{risk.residualScore ?? "-"}</p>
+              <p className="font-medium">{displayRisk.residualScore ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Risk Level")}</p>
-              <div className="mt-1">{getRiskLevelBadge(risk.riskLevel)}</div>
+              <div className="mt-1">{getRiskLevelBadge(displayRisk.riskLevel)}</div>
             </div>
           </div>
         </div>
@@ -278,11 +283,11 @@ export default function ViewRiskPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">{t("Status")}</p>
-              <div className="mt-1">{getStatusBadge(risk.status)}</div>
+              <div className="mt-1">{getStatusBadge(displayRisk.status)}</div>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t("Audit Comment")}</p>
-              <p className="font-medium">{risk.auditComment || "-"}</p>
+              <p className="font-medium">{displayRisk.auditComment || "-"}</p>
             </div>
           </div>
         </div>
@@ -291,10 +296,10 @@ export default function ViewRiskPage() {
         <div className="space-y-4 pt-4 border-t">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
             <div>
-              <p>{t("Created")}: {formatDate(risk.createdAt)}</p>
+              <p>{t("Created")}: {formatDate(displayRisk.createdAt)}</p>
             </div>
             <div>
-              <p>{t("Last Updated")}: {formatDate(risk.updatedAt)}</p>
+              <p>{t("Last Updated")}: {formatDate(displayRisk.updatedAt)}</p>
             </div>
           </div>
         </div>

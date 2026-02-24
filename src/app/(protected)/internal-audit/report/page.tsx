@@ -33,6 +33,7 @@ import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface CompletedEngagement {
   id: string;
@@ -101,7 +102,7 @@ interface UserOption {
 }
 
 export default function ReportsPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const isAuditHead = useHasRole("AuditHead");
   const isAuditManager = useHasRole("AuditManager");
@@ -145,6 +146,13 @@ export default function ReportsPage() {
     auditeeId: "",
   });
   const [auditeeComment, setAuditeeComment] = useState("");
+
+  // Dynamic translation hooks
+  const { data: translatedEngagements } = useTranslatedData(engagements, { modelName: 'AuditEngagement' });
+  const { data: translatedReport } = useTranslatedRecord(report, { modelName: 'AuditReport' });
+  const { data: translatedFindings } = useTranslatedData(report?.engagement?.findings ?? [], { modelName: 'InternalAuditFinding' });
+
+  const dateLocaleMap: Record<string, string> = { en: "en-GB", ar: "ar-SA", lv: "lv-LV" };
 
   useEffect(() => {
     fetchCompletedEngagements();
@@ -276,6 +284,17 @@ export default function ReportsPage() {
         setReport(updatedReport);
         setIsEditing(false);
         toast.success(t("Report saved successfully"));
+        // Trigger dynamic translation for report fields
+        triggerTranslation('AuditReport', updatedReport.id, {
+          title: updatedReport.title,
+          executiveSummary: updatedReport.executiveSummary,
+          observations: updatedReport.observations,
+          scope: updatedReport.scope,
+          objectives: updatedReport.objectives,
+          methodology: updatedReport.methodology,
+          recommendations: updatedReport.recommendations,
+          conclusion: updatedReport.conclusion,
+        });
       } else {
         toast.error(t("Failed to save report"));
       }
@@ -303,6 +322,10 @@ export default function ReportsPage() {
         setReport(updatedReport);
         setIsEditingAuditeeComment(false);
         toast.success(t("Auditee comment saved successfully"));
+        // Trigger dynamic translation for auditee comment
+        triggerTranslation('AuditReport', updatedReport.id, {
+          auditeeComment: updatedReport.auditeeComment,
+        });
       } else {
         toast.error(t("Failed to save auditee comment"));
       }
@@ -347,7 +370,7 @@ export default function ReportsPage() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-GB", {
+    return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -399,7 +422,7 @@ export default function ReportsPage() {
   };
 
   // Client-side filtering and pagination
-  const filteredEngagements = engagements.filter((e) => {
+  const filteredEngagements = translatedEngagements.filter((e) => {
     const matchesSearch =
       e.engagementTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.departmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -419,9 +442,9 @@ export default function ReportsPage() {
   );
 
   const filterTabs = [
-    { id: "all", label: "All", count: engagements.length },
-    { id: "has-report", label: "Report Ready", count: engagements.filter((e) => e.hasReport).length },
-    { id: "pending", label: "Pending", count: engagements.filter((e) => !e.hasReport).length },
+    { id: "all", label: "All", count: translatedEngagements.length },
+    { id: "has-report", label: "Report Ready", count: translatedEngagements.filter((e) => e.hasReport).length },
+    { id: "pending", label: "Pending", count: translatedEngagements.filter((e) => !e.hasReport).length },
   ];
 
   if (loading) {
@@ -652,7 +675,7 @@ export default function ReportsPage() {
           <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {report ? report.title : t("Audit Report")}
+                {translatedReport ? translatedReport.title : t("Audit Report")}
               </DialogTitle>
               {report && (
                 <p className="text-sm text-slate-500 mt-0.5">{report.reportCode}</p>
@@ -677,7 +700,7 @@ export default function ReportsPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex flex-col sm:flex-row sm:items-center">
                     <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Audit Title")}:</span>
-                    <span className="text-primary-600">{report.title}</span>
+                    <span className="text-primary-600">{translatedReport?.title || report.title}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center">
                     <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Audit Type")}:</span>
@@ -752,7 +775,7 @@ export default function ReportsPage() {
                     />
                   ) : (
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {report.executiveSummary || `This report presents the results of the internal audit conducted for ${report.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`}
+                      {translatedReport?.executiveSummary || report.executiveSummary || `This report presents the results of the internal audit conducted for ${translatedReport?.title || report.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`}
                     </p>
                   )}
                 </div>
@@ -774,7 +797,7 @@ export default function ReportsPage() {
                     </div>
                   ) : (
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {(report.observations || "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.")
+                      {(translatedReport?.observations || report.observations || "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.")
                         .replace(/{RESULT}/g, report.overallResult || "Pass")
                         .split(report.overallResult || "Pass")
                         .map((part, index, arr) => (
@@ -805,7 +828,7 @@ export default function ReportsPage() {
                     />
                   ) : (
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {report.methodology || "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter."}
+                      {translatedReport?.methodology || report.methodology || "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter."}
                     </p>
                   )}
                 </div>
@@ -824,7 +847,7 @@ export default function ReportsPage() {
                     />
                   ) : (
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {report.objectives || report.engagement.engagementObjective || "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements."}
+                      {translatedReport?.objectives || report.objectives || report.engagement.engagementObjective || "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements."}
                     </p>
                   )}
                 </div>
@@ -843,7 +866,7 @@ export default function ReportsPage() {
                     />
                   ) : (
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {report.scope || report.engagement.engagementScope || "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report."}
+                      {translatedReport?.scope || report.scope || report.engagement.engagementScope || "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report."}
                     </p>
                   )}
                 </div>
@@ -862,7 +885,7 @@ export default function ReportsPage() {
                     />
                   ) : (
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {report.recommendations || "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency."}
+                      {translatedReport?.recommendations || report.recommendations || "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency."}
                     </p>
                   )}
                 </div>
@@ -881,7 +904,7 @@ export default function ReportsPage() {
                     />
                   ) : (
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {report.conclusion || "In conclusion, this audit has provided valuable insights into the current state of internal controls and compliance within the audited area. We appreciate the cooperation of all personnel involved in this audit and look forward to working with management to address the identified findings."}
+                      {translatedReport?.conclusion || report.conclusion || "In conclusion, this audit has provided valuable insights into the current state of internal controls and compliance within the audited area. We appreciate the cooperation of all personnel involved in this audit and look forward to working with management to address the identified findings."}
                     </p>
                   )}
                 </div>
@@ -915,8 +938,8 @@ export default function ReportsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {report.engagement.findings && report.engagement.findings.length > 0 ? (
-                          report.engagement.findings.map((finding) => (
+                        {translatedFindings && translatedFindings.length > 0 ? (
+                          translatedFindings.map((finding) => (
                             <tr key={finding.id} className="border-b border-slate-100 last:border-b-0">
                               <td className="px-4 py-2">
                                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -1003,7 +1026,7 @@ export default function ReportsPage() {
                     </div>
                   ) : (
                     <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                      {report.auditeeComment || <span className="text-slate-400 italic">{t("No comment provided")}</span>}
+                      {translatedReport?.auditeeComment || report.auditeeComment || <span className="text-slate-400 italic">{t("No comment provided")}</span>}
                     </p>
                   )}
                 </div>
@@ -1031,7 +1054,10 @@ export default function ReportsPage() {
                 {!isEditing ? (
                   <Button
                     className="bg-primary-600 hover:bg-primary-700"
-                    onClick={() => setIsEditing(true)}
+                    onClick={() => {
+                      if (translatedReport) initEditForm(translatedReport);
+                      setIsEditing(true);
+                    }}
                   >
                     {t("Edit")}
                   </Button>

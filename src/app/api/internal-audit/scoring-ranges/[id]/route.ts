@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // GET a single scoring range
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -96,6 +97,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditScoringRange', range.id, { label: range.label });
+
       return NextResponse.json(range);
     } catch (error) {
       console.error("Error updating scoring range:", error);
@@ -133,6 +136,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.auditScoringRange.delete({ where: { id } });
+
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'AuditScoringRange', id);
 
       return NextResponse.json({ message: "Scoring range deleted successfully" });
     } catch (error) {

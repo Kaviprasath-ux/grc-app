@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // GET a single impact
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -90,6 +91,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditImpact', impact.id, { label: impact.label });
+
       return NextResponse.json(impact);
     } catch (error) {
       console.error("Error updating impact:", error);
@@ -127,6 +130,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.auditImpact.delete({ where: { id } });
+
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'AuditImpact', id);
 
       return NextResponse.json({ message: "Impact deleted successfully" });
     } catch (error) {

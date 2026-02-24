@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all scoring ranges
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -81,6 +82,8 @@ export const POST = withAuth(
           auditHeadId: auditHeadId,
         },
       });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditScoringRange', range.id, { label: range.label });
 
       return NextResponse.json(range, { status: 201 });
     } catch (error) {

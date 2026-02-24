@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface User {
   id: string;
@@ -86,7 +87,7 @@ function ViewFindingContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const engagementId = params.id as string;
   const findingId = params.findingId as string;
   const editMode = searchParams.get("edit") === "true";
@@ -104,6 +105,10 @@ function ViewFindingContent() {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [deletingAttachment, setDeletingAttachment] = useState<string | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic translation for finding data
+  const { data: translatedFinding } = useTranslatedRecord(formData, { modelName: 'InternalAuditFinding' });
+  const displayFinding = translatedFinding || formData;
 
   useEffect(() => {
     const loadData = async () => {
@@ -239,9 +244,10 @@ function ViewFindingContent() {
     return formatLocalDate(new Date(dateString));
   };
 
+  const dateLocaleMap: Record<string, string> = { en: "en-GB", ar: "ar-SA", lv: "lv-LV" };
   const formatDisplayDate = (dateString: string | null) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-GB", {
+    return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -285,6 +291,15 @@ function ViewFindingContent() {
       });
 
       if (response.ok) {
+        triggerTranslation('InternalAuditFinding', findingId, {
+          title: formData.title,
+          description: formData.description,
+          recommendation: formData.recommendation,
+          criteria: formData.criteria,
+          condition: formData.condition,
+          cause: formData.cause,
+          effect: formData.effect,
+        });
         toast.success(t("Finding updated successfully"));
         setIsEditing(false);
         fetchFinding();
@@ -387,7 +402,7 @@ function ViewFindingContent() {
               />
             ) : (
               <div className="p-3 bg-slate-50 rounded-md border">
-                {formData.title || "-"}
+                {displayFinding?.title || "-"}
               </div>
             )}
           </div>
@@ -436,7 +451,7 @@ function ViewFindingContent() {
               />
             ) : (
               <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
-                {formData.criteria || "-"}
+                {displayFinding?.criteria || "-"}
               </div>
             )}
           </div>
@@ -453,7 +468,7 @@ function ViewFindingContent() {
               />
             ) : (
               <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
-                {formData.condition || "-"}
+                {displayFinding?.condition || "-"}
               </div>
             )}
           </div>
@@ -470,7 +485,7 @@ function ViewFindingContent() {
               />
             ) : (
               <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
-                {formData.cause || "-"}
+                {displayFinding?.cause || "-"}
               </div>
             )}
           </div>
@@ -487,7 +502,7 @@ function ViewFindingContent() {
               />
             ) : (
               <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
-                {formData.effect || "-"}
+                {displayFinding?.effect || "-"}
               </div>
             )}
           </div>
@@ -504,7 +519,7 @@ function ViewFindingContent() {
               />
             ) : (
               <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
-                {formData.recommendation || "-"}
+                {displayFinding?.recommendation || "-"}
               </div>
             )}
           </div>

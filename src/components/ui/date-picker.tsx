@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { format } from "date-fns"
+import { format, Locale } from "date-fns"
+import { arSA } from "date-fns/locale/ar-SA"
+import { lv } from "date-fns/locale/lv"
 import { CalendarIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -12,6 +14,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { useLanguage } from "@/contexts/LanguageContext"
+
+const dateFnsLocaleMap: Record<string, Locale> = { ar: arSA, lv }
 
 interface DatePickerProps {
   value?: Date | string
@@ -29,6 +34,8 @@ export function DatePicker({
   disabled,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
+  const { locale } = useLanguage()
+  const dateFnsLocale = dateFnsLocaleMap[locale]
 
   // Convert string to Date if needed (using local timezone to avoid UTC date shift)
   const dateValue = React.useMemo(() => {
@@ -62,7 +69,7 @@ export function DatePicker({
           )}
         >
           <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
-          {dateValue ? format(dateValue, "PPP") : <span>{placeholder}</span>}
+          {dateValue ? format(dateValue, "PPP", { locale: dateFnsLocale }) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -77,6 +84,7 @@ export function DatePicker({
           selected={dateValue}
           onSelect={handleSelect}
           autoFocus
+          locale={dateFnsLocale}
         />
       </PopoverContent>
     </Popover>

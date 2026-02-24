@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // GET a single probability
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -90,6 +91,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditProbability', probability.id, { label: probability.label });
+
       return NextResponse.json(probability);
     } catch (error) {
       console.error("Error updating probability:", error);
@@ -127,6 +130,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.auditProbability.delete({ where: { id } });
+
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'AuditProbability', id);
 
       return NextResponse.json({ message: "Probability deleted successfully" });
     } catch (error) {

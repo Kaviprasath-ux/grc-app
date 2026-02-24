@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getAuditHeadId, getTenantFilter } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -167,6 +168,9 @@ export const POST = withAuth(
           department: true,
         },
       });
+
+      // Fire-and-forget: translate finding fields
+      if (customerAccountId) void translateRecord(customerAccountId, 'InternalAuditFinding', finding.id, { title: finding.finding, description: finding.description, recommendation: finding.recommendation });
 
       // Send FINDINGS_CREATED notification to the Audit Head
       if (auditHeadId && auditHeadId !== session.id) {

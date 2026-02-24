@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
+import { translateRecord } from '@/lib/translation-service';
 
 // Helper function to generate report code (format: RPT-NNNN - unique serial, tenant-scoped)
 async function generateReportCode(customerAccountId: string): Promise<string> {
@@ -161,6 +162,9 @@ Accordingly, this audit engagement is formally closed as of ${targetDate}.`;
           auditHeadId,
         },
       });
+
+      // Fire-and-forget: translate report fields
+      if (customerAccountId) void translateRecord(customerAccountId, 'AuditReport', report.id, { title: report.title, executiveSummary: report.executiveSummary, observations: report.observations, scope: report.scope, objectives: report.objectives, methodology: report.methodology, conclusion: report.conclusion });
 
       return NextResponse.json({
         report,

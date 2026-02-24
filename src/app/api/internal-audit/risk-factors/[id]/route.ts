@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // GET a single risk factor
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -87,6 +88,8 @@ export const PUT = withAuth(
         data: { label },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditRiskFactor', factor.id, { label: factor.label });
+
       return NextResponse.json(factor);
     } catch (error) {
       console.error("Error updating risk factor:", error);
@@ -124,6 +127,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.auditRiskFactor.delete({ where: { id } });
+
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'AuditRiskFactor', id);
 
       return NextResponse.json({ message: "Risk factor deleted successfully" });
     } catch (error) {

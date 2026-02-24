@@ -36,6 +36,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface AuditCategory {
   id: string;
@@ -124,6 +125,11 @@ export default function AuditCategoriesPage() {
       });
 
       if (response.ok) {
+        const savedItem = await response.json().catch(() => null);
+        const recordId = editItem ? editItem.id : savedItem?.id;
+        if (recordId) {
+          triggerTranslation('AuditCategory', recordId, { name: formData.name });
+        }
         setDialogOpen(false);
         fetchCategories();
         toast({
@@ -193,7 +199,10 @@ export default function AuditCategoriesPage() {
     }
   };
 
-  const filteredCategories = categories.filter((category) =>
+  // Dynamic data translation — must be before early returns (React hooks rule)
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'AuditCategory' });
+
+  const filteredCategories = translatedCategories.filter((category) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

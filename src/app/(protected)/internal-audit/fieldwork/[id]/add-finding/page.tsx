@@ -5,6 +5,7 @@ import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { triggerTranslation } from "@/hooks/useTranslatedData";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -189,6 +190,15 @@ export default function AddFindingPage() {
 
       if (response.ok) {
         const finding = await response.json();
+        triggerTranslation('InternalAuditFinding', finding.id, {
+          title: formData.findingTitle,
+          description: formData.condition,
+          recommendation: formData.recommendation,
+          criteria: formData.criteria,
+          condition: formData.condition,
+          cause: formData.cause,
+          effect: formData.effect,
+        });
 
         // Upload files if any
         if (uploadedFiles.length > 0) {

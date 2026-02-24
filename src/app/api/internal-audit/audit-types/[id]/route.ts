@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // GET a single audit type
 // Multi-tenant: Filter by customerAccountId and auditHeadId
@@ -92,6 +93,8 @@ export const PUT = withAuth(
         data: { name },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditType', id, { name: auditType.name });
+
       return NextResponse.json(auditType);
     } catch (error) {
       console.error("Error updating audit type:", error);
@@ -137,6 +140,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.auditType.delete({ where: { id } });
+
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'AuditType', id);
 
       return NextResponse.json({ message: "Audit type deleted successfully" });
     } catch (error) {

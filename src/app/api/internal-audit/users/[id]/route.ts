@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
 import { isValidEmailFormat } from "@/lib/validations/email";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // Audit-related roles that can be assigned
 const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditor", "Auditee"];
@@ -237,6 +238,9 @@ export const PUT = withAuth(
         },
       });
 
+      // Trigger translation for the updated user
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'User', user.id, { fullName: user.fullName });
+
       const { password: _, ...safeUser } = user;
       return NextResponse.json({
         ...safeUser,
@@ -291,6 +295,9 @@ export const DELETE = withAuth(
       });
 
       await prisma.user.delete({ where: { id } });
+
+      // Delete translations for the removed user
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'User', id);
 
       return NextResponse.json({ message: "User deleted successfully" });
     } catch (error: unknown) {

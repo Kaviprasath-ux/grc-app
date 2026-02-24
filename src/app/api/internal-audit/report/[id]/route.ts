@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -170,6 +171,23 @@ export const PATCH = withAuth(
           },
         },
       });
+
+      // Fire-and-forget: translate updated report fields (only non-null values)
+      const customerAccountId = session.customerAccountId;
+      if (customerAccountId) {
+        const fieldsToTranslate: Record<string, string | null | undefined> = {};
+        if (executiveSummary !== undefined) fieldsToTranslate.executiveSummary = executiveSummary;
+        if (observations !== undefined) fieldsToTranslate.observations = observations;
+        if (scope !== undefined) fieldsToTranslate.scope = scope;
+        if (objectives !== undefined) fieldsToTranslate.objectives = objectives;
+        if (methodology !== undefined) fieldsToTranslate.methodology = methodology;
+        if (recommendations !== undefined) fieldsToTranslate.recommendations = recommendations;
+        if (conclusion !== undefined) fieldsToTranslate.conclusion = conclusion;
+        if (auditeeComment !== undefined) fieldsToTranslate.auditeeComment = auditeeComment;
+        if (Object.keys(fieldsToTranslate).length > 0) {
+          void translateRecord(customerAccountId, 'AuditReport', updatedReport.id, fieldsToTranslate);
+        }
+      }
 
       return NextResponse.json(updatedReport);
     } catch (error) {

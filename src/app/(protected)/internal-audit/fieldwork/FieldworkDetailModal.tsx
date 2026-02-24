@@ -58,6 +58,7 @@ import {
 import { useHasRole, usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 import { DatePicker } from "@/components/ui/date-picker";
 import { formatLocalDate } from "@/lib/utils";
@@ -176,7 +177,7 @@ interface FieldworkDetailModalProps {
 export function FieldworkDetailModal({ open, onClose, engagementId, mode }: FieldworkDetailModalProps) {
   const router = useRouter();
   const { data: session } = useSession();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const currentUserId = session?.user?.id;
   const isAuditHead = useHasRole("AuditHead");
   const isAuditManager = useHasRole("AuditManager");
@@ -330,6 +331,12 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const findingAttachmentInputRef = useRef<HTMLInputElement>(null);
   const [newEvidence, setNewEvidence] = useState({ title: "", description: "", auditee: "", auditeeId: "", numberOfSamples: "" });
 
+  // Dynamic translation hooks
+  const { data: translatedEngagement } = useTranslatedRecord(engagement, { modelName: 'AuditEngagement' });
+  const displayEngagement = translatedEngagement || engagement;
+  const { data: translatedFindings } = useTranslatedData(findings, { modelName: 'InternalAuditFinding' });
+  const { data: translatedEvidenceRequests } = useTranslatedData(evidenceRequests, { modelName: 'FieldworkEvidenceRequest' });
+
   // Validation error states
   const [uploadFilesError, setUploadFilesError] = useState("");
   const [aiWorkpaperTaskError, setAiWorkpaperTaskError] = useState("");
@@ -473,9 +480,10 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     } catch (error) { console.error("Failed to fetch auditees:", error); }
   };
 
+  const dateLocaleMap: Record<string, string> = { en: "en-GB", ar: "ar-SA", lv: "lv-LV" };
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -487,8 +495,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   };
 
   const filteredEvidenceRequests = isAuditee && !isAuditHead
-    ? evidenceRequests.filter(er => er.auditeeId === currentUserId)
-    : evidenceRequests;
+    ? translatedEvidenceRequests.filter(er => er.auditeeId === currentUserId)
+    : translatedEvidenceRequests;
 
   const getAuditorName = () => {
     if (!engagement) return "-";
@@ -596,7 +604,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     setFindingTitleError("");
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newFinding, status: "Open" }) });
-      if (response.ok) { toast.success(t("Finding added successfully")); setAddFindingDialogOpen(false); setNewFinding({ title: "", description: "", severity: "Medium", recommendation: "" }); fetchFindings(); }
+      if (response.ok) { const savedFinding = await response.json(); triggerTranslation('InternalAuditFinding', savedFinding.id, { title: newFinding.title, description: newFinding.description, recommendation: newFinding.recommendation }); toast.success(t("Finding added successfully")); setAddFindingDialogOpen(false); setNewFinding({ title: "", description: "", severity: "Medium", recommendation: "" }); fetchFindings(); }
       else toast.error(t("Failed to add finding"));
     } catch (error) { toast.error(t("Failed to add finding")); }
   };
@@ -610,6 +618,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: fullFinding.findingTitle, severity: fullFinding.severity || "Medium", criteria: fullFinding.criteria || null, condition: fullFinding.condition || null, cause: fullFinding.cause || null, effect: fullFinding.effect || null, recommendation: fullFinding.recommendation || null, responsiblePersonId: fullFinding.responsiblePersonId || null, status: fullFinding.status || "Open", targetDate: fullFinding.targetClosureDate || null }) });
       if (response.ok) {
         const newFindingData = await response.json();
+        triggerTranslation('InternalAuditFinding', newFindingData.id, { title: fullFinding.findingTitle, description: fullFinding.condition, recommendation: fullFinding.recommendation, criteria: fullFinding.criteria, condition: fullFinding.condition, cause: fullFinding.cause, effect: fullFinding.effect });
         if (findingAttachments.length > 0) {
           const formData = new FormData();
           findingAttachments.forEach((file) => formData.append("files", file));
@@ -654,6 +663,9 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         }),
       });
       if (response.ok) {
+        if (selectedFindingId) {
+          triggerTranslation('InternalAuditFinding', selectedFindingId, { title: editFinding.findingTitle, recommendation: editFinding.recommendation, criteria: editFinding.criteria, condition: editFinding.condition, cause: editFinding.cause, effect: editFinding.effect });
+        }
         toast.success(t("Finding updated successfully"));
         setFindingDetailDialogOpen(false);
         setSelectedFindingId(null);
@@ -734,7 +746,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     setSavingEvidence(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${selectedEvidence.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: editEvidence.title, description: editEvidence.description, auditee: editEvidence.auditee, auditeeId: editEvidence.auditeeId || null, status: editEvidence.status, numberOfSamples: editEvidence.numberOfSamples || null }) });
-      if (response.ok) { toast.success(t("Evidence request updated successfully")); setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); setIsEditingEvidence(false); fetchEvidenceRequests(); }
+      if (response.ok) { if (selectedEvidence) { triggerTranslation('FieldworkEvidenceRequest', selectedEvidence.id, { title: editEvidence.title, description: editEvidence.description }); } toast.success(t("Evidence request updated successfully")); setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); setIsEditingEvidence(false); fetchEvidenceRequests(); }
       else toast.error(t("Failed to update evidence request"));
     } catch (error) { console.error("Error updating evidence request:", error); toast.error(t("Failed to update evidence request")); } finally { setSavingEvidence(false); }
   };
@@ -945,7 +957,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     setNewEvidenceTitleError("");
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: newEvidence.title, description: newEvidence.description, auditee: newEvidence.auditee, auditeeId: newEvidence.auditeeId || null, numberOfSamples: newEvidence.numberOfSamples || null, status: "Pending" }) });
-      if (response.ok) { toast.success(t("Evidence request added successfully")); setAddEvidenceDialogOpen(false); setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", numberOfSamples: "" }); fetchEvidenceRequests(); }
+      if (response.ok) { const savedEvidence = await response.json(); triggerTranslation('FieldworkEvidenceRequest', savedEvidence.id, { title: newEvidence.title, description: newEvidence.description }); toast.success(t("Evidence request added successfully")); setAddEvidenceDialogOpen(false); setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", numberOfSamples: "" }); fetchEvidenceRequests(); }
       else toast.error(t("Failed to add evidence request"));
     } catch (error) { toast.error(t("Failed to add evidence request")); }
   };
@@ -976,7 +988,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0 pr-14">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {engagement ? `${engagement.engagementTitle} (${engagement.auditId})` : t("Fieldwork Details")}
+                {engagement ? `${displayEngagement?.engagementTitle || engagement.engagementTitle} (${engagement.auditId})` : t("Fieldwork Details")}
                 {engagement && engagement.status === "Completed" && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-700 ltr:ml-3 rtl:mr-3">
                     {t("Completed")}
@@ -1052,7 +1064,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-medium text-primary-700">{engagement.auditId}</span>
                           <span className="text-slate-400">•</span>
-                          <span className="text-slate-600">{engagement.engagementTitle}</span>
+                          <span className="text-slate-600">{displayEngagement?.engagementTitle || engagement.engagementTitle}</span>
                         </div>
                       </div>
 
@@ -1064,7 +1076,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                           </div>
                           <div className="px-5 py-4 border-b border-slate-100">
                             <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Title")}</Label>
-                            <p className="text-sm font-medium text-slate-800 mt-1">{engagement.engagementTitle}</p>
+                            <p className="text-sm font-medium text-slate-800 mt-1">{displayEngagement?.engagementTitle || engagement.engagementTitle}</p>
                           </div>
                           <div className="px-5 py-4 border-b border-slate-100 border-r border-slate-100">
                             <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Auditor")}</Label>
@@ -1566,7 +1578,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {findings.map((finding) => (
+                              {translatedFindings.map((finding) => (
                                 <TableRow key={finding.id} className="border-b border-slate-100 last:border-0">
                                   <TableCell className="py-3 ps-5 font-medium text-sm text-slate-800">{finding.findingId || '-'}</TableCell>
                                   <TableCell className="py-3 max-w-[200px] truncate text-sm text-slate-700">{finding.title}</TableCell>

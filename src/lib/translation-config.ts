@@ -53,14 +53,23 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'RiskCause', fields: [{ name: 'name' }], priority: 3 },
 
   // Priority 4 — Internal Audit
-  { modelName: 'AuditEngagement', fields: [{ name: 'title' }, { name: 'objective' }, { name: 'scope' }], priority: 4 },
+  { modelName: 'AuditEngagement', fields: [{ name: 'engagementTitle' }, { name: 'engagementObjective' }, { name: 'engagementScope' }, { name: 'initialObservation' }, { name: 'relatedPolicies' }], priority: 4 },
   { modelName: 'AuditableEntity', fields: [{ name: 'name' }, { name: 'description' }], priority: 4 },
-  { modelName: 'InternalAuditFinding', fields: [{ name: 'title' }, { name: 'description' }, { name: 'recommendation' }], priority: 4 },
+  { modelName: 'InternalAuditFinding', fields: [{ name: 'title' }, { name: 'description' }, { name: 'recommendation' }, { name: 'criteria' }, { name: 'condition' }, { name: 'cause' }, { name: 'effect' }], priority: 4 },
   { modelName: 'InternalAuditCAPA', fields: [{ name: 'title' }, { name: 'description' }], priority: 4 },
-  { modelName: 'AuditReport', fields: [{ name: 'title' }, { name: 'executiveSummary' }], priority: 4 },
+  { modelName: 'AuditReport', fields: [{ name: 'title' }, { name: 'executiveSummary' }, { name: 'observations' }, { name: 'scope' }, { name: 'objectives' }, { name: 'methodology' }, { name: 'recommendations' }, { name: 'conclusion' }, { name: 'auditeeComment' }], priority: 4 },
   { modelName: 'AuditFinding', fields: [{ name: 'title' }, { name: 'description' }, { name: 'recommendation' }], priority: 4 },
+  { modelName: 'FieldworkEvidenceRequest', fields: [{ name: 'title' }, { name: 'description' }], priority: 4 },
   { modelName: 'CAPA', fields: [{ name: 'title' }, { name: 'description' }], priority: 4 },
-  { modelName: 'InternalAuditRisk', fields: [{ name: 'name' }, { name: 'description' }], priority: 4 },
+  { modelName: 'InternalAuditRisk', fields: [{ name: 'riskName' }, { name: 'riskDescription' }], priority: 4 },
+  { modelName: 'AuditType', fields: [{ name: 'name' }], priority: 4 },
+  { modelName: 'AuditCategory', fields: [{ name: 'name' }], priority: 4 },
+  { modelName: 'AuditNatureOfControl', fields: [{ name: 'label' }], priority: 4 },
+  { modelName: 'AuditPeriodicity', fields: [{ name: 'interval' }], priority: 4 },
+  { modelName: 'AuditRiskFactor', fields: [{ name: 'label' }], priority: 4 },
+  { modelName: 'AuditProbability', fields: [{ name: 'label' }], priority: 4 },
+  { modelName: 'AuditImpact', fields: [{ name: 'label' }], priority: 4 },
+  { modelName: 'AuditScoringRange', fields: [{ name: 'label' }], priority: 4 },
 
   // Priority 5 — Organization & assets
   { modelName: 'User', fields: [{ name: 'fullName' }, { name: 'firstName' }, { name: 'lastName' }, { name: 'designation' }], priority: 5 },

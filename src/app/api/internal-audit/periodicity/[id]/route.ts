@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // GET a single periodicity
 // Note: AuditPeriodicity model doesn't have customerAccountId field yet - tenant filtering disabled
@@ -35,7 +36,7 @@ export const GET = withAuth(
 // PUT update a periodicity
 // Note: AuditPeriodicity model doesn't have customerAccountId field yet - tenant filtering disabled
 export const PUT = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
       const body = await req.json();
@@ -73,6 +74,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'AuditPeriodicity', id, { interval: periodicity.interval });
+
       return NextResponse.json(periodicity);
     } catch (error) {
       console.error("Error updating periodicity:", error);
@@ -88,7 +91,7 @@ export const PUT = withAuth(
 // DELETE a periodicity
 // Note: AuditPeriodicity model doesn't have customerAccountId field yet - tenant filtering disabled
 export const DELETE = withAuth(
-  async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
 
@@ -104,6 +107,8 @@ export const DELETE = withAuth(
       }
 
       await prisma.auditPeriodicity.delete({ where: { id } });
+
+      if (session.customerAccountId) void deleteRecordTranslations(session.customerAccountId, 'AuditPeriodicity', id);
 
       return NextResponse.json({ message: "Periodicity deleted successfully" });
     } catch (error) {

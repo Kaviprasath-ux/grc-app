@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -118,6 +119,8 @@ export const PUT = withAuth(
         },
       });
 
+      if (existingRisk.customerAccountId) void translateRecord(existingRisk.customerAccountId, 'InternalAuditRisk', risk.id, { riskName: risk.riskName, riskDescription: risk.riskDescription });
+
       return NextResponse.json(risk);
     } catch (error) {
       console.error("Error updating internal audit risk:", error);
@@ -156,6 +159,8 @@ export const DELETE = withAuth(
       await prisma.internalAuditRisk.delete({
         where: { id },
       });
+
+      if (existingRisk.customerAccountId) void deleteRecordTranslations(existingRisk.customerAccountId, 'InternalAuditRisk', id);
 
       return NextResponse.json({ message: "Internal audit risk deleted successfully" });
     } catch (error) {
