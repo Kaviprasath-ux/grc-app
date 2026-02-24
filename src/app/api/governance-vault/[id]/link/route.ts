@@ -67,7 +67,16 @@ export const POST = withAuth(
       // Fetch updated document with links
       const updatedDocument = await prisma.governanceVaultDocument.findUnique({
         where: { id },
-        include: {
+        select: {
+          id: true,
+          documentCode: true,
+          fileName: true,
+          fileType: true,
+          fileSize: true,
+          filePath: true,
+          status: true,
+          uploadedAt: true,
+          customerAccountId: true,
           linkedPolicies: {
             include: {
               policy: {

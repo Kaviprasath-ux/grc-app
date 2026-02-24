@@ -41,7 +41,18 @@ export const GET = withAuth(
           },
           vaultDocumentLinks: {
             include: {
-              document: true,
+              document: {
+                select: {
+                  id: true,
+                  documentCode: true,
+                  fileName: true,
+                  fileType: true,
+                  fileSize: true,
+                  filePath: true,
+                  status: true,
+                  uploadedAt: true,
+                },
+              },
             },
           },
           policyAIReviews: {

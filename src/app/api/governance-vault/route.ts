@@ -16,7 +16,16 @@ export const GET = withAuth(
 
       const documents = await prisma.governanceVaultDocument.findMany({
         where: tenantFilter,
-        include: {
+        select: {
+          id: true,
+          documentCode: true,
+          fileName: true,
+          fileType: true,
+          fileSize: true,
+          filePath: true,
+          status: true,
+          uploadedAt: true,
+          customerAccountId: true,
           linkedPolicies: {
             include: {
               policy: {
@@ -131,7 +140,16 @@ export const POST = withAuth(
           filePath: relativePath,
           status: "Active",
         },
-        include: {
+        select: {
+          id: true,
+          documentCode: true,
+          fileName: true,
+          fileType: true,
+          fileSize: true,
+          filePath: true,
+          status: true,
+          uploadedAt: true,
+          customerAccountId: true,
           linkedPolicies: true,
         },
       });
