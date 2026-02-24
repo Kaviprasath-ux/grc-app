@@ -26,6 +26,7 @@ import { DataGrid } from "@/components/shared";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNumber } from "@/lib/validations";
 import {
   LineChart,
@@ -70,7 +71,7 @@ export default function KPIDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const processId = params.processId as string;
 
   const [process, setProcess] = useState<Process | null>(null);
@@ -98,6 +99,9 @@ export default function KPIDetailsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<KPIRecord | null>(null);
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+
+  // Dynamic translation for the process name in breadcrumb/title
+  const { data: translatedProcess } = useTranslatedRecord(process, { modelName: 'Process' });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -150,7 +154,7 @@ export default function KPIDetailsPage() {
         return recordDate.getMonth() === index && recordDate.getFullYear().toString() === selectedYear;
       });
       return {
-        month,
+        month: t(month),
         achievedValue: record?.achievedValue ?? null,
         expectedValue: hasKpiConfig ? kpiConfig.expectedValue : null,
       };
@@ -276,7 +280,7 @@ export default function KPIDetailsPage() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <div className="flex gap-1">
+        <div className={`flex gap-1 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Button
             variant="ghost"
             size="icon"
@@ -305,16 +309,16 @@ export default function KPIDetailsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap">
-          <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <nav className={`flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+          <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
             <Home className="h-4 w-4" />
             <span>{t("Organization")}</span>
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          </div>
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <Link href="/organization/process" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Process")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <span className="text-primary-700 font-medium">{t("KPI")}</span>
         </nav>
         <div className="flex items-center justify-center h-64">
@@ -327,39 +331,39 @@ export default function KPIDetailsPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap">
-        <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+      <nav className={`flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        </div>
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/organization/process" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Process")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("KPI")}</span>
       </nav>
 
       {/* Page Header with Back Button */}
-      <div className="flex items-center gap-3">
+      <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
         <Button
           variant="ghost"
           size="icon"
           className="h-9 w-9 text-slate-600 hover:text-slate-800"
           onClick={() => router.push("/organization/process")}
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className={`h-5 w-5 ${isRTL ? "rotate-180" : ""}`} />
         </Button>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("KPI Details")} - {process?.name}</h1>
+        <h1 className={`text-xl sm:text-2xl font-bold text-slate-800 ${isRTL ? "text-right" : ""}`}>{t("KPI Details")} - {translatedProcess?.name || process?.name}</h1>
       </div>
 
       {/* Main Content Card */}
       <Card className="bg-slate-50">
-        <CardContent className="p-3 sm:p-6 pt-4 sm:pt-6">
+        <CardContent className="p-3 sm:p-6 pt-4 sm:pt-6" style={isRTL ? { direction: 'rtl' } : undefined}>
           {/* KPI Header with Year Selector */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-            <h3 className="text-lg font-semibold text-slate-800">{t("KPI")}</h3>
-            <div className="flex items-center gap-2">
+          <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
+            <h3 className={`text-lg font-semibold text-slate-800 ${isRTL ? "text-right" : ""}`}>{t("KPI")}</h3>
+            <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
               <span className="text-sm text-muted-foreground">{t("Year")}</span>
               <Select value={selectedYear} onValueChange={setSelectedYear}>
                 <SelectTrigger className="w-[100px] bg-white">
@@ -419,7 +423,7 @@ export default function KPIDetailsPage() {
           </div>
 
           {/* Legend */}
-          <div className="flex justify-end gap-6 mb-6">
+          <div className={`flex gap-6 mb-6 ${isRTL ? "justify-start flex-row-reverse" : "justify-end"}`}>
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-primary-500" />
               <span className="text-sm">{t("Achieved Value")}</span>
@@ -433,16 +437,16 @@ export default function KPIDetailsPage() {
       </Card>
 
       {/* KPI Configuration Form */}
-      <Card>
+      <Card style={isRTL ? { direction: 'rtl' } : undefined}>
         <CardHeader>
-          <CardTitle className="text-base font-semibold text-slate-800">{t("KPI Configuration")}</CardTitle>
+          <CardTitle className={`text-base font-semibold text-slate-800 ${isRTL ? "text-right" : ""}`}>{t("KPI Configuration")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
               <div>
-                <h5 className="text-sm font-medium mb-2">{t("KPI Objective")}</h5>
+                <h5 className={`text-sm font-medium mb-2 ${isRTL ? "text-right" : ""}`}>{t("KPI Objective")}</h5>
                 <Input
                   placeholder={t("Enter Objective")}
                   value={kpiConfig.objective}
@@ -459,7 +463,7 @@ export default function KPIDetailsPage() {
                 )}
               </div>
               <div>
-                <h5 className="text-sm font-medium mb-2">{t("KPI Data Source")}</h5>
+                <h5 className={`text-sm font-medium mb-2 ${isRTL ? "text-right" : ""}`}>{t("KPI Data Source")}</h5>
                 <Input
                   placeholder={t("Enter Data Source")}
                   value={kpiConfig.dataSource}
@@ -476,7 +480,7 @@ export default function KPIDetailsPage() {
                 )}
               </div>
               <div>
-                <h5 className="text-sm font-medium mb-2">{t("Expected Value")}</h5>
+                <h5 className={`text-sm font-medium mb-2 ${isRTL ? "text-right" : ""}`}>{t("Expected Value")}</h5>
                 <Input
                   type="number"
                   value={kpiConfig.expectedValue}
@@ -497,7 +501,7 @@ export default function KPIDetailsPage() {
             {/* Right Column */}
             <div className="space-y-4">
               <div>
-                <h5 className="text-sm font-medium mb-2">{t("KPI Description")}</h5>
+                <h5 className={`text-sm font-medium mb-2 ${isRTL ? "text-right" : ""}`}>{t("KPI Description")}</h5>
                 <Input
                   placeholder={t("Enter Description")}
                   value={kpiConfig.description}
@@ -514,7 +518,7 @@ export default function KPIDetailsPage() {
                 )}
               </div>
               <div>
-                <h5 className="text-sm font-medium mb-2">{t("KPI Measurement Formula")}</h5>
+                <h5 className={`text-sm font-medium mb-2 ${isRTL ? "text-right" : ""}`}>{t("KPI Measurement Formula")}</h5>
                 <Input
                   placeholder={t("Enter the KPI Calculation Formula")}
                   value={kpiConfig.formula}
@@ -531,7 +535,7 @@ export default function KPIDetailsPage() {
                 )}
               </div>
               <div>
-                <h5 className="text-sm font-medium mb-2">{t("Targeted Achieved Value")}</h5>
+                <h5 className={`text-sm font-medium mb-2 ${isRTL ? "text-right" : ""}`}>{t("Targeted Achieved Value")}</h5>
                 <Input
                   type="number"
                   value={kpiConfig.targetedAchievedValue}
@@ -553,7 +557,7 @@ export default function KPIDetailsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end mt-6">
+          <div className={`flex mt-6 ${isRTL ? "justify-start" : "justify-end"}`}>
             <Button type="button" onClick={handleSave} disabled={saving}>
               {saving ? t("Saving...") : t("Save")}
             </Button>
@@ -563,7 +567,7 @@ export default function KPIDetailsPage() {
 
       {/* KPI Records Table */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6" style={isRTL ? { direction: 'rtl' } : undefined}>
           {kpiRecords.length > 0 ? (
             <DataGrid
               columns={recordColumns}
@@ -580,7 +584,7 @@ export default function KPIDetailsPage() {
 
       {/* Edit Record Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Edit KPI Record")}</DialogTitle>
           </DialogHeader>

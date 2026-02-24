@@ -40,7 +40,7 @@ export const PUT = withAuth(
         },
       });
 
-      if (existing.customerAccountId) void translateRecord(existing.customerAccountId, 'Service', service.id, { title: service.title, description: service.description });
+      if (existing.customerAccountId) void translateRecord(existing.customerAccountId, 'Service', service.id, { title: service.title, description: service.description, serviceCategory: service.serviceCategory, serviceItem: service.serviceItem });
 
       return NextResponse.json(service);
     } catch (error: unknown) {

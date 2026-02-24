@@ -19,6 +19,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Process {
   id: string;
@@ -51,11 +52,15 @@ const BAR_COLORS: Record<string, string> = {
 function ManagementReportContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [processes, setProcesses] = useState<Process[]>([]);
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic translations for user-entered data
+  const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
+  const { data: translatedKpis } = useTranslatedData(kpis, { modelName: 'KPI' });
 
   const selectedOptions = searchParams.get("options")?.split(",") || [];
 
@@ -111,7 +116,7 @@ function ManagementReportContent() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Process Management Report</title>
+          <title>${t("Process Management Report")}</title>
           <style>
             ${styles}
             @media print {
@@ -149,7 +154,7 @@ function ManagementReportContent() {
 
   // Calculate process by department data for pie chart
   const processByDepartmentData = Object.entries(
-    processes.reduce((acc, process) => {
+    translatedProcesses.reduce((acc, process) => {
       const dept = process.department?.name || "Unassigned";
       acc[dept] = (acc[dept] || 0) + 1;
       return acc;
@@ -158,7 +163,7 @@ function ManagementReportContent() {
 
   // Calculate process by criticality data for pie chart
   const processByCriticalityData = Object.entries(
-    processes.reduce((acc, process) => {
+    translatedProcesses.reduce((acc, process) => {
       const crit = process.criticality || "Not Set";
       acc[crit] = (acc[crit] || 0) + 1;
       return acc;
@@ -166,13 +171,13 @@ function ManagementReportContent() {
   ).map(([name, value]) => ({ name, value }));
 
   // Get top 5 process risk
-  const top5ProcessRisk = [...processes]
+  const top5ProcessRisk = [...translatedProcesses]
     .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0))
     .slice(0, 5);
 
   // Calculate KPI by measurement for pie chart
   const kpiByMeasurementData = Object.entries(
-    kpis.reduce((acc, kpi) => {
+    translatedKpis.reduce((acc, kpi) => {
       const measurement = kpi.measurement || "Not Set";
       acc[measurement] = (acc[measurement] || 0) + 1;
       return acc;
@@ -180,7 +185,7 @@ function ManagementReportContent() {
   ).map(([name, value]) => ({ name, value }));
 
   // Calculate process by risk for pie chart
-  const processByRiskData = processes
+  const processByRiskData = translatedProcesses
     .filter(p => (p.riskScore || 0) > 0)
     .slice(0, 8)
     .map(process => ({
@@ -190,7 +195,7 @@ function ManagementReportContent() {
 
   // Calculate KPI by performance for bar chart
   const kpiByPerformanceData = Object.entries(
-    kpis.reduce((acc, kpi) => {
+    translatedKpis.reduce((acc, kpi) => {
       const status = kpi.status || "Not Set";
       acc[status] = (acc[status] || 0) + 1;
       return acc;
@@ -228,8 +233,8 @@ function ManagementReportContent() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-slate-500">
+      <nav className={`flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <div className={`flex items-center gap-1.5 text-slate-500 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </div>
@@ -246,10 +251,10 @@ function ManagementReportContent() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isRTL ? "sm:flex-row-reverse" : ""}`} style={isRTL ? { direction: 'rtl' } : undefined}>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Management Report")}</h1>
         <Button size="sm" onClick={handleDownloadReport} className="self-start sm:self-auto">
-          <Download className="h-4 w-4 me-2" />
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Download Report")}
         </Button>
       </div>
@@ -257,7 +262,7 @@ function ManagementReportContent() {
       {/* Report Content */}
       <div ref={reportRef} className="space-y-6">
         {/* Report Title Card */}
-        <div className="bg-white rounded-xl border border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="bg-white rounded-xl border border-slate-200 px-4 sm:px-6 py-3 sm:py-4" style={isRTL ? { direction: 'rtl' } : undefined}>
           <h2 className="text-base sm:text-lg font-semibold text-slate-800">{t("Process Management Report")}</h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">{t("Generated on")} {new Date().toLocaleDateString()}</p>
         </div>
@@ -423,20 +428,20 @@ function ManagementReportContent() {
               <h3 className="text-base font-semibold text-slate-800">{t("Top 5 Process Risk")}</h3>
             </div>
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[400px]">
+            <table className="w-full min-w-[400px]" style={isRTL ? { direction: 'rtl' } : undefined}>
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="text-left py-4 pl-4 text-xs font-semibold text-slate-600">#</th>
-                  <th className="text-left py-4 text-xs font-semibold text-slate-600">{t("Process Name")}</th>
-                  <th className="text-left py-4 pr-4 text-xs font-semibold text-slate-600">{t("Risk Score")}</th>
+                  <th className="text-start py-4 ps-4 text-xs font-semibold text-slate-600">#</th>
+                  <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Process Name")}</th>
+                  <th className="text-start py-4 pe-4 text-xs font-semibold text-slate-600">{t("Risk Score")}</th>
                 </tr>
               </thead>
               <tbody>
                 {top5ProcessRisk.map((process, idx) => (
                   <tr key={process.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                    <td className="py-4 pl-4 text-sm text-slate-700">#{idx + 1}</td>
+                    <td className="py-4 ps-4 text-sm text-slate-700">#{idx + 1}</td>
                     <td className="py-4 text-sm text-slate-700">{process.name}</td>
-                    <td className="py-4 pr-4 text-sm text-slate-700">{process.riskScore || 0}</td>
+                    <td className="py-4 pe-4 text-sm text-slate-700">{process.riskScore || 0}</td>
                   </tr>
                 ))}
                 {top5ProcessRisk.length === 0 && (

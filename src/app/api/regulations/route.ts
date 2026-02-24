@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       include: { attachments: true },
     });
 
-    if (customerAccountId) void translateRecord(customerAccountId, 'Regulation', regulation.id, { name: regulation.name });
+    if (customerAccountId) void translateRecord(customerAccountId, 'Regulation', regulation.id, { name: regulation.name, version: regulation.version });
 
     return NextResponse.json(regulation, { status: 201 });
   } catch (error: unknown) {

@@ -35,7 +35,7 @@ export async function PUT(
     });
 
     const session = await auth();
-    if (session?.user?.customerAccountId) void translateRecord(session.user.customerAccountId, 'Regulation', regulation.id, { name: regulation.name });
+    if (session?.user?.customerAccountId) void translateRecord(session.user.customerAccountId, 'Regulation', regulation.id, { name: regulation.name, version: regulation.version });
 
     return NextResponse.json(regulation);
   } catch (error: unknown) {

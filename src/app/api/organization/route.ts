@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { translateRecord } from '@/lib/translation-service';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // GET organization profile with related data
 export const GET = withAuth(
@@ -72,6 +72,7 @@ export const PUT = withAuth(
       const tenantFilter = getTenantFilter(session);
       const existingOrg = await prisma.organization.findFirst({
         where: tenantFilter,
+        include: { branches: { select: { id: true } }, dataCenters: { select: { id: true } }, cloudProviders: { select: { id: true } } },
       });
 
       // Create or update organization and related data in a transaction
@@ -196,7 +197,28 @@ export const PUT = withAuth(
         });
       });
 
-      if (customerAccountId && result) void translateRecord(customerAccountId, 'Organization', result.id, { name: result.name, description: result.description });
+      if (customerAccountId && result) {
+        // Translate organization fields
+        void translateRecord(customerAccountId, 'Organization', result.id, { name: result.name, description: result.description, vision: result.vision, mission: result.mission, value: result.value, ceoMessage: result.ceoMessage, headOfficeLocation: result.headOfficeLocation, headOfficeAddress: result.headOfficeAddress });
+
+        // Clean up old translations for deleted associated records
+        if (existingOrg) {
+          for (const b of existingOrg.branches) void deleteRecordTranslations(customerAccountId, 'Branch', b.id);
+          for (const dc of existingOrg.dataCenters) void deleteRecordTranslations(customerAccountId, 'DataCenter', dc.id);
+          for (const cp of existingOrg.cloudProviders) void deleteRecordTranslations(customerAccountId, 'CloudProvider', cp.id);
+        }
+
+        // Translate new associated records
+        for (const b of result.branches) {
+          void translateRecord(customerAccountId, 'Branch', b.id, { location: b.location, address: b.address });
+        }
+        for (const dc of result.dataCenters) {
+          void translateRecord(customerAccountId, 'DataCenter', dc.id, { locationType: dc.locationType, address: dc.address, vendor: dc.vendor });
+        }
+        for (const cp of result.cloudProviders) {
+          void translateRecord(customerAccountId, 'CloudProvider', cp.id, { name: cp.name, serviceType: cp.serviceType });
+        }
+      }
 
       return NextResponse.json(result);
     } catch (error) {

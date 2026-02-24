@@ -176,7 +176,7 @@ export const POST = withAuth(
       },
       });
 
-      if (customerAccountId) void translateRecord(customerAccountId, 'Issue', issue.id, { title: issue.title, description: issue.description });
+      if (customerAccountId) void translateRecord(customerAccountId, 'Issue', issue.id, { title: issue.title, description: issue.description, domain: issue.domain, category: issue.category });
 
       // Notify owner if different from creator
       if (ownerId && ownerId !== session.id && session.customerAccountId) {

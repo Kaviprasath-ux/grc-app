@@ -43,7 +43,7 @@ interface BCPLabel {
 
 export default function BCPLabelsPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState("rto");
   const [labels, setLabels] = useState<BCPLabel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +109,7 @@ export default function BCPLabelsPage() {
         resetForm();
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create label");
+        alert(error.error || t("Failed to create label"));
       }
     } catch (error) {
       console.error("Error creating label:", error);
@@ -136,7 +136,7 @@ export default function BCPLabelsPage() {
         resetForm();
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update label");
+        alert(error.error || t("Failed to update label"));
       }
     } catch (error) {
       console.error("Error updating label:", error);
@@ -256,7 +256,7 @@ export default function BCPLabelsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
+      <nav className={`flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse" : ""}`}>
         <Link href="/organization/settings" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -269,9 +269,9 @@ export default function BCPLabelsPage() {
         <span className="text-primary-700 font-medium">{t("BCP Labels")}</span>
       </nav>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+      <div className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Back")}
         </Button>
         <div>
@@ -300,7 +300,7 @@ export default function BCPLabelsPage() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+          <div className={`flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -311,7 +311,7 @@ export default function BCPLabelsPage() {
               />
             </div>
             <Button onClick={() => { resetForm(); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Add RTO Label")}
             </Button>
           </div>
@@ -333,7 +333,7 @@ export default function BCPLabelsPage() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+          <div className={`flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -344,7 +344,7 @@ export default function BCPLabelsPage() {
               />
             </div>
             <Button onClick={() => { resetForm(); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Add RPO Label")}
             </Button>
           </div>
@@ -361,7 +361,7 @@ export default function BCPLabelsPage() {
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Add")} {activeTab.toUpperCase()} {t("Label")}</DialogTitle>
             <DialogDescription>
@@ -430,7 +430,7 @@ export default function BCPLabelsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Edit")} {formData.type} {t("Label")}</DialogTitle>
           </DialogHeader>
@@ -486,7 +486,7 @@ export default function BCPLabelsPage() {
 
       {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>

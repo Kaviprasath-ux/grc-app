@@ -95,6 +95,7 @@ interface Control {
   description?: string;
   domain?: { id: string; name: string } | null;
   functionalGrouping?: string | null;
+  entities?: string | null;
 }
 
 interface ControlDomain {

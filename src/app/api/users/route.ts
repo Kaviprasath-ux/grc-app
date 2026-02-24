@@ -245,6 +245,9 @@ export async function POST(request: NextRequest) {
     if (customerAccountId) {
       void translateRecord(customerAccountId, 'User', user.id, {
         fullName: user.fullName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        designation: user.designation,
       });
     }
 

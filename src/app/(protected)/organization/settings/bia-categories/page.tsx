@@ -33,7 +33,7 @@ interface BIACategory {
 
 export default function BIACategoriesPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [categories, setCategories] = useState<BIACategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,7 +98,7 @@ export default function BIACategoriesPage() {
         resetForm();
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create category");
+        alert(error.error || t("Failed to create category"));
       }
     } catch (error) {
       console.error("Error creating category:", error);
@@ -132,7 +132,7 @@ export default function BIACategoriesPage() {
         resetForm();
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update category");
+        alert(error.error || t("Failed to update category"));
       }
     } catch (error) {
       console.error("Error updating category:", error);
@@ -241,7 +241,7 @@ export default function BIACategoriesPage() {
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
+        <nav className={`flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse" : ""}`}>
           <Link href="/organization/settings" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Organization")}</span>
@@ -263,7 +263,7 @@ export default function BIACategoriesPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
+      <nav className={`flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse" : ""}`}>
         <Link href="/organization/settings" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -276,9 +276,9 @@ export default function BIACategoriesPage() {
         <span className="text-primary-700 font-medium">{t("BIA Categories")}</span>
       </nav>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+      <div className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Back")}
         </Button>
         <div>
@@ -298,7 +298,7 @@ export default function BIACategoriesPage() {
           />
         </div>
         <Button onClick={() => setIsAddOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Add Category")}
         </Button>
       </div>
@@ -307,7 +307,7 @@ export default function BIACategoriesPage() {
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Add BIA Category")}</DialogTitle>
             <DialogDescription>
@@ -369,7 +369,7 @@ export default function BIACategoriesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Edit BIA Category")}</DialogTitle>
           </DialogHeader>
@@ -426,7 +426,7 @@ export default function BIACategoriesPage() {
 
       {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>

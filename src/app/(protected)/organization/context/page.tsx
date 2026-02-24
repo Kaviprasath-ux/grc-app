@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, ChevronLeft, MessageSquare, File, FileText, FileImage, FileSpreadsheet, Eye, X, Check, ArrowLeft, Home, Users, AlertTriangle } from "lucide-react";
 import Link from "next/link";
@@ -352,6 +352,11 @@ export default function ContextPage() {
   // Dynamic data translation
   const { data: translatedIssues } = useTranslatedData(issues, { modelName: 'Issue' });
   const { data: translatedStakeholders } = useTranslatedData(stakeholders, { modelName: 'Stakeholder' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const tDeptName = useCallback((id: string | null | undefined) => {
+    if (!id) return undefined;
+    return translatedDepartments.find(d => d.id === id)?.name;
+  }, [translatedDepartments]);
 
   // Handlers for adding new options
   const handleAddDomain = () => {
@@ -828,7 +833,7 @@ export default function ContextPage() {
       if (res.ok) {
         const issue = await res.json();
         setIssues([...issues, issue]);
-        triggerTranslation('Issue', issue.id, { title: issue.title, description: issue.description });
+        triggerTranslation('Issue', issue.id, { title: issue.title, description: issue.description, domain: issue.domain, category: issue.category });
         setNewIssue({
           title: "",
           description: "",
@@ -976,7 +981,7 @@ export default function ContextPage() {
       if (res.ok) {
         const updatedIssue = await res.json();
         setIssues(issues.map((i) => (i.id === editingIssue.id ? updatedIssue : i)));
-        triggerTranslation('Issue', updatedIssue.id, { title: updatedIssue.title, description: updatedIssue.description });
+        triggerTranslation('Issue', updatedIssue.id, { title: updatedIssue.title, description: updatedIssue.description, domain: updatedIssue.domain, category: updatedIssue.category });
         setIsEditIssueOpen(false);
         setEditingIssue(null);
         setEditCurrentStep(1);
@@ -1385,7 +1390,7 @@ export default function ContextPage() {
         `"${issue.category}"`,
         `"${issue.issueType}"`,
         `"${issue.status}"`,
-        `"${issue.department?.name || ""}"`,
+        `"${tDeptName(issue.departmentId) || issue.department?.name || ""}"`,
       ];
       csvRows.push(row.join(","));
     });
@@ -1409,7 +1414,7 @@ export default function ContextPage() {
       const row = [
         `"${s.name.replace(/"/g, '""')}"`,
         `"${s.type}"`,
-        `"${s.department?.name || ""}"`,
+        `"${tDeptName(s.departmentId) || s.department?.name || ""}"`,
         `"${s.status}"`,
       ];
       csvRows.push(row.join(","));
@@ -1583,7 +1588,7 @@ export default function ContextPage() {
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {departments.map((dept) => (
+                        {translatedDepartments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
                           </SelectItem>
@@ -2210,7 +2215,7 @@ export default function ContextPage() {
                   placeholder={t("Search processes...")}
                   value={processSearchQuery}
                   onChange={(e) => setProcessSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
               <div className="border rounded-lg p-4 min-h-[200px]">
@@ -2430,7 +2435,7 @@ export default function ContextPage() {
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {departments.map((dept) => (
+                        {translatedDepartments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
                           </SelectItem>
@@ -3026,7 +3031,7 @@ export default function ContextPage() {
                   placeholder={t("Search processes...")}
                   value={editProcessSearchQuery}
                   onChange={(e) => setEditProcessSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
               <div className="border rounded-lg p-4 min-h-[200px]">
@@ -3218,7 +3223,7 @@ export default function ContextPage() {
                               {t(s.type)}
                             </span>
                           </div>
-                          <span className="text-sm text-slate-600 truncate">{s.department?.name || "-"}</span>
+                          <span className="text-sm text-slate-600 truncate">{tDeptName(s.departmentId) || s.department?.name || "-"}</span>
                           <div>
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                               s.status === "Active" ? "bg-success-light text-success-dark" : "bg-slate-100 text-slate-600"
@@ -3277,7 +3282,7 @@ export default function ContextPage() {
           <TabsContent value="stakeholder" className="mt-4 sm:mt-6">
             {/* Action Buttons */}
             <div className="flex mb-4">
-              <div className="ml-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
+              <div className="ms-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
                 <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportStakeholders}>
                   <Upload className="h-4 w-4 me-2" />
                   {t("Export")}
@@ -3370,7 +3375,7 @@ export default function ContextPage() {
                                 {t(s.type)}
                               </span>
                             </div>
-                            <span className="text-sm text-slate-600 truncate">{s.department?.name || "-"}</span>
+                            <span className="text-sm text-slate-600 truncate">{tDeptName(s.departmentId) || s.department?.name || "-"}</span>
                             <div>
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                                 s.status === "Active" ? "bg-success-light text-success-dark" : "bg-slate-100 text-slate-600"
@@ -3436,7 +3441,7 @@ export default function ContextPage() {
           <TabsContent value="issuelist" className="mt-4 sm:mt-6">
             {/* Action Buttons */}
             <div className="flex mb-4">
-              <div className="ml-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
+              <div className="ms-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
                 <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportIssues}>
                   <Upload className="h-4 w-4 me-2" />
                   {t("Export")}
@@ -3476,7 +3481,7 @@ export default function ContextPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       <SelectItem value="all">{t("All Departments")}</SelectItem>
-                      {departments.map((dept) => (
+                      {translatedDepartments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -3536,7 +3541,7 @@ export default function ContextPage() {
                               </div>
                               <span className="text-sm text-slate-600 truncate">{issue.category || "-"}</span>
                               <span className="text-sm text-slate-600 truncate">{issue.domain || "-"}</span>
-                              <span className="text-sm text-slate-600 truncate">{issue.department?.name || "-"}</span>
+                              <span className="text-sm text-slate-600 truncate">{tDeptName(issue.departmentId) || issue.department?.name || "-"}</span>
                               <div>
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                                   issue.status === "Open" ? "bg-error-light text-error-dark"
@@ -3564,12 +3569,12 @@ export default function ContextPage() {
                                 {isReadOnlyRole && (
                                   <>
                                     <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => { setSelectedIssueForAction(issue); setActionForm({ actionType: "", description: "", completion: 0, comment: "" }); setShowCreateActionDialog(true); }}>
-                                      <Plus className="h-3.5 w-3.5 mr-1.5" />
+                                      <Plus className="h-3.5 w-3.5 me-1.5" />
                                       {t("Create Action")}
                                     </Button>
                                     {issue.actions && issue.actions.length > 0 && (
                                       <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => { setSelectedIssueForAction(issue); setShowViewActionsDialog(true); }}>
-                                        <Eye className="h-3.5 w-3.5 mr-1.5" />
+                                        <Eye className="h-3.5 w-3.5 me-1.5" />
                                         {t("View Actions")} ({issue.actions.length})
                                       </Button>
                                     )}
@@ -3712,7 +3717,7 @@ export default function ContextPage() {
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {departments.map((dept) => (
+                      {translatedDepartments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
                         </SelectItem>
@@ -3814,7 +3819,7 @@ export default function ContextPage() {
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {departments.map((dept) => (
+                      {translatedDepartments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
                         </SelectItem>
@@ -4147,7 +4152,7 @@ export default function ContextPage() {
                       <Badge variant={action.status === "Resolved" ? "default" : action.status === "Sent Back" ? "destructive" : "secondary"}>
                         {t(action.status)}
                       </Badge>
-                      <Badge variant="outline" className="ml-2">{t(action.actionType)}</Badge>
+                      <Badge variant="outline" className="ms-2">{t(action.actionType)}</Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       {action.status === "Sent Back" && action.comments.length > 0 && (
@@ -4178,7 +4183,7 @@ export default function ContextPage() {
                             setShowEditActionDialog(true);
                           }}
                         >
-                          <Pencil className="h-4 w-4 mr-1" />
+                          <Pencil className="h-4 w-4 me-1" />
                           {t("Edit")}
                         </Button>
                       )}
@@ -4391,7 +4396,7 @@ export default function ContextPage() {
                         size="sm"
                         onClick={() => window.open(selectedActionForReview.filePath!, "_blank")}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
+                        <Eye className="h-4 w-4 me-1" />
                         {t("View")}
                       </Button>
                       <Button
@@ -4403,7 +4408,7 @@ export default function ContextPage() {
                           href={selectedActionForReview.filePath!}
                           download={selectedActionForReview.fileName}
                         >
-                          <Download className="h-4 w-4 mr-1" />
+                          <Download className="h-4 w-4 me-1" />
                           {t("Download")}
                         </a>
                       </Button>
@@ -4645,7 +4650,7 @@ export default function ContextPage() {
           {/* Fixed Footer */}
           <div className={`flex flex-row items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white rounded-b-lg ${isRTL ? "flex-row-reverse" : ""}`}>
             <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadTemplate}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               {t("Download Template")}
             </Button>
             <div className="flex gap-2">

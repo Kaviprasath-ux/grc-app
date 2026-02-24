@@ -206,10 +206,36 @@ function ProfilePageContent() {
   const [isEditRegulationOpen, setIsEditRegulationOpen] = useState(false);
   const [editingRegulation, setEditingRegulation] = useState<Regulation | null>(null);
 
-  // Dynamic data translation
+  // Dynamic data translation — wrap org in array to use bulk endpoint (which auto-translates)
+  const orgArray = organization ? [organization] : [];
+  const { data: translatedOrgArray } = useTranslatedData(orgArray, { modelName: 'Organization' });
+  const { data: translatedBranches } = useTranslatedData(organization?.branches || [], { modelName: 'Branch' });
+  const { data: translatedDataCenters } = useTranslatedData(organization?.dataCenters || [], { modelName: 'DataCenter' });
+  const { data: translatedCloudProviders } = useTranslatedData(organization?.cloudProviders || [], { modelName: 'CloudProvider' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedServices } = useTranslatedData(services, { modelName: 'Service' });
   const { data: translatedRegulations } = useTranslatedData(regulations, { modelName: 'Regulation' });
+
+  // Use translated organization for display, fall back to original
+  const displayOrg = translatedOrgArray[0] || organization;
+
+  // Build fully translated org (including associated records) for the edit wizard
+  const translatedOrgForEdit = organization ? {
+    ...organization,
+    ...(displayOrg ? {
+      name: displayOrg.name,
+      description: displayOrg.description,
+      vision: displayOrg.vision,
+      mission: displayOrg.mission,
+      value: displayOrg.value,
+      ceoMessage: displayOrg.ceoMessage,
+      headOfficeLocation: displayOrg.headOfficeLocation,
+      headOfficeAddress: displayOrg.headOfficeAddress,
+    } : {}),
+    branches: translatedBranches.length > 0 ? translatedBranches : organization.branches,
+    dataCenters: translatedDataCenters.length > 0 ? translatedDataCenters : organization.dataCenters,
+    cloudProviders: translatedCloudProviders.length > 0 ? translatedCloudProviders : organization.cloudProviders,
+  } : null;
 
   // Fetch data on mount
   useEffect(() => {
@@ -353,7 +379,7 @@ function ProfilePageContent() {
           serviceItem: "",
         });
         setIsAddServiceOpen(false);
-        triggerTranslation('Service', service.id, { title: service.title, description: service.description });
+        triggerTranslation('Service', service.id, { title: service.title, description: service.description, serviceCategory: service.serviceCategory, serviceItem: service.serviceItem });
       }
     } catch (error) {
       console.error("Error adding service:", error);
@@ -378,7 +404,7 @@ function ProfilePageContent() {
         setServices(services.map((s) => (s.id === updated.id ? updated : s)));
         setIsEditServiceOpen(false);
         setEditingService(null);
-        triggerTranslation('Service', updated.id, { title: updated.title, description: updated.description });
+        triggerTranslation('Service', updated.id, { title: updated.title, description: updated.description, serviceCategory: updated.serviceCategory, serviceItem: updated.serviceItem });
       }
     } catch (error) {
       console.error("Error updating service:", error);
@@ -488,7 +514,7 @@ function ProfilePageContent() {
         setDocumentFiles([]);
         setCertificateFiles([]);
         setIsAddRegulationOpen(false);
-        triggerTranslation('Regulation', reg.id, { name: reg.name });
+        triggerTranslation('Regulation', reg.id, { name: reg.name, version: reg.version });
       }
     } catch (error) {
       console.error("Error adding regulation:", error);
@@ -514,7 +540,7 @@ function ProfilePageContent() {
         setRegulations(regulations.map((r) => (r.id === updated.id ? updated : r)));
         setIsEditRegulationOpen(false);
         setEditingRegulation(null);
-        triggerTranslation('Regulation', updated.id, { name: updated.name });
+        triggerTranslation('Regulation', updated.id, { name: updated.name, version: updated.version });
       }
     } catch (error) {
       console.error("Error updating regulation:", error);
@@ -606,6 +632,17 @@ function ProfilePageContent() {
       if (res.ok) {
         const updated = await res.json();
         setOrganization(updated);
+        triggerTranslation('Organization', updated.id, { name: updated.name, description: updated.description, vision: updated.vision, mission: updated.mission, value: updated.value, ceoMessage: updated.ceoMessage, headOfficeLocation: updated.headOfficeLocation, headOfficeAddress: updated.headOfficeAddress });
+        // Trigger translations for associated records
+        for (const b of updated.branches || []) {
+          triggerTranslation('Branch', b.id, { location: b.location, address: b.address });
+        }
+        for (const dc of updated.dataCenters || []) {
+          triggerTranslation('DataCenter', dc.id, { locationType: dc.locationType, address: dc.address, vendor: dc.vendor });
+        }
+        for (const cp of updated.cloudProviders || []) {
+          triggerTranslation('CloudProvider', cp.id, { name: cp.name, serviceType: cp.serviceType });
+        }
       }
     } catch (error) {
       console.error("Error updating organization:", error);
@@ -681,9 +718,9 @@ function ProfilePageContent() {
                 {/* Organization Logo & Name Header */}
                 {organization.logo && (
                   <div className={`bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex items-center gap-4 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
-                    <img src={organization.logo} alt={organization.name} className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
+                    <img src={organization.logo} alt={displayOrg?.name || organization.name} className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-800">{organization.name}</h3>
+                      <h3 className="text-lg font-semibold text-slate-800">{displayOrg?.name || organization.name}</h3>
                       {organization.website && (
                         <p className="text-sm text-primary-600">{organization.website}</p>
                       )}
@@ -704,7 +741,7 @@ function ProfilePageContent() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Organization Name")}</p>
-                          <p className="text-base font-medium text-slate-800">{organization.name || "-"}</p>
+                          <p className="text-base font-medium text-slate-800">{displayOrg?.name || "-"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -751,7 +788,7 @@ function ProfilePageContent() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Head Office Location")}</p>
-                          <p className="text-base font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
+                          <p className="text-base font-medium text-slate-800">{displayOrg?.headOfficeLocation || "-"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 sm:col-span-2 lg:col-span-1 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -760,7 +797,7 @@ function ProfilePageContent() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-600 mb-0.5">{t("Head Office Address")}</p>
-                          <p className="text-base font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
+                          <p className="text-base font-medium text-slate-800">{displayOrg?.headOfficeAddress || "-"}</p>
                         </div>
                       </div>
                       <div className={`flex items-start gap-3 ${isRTL ? "flex-row-reverse text-right" : ""}`}>
@@ -792,25 +829,25 @@ function ProfilePageContent() {
                   </div>
                   <div className={`p-3 sm:p-5 space-y-4 sm:space-y-5 ${isRTL ? "text-right" : ""}`}>
                     {/* Description */}
-                    {organization.description && (
+                    {(displayOrg?.description || organization.description) && (
                       <div className={isRTL ? "border-r-2 border-primary-200 pr-4" : "border-l-2 border-primary-200 pl-4"}>
                         <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Description")}</p>
-                        <p className="text-sm text-slate-700 leading-relaxed">{organization.description}</p>
+                        <p className="text-sm text-slate-700 leading-relaxed">{displayOrg?.description || organization.description}</p>
                       </div>
                     )}
 
                     {/* Vision & Mission */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                      {organization.vision && (
+                      {(displayOrg?.vision || organization.vision) && (
                         <div className={isRTL ? "border-r-2 border-emerald-200 pr-4" : "border-l-2 border-emerald-200 pl-4"}>
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Vision")}</p>
-                          <p className="text-sm text-slate-700 leading-relaxed">{organization.vision}</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{displayOrg?.vision || organization.vision}</p>
                         </div>
                       )}
-                      {organization.mission && (
+                      {(displayOrg?.mission || organization.mission) && (
                         <div className={isRTL ? "border-r-2 border-amber-200 pr-4" : "border-l-2 border-amber-200 pl-4"}>
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">{t("Mission")}</p>
-                          <p className="text-sm text-slate-700 leading-relaxed">{organization.mission}</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{displayOrg?.mission || organization.mission}</p>
                         </div>
                       )}
                     </div>
@@ -2162,11 +2199,11 @@ function ProfilePageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Profile Wizard */}
+      {/* Edit Profile Wizard — pass translated org so form shows current locale values */}
       <EditProfileWizard
         open={isEditProfileWizardOpen}
         onOpenChange={setIsEditProfileWizardOpen}
-        organization={organization}
+        organization={translatedOrgForEdit}
         onSave={handleSaveOrganization}
       />
 

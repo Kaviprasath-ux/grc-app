@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { DatePicker } from "@/components/ui/date-picker";
-import { triggerTranslation } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -81,12 +81,14 @@ export default function EditProcessPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const processId = params.id as string;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [rawProcess, setRawProcess] = useState<Process | null>(null);
+  const formInitializedRef = useRef(false);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -127,6 +129,23 @@ export default function EditProcessPage() {
     informed: "",
   });
 
+  // Translate the loaded process so form shows current locale values
+  const processArray = rawProcess ? [rawProcess] : [];
+  const { data: translatedProcessArray, isLoading: translationsLoading } = useTranslatedData(processArray, { modelName: 'Process' });
+
+  // Populate form with translated values when translations arrive
+  useEffect(() => {
+    if (translatedProcessArray.length > 0 && rawProcess && !translationsLoading && !formInitializedRef.current) {
+      const tp = translatedProcessArray[0];
+      setFormData(prev => ({
+        ...prev,
+        name: tp.name || prev.name,
+        description: tp.description || prev.description,
+      }));
+      formInitializedRef.current = true;
+    }
+  }, [translatedProcessArray, rawProcess, translationsLoading]);
+
   const fetchData = useCallback(async () => {
     if (!processId) return;
 
@@ -159,6 +178,8 @@ export default function EditProcessPage() {
       if (processRes.ok) {
         const process: Process = await processRes.json();
         console.log("Fetched process:", process);
+        setRawProcess(process);
+        formInitializedRef.current = false;
         setFormData({
           processCode: process.processCode || "",
           name: process.name || "",
@@ -385,26 +406,27 @@ export default function EditProcessPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className={`flex items-center gap-4 ${isRTL ? "flex-row-reverse" : ""}`}>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
+          className={isRTL ? "flex-row-reverse" : ""}
         >
-          <ChevronLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          <ChevronLeft className={`h-4 w-4 ltr:mr-1 rtl:ml-1 ${isRTL ? "rotate-180" : ""}`} />
           {t("Back")}
         </Button>
-        <div>
+        <div className={isRTL ? "text-right" : ""}>
           <h1 className="text-xl sm:text-2xl font-bold">{t("Edit Process")}</h1>
           <p className="text-muted-foreground text-sm">{formData.processCode} - {formData.name}</p>
         </div>
       </div>
 
       {/* Timeline Steps */}
-      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6">
-        <div className="flex items-center justify-between mb-8">
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6" style={isRTL ? { direction: 'rtl' } : undefined}>
+        <div className={`flex items-center justify-between mb-8 ${isRTL ? "flex-row-reverse" : ""}`}>
           {steps.map((item, index) => (
-            <div key={item.step} className="flex items-center flex-1">
+            <div key={item.step} className={`flex items-center flex-1 ${isRTL ? "flex-row-reverse" : ""}`}>
               <div className="flex flex-col items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border-2 ${
@@ -464,6 +486,42 @@ export default function EditProcessPage() {
                 placeholder={t("Enter description")}
                 className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md bg-white"
               />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t("Process Type")}</Label>
+                <Select
+                  value={formData.processType}
+                  onValueChange={(value) => setFormData({ ...formData, processType: value })}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select Process Type")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {processTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {t(type)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("Status")}</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select Status")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">{t("Active")}</SelectItem>
+                    <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -591,7 +649,7 @@ export default function EditProcessPage() {
             </div>
 
             <div className="space-y-4 pt-4">
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
                 <Checkbox
                   id="assetDependency"
                   checked={formData.assetDependency}
@@ -599,7 +657,7 @@ export default function EditProcessPage() {
                 />
                 <Label htmlFor="assetDependency" className="text-sm font-normal">{t("Asset Dependency")}</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
                 <Checkbox
                   id="externalDependency"
                   checked={formData.externalDependency}
@@ -607,7 +665,7 @@ export default function EditProcessPage() {
                 />
                 <Label htmlFor="externalDependency" className="text-sm font-normal">{t("External Dependency")}</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
                 <Checkbox
                   id="kpiMeasurementRequired"
                   checked={formData.kpiMeasurementRequired}
@@ -615,7 +673,7 @@ export default function EditProcessPage() {
                 />
                 <Label htmlFor="kpiMeasurementRequired" className="text-sm font-normal">{t("KPI Measurement Required")}</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
                 <Checkbox
                   id="piiCapture"
                   checked={formData.piiCapture}
@@ -921,12 +979,13 @@ export default function EditProcessPage() {
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex items-center gap-3 mt-8 pt-6 border-t">
-          <span className="text-xs font-medium text-slate-400 me-auto">
+        <div className={`flex items-center gap-3 mt-8 pt-6 border-t ${isRTL ? "flex-row-reverse" : ""}`}>
+          <span className={`text-xs font-medium text-slate-400 ${isRTL ? "ms-auto" : "me-auto"}`}>
             {t("Step")} {currentStep} {t("of")} 3
           </span>
           <Button
             variant="outline"
+            className={isRTL ? "flex-row-reverse" : ""}
             onClick={() => {
               if (currentStep === 1) {
                 router.push("/organization/process");
@@ -935,13 +994,13 @@ export default function EditProcessPage() {
               }
             }}
           >
-            {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+            {currentStep > 1 && <ChevronLeft className={`h-4 w-4 me-1 ${isRTL ? "rotate-180" : ""}`} />}
             {currentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           {currentStep < 3 ? (
-            <Button onClick={() => setCurrentStep(currentStep + 1)}>
+            <Button onClick={() => setCurrentStep(currentStep + 1)} className={isRTL ? "flex-row-reverse" : ""}>
               {t("Next")}
-              <ChevronRight className="h-4 w-4 ms-1" />
+              <ChevronRight className={`h-4 w-4 ms-1 ${isRTL ? "rotate-180" : ""}`} />
             </Button>
           ) : (
             <Button onClick={handleSave} disabled={saving}>

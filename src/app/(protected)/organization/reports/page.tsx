@@ -407,7 +407,7 @@ export default function OrganizationReportsPage() {
               <span className="text-xs text-slate-500">
                 {startItem} {t("to")} {endItem} {t("of")} {totalItems}
               </span>
-              <div className="flex items-center gap-1">
+              <div className={`flex items-center gap-1 ${isRTL ? "flex-row-reverse" : ""}`}>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -415,7 +415,7 @@ export default function OrganizationReportsPage() {
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
                 >
-                  <ChevronsLeft className="h-4 w-4" />
+                  <ChevronsLeft className={`h-4 w-4 ${isRTL ? "rotate-180" : ""}`} />
                 </Button>
                 <Button
                   variant="ghost"
@@ -424,7 +424,7 @@ export default function OrganizationReportsPage() {
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className={`h-4 w-4 ${isRTL ? "rotate-180" : ""}`} />
                 </Button>
                 <span className="text-sm text-slate-600 px-2">
                   {t("Page")} {currentPage} {t("of")} {totalPages || 1}
@@ -436,7 +436,7 @@ export default function OrganizationReportsPage() {
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className={`h-4 w-4 ${isRTL ? "rotate-180" : ""}`} />
                 </Button>
                 <Button
                   variant="ghost"
@@ -445,7 +445,7 @@ export default function OrganizationReportsPage() {
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                 >
-                  <ChevronsRight className="h-4 w-4" />
+                  <ChevronsRight className={`h-4 w-4 ${isRTL ? "rotate-180" : ""}`} />
                 </Button>
               </div>
             </div>
@@ -485,7 +485,7 @@ export default function OrganizationReportsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className={`flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ${isRTL ? "flex-row-reverse" : ""}`}>
             <Button variant="outline" onClick={() => setIsManagementDialogOpen(false)}>
               {t("Cancel")}
             </Button>

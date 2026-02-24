@@ -49,7 +49,7 @@ export default function AddProcessPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   // Check if user is DepartmentContributor - they can only add processes in their department
   const isDepartmentContributor = userRoles.some((role) => role === "DepartmentContributor");
@@ -304,23 +304,24 @@ export default function AddProcessPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className={`flex items-center gap-4 ${isRTL ? "flex-row-reverse" : ""}`}>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
+          className={isRTL ? "flex-row-reverse" : ""}
         >
-          <ChevronLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          <ChevronLeft className={`h-4 w-4 ltr:mr-1 rtl:ml-1 ${isRTL ? "rotate-180" : ""}`} />
           {t("Back")}
         </Button>
-        <div>
+        <div className={isRTL ? "text-right" : ""}>
           <h1 className="text-xl sm:text-2xl font-bold">{t("New Process")}</h1>
           <p className="text-muted-foreground text-sm">{t("Complete the form to create a new process")}</p>
         </div>
       </div>
 
       {/* Timeline Steps */}
-      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6">
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6" style={isRTL ? { direction: 'rtl' } : undefined}>
         <div className="flex items-center justify-between mb-8">
           {steps.map((item, index) => (
             <div key={item.step} className="flex items-center flex-1">
@@ -500,7 +501,7 @@ export default function AddProcessPage() {
             </div>
 
             <div className="space-y-4 pt-4">
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
                 <Checkbox
                   id="assetDependency"
                   checked={formData.assetDependency}
@@ -508,7 +509,7 @@ export default function AddProcessPage() {
                 />
                 <Label htmlFor="assetDependency" className="text-sm font-normal">{t("Asset Dependency")}</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
                 <Checkbox
                   id="externalDependency"
                   checked={formData.externalDependency}
@@ -516,7 +517,7 @@ export default function AddProcessPage() {
                 />
                 <Label htmlFor="externalDependency" className="text-sm font-normal">{t("External Dependency")}</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
                 <Checkbox
                   id="kpiMeasurementRequired"
                   checked={formData.kpiMeasurementRequired}
@@ -524,7 +525,7 @@ export default function AddProcessPage() {
                 />
                 <Label htmlFor="kpiMeasurementRequired" className="text-sm font-normal">{t("KPI Measurement Required")}</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
                 <Checkbox
                   id="piiCapture"
                   checked={formData.piiCapture}
@@ -771,12 +772,13 @@ export default function AddProcessPage() {
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex items-center gap-3 mt-8 pt-6 border-t">
-          <span className="text-xs font-medium text-slate-400 me-auto">
+        <div className={`flex items-center gap-3 mt-8 pt-6 border-t ${isRTL ? "flex-row-reverse" : ""}`}>
+          <span className={`text-xs font-medium text-slate-400 ${isRTL ? "ms-auto" : "me-auto"}`}>
             {t("Step")} {currentStep} {t("of")} 3
           </span>
           <Button
             variant="outline"
+            className={isRTL ? "flex-row-reverse" : ""}
             onClick={() => {
               if (currentStep === 1) {
                 router.push("/organization/process");
@@ -785,13 +787,13 @@ export default function AddProcessPage() {
               }
             }}
           >
-            {currentStep > 1 && <ChevronLeft className="h-4 w-4 me-1" />}
+            {currentStep > 1 && <ChevronLeft className={`h-4 w-4 me-1 ${isRTL ? "rotate-180" : ""}`} />}
             {currentStep === 1 ? t("Cancel") : t("Previous")}
           </Button>
           {currentStep < 3 ? (
-            <Button onClick={() => setCurrentStep(currentStep + 1)}>
+            <Button onClick={() => setCurrentStep(currentStep + 1)} className={isRTL ? "flex-row-reverse" : ""}>
               {t("Next")}
-              <ChevronRight className="h-4 w-4 ms-1" />
+              <ChevronRight className={`h-4 w-4 ms-1 ${isRTL ? "rotate-180" : ""}`} />
             </Button>
           ) : (
             <Button onClick={handleSave} disabled={saving}>

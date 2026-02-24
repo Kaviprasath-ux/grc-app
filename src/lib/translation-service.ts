@@ -309,8 +309,15 @@ export async function translateRecord(
       const textsToTranslate = fieldsToTranslate.map(f => f.value);
       const translations = await translationProvider.translate(textsToTranslate, locale);
 
-      // Upsert each translation
+      // Upsert each translation — skip fields where the "translation" is identical
+      // to the source (indicates the backend was unavailable and returned fallback text)
       const upsertPromises = fieldsToTranslate.map((field, idx) => {
+        const translatedText = translations[idx];
+        // Skip storing if translation is identical to source (backend fallback)
+        if (translatedText === field.value) {
+          logInfo(`Skipping identical translation for ${field.name} [${locale}] — backend likely unavailable`);
+          return null;
+        }
         const sourceHash = hashText(field.value);
         return prisma.dynamicTranslation.upsert({
           where: {
@@ -323,7 +330,7 @@ export async function translateRecord(
             },
           },
           update: {
-            translatedText: translations[idx],
+            translatedText,
             sourceHash,
             isStale: false,
             translatedBy: 'python-gpt',
@@ -334,7 +341,7 @@ export async function translateRecord(
             recordId,
             fieldName: field.name,
             locale,
-            translatedText: translations[idx],
+            translatedText,
             sourceHash,
             isStale: false,
             translatedBy: 'python-gpt',
@@ -342,8 +349,9 @@ export async function translateRecord(
         });
       });
 
-      await Promise.all(upsertPromises);
-      totalSuccess += fieldsToTranslate.length;
+      const validPromises = upsertPromises.filter(Boolean);
+      await Promise.all(validPromises);
+      totalSuccess += validPromises.length;
 
       logSuccess(`Saved ${fieldsToTranslate.length} translation(s) for ${modelName}/${recordId} [${locale}]`);
     } catch (error) {
@@ -425,11 +433,16 @@ export async function getRecordTranslations(
   try {
     const translations = await prisma.dynamicTranslation.findMany({
       where: { customerAccountId, modelName, recordId, locale },
-      select: { fieldName: true, translatedText: true },
+      select: { fieldName: true, translatedText: true, sourceHash: true },
     });
 
     const result: Record<string, string> = {};
     for (const t of translations) {
+      // Skip translations identical to source (backend fallback)
+      const translatedHash = hashText(t.translatedText);
+      if (t.sourceHash && translatedHash === t.sourceHash) {
+        continue;
+      }
       result[t.fieldName] = t.translatedText;
     }
 
@@ -462,11 +475,17 @@ export async function getBulkTranslations(
         recordId: { in: recordIds },
         locale,
       },
-      select: { recordId: true, fieldName: true, translatedText: true },
+      select: { recordId: true, fieldName: true, translatedText: true, sourceHash: true },
     });
 
     const result: Record<string, Record<string, string>> = {};
     for (const t of translations) {
+      // Skip translations that are identical to the source text (backend fallback)
+      // This happens when the translation backend was unavailable and stored the original text
+      const translatedHash = hashText(t.translatedText);
+      if (t.sourceHash && translatedHash === t.sourceHash) {
+        continue;
+      }
       if (!result[t.recordId]) {
         result[t.recordId] = {};
       }

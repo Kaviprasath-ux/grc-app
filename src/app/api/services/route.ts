@@ -47,7 +47,7 @@ export const POST = withAuth(
         },
       });
 
-      if (customerAccountId) void translateRecord(customerAccountId, 'Service', service.id, { title: service.title, description: service.description });
+      if (customerAccountId) void translateRecord(customerAccountId, 'Service', service.id, { title: service.title, description: service.description, serviceCategory: service.serviceCategory, serviceItem: service.serviceItem });
 
       return NextResponse.json(service, { status: 201 });
     } catch (error) {

@@ -131,7 +131,7 @@ export const PUT = withAuth(
         });
       });
 
-      if (existingIssue.customerAccountId) void translateRecord(existingIssue.customerAccountId, 'Issue', issue.id, { title: issue.title, description: issue.description });
+      if (existingIssue.customerAccountId) void translateRecord(existingIssue.customerAccountId, 'Issue', issue.id, { title: issue.title, description: issue.description, domain: issue.domain, category: issue.category });
 
       // Send notifications for issue changes
       if (session.customerAccountId) {

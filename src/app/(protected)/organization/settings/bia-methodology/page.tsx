@@ -60,7 +60,7 @@ interface BIAScoringConfig {
 
 export default function BIAMethodologyPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState("ratings");
 
   // Ratings state
@@ -206,7 +206,7 @@ export default function BIAMethodologyPage() {
         resetRatingForm();
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create rating");
+        alert(error.error || t("Failed to create rating"));
       }
     } catch (error) {
       console.error("Error creating rating:", error);
@@ -237,7 +237,7 @@ export default function BIAMethodologyPage() {
         resetRatingForm();
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update rating");
+        alert(error.error || t("Failed to update rating"));
       }
     } catch (error) {
       console.error("Error updating rating:", error);
@@ -327,11 +327,11 @@ export default function BIAMethodologyPage() {
         resetRangeForm();
       } else {
         const error = await res.json();
-        setRangeFormErrors({ overlap: error.error || "Failed to create range" });
+        setRangeFormErrors({ overlap: error.error || t("Failed to create range") });
       }
     } catch (error) {
       console.error("Error creating range:", error);
-      setRangeFormErrors({ overlap: "Failed to create range. Please try again." });
+      setRangeFormErrors({ overlap: t("Failed to create range. Please try again.") });
     }
   };
 
@@ -356,11 +356,11 @@ export default function BIAMethodologyPage() {
         resetRangeForm();
       } else {
         const error = await res.json();
-        setRangeFormErrors({ overlap: error.error || "Failed to update range" });
+        setRangeFormErrors({ overlap: error.error || t("Failed to update range") });
       }
     } catch (error) {
       console.error("Error updating range:", error);
-      setRangeFormErrors({ overlap: "Failed to update range. Please try again." });
+      setRangeFormErrors({ overlap: t("Failed to update range. Please try again.") });
     }
   };
 
@@ -546,7 +546,7 @@ export default function BIAMethodologyPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
+      <nav className={`flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse" : ""}`}>
         <Link href="/organization/settings" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
@@ -559,9 +559,9 @@ export default function BIAMethodologyPage() {
         <span className="text-primary-700 font-medium">{t("BIA Methodology")}</span>
       </nav>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+      <div className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Back")}
         </Button>
         <div>
@@ -578,7 +578,7 @@ export default function BIAMethodologyPage() {
 
         {/* Rating Methodology Tab */}
         <TabsContent value="ratings" className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+          <div className={`flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -589,7 +589,7 @@ export default function BIAMethodologyPage() {
               />
             </div>
             <Button onClick={() => setIsAddRatingOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Add Rating")}
             </Button>
           </div>
@@ -649,7 +649,7 @@ export default function BIAMethodologyPage() {
 
           {/* Scoring Ranges Card */}
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <CardHeader className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
               <div>
                 <CardTitle>{t("Criticality Ranges")}</CardTitle>
                 <CardDescription>
@@ -657,7 +657,7 @@ export default function BIAMethodologyPage() {
                 </CardDescription>
               </div>
               <Button onClick={() => setIsAddRangeOpen(true)} className="w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Add Range")}
               </Button>
             </CardHeader>
@@ -674,7 +674,7 @@ export default function BIAMethodologyPage() {
 
       {/* Add Rating Dialog */}
       <Dialog open={isAddRatingOpen} onOpenChange={setIsAddRatingOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Add BIA Rating")}</DialogTitle>
             <DialogDescription>{t("Define a new rating level for BIA assessments")}</DialogDescription>
@@ -738,7 +738,7 @@ export default function BIAMethodologyPage() {
 
       {/* Edit Rating Dialog */}
       <Dialog open={isEditRatingOpen} onOpenChange={setIsEditRatingOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Edit BIA Rating")}</DialogTitle>
           </DialogHeader>
@@ -794,7 +794,7 @@ export default function BIAMethodologyPage() {
 
       {/* Delete Rating Dialog */}
       <Dialog open={isDeleteRatingOpen} onOpenChange={setIsDeleteRatingOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>
@@ -810,7 +810,7 @@ export default function BIAMethodologyPage() {
 
       {/* Add Range Dialog */}
       <Dialog open={isAddRangeOpen} onOpenChange={(open) => { setIsAddRangeOpen(open); if (!open) resetRangeForm(); }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Add Scoring Range")}</DialogTitle>
             <DialogDescription>{t("Define a criticality level based on score range")}</DialogDescription>
@@ -894,7 +894,7 @@ export default function BIAMethodologyPage() {
 
       {/* Edit Range Dialog */}
       <Dialog open={isEditRangeOpen} onOpenChange={(open) => { setIsEditRangeOpen(open); if (!open) { setEditingRange(null); resetRangeForm(); } }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Edit Scoring Range")}</DialogTitle>
           </DialogHeader>
@@ -976,7 +976,7 @@ export default function BIAMethodologyPage() {
 
       {/* Delete Range Dialog */}
       <Dialog open={isDeleteRangeOpen} onOpenChange={setIsDeleteRangeOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>

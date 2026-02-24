@@ -40,7 +40,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'RequirementCategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
   { modelName: 'GovernanceVaultDocument', fields: [{ name: 'fileName' }], priority: 2 },
   { modelName: 'GovernanceTemplate', fields: [{ name: 'name' }], priority: 2 },
-  { modelName: 'Regulation', fields: [{ name: 'name' }], priority: 2 },
+  { modelName: 'Regulation', fields: [{ name: 'name' }, { name: 'version' }], priority: 2 },
 
   // Priority 3 — Risk management details
   { modelName: 'RiskAssessment', fields: [{ name: 'notes' }], priority: 3 },
@@ -63,14 +63,17 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'InternalAuditRisk', fields: [{ name: 'name' }, { name: 'description' }], priority: 4 },
 
   // Priority 5 — Organization & assets
-  { modelName: 'User', fields: [{ name: 'fullName' }], priority: 5 },
-  { modelName: 'Organization', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
+  { modelName: 'User', fields: [{ name: 'fullName' }, { name: 'firstName' }, { name: 'lastName' }, { name: 'designation' }], priority: 5 },
+  { modelName: 'Organization', fields: [{ name: 'name' }, { name: 'description' }, { name: 'vision' }, { name: 'mission' }, { name: 'value' }, { name: 'ceoMessage' }, { name: 'headOfficeLocation' }, { name: 'headOfficeAddress' }], priority: 5 },
+  { modelName: 'Branch', fields: [{ name: 'location' }, { name: 'address' }], priority: 5 },
+  { modelName: 'DataCenter', fields: [{ name: 'locationType' }, { name: 'address' }, { name: 'vendor' }], priority: 5 },
+  { modelName: 'CloudProvider', fields: [{ name: 'name' }, { name: 'serviceType' }], priority: 5 },
   { modelName: 'Department', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
   { modelName: 'Process', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
   { modelName: 'Asset', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
-  { modelName: 'Service', fields: [{ name: 'title' }, { name: 'description' }], priority: 5 },
+  { modelName: 'Service', fields: [{ name: 'title' }, { name: 'description' }, { name: 'serviceCategory' }, { name: 'serviceItem' }], priority: 5 },
   { modelName: 'Stakeholder', fields: [{ name: 'name' }], priority: 5 },
-  { modelName: 'Issue', fields: [{ name: 'title' }, { name: 'description' }], priority: 5 },
+  { modelName: 'Issue', fields: [{ name: 'title' }, { name: 'description' }, { name: 'domain' }, { name: 'category' }], priority: 5 },
 
   // Priority 6 — Organization settings
   { modelName: 'OrganizationLocation', fields: [{ name: 'name' }], priority: 6 },

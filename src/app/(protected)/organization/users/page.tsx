@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Pencil, Trash2, Search, Upload, Download, Home, ChevronRight, ChevronLeft, Eye, Users as UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { DataGrid } from "@/components/shared";
@@ -127,6 +127,16 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
 
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedManagers } = useTranslatedData(reportingManagers, { modelName: 'User' });
+  const tDeptName = useCallback((id: string | undefined) => {
+    if (!id) return undefined;
+    return translatedDepartments.find(d => d.id === id)?.name;
+  }, [translatedDepartments]);
+  const tManagerName = useCallback((id: string | undefined) => {
+    if (!id) return undefined;
+    return translatedManagers.find(m => m.id === id)?.fullName;
+  }, [translatedManagers]);
 
   // Check if user is DeptReviewer or DeptContributor (read-only department view)
   const userRoles = session?.user?.roles || [];
@@ -335,7 +345,7 @@ export default function UsersPage() {
       if (res.ok) {
         const user = await res.json();
         setUsers([...users, user]);
-        triggerTranslation('User', user.id, { fullName: user.fullName });
+        triggerTranslation('User', user.id, { fullName: user.fullName, firstName: user.firstName, lastName: user.lastName, designation: user.designation });
         resetForm();
         setIsAddUserOpen(false);
         toast({ title: t("Success"), description: t("User created successfully") });
@@ -395,7 +405,7 @@ export default function UsersPage() {
       if (res.ok) {
         const updated = await res.json();
         setUsers(users.map((u) => (u.id === updated.id ? updated : u)));
-        triggerTranslation('User', updated.id, { fullName: updated.fullName });
+        triggerTranslation('User', updated.id, { fullName: updated.fullName, firstName: updated.firstName, lastName: updated.lastName, designation: updated.designation });
         setIsEditUserOpen(false);
         setEditingUser(null);
         toast({ title: t("Success"), description: t("User updated successfully") });
@@ -538,7 +548,7 @@ export default function UsersPage() {
         u.designation || "",
         u.function || "",
         u.role,
-        u.department?.name || "",
+        tDeptName(u.departmentId) || u.department?.name || "",
         u.language,
         u.timezone,
         u.isActive ? "Yes" : "No",
@@ -659,13 +669,13 @@ export default function UsersPage() {
   };
 
   // Group users by department for Account Overview
-  const usersByDepartment = departments
+  const usersByDepartment = translatedDepartments
     .filter((dept) =>
       dept.name.toLowerCase().includes(departmentSearchTerm.toLowerCase())
     )
     .map((dept) => ({
       ...dept,
-      users: translatedUsers.filter((user) => user.department?.name === dept.name),
+      users: translatedUsers.filter((user) => user.departmentId === dept.id),
     }));
 
   // User columns for User Management grid
@@ -684,7 +694,7 @@ export default function UsersPage() {
     {
       accessorKey: "department.name",
       header: t("Department"),
-      cell: ({ row }) => row.original.department?.name || "-",
+      cell: ({ row }) => tDeptName(row.original.departmentId) || row.original.department?.name || "-",
     },
     {
       accessorKey: "designation",
@@ -772,7 +782,7 @@ export default function UsersPage() {
   // Filter users
   const filteredUsers = translatedUsers.filter((user) => {
     const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    const matchesDepartment = departmentFilter === "all" || user.department?.name === departmentFilter;
+    const matchesDepartment = departmentFilter === "all" || user.departmentId === departmentFilter;
     const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.userName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesRole && matchesDepartment && matchesSearch;
@@ -784,7 +794,7 @@ export default function UsersPage() {
   );
 
   // Get current user's department name
-  const currentDepartment = departments.find((d) => d.id === currentUserDepartmentId);
+  const currentDepartment = translatedDepartments.find((d) => d.id === currentUserDepartmentId);
 
   // Columns for department view (read-only, no actions)
   const departmentUserColumns: ColumnDef<User>[] = [
@@ -803,7 +813,7 @@ export default function UsersPage() {
     {
       id: "reportingManager",
       header: t("Reporting Manager"),
-      cell: ({ row }) => row.original.reportingManager?.fullName || "-",
+      cell: ({ row }) => tManagerName(row.original.reportingManagerId) || row.original.reportingManager?.fullName || "-",
     },
     {
       accessorKey: "email",
@@ -903,7 +913,7 @@ export default function UsersPage() {
           <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
             <div className="flex">
-              <div className="ml-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
+              <div className="ms-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleExport} className={isRTL ? "flex-row-reverse" : ""}>
                   <Upload className="h-4 w-4 me-2" />
                   {t("Export")}
@@ -970,7 +980,7 @@ export default function UsersPage() {
                               <tr key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                                 <td className="text-start py-3.5 ps-5 text-sm font-medium text-slate-800">{user.fullName}</td>
                                 <td className="text-start py-3.5 text-sm text-slate-600">{user.designation || "-"}</td>
-                                <td className="text-start py-3.5 text-sm text-slate-600">{user.reportingManager?.fullName || "-"}</td>
+                                <td className="text-start py-3.5 text-sm text-slate-600">{tManagerName(user.reportingManagerId) || user.reportingManager?.fullName || "-"}</td>
                                 <td className="text-start py-3.5 text-sm text-slate-600">{user.email}</td>
                                 <td className="text-start py-3.5 text-sm text-slate-600">-</td>
                                 <td className="text-end py-3.5 pe-5">
@@ -1057,7 +1067,7 @@ export default function UsersPage() {
           <div className="space-y-3 sm:space-y-5">
             {/* Action Buttons */}
             <div className="flex">
-              <div className="ml-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
+              <div className="ms-auto grid grid-cols-2 sm:flex sm:items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleExport} className={isRTL ? "flex-row-reverse" : ""}>
                   <Upload className="h-4 w-4 me-2" />
                   {t("Export")}
@@ -1104,8 +1114,8 @@ export default function UsersPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="all">{t("All Departments")}</SelectItem>
-                    {departments.map((d) => (
-                      <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
+                    {translatedDepartments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1348,7 +1358,7 @@ export default function UsersPage() {
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                      {departments.map((dept) => (
+                      {translatedDepartments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
                         </SelectItem>
@@ -1384,7 +1394,7 @@ export default function UsersPage() {
                               <SelectValue placeholder={userForm.function ? t("Select reporting manager") : t("Select function first")} />
                             </SelectTrigger>
                             <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                              {reportingManagers.map((manager) => (
+                              {translatedManagers.map((manager) => (
                                 <SelectItem key={manager.id} value={manager.id}>
                                   {manager.fullName} {manager.designation ? `(${manager.designation})` : ""}
                                 </SelectItem>
@@ -1751,7 +1761,7 @@ export default function UsersPage() {
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                    {departments.map((dept) => (
+                    {translatedDepartments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
                       </SelectItem>
@@ -2049,7 +2059,7 @@ export default function UsersPage() {
               {/* Department */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end text-slate-500">{t("Department")}</Label>
-                <span className="text-sm text-slate-800">{viewingUser.department?.name || "-"}</span>
+                <span className="text-sm text-slate-800">{tDeptName(viewingUser.departmentId) || viewingUser.department?.name || "-"}</span>
               </div>
 
               {/* Designation */}
@@ -2061,7 +2071,7 @@ export default function UsersPage() {
               {/* Reporting Manager */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end text-slate-500">{t("Reporting Manager")}</Label>
-                <span className="text-sm text-slate-800">{viewingUser.reportingManager?.fullName || "-"}</span>
+                <span className="text-sm text-slate-800">{tManagerName(viewingUser.reportingManagerId) || viewingUser.reportingManager?.fullName || "-"}</span>
               </div>
 
               {/* Language */}

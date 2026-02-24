@@ -121,7 +121,7 @@ export const PUT = withAuth(
         },
       });
 
-      if (existingUser.customerAccountId) void translateRecord(existingUser.customerAccountId, 'User', user.id, { fullName: user.fullName });
+      if (existingUser.customerAccountId) void translateRecord(existingUser.customerAccountId, 'User', user.id, { fullName: user.fullName, firstName: user.firstName, lastName: user.lastName, designation: user.designation });
 
       const { password: _, ...safeUser } = user;
       return NextResponse.json(safeUser);

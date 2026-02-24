@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -116,7 +117,7 @@ export default function BIAPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const processId = params.processId as string;
@@ -128,6 +129,7 @@ export default function BIAPage() {
   const currentUserName = session?.user?.name || "User";
 
   const [process, setProcess] = useState<Process | null>(null);
+  const { data: translatedProcess } = useTranslatedRecord(process, { modelName: 'Process' });
   const [departments, setDepartments] = useState<Department[]>([]);
   const [approvers, setApprovers] = useState<User[]>([]);
   const [filteredApprovers, setFilteredApprovers] = useState<User[]>([]); // For Reviewer role only
@@ -454,7 +456,7 @@ export default function BIAPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            comment: "BIA submitted for approval",
+            comment: t("BIA submitted for approval"),
             createdBy: currentUserId,
             createdByName: currentUserName,
             action: "Submit",
@@ -504,7 +506,7 @@ export default function BIAPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            comment: "BIA approved",
+            comment: t("BIA approved"),
             createdBy: currentUserId,
             createdByName: currentUserName,
             action: "Approve",
@@ -608,16 +610,16 @@ export default function BIAPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <nav className="flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap">
-          <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <nav className={`flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+          <Link href="/organization/process" className={`flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors ${isRTL ? "flex-row-reverse" : ""}`}>
             <Home className="h-4 w-4" />
             <span>{t("Organization")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <Link href="/organization/process" className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Process")}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <span className="text-primary-700 font-medium">{t("BIA")}</span>
         </nav>
         <div className="flex items-center justify-center h-64">
@@ -630,34 +632,34 @@ export default function BIAPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap">
-        <Link href="/organization/process" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+      <nav className={`flex items-center gap-1.5 text-sm mb-6 overflow-x-auto whitespace-nowrap ${isRTL ? "flex-row-reverse justify-end" : ""}`}>
+        <Link href="/organization/process" className={`flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors ${isRTL ? "flex-row-reverse" : ""}`}>
           <Home className="h-4 w-4" />
           <span>{t("Organization")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <Link href="/organization/process" className="text-slate-500 hover:text-primary-600 transition-colors">
           {t("Process")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("BIA")}</span>
       </nav>
 
       {/* Page Header with Back Button */}
-      <div className="flex items-center gap-3">
+      <div className={`flex items-center gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
         <Button
           variant="ghost"
           size="icon"
           className="h-9 w-9 text-slate-600 hover:text-slate-800"
           onClick={() => router.push("/organization/process")}
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className={`h-5 w-5 ${isRTL ? "rotate-180" : ""}`} />
         </Button>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Business Impact Analysis")}</h1>
+        <h1 className={`text-xl sm:text-2xl font-bold text-slate-800 ${isRTL ? "text-right" : ""}`}>{t("Business Impact Analysis")}</h1>
       </div>
 
       {/* Top controls row */}
-      <div className="flex flex-row items-center justify-end gap-3 sm:gap-4">
+      <div className={`flex flex-row items-center justify-end gap-3 sm:gap-4 ${isRTL ? "flex-row-reverse" : ""}`}>
         <span className={`font-medium text-center sm:text-left ${
           status === "Open" ? "text-info" :
           status === "Pending Approval" ? "text-warning" :
@@ -752,15 +754,15 @@ export default function BIAPage() {
       </div>
 
       {/* Main content card */}
-      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6 space-y-4 sm:space-y-6" style={isRTL ? { direction: 'rtl' } : undefined}>
         {/* Process name */}
-        <h2 className="text-lg font-semibold">{process?.name}</h2>
+        <h2 className={`text-lg font-semibold ${isRTL ? "text-right" : ""}`}>{translatedProcess?.name || process?.name}</h2>
 
         {/* Category table */}
         <div className="border rounded-lg overflow-x-auto">
           <div className="min-w-[500px]">
           {/* Table header */}
-          <div className="grid grid-cols-3 bg-slate-800 text-white">
+          <div className={`grid grid-cols-3 bg-slate-800 text-white ${isRTL ? "text-right" : ""}`}>
             <div className="px-4 py-3 font-medium">{t("Category")}</div>
             <div className="px-4 py-3 font-medium text-center">{t("BIA Rating")}</div>
             <div className="px-4 py-3 font-medium">{t("Description")}</div>
@@ -772,7 +774,7 @@ export default function BIAPage() {
             return (
               <div
                 key={category.id}
-                className="grid grid-cols-3 border-b last:border-b-0"
+                className={`grid grid-cols-3 border-b last:border-b-0 ${isRTL ? "text-right" : ""}`}
               >
                 <div className="px-4 py-4 text-sm">{category.name}</div>
                 <div className="px-4 py-3 flex justify-center">
@@ -874,7 +876,7 @@ export default function BIAPage() {
       </div>
 
       {/* Footer buttons */}
-      <div className="flex justify-end gap-2">
+      <div className={`flex justify-end gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
         <Button variant="outline" onClick={handleCancel}>
           {t("Cancel")}
         </Button>
@@ -887,7 +889,7 @@ export default function BIAPage() {
 
       {/* Send Back Dialog */}
       <Dialog open={isSendBackDialogOpen} onOpenChange={setIsSendBackDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("Send Back for Revision")}</DialogTitle>
           </DialogHeader>
@@ -916,7 +918,7 @@ export default function BIAPage() {
 
       {/* Comments Dialog */}
       <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg" style={isRTL ? { direction: 'rtl' } : undefined}>
           <DialogHeader>
             <DialogTitle>{t("BIA Comments")}</DialogTitle>
           </DialogHeader>
@@ -926,7 +928,7 @@ export default function BIAPage() {
             ) : (
               biaComments.map((comment) => (
                 <div key={comment.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className={`flex items-center justify-between ${isRTL ? "flex-row-reverse" : ""}`}>
                     <span className="font-medium text-sm">{comment.createdByName}</span>
                     <span className={`text-xs px-2 py-1 rounded ${
                       comment.action === "Approve" ? "bg-success-light text-success-dark" :
