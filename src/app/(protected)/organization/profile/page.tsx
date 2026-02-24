@@ -916,7 +916,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => { setServiceErrors({}); setIsAddServiceOpen(true); }} className="w-full sm:w-auto">
+            <Button size="sm" onClick={() => { setServiceErrors({}); setNewService({ title: "", description: "", serviceUser: "", serviceCategory: "", serviceItem: "" }); setIsAddServiceOpen(true); }} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 me-2" />
               {t("Add Service")}
             </Button>
@@ -1071,7 +1071,7 @@ function ProfilePageContent() {
               <p className="text-sm text-slate-500 mb-6">
                 {t("Add services your organization provides.")}
               </p>
-              <Button onClick={() => { setServiceErrors({}); setIsAddServiceOpen(true); }}>
+              <Button onClick={() => { setServiceErrors({}); setNewService({ title: "", description: "", serviceUser: "", serviceCategory: "", serviceItem: "" }); setIsAddServiceOpen(true); }}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("Add Service")}
               </Button>
@@ -1091,7 +1091,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => { setRegulationErrors({}); setIsAddRegulationOpen(true); }} className="w-full sm:w-auto">
+            <Button size="sm" onClick={() => { setRegulationErrors({}); setNewRegulation({ name: "", version: "", sa1Date: "", sa2Date: "", scope: "", exclusionJustification: "", document: "", certificate: "" }); setDocumentFiles([]); setCertificateFiles([]); setIsAddRegulationOpen(true); }} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 me-2" />
               {t("Add Regulation")}
             </Button>
@@ -1251,7 +1251,7 @@ function ProfilePageContent() {
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => { setDepartmentNameError(""); setIsAddDepartmentOpen(true); }} className="w-full sm:w-auto">
+            <Button size="sm" onClick={() => { setDepartmentNameError(""); setNewDepartmentName(""); setIsAddDepartmentOpen(true); }} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 me-2" />
               {t("Add Department")}
             </Button>
@@ -1373,7 +1373,7 @@ function ProfilePageContent() {
               <p className="text-sm text-slate-500 mb-6">
                 {t("Add departments to organize your team structure.")}
               </p>
-              <Button onClick={() => { setDepartmentNameError(""); setIsAddDepartmentOpen(true); }}>
+              <Button onClick={() => { setDepartmentNameError(""); setNewDepartmentName(""); setIsAddDepartmentOpen(true); }}>
                 <Plus className="h-4 w-4 me-2" />
                 {t("Add Department")}
               </Button>
