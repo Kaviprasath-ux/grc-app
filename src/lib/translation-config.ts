@@ -80,6 +80,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'ProcessFrequency', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'NatureOfImplementation', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'Designation', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'UserDocumentType', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'BIACategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
   { modelName: 'BIARating', fields: [{ name: 'label' }, { name: 'description' }], priority: 6 },
   { modelName: 'BIAScoringRange', fields: [{ name: 'label' }], priority: 6 },

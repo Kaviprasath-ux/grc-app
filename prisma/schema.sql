@@ -877,7 +877,6 @@ CREATE TABLE "PolicyAttachment" (
     "fileType" TEXT,
     "fileSize" INTEGER,
     "filePath" TEXT NOT NULL,
-    "fileData" BYTEA,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "policyId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -895,7 +894,6 @@ CREATE TABLE "GovernanceVaultDocument" (
     "fileType" TEXT,
     "fileSize" INTEGER,
     "filePath" TEXT NOT NULL,
-    "fileData" BYTEA,
     "status" TEXT NOT NULL DEFAULT 'Active',
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1737,6 +1735,17 @@ CREATE TABLE "Designation" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Designation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserDocumentType" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserDocumentType_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -2898,6 +2907,12 @@ CREATE INDEX "Designation_customerAccountId_idx" ON "Designation"("customerAccou
 CREATE UNIQUE INDEX "Designation_customerAccountId_name_key" ON "Designation"("customerAccountId", "name");
 
 -- CreateIndex
+CREATE INDEX "UserDocumentType_customerAccountId_idx" ON "UserDocumentType"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserDocumentType_customerAccountId_name_key" ON "UserDocumentType"("customerAccountId", "name");
+
+-- CreateIndex
 CREATE INDEX "InternalAuditProcess_customerAccountId_idx" ON "InternalAuditProcess"("customerAccountId");
 
 -- CreateIndex
@@ -3679,6 +3694,9 @@ ALTER TABLE "OrganizationLocation" ADD CONSTRAINT "OrganizationLocation_customer
 
 -- AddForeignKey
 ALTER TABLE "Designation" ADD CONSTRAINT "Designation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserDocumentType" ADD CONSTRAINT "UserDocumentType_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditProcess" ADD CONSTRAINT "InternalAuditProcess_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;

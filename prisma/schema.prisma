@@ -102,6 +102,7 @@ model CustomerAccount {
   natureOfImplementations NatureOfImplementation[]
   organizationLocations  OrganizationLocation[]
   designations           Designation[]
+  userDocumentTypes      UserDocumentType[]
   internalAuditProcesses InternalAuditProcess[]
   governanceTemplates    GovernanceTemplate[]
   // Notification relations
@@ -2433,6 +2434,18 @@ model OrganizationLocation {
 }
 
 model Designation {
+  id                String           @id @default(cuid())
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
+}
+
+model UserDocumentType {
   id                String           @id @default(cuid())
   customerAccountId String?
   customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])

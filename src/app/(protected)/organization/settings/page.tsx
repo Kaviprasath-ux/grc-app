@@ -83,6 +83,7 @@ const categoryApiEndpoints: Record<string, string> = {
   location: "/api/organization-settings/location",
   implementation: "/api/organization-settings/nature-of-implementation",
   designation: "/api/organization-settings/designation",
+  "document-types": "/api/organization-settings/user-document-type",
 };
 
 export default function OrganizationSettingsPage() {
@@ -193,12 +194,12 @@ export default function OrganizationSettingsPage() {
   const currentData = activeCategory ? settingsData[activeCategory] || [] : [];
 
   // Category-to-model mapping for dynamic translations
-  // Note: "document-types" has no backend API or Prisma model, so no translation
   const categoryModelMap: Record<string, string> = {
     designation: "Designation",
     location: "OrganizationLocation",
     frequency: "ProcessFrequency",
     implementation: "NatureOfImplementation",
+    "document-types": "UserDocumentType",
   };
   const currentModelName = activeCategory ? categoryModelMap[activeCategory] || "" : "";
   const { data: translatedData } = useTranslatedData(currentData, { modelName: currentModelName });
