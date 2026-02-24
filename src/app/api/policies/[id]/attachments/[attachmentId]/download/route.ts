@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { readFile } from "fs/promises";
+import { join } from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 
@@ -31,6 +33,13 @@ export const GET = withAuth(
 
       const attachment = await prisma.policyAttachment.findUnique({
         where: { id: attachmentId },
+        select: {
+          id: true,
+          policyId: true,
+          fileName: true,
+          fileType: true,
+          filePath: true,
+        },
       });
 
       if (!attachment || attachment.policyId !== id) {
@@ -40,14 +49,20 @@ export const GET = withAuth(
         );
       }
 
-      // Read file from database
-      if (!attachment.fileData) {
+      // Read file from disk
+      const relativePath = attachment.filePath.startsWith("/")
+        ? attachment.filePath.slice(1)
+        : attachment.filePath;
+      const diskPath = join(process.cwd(), relativePath);
+      let fileBuffer: Buffer;
+      try {
+        fileBuffer = await readFile(diskPath);
+      } catch {
         return NextResponse.json(
-          { error: "File data not found in database" },
+          { error: "File not found on disk" },
           { status: 404 }
         );
       }
-      const fileBuffer = Buffer.from(attachment.fileData);
 
       // Determine content type
       const contentTypeMap: Record<string, string> = {
@@ -66,7 +81,7 @@ export const GET = withAuth(
 
       const contentType = contentTypeMap[attachment.fileType || ""] || "application/octet-stream";
 
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(new Uint8Array(fileBuffer), {
         status: 200,
         headers: {
           "Content-Type": contentType,

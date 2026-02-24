@@ -3069,7 +3069,7 @@ export default function GovernanceDetailPage() {
                                 {control.controlCode} : {control.name}
                               </span>
                               <Badge className="bg-slate-100 text-slate-600 text-xs shrink-0">
-                                {control.entities || "Organization Wide"}
+                                {t(control.entities || "Organization Wide")}
                               </Badge>
                             </div>
                             {control.description && (

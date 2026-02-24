@@ -43,6 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -159,13 +160,20 @@ export default function GovernanceMasterDataPage() {
   });
   const [policyErrors, setPolicyErrors] = useState<Record<string, string>>({});
 
+  // Dynamic translation hooks
+  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'Policy' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+
   // Get users filtered by selected department
   const filteredUsers = formData.departmentId
-    ? users.filter((u) => u.departmentId === formData.departmentId)
-    : users;
+    ? translatedUsers.filter((u) => u.departmentId === formData.departmentId)
+    : translatedUsers;
 
   // Get filtered controls for Step 2
-  const filteredControls = controls.filter((c) => {
+  const filteredControls = translatedControls.filter((c) => {
     if (controlCategoryFilter && c.domain?.name !== controlCategoryFilter) return false;
     if (frameworkFilter && c.framework?.id !== frameworkFilter) return false;
     if (functionalGroupingFilter && c.functionalGrouping !== functionalGroupingFilter) return false;
@@ -179,7 +187,7 @@ export default function GovernanceMasterDataPage() {
   });
 
   // Get unique policy categories (control domains)
-  const policyCategories = [...new Set(controls.map(c => c.domain?.name).filter(Boolean))] as string[];
+  const policyCategories = [...new Set(translatedControls.map(c => c.domain?.name).filter(Boolean))] as string[];
 
   const fetchPolicies = useCallback(async () => {
     try {
@@ -284,6 +292,8 @@ export default function GovernanceMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('Policy', savedData.id, { name: savedData.name });
         setCreateDialogOpen(false);
         setWizardStep(1);
         resetForm();
@@ -314,6 +324,8 @@ export default function GovernanceMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('Policy', savedData.id, { name: savedData.name });
         setEditDialogOpen(false);
         setSelectedPolicy(null);
         resetForm();
@@ -503,6 +515,8 @@ export default function GovernanceMasterDataPage() {
             });
 
             if (response.ok) {
+              const savedData = await response.json();
+              triggerTranslation('Policy', savedData.id, { name: savedData.name });
               successCount++;
             } else {
               errorCount++;
@@ -528,7 +542,7 @@ export default function GovernanceMasterDataPage() {
     }
   };
 
-  const filteredPolicies = policies.filter(
+  const filteredPolicies = translatedPolicies.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -796,7 +810,7 @@ export default function GovernanceMasterDataPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       <SelectItem value="none">{t("Select department")}</SelectItem>
-                      {departments.map((d) => (
+                      {translatedDepartments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.name}
                         </SelectItem>
@@ -930,7 +944,7 @@ export default function GovernanceMasterDataPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-                      {frameworks.map((f) => (
+                      {translatedFrameworks.map((f) => (
                         <SelectItem key={f.id} value={f.id}>
                           {f.name}
                         </SelectItem>
@@ -993,7 +1007,7 @@ export default function GovernanceMasterDataPage() {
                                 {control.controlCode} : {control.name}
                               </span>
                               <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                                {control.entities || t("Organization Wide")}
+                                {t(control.entities || "Organization Wide")}
                               </span>
                             </div>
                             <p className="text-sm text-slate-600 mt-1 line-clamp-2">
@@ -1036,13 +1050,13 @@ export default function GovernanceMasterDataPage() {
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                     <p className="text-sm text-slate-800 mt-1">
-                      {departments.find((d) => d.id === formData.departmentId)?.name || "-"}
+                      {translatedDepartments.find((d) => d.id === formData.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
                     <p className="text-sm text-slate-800 mt-1">
-                      {users.find((u) => u.id === formData.assigneeId)?.fullName || "-"}
+                      {translatedUsers.find((u) => u.id === formData.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                 </div>
@@ -1053,7 +1067,7 @@ export default function GovernanceMasterDataPage() {
                     <div className="p-4 text-center text-slate-500">{t("No controls selected")}</div>
                   ) : (
                     Array.from(selectedControlIds).map((controlId) => {
-                      const control = controls.find((c) => c.id === controlId);
+                      const control = translatedControls.find((c) => c.id === controlId);
                       if (!control) return null;
                       return (
                         <div key={control.id} className="p-3 border-b border-slate-200 last:border-b-0">
@@ -1061,7 +1075,7 @@ export default function GovernanceMasterDataPage() {
                             {control.controlCode} : {control.name}
                           </div>
                           <div className="text-xs text-slate-500">
-                            {control.entities || t("Organization Wide")}
+                            {t(control.entities || "Organization Wide")}
                           </div>
                         </div>
                       );
@@ -1195,7 +1209,7 @@ export default function GovernanceMasterDataPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">{t("None")}</SelectItem>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
                       </SelectItem>
@@ -1260,7 +1274,7 @@ export default function GovernanceMasterDataPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">{t("None")}</SelectItem>
-                    {users.map((u) => (
+                    {translatedUsers.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.fullName}
                       </SelectItem>

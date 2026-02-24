@@ -47,6 +47,7 @@ import {
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 
 interface Evidence {
@@ -160,6 +161,7 @@ export default function EvidencesMasterDataPage() {
   // Delete Dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Delete All Dialog
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
@@ -252,6 +254,13 @@ export default function EvidencesMasterDataPage() {
     fetchFrameworks();
   }, [fetchEvidences, fetchDepartments, fetchUsers, fetchControls, fetchControlDomains, fetchFrameworks]);
 
+  // Dynamic translation hooks
+  const { data: translatedEvidences } = useTranslatedData(evidences, { modelName: 'Evidence' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedControlDomains } = useTranslatedData(controlDomains, { modelName: 'ControlDomain' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+
   // Filter users by selected department and DepartmentContributor role only
   const filteredUsers = users.filter(
     (user) =>
@@ -259,8 +268,8 @@ export default function EvidencesMasterDataPage() {
       user.userRoles?.some((ur) => ur.role.name === "DepartmentContributor")
   );
 
-  // Filter controls based on search and filters
-  const filteredControls = controls.filter((control) => {
+  // Filter controls based on search and filters (use translated controls for display)
+  const filteredControls = translatedControls.filter((control) => {
     const matchesSearch =
       !controlSearch ||
       control.controlCode.toLowerCase().includes(controlSearch.toLowerCase()) ||
@@ -278,7 +287,7 @@ export default function EvidencesMasterDataPage() {
   const handleExport = () => {
     const csv = [
       ["Evidence Code", "Title", "Evidence Requirement"],
-      ...evidences.map((e) => [
+      ...translatedEvidences.map((e) => [
         e.evidenceCode,
         e.name,
         e.description || "",
@@ -354,6 +363,8 @@ export default function EvidencesMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('Evidence', savedData.id, { name: newFormData.name, description: newFormData.description });
         toast({
           title: t("Success"),
           description: t("Evidence created successfully"),
@@ -425,6 +436,7 @@ export default function EvidencesMasterDataPage() {
       });
 
       if (response.ok) {
+        triggerTranslation('Evidence', editingEvidence.id, { name: editingEvidence.name, description: editingEvidence.description });
         toast({
           title: t("Success"),
           description: t("Evidence updated successfully"),
@@ -458,6 +470,7 @@ export default function EvidencesMasterDataPage() {
 
   const confirmDelete = async () => {
     if (!deletingId) return;
+    setIsDeleting(true);
 
     try {
       const response = await fetch(`/api/evidences/${deletingId}`, {
@@ -485,6 +498,7 @@ export default function EvidencesMasterDataPage() {
         variant: "destructive",
       });
     } finally {
+      setIsDeleting(false);
       setDeleteDialogOpen(false);
       setDeletingId(null);
     }
@@ -574,12 +588,12 @@ export default function EvidencesMasterDataPage() {
     reader.readAsText(importFile);
   };
 
-  // Get selected controls for review
-  const selectedControls = controls.filter((c) => newFormData.controlIds.includes(c.id));
+  // Get selected controls for review (use translated controls for display)
+  const selectedControls = translatedControls.filter((c) => newFormData.controlIds.includes(c.id));
   const selectedDomains = [...new Set(selectedControls.map((c) => c.domain?.name).filter(Boolean))];
 
-  // Filter evidences based on search
-  const filteredEvidences = evidences.filter(
+  // Filter evidences based on search (use translated data for display)
+  const filteredEvidences = translatedEvidences.filter(
     (e) =>
       e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.evidenceCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -856,7 +870,7 @@ export default function EvidencesMasterDataPage() {
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {departments.map((dept) => (
+                        {translatedDepartments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
                           </SelectItem>
@@ -927,7 +941,7 @@ export default function EvidencesMasterDataPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       <SelectItem value="_all">{t("All Domains")}</SelectItem>
-                      {controlDomains.map((domain) => (
+                      {translatedControlDomains.map((domain) => (
                         <SelectItem key={domain.id} value={domain.id}>
                           {domain.name}
                         </SelectItem>
@@ -941,7 +955,7 @@ export default function EvidencesMasterDataPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       <SelectItem value="_all">{t("All Frameworks")}</SelectItem>
-                      {frameworks.map((framework) => (
+                      {translatedFrameworks.map((framework) => (
                         <SelectItem key={framework.id} value={framework.id}>
                           {framework.name}
                         </SelectItem>
@@ -1010,7 +1024,7 @@ export default function EvidencesMasterDataPage() {
                                 {control.controlCode} : {control.name}
                               </span>
                               <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                                {t("Organization Wide")}
+                                {t(control.entities || "Organization Wide")}
                               </span>
                             </div>
                             {control.description && (
@@ -1054,7 +1068,7 @@ export default function EvidencesMasterDataPage() {
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                   <p className="mt-1 text-slate-800">
-                    {departments.find((d) => d.id === newFormData.departmentId)?.name || "-"}
+                    {translatedDepartments.find((d) => d.id === newFormData.departmentId)?.name || "-"}
                   </p>
                 </div>
                 {newFormData.description && (
@@ -1437,7 +1451,7 @@ export default function EvidencesMasterDataPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="_none">{t("No control")}</SelectItem>
-                    {controls.map((control) => (
+                    {translatedControls.map((control) => (
                       <SelectItem key={control.id} value={control.id}>
                         {control.name}
                       </SelectItem>
@@ -1468,8 +1482,8 @@ export default function EvidencesMasterDataPage() {
             <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button size="sm" variant="destructive" onClick={confirmDelete}>
-              {t("Delete")}
+            <Button size="sm" variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
+              {isDeleting ? t("Deleting...") : t("Delete")}
             </Button>
           </div>
         </DialogContent>

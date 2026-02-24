@@ -1284,7 +1284,6 @@ model PolicyAttachment {
   fileType   String? // pdf, docx, xlsx, etc.
   fileSize   Int?
   filePath   String
-  fileData   Bytes?        // Store file binary for serverless (Vercel) compatibility
   uploadedAt DateTime @default(now())
   policyId   String
   policy     Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)

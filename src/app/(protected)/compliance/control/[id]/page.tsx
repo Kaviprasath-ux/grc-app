@@ -517,7 +517,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-0.5">{t("Entities")}</p>
-              <p className="text-sm font-medium text-slate-800">{control.entities || t("Organization Wide")}</p>
+              <p className="text-sm font-medium text-slate-800">{t(control.entities || "Organization Wide")}</p>
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-0.5">{t("Scope")}</p>

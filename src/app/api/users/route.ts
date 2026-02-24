@@ -264,8 +264,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (customerAccountId) void translateRecord(customerAccountId, 'User', user.id, { fullName: user.fullName });
-
     return NextResponse.json(safeUser, { status: 201 });
   } catch (error: unknown) {
     console.error("Error creating user:", error);

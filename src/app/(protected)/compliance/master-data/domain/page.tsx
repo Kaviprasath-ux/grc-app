@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,8 @@ export default function DomainMasterDataPage() {
   });
   const [domainErrors, setDomainErrors] = useState<Record<string, string>>({});
 
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+
   const fetchDomains = useCallback(async () => {
     try {
       const response = await fetch("/api/control-domains");
@@ -89,11 +92,6 @@ export default function DomainMasterDataPage() {
 
   const handleCreate = async () => {
     const errors: Record<string, string> = {};
-    if (!formData.code.trim()) {
-      errors.code = t("Please enter Domain Code");
-    } else if (!isValidName(formData.code.trim())) {
-      errors.code = t("Only letters, spaces, and hyphens are allowed");
-    }
     if (!formData.name.trim()) {
       errors.name = t("Please enter Domain name");
     } else if (!isValidName(formData.name.trim())) {
@@ -110,6 +108,8 @@ export default function DomainMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('ControlDomain', savedData.id, { name: savedData.name });
         setCreateDialogOpen(false);
         resetForm();
         fetchDomains();
@@ -143,6 +143,8 @@ export default function DomainMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('ControlDomain', savedData.id, { name: savedData.name });
         setEditDialogOpen(false);
         setSelectedDomain(null);
         resetForm();
@@ -203,6 +205,15 @@ export default function DomainMasterDataPage() {
   const openDeleteDialog = (domain: ControlDomain) => {
     setSelectedDomain(domain);
     setDeleteDialogOpen(true);
+  };
+
+  const generateDomainCode = () => {
+    const existingCodes = domains.map((d) => d.code || "").filter((c) => /^DOM-\d+$/.test(c));
+    const maxNum = existingCodes.reduce((max, c) => {
+      const num = parseInt(c.replace("DOM-", ""), 10);
+      return num > max ? num : max;
+    }, 0);
+    return `DOM-${String(maxNum + 1).padStart(3, "0")}`;
   };
 
   const resetForm = () => {
@@ -272,7 +283,7 @@ export default function DomainMasterDataPage() {
     }
   };
 
-  const filteredDomains = domains.filter(
+  const filteredDomains = translatedDomains.filter(
     (d) =>
       d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (d.code && d.code.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -346,7 +357,7 @@ export default function DomainMasterDataPage() {
             {t("Delete All")}
           </Button>
         )}
-        <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); setDomainErrors({}); } else { setCreateDialogOpen(true); } }}>
+        <Dialog open={createDialogOpen} onOpenChange={(open) => { if (!open) { setCreateDialogOpen(false); setDomainErrors({}); } else { setFormData({ code: generateDomainCode(), name: "" }); setCreateDialogOpen(true); } }}>
           <DialogTrigger asChild>
             <Button size="sm" className="col-span-2 sm:col-span-1" onClick={() => setDomainErrors({})}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -364,18 +375,10 @@ export default function DomainMasterDataPage() {
                   </Label>
                   <Input
                     value={formData.code}
-                    onChange={(e) => {
-                      setFormData({ ...formData, code: e.target.value });
-                      if (domainErrors.code) setDomainErrors((prev) => { const { code, ...rest } = prev; return rest; });
-                    }}
-                    placeholder={t("e.g., GOV")}
-                    className={`mt-1.5 w-full bg-white ${domainErrors.code ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    readOnly
+                    disabled
+                    className="mt-1.5 w-full bg-slate-50 text-slate-500 cursor-not-allowed"
                   />
-                  {domainErrors.code && (
-                    <div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2">
-                      <p className="text-sm text-red-600">{domainErrors.code}</p>
-                    </div>
-                  )}
                 </div>
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">

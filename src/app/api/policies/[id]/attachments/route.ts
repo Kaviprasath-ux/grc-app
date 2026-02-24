@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { writeFile, mkdir, unlink } from "fs/promises";
+import { join } from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 
@@ -89,27 +91,27 @@ export const POST = withAuth(
         );
       }
 
-      // Read file into buffer for database storage
       const originalName = file.name;
       const ext = originalName.split(".").pop()?.toLowerCase() || "";
       const buffer = Buffer.from(await file.arrayBuffer());
-
-      // Get file type from extension
       const fileType = ext || file.type;
 
-      // Generate a virtual path for reference
+      // Save file to disk
       const timestamp = Date.now();
-      const virtualPath = `/uploads/governance/${id}/${originalName.replace(/\.[^/.]+$/, "")}_${timestamp}.${ext}`;
+      const uniqueFileName = `${originalName.replace(/\.[^/.]+$/, "")}_${timestamp}.${ext}`;
+      const uploadDir = join(process.cwd(), "uploads", "governance", id);
+      await mkdir(uploadDir, { recursive: true });
+      await writeFile(join(uploadDir, uniqueFileName), buffer);
+      const relativePath = `/uploads/governance/${id}/${uniqueFileName}`;
 
-      // Create attachment record with file data stored in DB
+      // Create attachment record
       const attachment = await prisma.policyAttachment.create({
         data: {
           policyId: id,
           fileName: originalName,
           fileType,
           fileSize: file.size,
-          filePath: virtualPath,
-          fileData: buffer,
+          filePath: relativePath,
         },
       });
 
@@ -191,7 +193,20 @@ export const DELETE = withAuth(
         );
       }
 
-      // Delete attachment record from database (file data is stored in DB, no disk cleanup needed)
+      // Delete physical file from disk
+      if (attachment.filePath) {
+        try {
+          const relativePath = attachment.filePath.startsWith("/")
+            ? attachment.filePath.slice(1)
+            : attachment.filePath;
+          const absolutePath = join(process.cwd(), relativePath);
+          await unlink(absolutePath);
+        } catch {
+          console.warn(`Could not delete file: ${attachment.filePath}`);
+        }
+      }
+
+      // Delete attachment record
       await prisma.policyAttachment.delete({
         where: { id: attachmentId },
       });

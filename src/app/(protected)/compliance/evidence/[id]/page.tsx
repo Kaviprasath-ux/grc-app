@@ -1484,7 +1484,7 @@ export default function EvidenceDetailPage() {
                           )}
                         </div>
                         <Badge className="bg-primary-700 text-white hover:bg-primary-600">
-                          {ec.control.entities || t("Organization Wide")}
+                          {t(ec.control.entities || "Organization Wide")}
                         </Badge>
                       </div>
                     </div>
@@ -2461,7 +2461,7 @@ export default function EvidenceDetailPage() {
                                   {control.controlCode} : {control.name}
                                 </span>
                                 <Badge className="bg-slate-100 text-slate-600 rounded-full px-3 text-xs font-medium">
-                                  {control.entities || t("Organization Wide")}
+                                  {t(control.entities || "Organization Wide")}
                                 </Badge>
                               </div>
                               {control.description && (

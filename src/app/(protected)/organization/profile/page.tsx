@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft, Home, ChevronLeft, ChevronRight, Download, FileText, Search } from "lucide-react";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -129,6 +130,7 @@ function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t, isRTL } = useLanguage();
+  const { toast } = useToast();
   const initialTab = searchParams.get("tab") || "overview";
   const fromDashboard = searchParams.get("from") === "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -176,6 +178,8 @@ function ProfilePageContent() {
   // Form states
   const [newDepartmentName, setNewDepartmentName] = useState("");
   const [departmentNameError, setDepartmentNameError] = useState("");
+  const [isDeptSaving, setIsDeptSaving] = useState(false);
+  const [isDeptEditSaving, setIsDeptEditSaving] = useState(false);
   const [newService, setNewService] = useState({
     title: "",
     description: "",
@@ -247,6 +251,7 @@ function ProfilePageContent() {
     if (!newDepartmentName.trim()) { setDepartmentNameError(t("Please enter department name")); return; }
     if (!isValidName(newDepartmentName.trim())) { setDepartmentNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setDepartmentNameError("");
+    setIsDeptSaving(true);
     try {
       const res = await fetch("/api/departments", {
         method: "POST",
@@ -259,9 +264,15 @@ function ProfilePageContent() {
         setNewDepartmentName("");
         setIsAddDepartmentOpen(false);
         triggerTranslation('Department', dept.id, { name: dept.name });
+      } else {
+        const error = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
+        toast({ title: t("Error"), description: error.error || t("Failed to add department"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding department:", error);
+      toast({ title: t("Error"), description: t("Failed to add department"), variant: "destructive" });
+    } finally {
+      setIsDeptSaving(false);
     }
   };
 
@@ -287,6 +298,7 @@ function ProfilePageContent() {
     if (!editingDepartment || !editingDepartment.name.trim()) { setEditDepartmentNameError(t("Please enter department name")); return; }
     if (!isValidName(editingDepartment.name.trim())) { setEditDepartmentNameError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setEditDepartmentNameError("");
+    setIsDeptEditSaving(true);
     try {
       const res = await fetch(`/api/departments/${editingDepartment.id}`, {
         method: "PUT",
@@ -299,9 +311,15 @@ function ProfilePageContent() {
         setIsEditDepartmentOpen(false);
         setEditingDepartment(null);
         triggerTranslation('Department', updated.id, { name: updated.name });
+      } else {
+        const error = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
+        toast({ title: t("Error"), description: error.error || t("Failed to update department"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating department:", error);
+      toast({ title: t("Error"), description: t("Failed to update department"), variant: "destructive" });
+    } finally {
+      setIsDeptEditSaving(false);
     }
   };
 
@@ -1370,7 +1388,7 @@ function ProfilePageContent() {
             <Button variant="outline" onClick={() => { setIsAddDepartmentOpen(false); setDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleAddDepartment}>{t("Save")}</Button>
+            <Button onClick={handleAddDepartment} disabled={isDeptSaving}>{isDeptSaving ? t("Saving...") : t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1408,7 +1426,7 @@ function ProfilePageContent() {
             <Button variant="outline" onClick={() => { setIsEditDepartmentOpen(false); setEditDepartmentNameError(""); }}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleEditDepartment}>{t("Save")}</Button>
+            <Button onClick={handleEditDepartment} disabled={isDeptEditSaving}>{isDeptEditSaving ? t("Saving...") : t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>

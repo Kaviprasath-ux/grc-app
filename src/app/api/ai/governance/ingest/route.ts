@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readFile } from "fs/promises";
+import { join } from "path";
 import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
@@ -55,28 +57,38 @@ export async function POST(req: NextRequest) {
             return notFoundResponse("Policy");
         }
 
-        // If no file provided, read from database using the latest attachment
+        // If no file provided, read from disk using the latest attachment
         if (!file) {
             const latestAttachment = policy.attachments[0];
             if (!latestAttachment) {
                 return badRequestResponse("No document attached to this policy");
             }
 
-            if (!latestAttachment.fileData) {
-                return errorResponse(`File data not found in database for: ${latestAttachment.fileName}`, 404);
+            if (!latestAttachment.filePath) {
+                return errorResponse(`File path not found for: ${latestAttachment.fileName}`, 404);
             }
 
-            console.log(`[Governance Ingest] Reading file from database: ${latestAttachment.fileName}`);
+            console.log(`[Governance Ingest] Reading file from disk: ${latestAttachment.fileName}`);
 
-            const fileBuffer = Buffer.from(latestAttachment.fileData);
+            const relativePath = latestAttachment.filePath.startsWith("/")
+                ? latestAttachment.filePath.slice(1)
+                : latestAttachment.filePath;
+            const absolutePath = join(process.cwd(), relativePath);
+            let fileBuffer: Buffer;
+            try {
+                fileBuffer = await readFile(absolutePath);
+            } catch {
+                return errorResponse(`File not found on disk: ${latestAttachment.fileName}`, 404);
+            }
+
             const mimeType = latestAttachment.fileType === 'docx'
                 ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 : latestAttachment.fileType === 'pdf'
                     ? 'application/pdf'
                     : 'application/octet-stream';
 
-            file = new File([fileBuffer], latestAttachment.fileName, { type: mimeType });
-            console.log(`[Governance Ingest] File loaded from database: ${latestAttachment.fileName} (${fileBuffer.length} bytes)`);
+            file = new File([new Uint8Array(fileBuffer)], latestAttachment.fileName, { type: mimeType });
+            console.log(`[Governance Ingest] File loaded from disk: ${latestAttachment.fileName} (${fileBuffer.length} bytes)`);
         }
 
         // Canonical OpenAPI Payload construction

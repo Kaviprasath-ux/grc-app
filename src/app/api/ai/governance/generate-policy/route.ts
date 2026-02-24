@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
             return badRequestResponse("Policy must have at least one linked control to generate document");
         }
 
-        // Fetch the selected GovernanceTemplate (include fileData for cloud)
+        // Fetch the selected GovernanceTemplate
         const governanceTemplate = await prisma.governanceTemplate.findUnique({
             where: { id: templateId },
             select: {
@@ -95,7 +95,6 @@ export async function POST(req: NextRequest) {
                 fileType: true,
                 fileSize: true,
                 filePath: true,
-                fileData: true,
             },
         });
 
@@ -148,21 +147,15 @@ export async function POST(req: NextRequest) {
             ? Array.from(frameworkNamesSet)
             : ["General"];
 
-        // Load template file - try disk first, then fallback to DB
+        // Load template file from disk
         let templateBuffer: Buffer;
         try {
             const absolutePath = path.join(process.cwd(), "public", governanceTemplate.filePath);
             templateBuffer = await readFile(absolutePath);
             console.log(`[Governance Generate] Loaded template from disk: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
         } catch {
-            // File not on disk (e.g., Vercel) - read from database
-            if (governanceTemplate.fileData) {
-                templateBuffer = Buffer.from(governanceTemplate.fileData);
-                console.log(`[Governance Generate] Loaded template from DB: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
-            } else {
-                console.error(`[Governance Generate] Template file not found on disk or in DB`);
-                return errorResponse(`Template file not found: ${governanceTemplate.fileName}`, 404);
-            }
+            console.error(`[Governance Generate] Template file not found on disk`);
+            return errorResponse(`Template file not found: ${governanceTemplate.fileName}`, 404);
         }
 
         // Build FormData for RunPod API

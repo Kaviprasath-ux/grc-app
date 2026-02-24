@@ -40,6 +40,7 @@ import {
 import { Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, Search, ChevronLeft, ChevronRight, Home, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 
 interface Framework {
@@ -58,6 +59,7 @@ export default function FrameworkMasterDataPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -119,6 +121,14 @@ export default function FrameworkMasterDataPage() {
       });
 
       if (response.ok) {
+        // Trigger dynamic translation for the edited framework
+        triggerTranslation('Framework', selectedFramework.id, {
+          name: formData.name,
+          description: formData.description,
+          country: formData.country,
+          industry: formData.industry,
+        });
+
         setEditDialogOpen(false);
         setSelectedFramework(null);
         resetForm();
@@ -238,6 +248,14 @@ export default function FrameworkMasterDataPage() {
       if (response.ok) {
         const framework = await response.json();
 
+        // Trigger dynamic translation for the new framework
+        triggerTranslation('Framework', framework.id, {
+          name: framework.name,
+          description: framework.description,
+          country: framework.country,
+          industry: framework.industry,
+        });
+
         // If file is selected, upload requirements
         if (selectedFile) {
           const formDataUpload = new FormData();
@@ -294,7 +312,7 @@ export default function FrameworkMasterDataPage() {
     a.click();
   };
 
-  const filteredFrameworks = frameworks.filter((f) => {
+  const filteredFrameworks = translatedFrameworks.filter((f) => {
     const matchesSearch = f.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === "all" || f.type === typeFilter;
     const matchesStatus = statusFilter === "all" || f.status === statusFilter;
@@ -671,7 +689,7 @@ export default function FrameworkMasterDataPage() {
                     {framework.name}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
-                    {framework.type}
+                    {t(framework.type)}
                   </TableCell>
                   <TableCell className="py-3 text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -681,7 +699,7 @@ export default function FrameworkMasterDataPage() {
                         ? 'bg-info-light text-info-dark'
                         : 'bg-slate-100 text-slate-600'
                     }`}>
-                      {framework.status}
+                      {t(framework.status)}
                     </span>
                   </TableCell>
                   <TableCell className="py-3 text-sm pe-5">

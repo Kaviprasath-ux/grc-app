@@ -132,6 +132,7 @@ const translations: [string, string, string][] = [
   ['Users', 'المستخدمون', 'Lietotāji'],
   ['Process', 'العمليات', 'Process'],
   ['Organization Settings', 'إعدادات المنظمة', 'Organizācijas iestatījumi'],
+  ['Organization Wide', 'على مستوى المنظمة', 'Visā organizācijā'],
   ['Reports', 'التقارير', 'Atskaites'],
   ['Compliance', 'الامتثال', 'Atbilstība'],
   ['Frameworks', 'الأطر', 'Ietvari'],

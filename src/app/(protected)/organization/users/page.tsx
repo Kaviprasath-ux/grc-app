@@ -163,10 +163,16 @@ export default function UsersPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const addUserScrollRef = useRef<HTMLDivElement>(null);
+  const editUserScrollRef = useRef<HTMLDivElement>(null);
 
   // Subscription error dialog
   const [showSubscriptionErrorDialog, setShowSubscriptionErrorDialog] = useState(false);
   const [subscriptionErrorMessage, setSubscriptionErrorMessage] = useState("");
+
+  // Saving states
+  const [isSaving, setIsSaving] = useState(false);
+  const [isEditSaving, setIsEditSaving] = useState(false);
 
   // Validation error states
   const [userFormErrors, setUserFormErrors] = useState<Record<string, string>>({});
@@ -293,9 +299,11 @@ export default function UsersPage() {
     }
     if (Object.keys(errors).length > 0) {
       setUserFormErrors(errors);
+      addUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     setUserFormErrors({});
+    setIsSaving(true);
 
     // Auto-generate User ID
     const userId = `USR-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
@@ -330,12 +338,16 @@ export default function UsersPage() {
         triggerTranslation('User', user.id, { fullName: user.fullName });
         resetForm();
         setIsAddUserOpen(false);
+        toast({ title: t("Success"), description: t("User created successfully") });
       } else {
-        const error = await res.json();
+        const error = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
         toast({ title: t("Error"), description: error.error || t("Failed to create user"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding user:", error);
+      toast({ title: t("Error"), description: t("Failed to create user. Please try again."), variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -368,9 +380,11 @@ export default function UsersPage() {
     }
     if (Object.keys(errors).length > 0) {
       setEditUserFormErrors(errors);
+      editUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     setEditUserFormErrors({});
+    setIsEditSaving(true);
     try {
       const res = await fetch(`/api/users/${editingUser.id}`, {
         method: "PUT",
@@ -392,6 +406,8 @@ export default function UsersPage() {
     } catch (error) {
       console.error("Error updating user:", error);
       toast({ title: t("Error"), description: t("Failed to update user"), variant: "destructive" });
+    } finally {
+      setIsEditSaving(false);
     }
   };
 
@@ -1140,7 +1156,7 @@ export default function UsersPage() {
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+          <div ref={addUserScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
             {/* Account Credentials Section */}
             <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Credentials")}</h4>
@@ -1515,7 +1531,7 @@ export default function UsersPage() {
             }}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleAddUser}>{t("Save")}</Button>
+            <Button onClick={handleAddUser} disabled={isSaving}>{isSaving ? t("Saving...") : t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1531,7 +1547,7 @@ export default function UsersPage() {
           </div>
           {/* Scrollable Content */}
           {editingUser && (
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
+            <div ref={editUserScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
               {/* User ID - Read Only */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end">{t("User ID")}</Label>
@@ -1889,7 +1905,7 @@ export default function UsersPage() {
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleEditUser}>{t("Save")}</Button>
+            <Button onClick={handleEditUser} disabled={isEditSaving}>{isEditSaving ? t("Saving...") : t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -39,6 +39,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'Requirement', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
   { modelName: 'RequirementCategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
   { modelName: 'GovernanceVaultDocument', fields: [{ name: 'fileName' }], priority: 2 },
+  { modelName: 'GovernanceTemplate', fields: [{ name: 'name' }], priority: 2 },
   { modelName: 'Regulation', fields: [{ name: 'name' }], priority: 2 },
 
   // Priority 3 — Risk management details

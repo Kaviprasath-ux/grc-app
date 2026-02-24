@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Template {
   id: string;
@@ -94,6 +95,8 @@ export default function GovernanceTemplatesPage() {
     file: null as File | null,
   });
   const [templateErrors, setTemplateErrors] = useState<Record<string, string>>({});
+
+  const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'GovernanceTemplate' });
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -190,6 +193,8 @@ export default function GovernanceTemplatesPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('GovernanceTemplate', savedData.id, { name: savedData.name });
         setCreateDialogOpen(false);
         resetForm();
         fetchTemplates();
@@ -210,6 +215,8 @@ export default function GovernanceTemplatesPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('GovernanceTemplate', savedData.id, { name: savedData.name });
         setEditDialogOpen(false);
         setSelectedTemplate(null);
         resetForm();
@@ -272,7 +279,7 @@ export default function GovernanceTemplatesPage() {
   const handleExport = () => {
     const csv = [
       ["Template Name", "Governance Type", "Uploaded By", "Created At"],
-      ...templates.map((t) => [
+      ...translatedTemplates.map((t) => [
         t.name,
         t.governanceType,
         t.uploadedBy || "System",
@@ -299,7 +306,7 @@ export default function GovernanceTemplatesPage() {
     });
   };
 
-  const filteredTemplates = templates.filter(
+  const filteredTemplates = translatedTemplates.filter(
     (t) =>
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.governanceType.toLowerCase().includes(searchTerm.toLowerCase())
