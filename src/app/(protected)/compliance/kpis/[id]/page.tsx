@@ -41,6 +41,7 @@ import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedRecord, useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import {
   LineChart,
   Line,
@@ -209,6 +210,28 @@ export default function KPIDetailPage({
 
   // Inline actual score save state
   const [savingInlineScore, setSavingInlineScore] = useState(false);
+
+  // Dynamic translations
+  const { data: translatedKpi } = useTranslatedRecord(kpi, { modelName: 'KPI' });
+  const deptArray = useMemo(() => {
+    const dept = kpi?.department;
+    return dept ? [dept] : [];
+  }, [kpi?.department]);
+  const { data: translatedDepts } = useTranslatedData(deptArray, { modelName: 'Department' });
+  const translatedDeptName = translatedDepts[0]?.name || kpi?.department?.name;
+
+  // Populate form with translated KPI values when translations load
+  useEffect(() => {
+    if (translatedKpi && kpi) {
+      setFormData(prev => ({
+        ...prev,
+        objective: translatedKpi.objective || prev.objective,
+        description: translatedKpi.description || prev.description,
+        dataSource: translatedKpi.dataSource || prev.dataSource,
+        calculationFormula: translatedKpi.calculationFormula || prev.calculationFormula,
+      }));
+    }
+  }, [translatedKpi, kpi]);
 
   const fetchKPI = useCallback(async () => {
     try {
@@ -418,6 +441,13 @@ export default function KPIDetailPage({
       }
 
       if (response.ok) {
+        // Trigger translation for KPI fields
+        triggerTranslation('KPI', id, {
+          objective: formData.objective,
+          description: formData.description,
+          dataSource: formData.dataSource,
+          calculationFormula: formData.calculationFormula,
+        });
         toast({
           title: t("Success"),
           description: t("KPI details saved successfully."),
@@ -670,7 +700,7 @@ export default function KPIDetailPage({
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Department")}</p>
-          <p className="text-sm font-semibold text-slate-800">{kpi.department?.name || kpi.evidence?.name || "-"}</p>
+          <p className="text-sm font-semibold text-slate-800">{translatedDeptName || kpi.evidence?.name || "-"}</p>
         </div>
       </div>
 

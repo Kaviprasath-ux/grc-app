@@ -58,6 +58,7 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface Department {
@@ -195,6 +196,27 @@ export default function ExceptionsPage() {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
+
+  // Dynamic translations
+  const { data: translatedExceptions } = useTranslatedData(exceptions, { modelName: 'Exception' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'Policy' });
+  const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'Risk' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'Requirement' });
+
+  // Lookup helpers
+  const tDept = useCallback((deptId: string | undefined, fallback: string) => {
+    if (!deptId) return fallback;
+    return translatedDepartments.find(d => d.id === deptId)?.name || fallback;
+  }, [translatedDepartments]);
+
+  const tUser = useCallback((userId: string | undefined, fallback: string) => {
+    if (!userId) return fallback;
+    return translatedUsers.find(u => u.id === userId)?.fullName || fallback;
+  }, [translatedUsers]);
 
   // Create form
   const [createForm, setCreateForm] = useState({
@@ -368,6 +390,14 @@ export default function ExceptionsPage() {
       });
 
       if (response.ok) {
+        const saved = await response.json();
+        const savedId = saved?.data?.id || saved?.id;
+        if (savedId) {
+          triggerTranslation('Exception', savedId, {
+            name: createForm.name,
+            description: createForm.description,
+          });
+        }
         toast({
           title: t("Success"),
           description: t("Exception created successfully"),
@@ -425,9 +455,11 @@ export default function ExceptionsPage() {
   const handleOpenEdit = (exception: Exception, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedException(exception);
+    // Use translated values if available
+    const te = translatedExceptions.find(ex => ex.id === exception.id);
     setEditForm({
-      name: exception.name,
-      description: exception.description || "",
+      name: te?.name || exception.name,
+      description: te?.description || exception.description || "",
       category: exception.category,
       status: exception.status,
       departmentId: exception.department?.id || "",
@@ -476,6 +508,10 @@ export default function ExceptionsPage() {
       });
 
       if (response.ok) {
+        triggerTranslation('Exception', selectedException.id, {
+          name: editForm.name,
+          description: editForm.description,
+        });
         toast({
           title: t("Success"),
           description: t("Exception updated successfully"),
@@ -548,28 +584,28 @@ export default function ExceptionsPage() {
 
   // Status counts
   const statusCounts = {
-    total: exceptions.length,
-    pending: exceptions.filter((e) => e.status === "Pending").length,
-    approved: exceptions.filter((e) => e.status === "Approved").length,
-    authorised: exceptions.filter((e) => e.status === "Authorised").length,
-    overdue: exceptions.filter((e) => e.status === "Overdue").length,
-    closed: exceptions.filter((e) => e.status === "Closed").length,
+    total: translatedExceptions.length,
+    pending: translatedExceptions.filter((e) => e.status === "Pending").length,
+    approved: translatedExceptions.filter((e) => e.status === "Approved").length,
+    authorised: translatedExceptions.filter((e) => e.status === "Authorised").length,
+    overdue: translatedExceptions.filter((e) => e.status === "Overdue").length,
+    closed: translatedExceptions.filter((e) => e.status === "Closed").length,
   };
 
-  // Category counts
-  const categoryCounts = exceptions.reduce(
+  // Category counts (translated labels)
+  const categoryCounts = translatedExceptions.reduce(
     (acc, exc) => {
-      const cat = exc.category || "Other";
+      const cat = t(exc.category || "Other");
       acc[cat] = (acc[cat] || 0) + 1;
       return acc;
     },
     {} as Record<string, number>
   );
 
-  // Department counts
-  const departmentCounts = exceptions.reduce(
+  // Department counts (translated)
+  const departmentCounts = translatedExceptions.reduce(
     (acc, exc) => {
-      const deptName = exc.department?.name || "Unassigned";
+      const deptName = tDept(exc.department?.id, exc.department?.name || t("Unassigned"));
       acc[deptName] = (acc[deptName] || 0) + 1;
       return acc;
     },
@@ -722,7 +758,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select control")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {controls.map((c) => (
+                      {translatedControls.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.controlCode} – {c.name}
                         </SelectItem>
@@ -745,7 +781,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select policy")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {policies.map((p) => (
+                      {translatedPolicies.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.code} - {p.name}
                         </SelectItem>
@@ -768,7 +804,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select risk")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {risks.map((r) => (
+                      {translatedRisks.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
                           {r.riskId} – {r.name}
                         </SelectItem>
@@ -792,7 +828,7 @@ export default function ExceptionsPage() {
                         <SelectValue placeholder={t("Select framework")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {frameworks.map((f) => (
+                        {translatedFrameworks.map((f) => (
                           <SelectItem key={f.id} value={f.id}>
                             {f.code ? `${f.code} – ${f.name}` : f.name}
                           </SelectItem>
@@ -814,7 +850,7 @@ export default function ExceptionsPage() {
                           <SelectValue placeholder={t("Select requirement")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
-                          {requirements.map((r) => (
+                          {translatedRequirements.map((r) => (
                             <SelectItem key={r.id} value={r.id}>
                               {r.code} – {r.name}
                             </SelectItem>
@@ -863,7 +899,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {departments.map((d) => (
+                      {translatedDepartments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.name}
                         </SelectItem>
@@ -884,7 +920,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={createForm.departmentId ? t("Select approver") : t("Select department first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {users
+                      {translatedUsers
                         .filter((u) =>
                           u.departmentId === createForm.departmentId &&
                           u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
@@ -894,7 +930,7 @@ export default function ExceptionsPage() {
                             {u.fullName || u.name}
                           </SelectItem>
                         ))}
-                      {users.filter((u) =>
+                      {translatedUsers.filter((u) =>
                         u.departmentId === createForm.departmentId &&
                         u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
                       ).length === 0 && createForm.departmentId && (
@@ -983,7 +1019,7 @@ export default function ExceptionsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
+                  {translatedUsers.map((user) => (
                     <TableRow
                       key={user.id}
                       className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
@@ -1270,7 +1306,7 @@ export default function ExceptionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {exceptions.length === 0 ? (
+              {translatedExceptions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-12">
                     <div className="flex flex-col items-center gap-3">
@@ -1285,7 +1321,7 @@ export default function ExceptionsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                exceptions.map((exception) => (
+                translatedExceptions.map((exception) => (
                   <TableRow
                     key={exception.id}
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
@@ -1307,10 +1343,7 @@ export default function ExceptionsPage() {
                     </TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{getReference(exception)}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
-                      {exception.requester?.fullName ||
-                        exception.requester?.userName ||
-                        exception.requester?.name ||
-                        "-"}
+                      {tUser(exception.requester?.id, exception.requester?.fullName || exception.requester?.userName || exception.requester?.name || "-")}
                     </TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       {exception.endDate
@@ -1319,7 +1352,7 @@ export default function ExceptionsPage() {
                           )
                         : "-"}
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{exception.department?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{tDept(exception.department?.id, exception.department?.name || "-")}</TableCell>
                     <TableCell className="py-3 text-sm">
                       <Badge
                         className={
@@ -1374,7 +1407,7 @@ export default function ExceptionsPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
             <span className="text-xs text-slate-500">
-              {exceptions.length > 0 ? `${t("Showing")} 1 ${t("to")} ${exceptions.length} ${t("of")} ${exceptions.length}` : t("No exceptions")}
+              {translatedExceptions.length > 0 ? `${t("Showing")} 1 ${t("to")} ${translatedExceptions.length} ${t("of")} ${translatedExceptions.length}` : t("No exceptions")}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -1461,7 +1494,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select requester")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {users.map((u) => (
+                      {translatedUsers.map((u) => (
                         <SelectItem key={u.id} value={u.id}>
                           {u.fullName || u.userName || u.name || "-"}
                         </SelectItem>
@@ -1515,7 +1548,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select control")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {controls.map((c) => (
+                      {translatedControls.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.controlCode} – {c.name}
                         </SelectItem>
@@ -1539,7 +1572,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select policy")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {policies.map((p) => (
+                      {translatedPolicies.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.code} - {p.name}
                         </SelectItem>
@@ -1563,7 +1596,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select risk")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {risks.map((r) => (
+                      {translatedRisks.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
                           {r.riskId} – {r.name}
                         </SelectItem>
@@ -1588,7 +1621,7 @@ export default function ExceptionsPage() {
                         <SelectValue placeholder={t("Select framework")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {frameworks.map((f) => (
+                        {translatedFrameworks.map((f) => (
                           <SelectItem key={f.id} value={f.id}>
                             {f.code ? `${f.code} – ${f.name}` : f.name}
                           </SelectItem>
@@ -1611,7 +1644,7 @@ export default function ExceptionsPage() {
                           <SelectValue placeholder={t("Select requirement")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
-                          {requirements.map((r) => (
+                          {translatedRequirements.map((r) => (
                             <SelectItem key={r.id} value={r.id}>
                               {r.code} – {r.name}
                             </SelectItem>
@@ -1654,7 +1687,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {departments.map((d) => (
+                      {translatedDepartments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.name}
                         </SelectItem>
@@ -1675,7 +1708,7 @@ export default function ExceptionsPage() {
                       <SelectValue placeholder={editForm.departmentId ? t("Select approver") : t("Select department first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {users
+                      {translatedUsers
                         .filter((u) =>
                           u.departmentId === editForm.departmentId &&
                           u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
@@ -1685,7 +1718,7 @@ export default function ExceptionsPage() {
                             {u.fullName || u.name}
                           </SelectItem>
                         ))}
-                      {users.filter((u) =>
+                      {translatedUsers.filter((u) =>
                         u.departmentId === editForm.departmentId &&
                         u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
                       ).length === 0 && editForm.departmentId && (

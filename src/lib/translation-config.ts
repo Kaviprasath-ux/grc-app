@@ -35,7 +35,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   // Priority 2 — Compliance & governance
   { modelName: 'Evidence', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
   { modelName: 'Exception', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
-  { modelName: 'KPI', fields: [{ name: 'objective' }, { name: 'description' }], priority: 2 },
+  { modelName: 'KPI', fields: [{ name: 'objective' }, { name: 'description' }, { name: 'dataSource' }, { name: 'calculationFormula' }], priority: 2 },
   { modelName: 'Requirement', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
   { modelName: 'RequirementCategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 2 },
   { modelName: 'GovernanceVaultDocument', fields: [{ name: 'fileName' }], priority: 2 },

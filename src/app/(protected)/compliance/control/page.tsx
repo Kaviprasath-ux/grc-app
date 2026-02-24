@@ -422,6 +422,18 @@ function ControlListPageContent() {
     return map;
   }, [translatedDepartments]);
 
+  // Rebuild framework chart data with translated names
+  const translatedFrameworkChartData = useMemo(() => {
+    return frameworkChartData.map(item => {
+      // Try to find the framework by original name and translate it
+      const fw = translatedFrameworks.find(f => f.name === item.name);
+      if (fw) return { ...item, name: fw.name, fullName: fw.name };
+      // "No Framework" should be translated via t()
+      if (item.name === "No Framework") return { ...item, name: t("No Framework"), fullName: t("No Framework") };
+      return item;
+    });
+  }, [frameworkChartData, translatedFrameworks, t]);
+
   const sortedControls = [...translatedControls].sort((a, b) => {
     let aValue = "";
     let bValue = "";
@@ -841,10 +853,10 @@ function ControlListPageContent() {
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h3 className="text-sm font-medium text-slate-500 mb-4">{t("Controls by Framework")}</h3>
               <div className={isRTL ? "h-[420px]" : "h-[300px]"} style={{ direction: 'ltr' }}>
-                {frameworkChartData.length > 0 ? (
+                {translatedFrameworkChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={frameworkChartData}
+                      data={translatedFrameworkChartData}
                       margin={isRTL ? { top: 10, right: 20, left: 10, bottom: 100 } : { top: 10, right: 20, left: 10, bottom: 5 }}
                       barCategoryGap="20%"
                     >

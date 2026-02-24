@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, useMemo, useCallback, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X, Home, ChevronRight, Search, Eye } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { useSession } from "next-auth/react";
 import { DatePicker } from "@/components/ui/date-picker";
 
@@ -73,7 +74,7 @@ interface Evidence {
   name: string;
   status: string;
   dueDate?: string;
-  assignee?: { fullName: string };
+  assignee?: { id: string; fullName: string };
   attachments?: { id: string; fileName: string }[];
 }
 
@@ -91,7 +92,7 @@ interface RequirementControl {
     id: string;
     code: string;
     name: string;
-    framework?: { name: string };
+    framework?: { id: string; name: string };
   };
 }
 
@@ -102,7 +103,7 @@ interface ControlRisk {
     name: string;
     riskRating: string;
     status: string;
-    owner?: { fullName: string };
+    owner?: { id: string; fullName: string };
   };
 }
 
@@ -124,7 +125,7 @@ interface EvidenceControl {
     name: string;
     status: string;
     dueDate?: string;
-    assignee?: { fullName: string };
+    assignee?: { id: string; fullName: string };
     attachments?: { id: string; fileName: string }[];
   };
 }
@@ -205,10 +206,94 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
   const [allRisks, setAllRisks] = useState<Risk[]>([]);
   const [allRequirements, setAllRequirements] = useState<Requirement[]>([]);
 
+  // Dynamic data translation hooks
+  const { data: translatedControl } = useTranslatedRecord(control, { modelName: 'Control' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedAllRisks } = useTranslatedData(allRisks, { modelName: 'Risk' });
+  const { data: translatedAllRequirements } = useTranslatedData(allRequirements, { modelName: 'Requirement' });
+
+  // Translate nested arrays from control
+  const requirementArray = useMemo(() => control?.requirements?.map(rc => rc.requirement) || [], [control?.requirements]);
+  const { data: translatedRequirements } = useTranslatedData(requirementArray, { modelName: 'Requirement' });
+
+  const policyArray = useMemo(() => control?.policyControls?.map(pc => pc.policy) || [], [control?.policyControls]);
+  const { data: translatedPolicies } = useTranslatedData(policyArray, { modelName: 'Policy' });
+
+  const evidenceArray = useMemo(() => {
+    const direct = control?.evidences || [];
+    const junction = control?.evidenceControls?.map(ec => ec.evidence) || [];
+    return [...direct, ...junction];
+  }, [control?.evidences, control?.evidenceControls]);
+  const { data: translatedEvidences } = useTranslatedData(evidenceArray, { modelName: 'Evidence' });
+
+  const exceptionArray = useMemo(() => control?.exceptions || [], [control?.exceptions]);
+  const { data: translatedExceptions } = useTranslatedData(exceptionArray, { modelName: 'Exception' });
+
+  const riskArray = useMemo(() => control?.controlRisks?.map(cr => cr.risk) || [], [control?.controlRisks]);
+  const { data: translatedRisks } = useTranslatedData(riskArray, { modelName: 'Risk' });
+
+  // Translate nested single objects
+  const domainArray = useMemo(() => control?.domain ? [control.domain] : [], [control?.domain]);
+  const { data: translatedDomainArr } = useTranslatedData(domainArray, { modelName: 'ControlDomain' });
+  const translatedDomainName = translatedDomainArr[0]?.name || control?.domain?.name;
+
+  const frameworkArray = useMemo(() => control?.framework ? [control.framework] : [], [control?.framework]);
+  // Also collect unique frameworks from requirements for translation
+  const reqFrameworkArray = useMemo(() => {
+    const fws = control?.requirements?.map(rc => rc.requirement.framework).filter((f): f is { id: string; name: string } => !!f) || [];
+    const seen = new Set<string>();
+    return fws.filter(f => { if (seen.has(f.id)) return false; seen.add(f.id); return true; });
+  }, [control?.requirements]);
+  const allFrameworksArray = useMemo(() => [...frameworkArray, ...reqFrameworkArray], [frameworkArray, reqFrameworkArray]);
+  const { data: translatedFrameworks } = useTranslatedData(allFrameworksArray, { modelName: 'Framework' });
+  const translatedFrameworkName = translatedFrameworks.find(f => f.id === control?.framework?.id)?.name || control?.framework?.name;
+
+  const ownerArray = useMemo(() => control?.owner ? [control.owner] : [], [control?.owner]);
+  const { data: translatedOwnerArr } = useTranslatedData(ownerArray, { modelName: 'User' });
+  const translatedOwnerName = translatedOwnerArr[0]?.fullName || control?.owner?.fullName;
+
+  // Lookup helpers
+  const tDept = useCallback((deptId: string | undefined, fallback: string) => {
+    if (!deptId) return fallback;
+    return translatedDepartments.find(d => d.id === deptId)?.name || fallback;
+  }, [translatedDepartments]);
+
+  const tUser = useCallback((userId: string | undefined, fallback: string) => {
+    if (!userId) return fallback;
+    return translatedUsers.find(u => u.id === userId)?.fullName || fallback;
+  }, [translatedUsers]);
+
+  const tReq = useCallback((reqId: string) => {
+    return translatedRequirements.find(r => r.id === reqId)?.name || translatedAllRequirements.find(r => r.id === reqId)?.name;
+  }, [translatedRequirements, translatedAllRequirements]);
+
+  const tRisk = useCallback((riskId: string) => {
+    return translatedRisks.find(r => r.id === riskId)?.name || translatedAllRisks.find(r => r.id === riskId)?.name;
+  }, [translatedRisks, translatedAllRisks]);
+
+  const tFramework = useCallback((fwId: string | undefined, fallback: string) => {
+    if (!fwId) return fallback;
+    return translatedFrameworks.find(f => f.id === fwId)?.name || fallback;
+  }, [translatedFrameworks]);
+
   useEffect(() => {
     fetchControl();
     fetchFilterOptions();
   }, [id]);
+
+  // Populate edit form with translated values
+  useEffect(() => {
+    if (translatedControl && control) {
+      setEditData(prev => ({
+        ...prev,
+        name: translatedControl.name || prev.name,
+        description: translatedControl.description || prev.description,
+        controlQuestion: translatedControl.controlQuestion || prev.controlQuestion,
+      }));
+    }
+  }, [translatedControl, control]);
 
   const fetchControl = async () => {
     try {
@@ -271,6 +356,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
       if (response.ok) {
         setIsEditDialogOpen(false);
         fetchControl();
+        triggerTranslation('Control', id, {
+          name: editData.name || '',
+          description: editData.description || '',
+          controlQuestion: editData.controlQuestion || '',
+        });
       }
     } catch (error) {
       console.error("Error updating control:", error);
@@ -375,9 +465,14 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
         }),
       });
       if (response.ok) {
+        const exData = await response.json();
         setIsExceptionDialogOpen(false);
         setExceptionForm({ name: "", description: "", departmentId: "", endDate: undefined });
         fetchControl();
+        triggerTranslation('Exception', exData.id, {
+          name: exceptionForm.name.trim(),
+          description: exceptionForm.description.trim(),
+        });
       }
     } catch (error) {
       console.error("Error creating exception:", error);
@@ -450,7 +545,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{control.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{translatedControl?.name || control.name}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-sm text-slate-500">{control.controlCode}</span>
             <Badge className={getStatusBadgeColor(control.status)}>{t(control.status)}</Badge>
@@ -468,19 +563,19 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             <div>
               <p className="text-xs text-slate-400 mb-0.5">{t("Domain")}</p>
-              <p className="text-sm font-medium text-slate-800">{control.domain?.name || "-"}</p>
+              <p className="text-sm font-medium text-slate-800">{translatedDomainName || "-"}</p>
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-0.5">{t("Framework")}</p>
-              <p className="text-sm font-medium text-slate-800">{control.framework?.name || "-"}</p>
+              <p className="text-sm font-medium text-slate-800">{translatedFrameworkName || "-"}</p>
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-0.5">{t("Owner")}</p>
-              <p className="text-sm font-medium text-slate-800">{control.owner?.fullName || "-"}</p>
+              <p className="text-sm font-medium text-slate-800">{translatedOwnerName || "-"}</p>
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-0.5">{t("Functional Grouping")}</p>
-              <p className="text-sm font-medium text-slate-800">{control.functionalGrouping || "-"}</p>
+              <p className="text-sm font-medium text-slate-800">{control.functionalGrouping ? t(control.functionalGrouping) : "-"}</p>
             </div>
           </div>
         </div>
@@ -496,7 +591,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                   <SelectValue placeholder={t("Select department")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((d) => (
+                  {translatedDepartments.map((d) => (
                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -509,7 +604,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                   <SelectValue placeholder={t("Select assignee")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((u) => (
+                  {translatedUsers.map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                   ))}
                 </SelectContent>
@@ -521,7 +616,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-0.5">{t("Scope")}</p>
-              <p className="text-sm font-medium text-slate-800">{control.scope || "-"}</p>
+              <p className="text-sm font-medium text-slate-800">{control.scope ? t(control.scope) : "-"}</p>
             </div>
           </div>
         </div>
@@ -543,7 +638,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 variant="outline"
                 className="flex items-center gap-1 text-xs"
               >
-                {cr.risk.riskId} - {cr.risk.name}
+                {cr.risk.riskId} - {tRisk(cr.risk.id) || cr.risk.name}
                 <button
                   onClick={() => handleRemoveRisk(cr.risk.id)}
                   className="ltr:ml-1 rtl:mr-1 hover:text-semantic-error"
@@ -575,13 +670,13 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {control.description && (
                   <div>
                     <p className="text-xs text-slate-400 mb-1">{t("Description")}</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{control.description}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{translatedControl?.description || control.description}</p>
                   </div>
                 )}
                 {control.controlQuestion && (
                   <div>
                     <p className="text-xs text-slate-400 mb-1">{t("Control Question")}</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{control.controlQuestion}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{translatedControl?.controlQuestion || control.controlQuestion}</p>
                   </div>
                 )}
               </div>
@@ -632,8 +727,8 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {control.requirements?.map((rc) => (
                   <TableRow key={rc.requirement.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                     <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{rc.requirement.code}</TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{rc.requirement.name}</TableCell>
-                    <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{rc.requirement.framework?.name || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{tReq(rc.requirement.id) || rc.requirement.name}</TableCell>
+                    <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{tFramework(rc.requirement.framework?.id, rc.requirement.framework?.name || "-")}</TableCell>
                   </TableRow>
                 ))}
                 {(!control.requirements || control.requirements.length === 0) && (
@@ -668,10 +763,10 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {control.policyControls?.map((pc) => (
                   <TableRow key={pc.policy.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                     <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{pc.policy.code}</TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{pc.policy.name}</TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{pc.policy.documentType}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{translatedPolicies.find(p => p.id === pc.policy.id)?.name || pc.policy.name}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{t(pc.policy.documentType)}</TableCell>
                     <TableCell className="py-3.5 pe-5">
-                      <Badge variant="outline">{pc.policy.status}</Badge>
+                      <Badge variant="outline">{t(pc.policy.status)}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -710,11 +805,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {control.evidences?.map((e) => (
                   <TableRow key={e.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                     <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{e.evidenceCode}</TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{e.name}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{translatedEvidences.find(te => te.id === e.id)?.name || e.name}</TableCell>
                     <TableCell className="py-3.5">
-                      <Badge variant="outline">{e.status}</Badge>
+                      <Badge variant="outline">{t(e.status)}</Badge>
                     </TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{e.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{tUser(e.assignee?.id, e.assignee?.fullName || "-")}</TableCell>
                     <TableCell className="py-3.5 text-sm text-slate-600">{e.dueDate ? new Date(e.dueDate).toLocaleDateString() : "-"}</TableCell>
                     <TableCell className="py-3.5 pe-5 text-end">
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => router.push(`/compliance/evidence/${e.id}`)}>
@@ -727,11 +822,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {control.evidenceControls?.map((ec) => (
                   <TableRow key={ec.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                     <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{ec.evidence.evidenceCode}</TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{ec.evidence.name}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{translatedEvidences.find(te => te.id === ec.evidence.id)?.name || ec.evidence.name}</TableCell>
                     <TableCell className="py-3.5">
-                      <Badge variant="outline">{ec.evidence.status}</Badge>
+                      <Badge variant="outline">{t(ec.evidence.status)}</Badge>
                     </TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{ec.evidence.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{tUser(ec.evidence.assignee?.id, ec.evidence.assignee?.fullName || "-")}</TableCell>
                     <TableCell className="py-3.5 text-sm text-slate-600">{ec.evidence.dueDate ? new Date(ec.evidence.dueDate).toLocaleDateString() : "-"}</TableCell>
                     <TableCell className="py-3.5 pe-5 text-end">
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50" onClick={() => router.push(`/compliance/evidence/${ec.evidence.id}`)}>
@@ -789,10 +884,10 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {control.exceptions?.map((ex) => (
                   <TableRow key={ex.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                     <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{ex.exceptionCode}</TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{ex.name}</TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{ex.category}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{translatedExceptions.find(te => te.id === ex.id)?.name || ex.name}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{t(ex.category)}</TableCell>
                     <TableCell className="py-3.5">
-                      <Badge variant="outline">{ex.status}</Badge>
+                      <Badge variant="outline">{t(ex.status)}</Badge>
                     </TableCell>
                     <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{ex.endDate ? new Date(ex.endDate).toLocaleDateString() : "-"}</TableCell>
                   </TableRow>
@@ -830,16 +925,16 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {control.controlRisks?.map((cr) => (
                   <TableRow key={cr.risk.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
                     <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{cr.risk.riskId}</TableCell>
-                    <TableCell className="py-3.5 text-sm text-slate-600">{cr.risk.name}</TableCell>
+                    <TableCell className="py-3.5 text-sm text-slate-600">{tRisk(cr.risk.id) || cr.risk.name}</TableCell>
                     <TableCell className="py-3.5">
                       <Badge className={getRiskRatingColor(cr.risk.riskRating)}>
-                        {cr.risk.riskRating}
+                        {t(cr.risk.riskRating)}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3.5">
-                      <Badge variant="outline">{cr.risk.status}</Badge>
+                      <Badge variant="outline">{t(cr.risk.status)}</Badge>
                     </TableCell>
-                    <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{cr.risk.owner?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{tUser(cr.risk.owner?.id, cr.risk.owner?.fullName || "-")}</TableCell>
                   </TableRow>
                 ))}
                 {(!control.controlRisks || control.controlRisks.length === 0) && (
@@ -923,7 +1018,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                     <SelectValue placeholder={t("Select domain")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
-                    {domains.map((d) => (
+                    {translatedDomains.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1165,7 +1260,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                           checked={isChecked}
                           className="pointer-events-none shrink-0"
                         />
-                        <span className="text-sm text-slate-700">{req.code} - {req.name}</span>
+                        <span className="text-sm text-slate-700">{req.code} - {translatedAllRequirements.find(r => r.id === req.id)?.name || req.name}</span>
                       </div>
                     );
                   })}
@@ -1232,7 +1327,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-500">{t("Control Name")}</Label>
-                <Input value={control.name} disabled className="h-9 text-sm bg-slate-50" />
+                <Input value={translatedControl?.name || control.name} disabled className="h-9 text-sm bg-slate-50" />
               </div>
             </div>
 
@@ -1258,7 +1353,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1301,7 +1396,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             <DialogTitle>{t("Select Risks")}</DialogTitle>
           </div>
           <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5">
-            {allRisks.map((risk) => (
+            {translatedAllRisks.map((risk) => (
               <div key={risk.id} className="flex items-center space-x-2 py-2">
                 <Checkbox
                   id={`risk-${risk.id}`}

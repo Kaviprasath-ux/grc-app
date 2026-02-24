@@ -31,6 +31,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
+
+interface Department {
+  id: string;
+  name: string;
+}
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface KPI {
@@ -67,6 +73,7 @@ export default function KPIsPage() {
   const { data: session } = useSession();
   const isGRCAdmin = useHasRole("GRCAdministrator");
   const [kpis, setKpis] = useState<KPI[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -75,12 +82,29 @@ export default function KPIsPage() {
   const userRoles = (session?.user?.roles as string[]) || [];
   const isCustomerAdmin = userRoles.includes("CustomerAdministrator");
 
+  // Dynamic translations
+  const { data: translatedKpis } = useTranslatedData(kpis, { modelName: 'KPI' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+
+  // Translated department name lookup
+  const tDept = useCallback((deptId: string | undefined, fallback: string) => {
+    if (!deptId) return fallback;
+    return translatedDepartments.find(d => d.id === deptId)?.name || fallback;
+  }, [translatedDepartments]);
+
   const fetchKPIs = useCallback(async () => {
     try {
-      const response = await fetch("/api/kpis");
-      if (response.ok) {
-        const result = await response.json();
+      const [kpiRes, deptRes] = await Promise.all([
+        fetch("/api/kpis"),
+        fetch("/api/departments"),
+      ]);
+      if (kpiRes.ok) {
+        const result = await kpiRes.json();
         setKpis(result.data || []);
+      }
+      if (deptRes.ok) {
+        const deptResult = await deptRes.json();
+        setDepartments(deptResult.data || deptResult || []);
       }
     } catch (error) {
       console.error("Error fetching KPIs:", error);
@@ -94,7 +118,7 @@ export default function KPIsPage() {
   }, [fetchKPIs]);
 
   // Filter KPIs based on search and status
-  const filteredKpis = kpis.filter((kpi) => {
+  const filteredKpis = translatedKpis.filter((kpi) => {
     const matchesSearch =
       !searchTerm ||
       kpi.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,18 +131,19 @@ export default function KPIsPage() {
 
   // Status counts
   const statusCounts = {
-    total: kpis.length,
-    scheduled: kpis.filter((k) => k.status === "Scheduled").length,
-    missed: kpis.filter((k) => k.status === "Missed").length,
-    overdue: kpis.filter((k) => k.status === "Overdue").length,
-    achieved: kpis.filter((k) => k.status === "Achieved").length,
+    total: translatedKpis.length,
+    scheduled: translatedKpis.filter((k) => k.status === "Scheduled").length,
+    missed: translatedKpis.filter((k) => k.status === "Missed").length,
+    overdue: translatedKpis.filter((k) => k.status === "Overdue").length,
+    achieved: translatedKpis.filter((k) => k.status === "Achieved").length,
   };
 
-  // Department counts - use evidence department if KPI department is not set
-  const departmentCounts = kpis.reduce(
+  // Department counts - use translated department names
+  const departmentCounts = translatedKpis.reduce(
     (acc, kpi) => {
-      const deptName =
-        kpi.department?.name || kpi.evidence?.department?.name || "Unassigned";
+      const deptId = kpi.department?.id || kpi.evidence?.department?.id;
+      const rawName = kpi.department?.name || kpi.evidence?.department?.name || t("Unassigned");
+      const deptName = tDept(deptId, rawName);
       acc[deptName] = (acc[deptName] || 0) + 1;
       return acc;
     },
@@ -424,8 +449,9 @@ export default function KPIsPage() {
             ) : (
               paginatedKpis.map((kpi) => {
                 const displayCode = kpi.evidence?.evidenceCode || kpi.code;
-                const displayDepartment =
-                  kpi.department?.name || kpi.evidence?.department?.name || "-";
+                const deptId = kpi.department?.id || kpi.evidence?.department?.id;
+                const rawDeptName = kpi.department?.name || kpi.evidence?.department?.name || "-";
+                const displayDepartment = tDept(deptId, rawDeptName);
                 const displayReviewDate = kpi.reviewDate || kpi.evidence?.reviewDate;
 
                 return (

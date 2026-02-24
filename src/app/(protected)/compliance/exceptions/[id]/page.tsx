@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useTranslatedRecord, useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface ExceptionComment {
   id: string;
@@ -139,6 +140,19 @@ export default function ExceptionDetailPage({
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
 
+  // Dynamic translations
+  const { data: translatedException } = useTranslatedRecord(exception, { modelName: 'Exception' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+
+  // Translate nested reference objects
+  const policyArray = useMemo(() => exception?.policy ? [exception.policy] : [], [exception?.policy]);
+  const controlArray = useMemo(() => exception?.control ? [exception.control] : [], [exception?.control]);
+  const riskArray = useMemo(() => exception?.risk ? [exception.risk] : [], [exception?.risk]);
+  const { data: translatedPolicies } = useTranslatedData(policyArray, { modelName: 'Policy' });
+  const { data: translatedControls } = useTranslatedData(controlArray, { modelName: 'Control' });
+  const { data: translatedRisks } = useTranslatedData(riskArray, { modelName: 'Risk' });
+
   // Form state
   const [formData, setFormData] = useState({
     name: "",
@@ -237,6 +251,17 @@ export default function ExceptionDetailPage({
     fetchReferenceData();
   }, [fetchException, fetchReferenceData]);
 
+  // Update form with translated values when translations load
+  useEffect(() => {
+    if (translatedException && exception) {
+      setFormData(prev => ({
+        ...prev,
+        name: translatedException.name || prev.name,
+        description: translatedException.description || prev.description,
+      }));
+    }
+  }, [translatedException, exception]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -256,6 +281,10 @@ export default function ExceptionDetailPage({
       });
 
       if (response.ok) {
+        triggerTranslation('Exception', id, {
+          name: formData.name,
+          description: formData.description,
+        });
         fetchException();
       }
     } catch (error) {
@@ -466,9 +495,9 @@ export default function ExceptionDetailPage({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{exception.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{translatedException?.name || exception.name}</h1>
           <Badge className={statusColors[exception.status] || "bg-slate-100 text-slate-600"}>
-            {exception.status}
+            {t(exception.status)}
           </Badge>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -560,13 +589,13 @@ export default function ExceptionDetailPage({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Category")}</Label>
-                <Input value={exception.category} disabled className="bg-slate-50" />
+                <Input value={t(exception.category)} disabled className="bg-slate-50" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
                 {isReadOnly ? (
                   <Input
-                    value={formData.status}
+                    value={t(formData.status)}
                     disabled
                     className="bg-slate-50"
                   />
@@ -583,7 +612,7 @@ export default function ExceptionDetailPage({
                     <SelectContent>
                       {statuses.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {s}
+                          {t(s)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -594,7 +623,7 @@ export default function ExceptionDetailPage({
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</Label>
                 {isReadOnly ? (
                   <Input
-                    value={exception.department?.name || "-"}
+                    value={translatedDepartments.find(d => d.id === exception.department?.id)?.name || exception.department?.name || "-"}
                     disabled
                     className="bg-slate-50"
                   />
@@ -609,7 +638,7 @@ export default function ExceptionDetailPage({
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments.map((d) => (
+                      {translatedDepartments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.name}
                         </SelectItem>
@@ -653,11 +682,9 @@ export default function ExceptionDetailPage({
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requester")}</Label>
                 <Input
                   value={
+                    (exception.requester?.id ? translatedUsers.find(u => u.id === exception.requester?.id)?.fullName : null) ||
                     exception.requester?.fullName ||
                     exception.requester?.userName ||
-                    (exception.requester?.firstName && exception.requester?.lastName
-                      ? `${exception.requester.firstName} ${exception.requester.lastName}`
-                      : null) ||
                     exception.requester?.name ||
                     "-"
                   }
@@ -669,11 +696,9 @@ export default function ExceptionDetailPage({
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approver")}</Label>
                 <Input
                   value={
+                    (exception.approver?.id ? translatedUsers.find(u => u.id === exception.approver?.id)?.fullName : null) ||
                     exception.approver?.fullName ||
                     exception.approver?.userName ||
-                    (exception.approver?.firstName && exception.approver?.lastName
-                      ? `${exception.approver.firstName} ${exception.approver.lastName}`
-                      : null) ||
                     exception.approver?.name ||
                     "-"
                   }
@@ -711,7 +736,7 @@ export default function ExceptionDetailPage({
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Policy Name")}
                     </Label>
-                    <p className="text-sm font-medium text-slate-800">{exception.policy.name}</p>
+                    <p className="text-sm font-medium text-slate-800">{translatedPolicies[0]?.name || exception.policy.name}</p>
                   </div>
                 </div>
               </div>
@@ -735,7 +760,7 @@ export default function ExceptionDetailPage({
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Control Name")}
                     </Label>
-                    <p className="text-sm font-medium text-slate-800">{exception.control.name}</p>
+                    <p className="text-sm font-medium text-slate-800">{translatedControls[0]?.name || exception.control.name}</p>
                   </div>
                 </div>
               </div>
@@ -759,7 +784,7 @@ export default function ExceptionDetailPage({
                     <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                       {t("Risk Name")}
                     </Label>
-                    <p className="text-sm font-medium text-slate-800">{exception.risk.name}</p>
+                    <p className="text-sm font-medium text-slate-800">{translatedRisks[0]?.name || exception.risk.name}</p>
                   </div>
                 </div>
               </div>

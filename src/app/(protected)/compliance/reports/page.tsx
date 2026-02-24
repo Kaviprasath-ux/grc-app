@@ -29,6 +29,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Framework {
   id: string;
@@ -156,6 +157,7 @@ export default function ReportsPage() {
   // Framework selection
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [selectedFrameworkId, setSelectedFrameworkId] = useState<string>("");
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
 
   // Fetch frameworks on mount
   useEffect(() => {
@@ -594,7 +596,7 @@ export default function ReportsPage() {
                       <SelectValue placeholder={t("Framework")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      {frameworks.map((framework) => (
+                      {translatedFrameworks.map((framework) => (
                         <SelectItem key={framework.id} value={framework.id}>
                           {framework.name}
                         </SelectItem>

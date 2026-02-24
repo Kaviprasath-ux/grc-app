@@ -70,6 +70,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { EvidenceAIReview } from "@/components/evidence/EvidenceAIReview";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 // Cycle status types
 type CycleStatus = "none" | "submitted" | "validated" | "rejected";
@@ -327,6 +328,18 @@ export default function EvidenceDetailPage() {
   const [controlDomainFilter, setControlDomainFilter] = useState("all");
   const [controlFunctionalGroupingFilter, setControlFunctionalGroupingFilter] = useState("all");
   const [controlFrameworkFilter, setControlFrameworkFilter] = useState("all");
+
+  // Dynamic translations for user-entered data
+  const { data: translatedEvidence } = useTranslatedRecord(evidence, { modelName: 'Evidence' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedControlDomains } = useTranslatedData(controlDomains, { modelName: 'ControlDomain' });
+
+  // Translate linked KPI record
+  const linkedKpiRecord = evidence?.kpis?.[0] || null;
+  const { data: translatedKpi } = useTranslatedRecord(linkedKpiRecord, { modelName: 'KPI' });
 
   // KPI form
   const [kpiForm, setKpiForm] = useState({
@@ -888,6 +901,15 @@ export default function EvidenceDetailPage() {
       }
 
       if (kpiResponse.ok) {
+        const savedKpi = await kpiResponse.json();
+        if (savedKpi?.id) {
+          triggerTranslation('KPI', savedKpi.id, {
+            objective: kpiForm.kpiObjective,
+            description: kpiForm.kpiDescription,
+            dataSource: kpiForm.kpiDataSource,
+            calculationFormula: kpiForm.kpiCalculationFormula,
+          });
+        }
         toast.success(existingKpi ? t("KPI updated successfully!") : t("KPI created successfully!"));
         setKpiEditMode(false); // Switch to view mode (show Edit button)
         await fetchEvidence();
@@ -1266,8 +1288,8 @@ export default function EvidenceDetailPage() {
 
   // Filter users by selected department
   const filteredUsers = evidence?.departmentId
-    ? users.filter((u) => u.departmentId === evidence.departmentId)
-    : users;
+    ? translatedUsers.filter((u) => u.departmentId === evidence.departmentId)
+    : translatedUsers;
 
   // Get linked control IDs for filtering
   const linkedControlIds = evidence?.evidenceControls?.map((ec) => ec.control.id) || [];
@@ -1276,7 +1298,7 @@ export default function EvidenceDetailPage() {
   const functionalGroupings = ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"];
 
   // Filter out already linked controls and apply search/filter criteria
-  const availableControls = controls.filter((c) => {
+  const availableControls = translatedControls.filter((c) => {
     // First, exclude already linked controls
     if (linkedControlIds.includes(c.id)) return false;
 
@@ -1351,12 +1373,12 @@ export default function EvidenceDetailPage() {
           {evidence.frameworks && evidence.frameworks.length > 0 ? (
             evidence.frameworks.map((fw) => (
               <Badge key={fw.id} className="bg-primary-700 text-white hover:bg-primary-600">
-                {fw.name}
+                {translatedFrameworks.find(f => f.id === fw.id)?.name || fw.name}
               </Badge>
             ))
           ) : evidence.framework ? (
             <Badge className="bg-primary-700 text-white hover:bg-primary-600">
-              {evidence.framework.name}
+              {translatedFrameworks.find(f => f.id === evidence.framework?.id)?.name || evidence.framework.name}
             </Badge>
           ) : null}
         </div>
@@ -1376,7 +1398,7 @@ export default function EvidenceDetailPage() {
               <div className="space-y-6">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
-                  <p className="mt-1 text-slate-800">{evidence.name}</p>
+                  <p className="mt-1 text-slate-800">{translatedEvidence?.name || evidence.name}</p>
                 </div>
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Recurrence")}</Label>
@@ -1402,7 +1424,7 @@ export default function EvidenceDetailPage() {
               <div className="space-y-6">
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Artifact")}</Label>
-                  <p className="mt-1 text-slate-800">{evidence.description || "-"}</p>
+                  <p className="mt-1 text-slate-800">{translatedEvidence?.description || evidence.description || "-"}</p>
                 </div>
                 <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -1468,7 +1490,9 @@ export default function EvidenceDetailPage() {
               <div>
                 <h3 className="text-lg font-semibold text-primary-700 mb-4">{t("Controls")}</h3>
                 <div className="space-y-3">
-                  {evidence.evidenceControls?.map((ec) => (
+                  {evidence.evidenceControls?.map((ec) => {
+                    const tc = translatedControls.find(c => c.id === ec.control.id);
+                    return (
                     <div
                       key={ec.id}
                       className="bg-white border border-slate-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-sm transition-all"
@@ -1477,10 +1501,10 @@ export default function EvidenceDetailPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-primary-700 font-medium hover:underline">
-                            {ec.control.controlCode} : {ec.control.name}
+                            {ec.control.controlCode} : {tc?.name || ec.control.name}
                           </p>
-                          {ec.control.description && (
-                            <p className="text-slate-600 text-sm mt-1">{ec.control.description}</p>
+                          {(tc?.description || ec.control.description) && (
+                            <p className="text-slate-600 text-sm mt-1">{tc?.description || ec.control.description}</p>
                           )}
                         </div>
                         <Badge className="bg-primary-700 text-white hover:bg-primary-600">
@@ -1488,7 +1512,8 @@ export default function EvidenceDetailPage() {
                         </Badge>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
                     <div className="text-center py-8 text-slate-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -1576,7 +1601,7 @@ export default function EvidenceDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{evidence.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{translatedEvidence?.name || evidence.name}</h1>
           <Badge className={statusColors[evidence.status] || "bg-slate-100 text-slate-600"}>
             {t(evidence.status)}
           </Badge>
@@ -1669,7 +1694,7 @@ export default function EvidenceDetailPage() {
                   <div className="space-y-1">
                     <p className="font-medium text-xs text-slate-300">{t("Linked Frameworks:")}</p>
                     {linkedFrameworks.map((fw) => (
-                      <p key={fw.id} className="text-sm">{fw.name}</p>
+                      <p key={fw.id} className="text-sm">{translatedFrameworks.find(f => f.id === fw.id)?.name || fw.name}</p>
                     ))}
                   </div>
                 </TooltipContent>
@@ -1693,11 +1718,11 @@ export default function EvidenceDetailPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
-                <p>{evidence.name}</p>
+                <p>{translatedEvidence?.name || evidence.name}</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
-                <p>{evidence.description || "-"}</p>
+                <p>{translatedEvidence?.description || evidence.description || "-"}</p>
               </div>
             </div>
 
@@ -1712,7 +1737,7 @@ export default function EvidenceDetailPage() {
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
                       </SelectItem>
@@ -1759,7 +1784,7 @@ export default function EvidenceDetailPage() {
                     </DialogContent>
                   </Dialog>
                 </div>
-                <p>{evidence.assignee?.fullName || "-"}</p>
+                <p>{(evidence.assigneeId ? translatedUsers.find(u => u.id === evidence.assigneeId)?.fullName : null) || evidence.assignee?.fullName || "-"}</p>
               </div>
             </div>
 
@@ -1839,7 +1864,7 @@ export default function EvidenceDetailPage() {
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")} <span className="text-red-500">*</span></Label>
                   <Textarea
                     placeholder={t("Enter Objective")}
-                    value={kpiForm.kpiObjective}
+                    value={!kpiEditMode && translatedKpi?.objective ? translatedKpi.objective : kpiForm.kpiObjective}
                     onChange={(e) => handleKpiFieldChange("kpiObjective", e.target.value)}
                     disabled={!kpiEditMode}
                     rows={3}
@@ -1853,7 +1878,7 @@ export default function EvidenceDetailPage() {
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Data Source")} <span className="text-red-500">*</span></Label>
                   <Textarea
                     placeholder={t("Enter Data Source")}
-                    value={kpiForm.kpiDataSource}
+                    value={!kpiEditMode && translatedKpi?.dataSource ? translatedKpi.dataSource : kpiForm.kpiDataSource}
                     onChange={(e) => handleKpiFieldChange("kpiDataSource", e.target.value)}
                     disabled={!kpiEditMode}
                     rows={3}
@@ -1883,7 +1908,7 @@ export default function EvidenceDetailPage() {
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")} <span className="text-red-500">*</span></Label>
                   <Textarea
                     placeholder={t("Enter KPI Description")}
-                    value={kpiForm.kpiDescription}
+                    value={!kpiEditMode && translatedKpi?.description ? translatedKpi.description : kpiForm.kpiDescription}
                     onChange={(e) => handleKpiFieldChange("kpiDescription", e.target.value)}
                     disabled={!kpiEditMode}
                     rows={3}
@@ -1897,7 +1922,7 @@ export default function EvidenceDetailPage() {
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Calculation Formula")} <span className="text-red-500">*</span></Label>
                   <Textarea
                     placeholder={t("Enter the KPI Calculation Formula")}
-                    value={kpiForm.kpiCalculationFormula}
+                    value={!kpiEditMode && translatedKpi?.calculationFormula ? translatedKpi.calculationFormula : kpiForm.kpiCalculationFormula}
                     onChange={(e) => handleKpiFieldChange("kpiCalculationFormula", e.target.value)}
                     disabled={!kpiEditMode}
                     rows={3}
@@ -2380,7 +2405,7 @@ export default function EvidenceDetailPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">{t("All Domains")}</SelectItem>
-                            {controlDomains.map((d) => (
+                            {translatedControlDomains.map((d) => (
                               <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -2402,7 +2427,7 @@ export default function EvidenceDetailPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-                            {frameworks.map((f) => (
+                            {translatedFrameworks.map((f) => (
                               <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -2495,7 +2520,9 @@ export default function EvidenceDetailPage() {
               </div>
               <div className="p-3 sm:p-5">
                 <div className="space-y-2">
-                  {evidence.evidenceControls?.map((ec) => (
+                  {evidence.evidenceControls?.map((ec) => {
+                    const tc = translatedControls.find(c => c.id === ec.control.id);
+                    return (
                     <div
                       key={ec.id}
                       className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 p-3 border border-slate-200 rounded-lg hover:bg-slate-50/60 cursor-pointer hover:border-primary-300 transition-all"
@@ -2504,13 +2531,13 @@ export default function EvidenceDetailPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-primary-700 hover:underline">{ec.control.controlCode}</span>
-                          <span>: {ec.control.name}</span>
+                          <span>: {tc?.name || ec.control.name}</span>
                         </div>
-                        {ec.control.description && (
-                          <p className="text-sm text-slate-500 mt-1">{ec.control.description}</p>
+                        {(tc?.description || ec.control.description) && (
+                          <p className="text-sm text-slate-500 mt-1">{tc?.description || ec.control.description}</p>
                         )}
                         <Badge variant="secondary" className="mt-2">
-                          {ec.control.entities}
+                          {t(ec.control.entities || "Organization Wide")}
                         </Badge>
                       </div>
                       <Button
@@ -2524,7 +2551,8 @@ export default function EvidenceDetailPage() {
                         {t("Unlink")}
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                   {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
                     <div className="text-center py-8 text-slate-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />

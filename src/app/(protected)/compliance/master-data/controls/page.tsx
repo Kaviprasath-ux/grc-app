@@ -1117,7 +1117,7 @@ export default function ControlsMasterDataPage() {
                     {control.name}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
-                    {control.domain?.name || "-"}
+                    {(control.domain?.id ? translatedDomains.find(d => d.id === control.domain?.id)?.name : null) || control.domain?.name || "-"}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
                     {control.controlCode}

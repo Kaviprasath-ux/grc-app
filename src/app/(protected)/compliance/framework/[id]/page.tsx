@@ -50,6 +50,7 @@ import * as XLSX from "xlsx";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Framework {
   id: string;
@@ -763,6 +764,7 @@ interface SOARowProps {
   onJustificationChange: (id: string, value: string) => void;
   onImplementationChange: (id: string, value: string) => void;
   t: (key: string) => string;
+  translatedName?: string;
 }
 
 const SOARow = memo(function SOARow({
@@ -772,12 +774,13 @@ const SOARow = memo(function SOARow({
   onJustificationChange,
   onImplementationChange,
   t,
+  translatedName,
 }: SOARowProps) {
   return (
     <TableRow className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
       <TableCell className="py-3 text-sm font-medium text-slate-800 w-16">{req.code}</TableCell>
       <TableCell className="py-3 text-sm text-slate-700 w-64 truncate">
-        {req.name}
+        {translatedName || req.name}
       </TableCell>
       <TableCell className="py-3 w-28">
         <Select
@@ -831,7 +834,7 @@ const SOARow = memo(function SOARow({
               : "bg-error-light text-semantic-error"
           }`}
         >
-          {req.controlCompliance || t("Non Compliant")}
+          {t(req.controlCompliance || "Non Compliant")}
         </span>
       </TableCell>
     </TableRow>
@@ -935,6 +938,38 @@ export default function FrameworkDetailPage({
   const [auditLogActionFilter, setAuditLogActionFilter] = useState("all");
   const [auditLogPage, setAuditLogPage] = useState(0);
   const AUDIT_LOG_PAGE_SIZE = 10;
+
+  // Dynamic data translation hooks
+  const { data: translatedFramework } = useTranslatedRecord(framework, { modelName: 'Framework' });
+
+  // Flatten all requirements for translation
+  const allRequirements = useMemo(() => framework?.requirements || [], [framework?.requirements]);
+  const { data: translatedRequirements } = useTranslatedData(allRequirements, { modelName: 'Requirement' });
+
+  // Translate categories
+  const allCategories = useMemo(() => framework?.requirementCategories || [], [framework?.requirementCategories]);
+  const { data: translatedCategories } = useTranslatedData(allCategories, { modelName: 'RequirementCategory' });
+
+  // Translate controls and domains
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedControlDomains } = useTranslatedData(controlDomains, { modelName: 'ControlDomain' });
+
+  // Lookup helpers
+  const tReq = useCallback((reqId: string, fallback: string) => {
+    return translatedRequirements.find(r => r.id === reqId)?.name || fallback;
+  }, [translatedRequirements]);
+
+  const tReqDesc = useCallback((reqId: string, fallback: string) => {
+    return translatedRequirements.find(r => r.id === reqId)?.description || fallback;
+  }, [translatedRequirements]);
+
+  const tCat = useCallback((catId: string, fallback: string) => {
+    return translatedCategories.find(c => c.id === catId)?.name || fallback;
+  }, [translatedCategories]);
+
+  const tControl = useCallback((controlId: string, fallback: string) => {
+    return translatedControls.find(c => c.id === controlId)?.name || fallback;
+  }, [translatedControls]);
 
   useEffect(() => {
     fetchFramework();
@@ -1202,6 +1237,7 @@ export default function FrameworkDetailPage({
       });
 
       if (response.ok) {
+        const savedReq = await response.json();
         setIsAddRequirementOpen(false);
         setNewRequirement({
           name: "",
@@ -1213,6 +1249,10 @@ export default function FrameworkDetailPage({
         });
         setReqErrors({});
         fetchFramework();
+        triggerTranslation('Requirement', savedReq.id, {
+          name: newRequirement.name.trim(),
+          description: newRequirement.description.trim(),
+        });
       }
     } catch (error) {
       console.error("Error adding requirement:", error);
@@ -1222,9 +1262,9 @@ export default function FrameworkDetailPage({
   const handleOpenUpdateRequirement = (requirement: Requirement) => {
     setUpdateRequirement({
       id: requirement.id,
-      name: requirement.name,
+      name: tReq(requirement.id, requirement.name),
       code: requirement.code,
-      description: requirement.description || "",
+      description: tReqDesc(requirement.id, requirement.description || ""),
       requirementType: requirement.requirementType || "Mandatory",
       chapterType: requirement.chapterType || "Domain",
       applicability: requirement.applicability || "",
@@ -1253,6 +1293,9 @@ export default function FrameworkDetailPage({
 
       if (response.ok) {
         setIsUpdateRequirementOpen(false);
+        const reqId = updateRequirement.id;
+        const reqName = updateRequirement.name;
+        const reqDesc = updateRequirement.description;
         setUpdateRequirement({
           id: "",
           name: "",
@@ -1265,6 +1308,10 @@ export default function FrameworkDetailPage({
           controlCompliance: "",
         });
         fetchFramework();
+        triggerTranslation('Requirement', reqId, {
+          name: reqName,
+          description: reqDesc,
+        });
       }
     } catch (error) {
       console.error("Error updating requirement:", error);
@@ -1441,7 +1488,10 @@ export default function FrameworkDetailPage({
       });
 
       if (response.ok) {
+        const excData = await response.json();
         setIsAddExceptionOpen(false);
+        const excName = newException.name.trim();
+        const excDesc = newException.description.trim();
         setNewException({
           name: "",
           description: "",
@@ -1450,6 +1500,10 @@ export default function FrameworkDetailPage({
         });
         setExcErrors({});
         setSelectedRequirement(null);
+        triggerTranslation('Exception', excData.id, {
+          name: excName,
+          description: excDesc,
+        });
       }
     } catch (error) {
       console.error("Error adding exception:", error);
@@ -1673,12 +1727,12 @@ export default function FrameworkDetailPage({
           {t("Frameworks")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{framework.name}</span>
+        <span className="text-primary-700 font-medium">{translatedFramework?.name || framework.name}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{framework.name}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{translatedFramework?.name || framework.name}</h1>
         <p className="text-sm text-slate-500">{t("Manage framework requirements and controls")}</p>
       </div>
 
@@ -1729,7 +1783,7 @@ export default function FrameworkDetailPage({
                 <AccordionItem key={category.id} value={category.id}>
                   <AccordionTrigger className="px-4 hover:no-underline">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{category.name}</span>
+                      <span className="font-medium">{tCat(category.id, category.name)}</span>
                       <span className="text-slate-400 text-sm">
                         {category.children?.length || 0} {t("items")}
                       </span>
@@ -1744,14 +1798,14 @@ export default function FrameworkDetailPage({
                         >
                           <AccordionTrigger className="hover:no-underline">
                             <span>
-                              {requirement.code} - {requirement.name}
+                              {requirement.code} - {tReq(requirement.id, requirement.name)}
                             </span>
                           </AccordionTrigger>
                           <AccordionContent className="space-y-4">
                             {/* Requirement Description */}
                             <div className="flex items-start justify-between p-4 bg-muted/50 rounded-lg">
                               <p className="text-sm flex-1">
-                                {requirement.description || t("No description")}
+                                {tReqDesc(requirement.id, requirement.description || "") || t("No description")}
                               </p>
                               <Button
                                 variant="ghost"
@@ -1818,7 +1872,7 @@ export default function FrameworkDetailPage({
                                           </TableCell>
                                           <TableCell>
                                             <span className="text-primary-600 hover:underline">
-                                              {rc.control.name}
+                                              {tControl(rc.control.id, rc.control.name)}
                                             </span>
                                           </TableCell>
                                           <TableCell>
@@ -1912,6 +1966,7 @@ export default function FrameworkDetailPage({
                     onJustificationChange={handleJustificationChange}
                     onImplementationChange={handleImplementationChange}
                     t={t}
+                    translatedName={tReq(req.id, req.name)}
                   />
                 ))}
               </TableBody>
@@ -2255,7 +2310,7 @@ export default function FrameworkDetailPage({
                 </SelectTrigger>
                 <SelectContent className="bg-white">
                   <SelectItem value="all">{t("All Domains")}</SelectItem>
-                  {controlDomains.map((domain) => (
+                  {translatedControlDomains.map((domain) => (
                     <SelectItem key={domain.id} value={domain.id}>
                       {domain.name}
                     </SelectItem>
@@ -2321,7 +2376,7 @@ export default function FrameworkDetailPage({
                   <div>
                     <div className="text-sm font-medium text-slate-800">{control.controlCode}</div>
                     <div className="text-xs text-slate-500">
-                      {control.name}
+                      {tControl(control.id, control.name)}
                     </div>
                   </div>
                 </div>
@@ -2397,7 +2452,7 @@ export default function FrameworkDetailPage({
 
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Framework")}</Label>
-              <Input disabled value={framework.name} className="mt-1.5 bg-slate-50" />
+              <Input disabled value={translatedFramework?.name || framework.name} className="mt-1.5 bg-slate-50" />
             </div>
 
             <div>

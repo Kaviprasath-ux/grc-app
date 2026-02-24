@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Framework {
   id: string;
@@ -81,6 +82,11 @@ function ManagementReportContent() {
   const [governanceDocuments, setGovernanceDocuments] = useState<GovernanceDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedExceptions } = useTranslatedData(exceptions, { modelName: 'Exception' });
+  const { data: translatedGovernance } = useTranslatedData(governanceDocuments, { modelName: 'Policy' });
+
   // Calculate overall compliance stats
   const overallStats = {
     compliant: 0,
@@ -138,19 +144,19 @@ function ManagementReportContent() {
 
   // Filter data by framework if selected
   const filteredFrameworks = frameworkId
-    ? frameworks.filter((f) => f.id === frameworkId)
-    : frameworks;
+    ? translatedFrameworks.filter((f) => f.id === frameworkId)
+    : translatedFrameworks;
 
   const filteredControls = frameworkId
-    ? controls.filter((c) => c.framework?.name && frameworks.find(f => f.id === frameworkId)?.name === c.framework.name)
-    : controls;
+    ? translatedControls.filter((c) => c.framework?.name && frameworks.find(f => f.id === frameworkId)?.name === c.framework.name)
+    : translatedControls;
 
-  const controlExceptionsList = exceptions.filter((e) => e.type === "Control" || e.control);
-  const requirementExceptionsList = exceptions.filter((e) => e.type === "Requirement" || e.requirement);
+  const controlExceptionsList = translatedExceptions.filter((e) => e.type === "Control" || e.control);
+  const requirementExceptionsList = translatedExceptions.filter((e) => e.type === "Requirement" || e.requirement);
 
   // Group controls by framework (using all controls, not filtered)
   const controlsByFramework: Record<string, Control[]> = {};
-  controls.forEach((control) => {
+  translatedControls.forEach((control) => {
     const fwName = control.framework?.name || "Unassigned";
     if (!controlsByFramework[fwName]) {
       controlsByFramework[fwName] = [];
@@ -173,7 +179,7 @@ function ManagementReportContent() {
   }
 
   const calculateFrameworkComplianceStats = (): FrameworkComplianceStats[] => {
-    return frameworks.map((fw) => {
+    return translatedFrameworks.map((fw) => {
       // Get all controls for this framework (de-duplicated by control id)
       const fwControls = controlsByFramework[fw.name] || [];
       const uniqueControlsMap = new Map<string, Control>();
@@ -227,7 +233,7 @@ function ManagementReportContent() {
 
   // Group governance documents by framework
   const governanceByFramework: Record<string, GovernanceDocument[]> = {};
-  governanceDocuments.forEach((doc) => {
+  translatedGovernance.forEach((doc) => {
     const fwName = doc.framework?.name || "Unassigned";
     if (!governanceByFramework[fwName]) {
       governanceByFramework[fwName] = [];
@@ -569,7 +575,7 @@ function ManagementReportContent() {
                       exception.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
                       "bg-slate-100 text-slate-800"
                     }`}>
-                      {exception.status}
+                      {t(exception.status)}
                     </span>
                   </div>
                 ))}
@@ -764,7 +770,7 @@ function ManagementReportContent() {
                         control.status === "Not Implemented" ? "bg-red-100 text-red-800" :
                         "bg-yellow-100 text-yellow-800"
                       }`}>
-                        {control.status}
+                        {t(control.status)}
                       </span>
                     </div>
                   ))}

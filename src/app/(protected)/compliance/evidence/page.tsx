@@ -78,6 +78,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { isValidName } from "@/lib/validations";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Evidence {
   id: string;
@@ -183,6 +184,7 @@ export default function EvidencePage() {
   searchTermRef.current = searchTerm;
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Tabs state
   const [activeTab, setActiveTab] = useState("evidence-request");
@@ -278,6 +280,14 @@ export default function EvidencePage() {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [controlDomains, setControlDomains] = useState<ControlDomain[]>([]);
+
+  // Dynamic translations for user-entered data
+  const { data: translatedEvidences } = useTranslatedData(evidences, { modelName: 'Evidence' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedControlDomains } = useTranslatedData(controlDomains, { modelName: 'ControlDomain' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
 
   // Create form
   const [createForm, setCreateForm] = useState({
@@ -385,22 +395,22 @@ export default function EvidencePage() {
 
   // The /api/users and /api/departments endpoints already apply tenant filtering,
   // so data is already scoped to the user's customerAccountId.
-  const getCustomerScopedUsers = () => users;
+  const getCustomerScopedUsers = () => translatedUsers;
 
-  const getCustomerScopedDepartments = () => departments;
+  const getCustomerScopedDepartments = () => translatedDepartments;
 
   // Filter users for Assignee dropdown: only DepartmentContributors from the selected department
   const filteredUsers = (() => {
     if (!createForm.departmentId) return [];
 
-    return users.filter((u) => {
+    return translatedUsers.filter((u) => {
       if (u.departmentId !== createForm.departmentId) return false;
       return u.userRoles?.some((ur) => ur.role?.name === "DepartmentContributor");
     });
   })();
 
   // Filtered controls for step 2
-  const filteredControls = controls.filter((c) => {
+  const filteredControls = translatedControls.filter((c) => {
     if (controlFilters.domainId && c.domain?.id !== controlFilters.domainId) return false;
     if (controlFilters.frameworkId && c.framework?.id !== controlFilters.frameworkId) return false;
     if (controlFilters.functionalGrouping && c.functionalGrouping !== controlFilters.functionalGrouping) return false;
@@ -420,6 +430,7 @@ export default function EvidencePage() {
   };
 
   const handleCreate = async () => {
+    setIsSaving(true);
     try {
       const response = await fetch("/api/evidences", {
         method: "POST",
@@ -436,12 +447,22 @@ export default function EvidencePage() {
       });
 
       if (response.ok) {
+        const savedEvidence = await response.json();
+        if (savedEvidence?.id) {
+          triggerTranslation('Evidence', savedEvidence.id, { name: createForm.name, description: createForm.description });
+        }
         setCreateDialogOpen(false);
         resetCreateForm();
         fetchEvidences();
+        fetchStatusCounts();
+      } else {
+        toast.error(t("Failed to create evidence"));
       }
     } catch (error) {
       console.error("Error creating evidence:", error);
+      toast.error(t("Failed to create evidence"));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -501,7 +522,7 @@ export default function EvidencePage() {
   const handleExport = () => {
     const csv = [
       ["Evidence Code", "Name", "Description", "Domain", "Recurrence", "Status", "Department", "Assignee"],
-      ...evidences.map((e) => [
+      ...translatedEvidences.map((e) => [
         e.evidenceCode,
         e.name,
         e.description || "",
@@ -794,7 +815,7 @@ export default function EvidencePage() {
   };
 
   // Filter evidences for link dialog
-  const filteredEvidencesForLink = evidences.filter((e) => {
+  const filteredEvidencesForLink = translatedEvidences.filter((e) => {
     if (!linkEvidenceSearchTerm) return true;
     const search = linkEvidenceSearchTerm.toLowerCase();
     return (
@@ -985,7 +1006,7 @@ export default function EvidencePage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">{t("All Departments")}</SelectItem>
-                      {departments.map((d) => (
+                      {translatedDepartments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -996,7 +1017,7 @@ export default function EvidencePage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-                      {frameworks.map((f) => (
+                      {translatedFrameworks.map((f) => (
                         <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1019,7 +1040,7 @@ export default function EvidencePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {evidences.map((evidence) => (
+                  {translatedEvidences.map((evidence) => (
                     <TableRow
                       key={evidence.id}
                       className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
@@ -1033,8 +1054,8 @@ export default function EvidencePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3.5 text-sm text-slate-600">{evidence.issueIdentifiedBy || "-"}</TableCell>
-                      <TableCell className="py-3.5 text-sm text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
-                      <TableCell className="py-3.5 text-sm text-slate-600">{evidence.department?.name || "-"}</TableCell>
+                      <TableCell className="py-3.5 text-sm text-slate-600">{(evidence.assigneeId ? translatedUsers.find(u => u.id === evidence.assigneeId)?.fullName : null) || evidence.assignee?.fullName || "-"}</TableCell>
+                      <TableCell className="py-3.5 text-sm text-slate-600">{(evidence.department?.id ? translatedDepartments.find(d => d.id === evidence.department?.id)?.name : null) || evidence.department?.name || "-"}</TableCell>
                       <TableCell className="py-3.5 pe-5">
                         <div className="flex items-center gap-0.5">
                           <Button
@@ -1417,13 +1438,24 @@ export default function EvidencePage() {
                       className="bg-white"
                     />
                   </div>
+                  <Select value={controlFilters.frameworkId || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, frameworkId: v === "all" ? "" : v })}>
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white">
+                      <SelectValue placeholder={t("Framework")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                      {translatedFrameworks.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Select value={controlFilters.domainId || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, domainId: v === "all" ? "" : v })}>
                     <SelectTrigger className="w-full sm:w-[180px] bg-white">
                       <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">{t("All Domains")}</SelectItem>
-                      {controlDomains.map((d) => (
+                      {translatedControlDomains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1466,7 +1498,7 @@ export default function EvidencePage() {
                           </TableCell>
                           <TableCell className="py-3 text-sm font-medium text-slate-800">{control.controlCode}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-600">{control.name}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-600">{control.domain?.name || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-600">{(control.domain?.id ? translatedControlDomains.find(d => d.id === control.domain?.id)?.name : null) || control.domain?.name || "-"}</TableCell>
                         </TableRow>
                       ))}
                       {filteredControls.length === 0 && (
@@ -1523,7 +1555,7 @@ export default function EvidencePage() {
                     <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Controls")}:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedControlIds.map((id) => {
-                        const control = controls.find((c) => c.id === id);
+                        const control = translatedControls.find((c) => c.id === id);
                         return control ? (
                           <Badge key={id} variant="outline">
                             {control.controlCode}
@@ -1539,7 +1571,7 @@ export default function EvidencePage() {
 
           {/* Sticky Footer */}
           <div className="flex-shrink-0 flex flex-row items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" onClick={() => {
+            <Button variant="outline" disabled={isSaving} onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
                 resetCreateForm();
@@ -1549,6 +1581,7 @@ export default function EvidencePage() {
               {createStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             <Button
+              disabled={isSaving}
               onClick={() => {
                 if (createStep === 1) {
                   const errors: Record<string, string> = {};
@@ -1567,7 +1600,7 @@ export default function EvidencePage() {
                 else handleCreate();
               }}
             >
-              {createStep === 3 ? t("Create Evidence") : t("Next")}
+              {createStep === 3 ? (isSaving ? t("Saving...") : t("Create Evidence")) : t("Next")}
             </Button>
           </div>
         </DialogContent>

@@ -2359,11 +2359,11 @@ export default function GovernanceDetailPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Policy Name")}</Label>
-                              <Input value={policy?.name || ""} disabled className="bg-slate-50" />
+                              <Input value={translatedPolicy?.name || policy?.name || ""} disabled className="bg-slate-50" />
                             </div>
                             <div className="space-y-1.5">
                               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Document Type")}</Label>
-                              <Input value={policy?.documentType || "Policy"} disabled className="bg-slate-50" />
+                              <Input value={t(typeLabels[policy?.documentType] || "Policy")} disabled className="bg-slate-50" />
                             </div>
                           </div>
 
@@ -2887,7 +2887,7 @@ export default function GovernanceDetailPage() {
           </DialogHeader>
           <div className="px-4 sm:px-6 py-5 space-y-4">
             <p className="text-sm text-slate-500">
-              {t("Please sign below to publish this")} {(policy.documentType || "document").toLowerCase()}.
+              {t("Please sign below to publish this")} {t(typeLabels[policy.documentType] || "document").toLowerCase()}.
             </p>
             <div className="border border-slate-200 rounded-lg p-2 bg-white">
               <canvas
@@ -3112,7 +3112,7 @@ export default function GovernanceDetailPage() {
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                   <Link2 className="h-6 w-6 text-primary-400" />
                 </div>
-                <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked to this")} {t(typeLabels[policy.documentType] || "policy").toLowerCase()}</p>
                 <p className="text-xs text-slate-400">{t("Link controls to track compliance")}</p>
               </div>
             ) : (
@@ -3229,7 +3229,7 @@ export default function GovernanceDetailPage() {
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                   <AlertTriangle className="h-6 w-6 text-primary-400" />
                 </div>
-                <p className="text-sm font-medium text-slate-600 mb-1">{t("No exceptions linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No exceptions linked to this")} {t(typeLabels[policy.documentType] || "policy").toLowerCase()}</p>
                 <p className="text-xs text-slate-400">{t("Link exceptions to track deviations")}</p>
               </div>
             ) : (
@@ -3304,7 +3304,7 @@ export default function GovernanceDetailPage() {
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                   <FileText className="h-6 w-6 text-primary-400" />
                 </div>
-                <p className="text-sm font-medium text-slate-600 mb-1">{t("No documents linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No documents linked to this")} {t(typeLabels[policy.documentType] || "policy").toLowerCase()}</p>
                 <p className="text-xs text-slate-400">{t("Documents linked to this policy will appear here")}</p>
               </div>
             ) : (
