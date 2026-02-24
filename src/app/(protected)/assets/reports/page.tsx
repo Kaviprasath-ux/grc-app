@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Download, ChevronRight, Home, FileBarChart, Search,Upload } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Asset {
   id: string;
@@ -50,27 +51,82 @@ export default function AssetReportsPage() {
   const pageSize = 20;
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Extract unique entities for translation
+  const uniqueAssetItems = useMemo(() =>
+    assets.map((a) => ({ id: a.id, name: a.name })),
+    [assets]
+  );
+  const uniqueCategories = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    assets.forEach((a) => { if (a.category) map.set(a.category.id, a.category); });
+    return Array.from(map.values());
+  }, [assets]);
+  const uniqueSubCategories = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    assets.forEach((a) => { if (a.subCategory) map.set(a.subCategory.id, a.subCategory); });
+    return Array.from(map.values());
+  }, [assets]);
+  const uniqueGroups = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    assets.forEach((a) => { if (a.group) map.set(a.group.id, a.group); });
+    return Array.from(map.values());
+  }, [assets]);
+  const uniqueSensitivities = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    assets.forEach((a) => { if (a.sensitivity) map.set(a.sensitivity.id, a.sensitivity); });
+    return Array.from(map.values());
+  }, [assets]);
+
+  // Translate each entity type
+  const { data: translatedAssetItems } = useTranslatedData(uniqueAssetItems, { modelName: 'Asset' });
+  const { data: translatedCategories } = useTranslatedData(uniqueCategories, { modelName: 'AssetCategory' });
+  const { data: translatedSubCategories } = useTranslatedData(uniqueSubCategories, { modelName: 'AssetSubCategory' });
+  const { data: translatedGroups } = useTranslatedData(uniqueGroups, { modelName: 'AssetGroup' });
+  const { data: translatedSensitivities } = useTranslatedData(uniqueSensitivities, { modelName: 'AssetSensitivity' });
+
+  // Lookup helpers
+  const getAssetName = useCallback((asset: Asset) =>
+    translatedAssetItems.find((a) => a.id === asset.id)?.name || asset.name,
+    [translatedAssetItems]
+  );
+  const getCategoryName = useCallback((asset: Asset) =>
+    translatedCategories.find((c) => c.id === asset.category?.id)?.name || asset.category?.name || "",
+    [translatedCategories]
+  );
+  const getSubCategoryName = useCallback((asset: Asset) =>
+    translatedSubCategories.find((s) => s.id === asset.subCategory?.id)?.name || asset.subCategory?.name || "",
+    [translatedSubCategories]
+  );
+  const getGroupName = useCallback((asset: Asset) =>
+    translatedGroups.find((g) => g.id === asset.group?.id)?.name || asset.group?.name || "",
+    [translatedGroups]
+  );
+  const getSensitivityName = useCallback((asset: Asset) =>
+    translatedSensitivities.find((s) => s.id === asset.sensitivity?.id)?.name || asset.sensitivity?.name || "",
+    [translatedSensitivities]
+  );
+
   const reportConfigs: ReportConfig[] = [
     {
       id: "category",
       title: t("Asset By Category"),
       description: t("Assets grouped by their assigned category"),
       column1Header: t("Category"),
-      getColumn1Value: (asset) => asset.category?.name || "",
+      getColumn1Value: (asset) => getCategoryName(asset),
     },
     {
       id: "subcategory",
       title: t("Asset By Sub-Category"),
       description: t("Assets grouped by sub-category classification"),
       column1Header: t("Asset Sub Category"),
-      getColumn1Value: (asset) => asset.subCategory?.name || "",
+      getColumn1Value: (asset) => getSubCategoryName(asset),
     },
     {
       id: "group",
       title: t("Asset By Group"),
       description: t("Assets grouped by asset group"),
       column1Header: t("Asset Group"),
-      getColumn1Value: (asset) => asset.group?.name || "",
+      getColumn1Value: (asset) => getGroupName(asset),
     },
     {
       id: "location",
@@ -91,7 +147,7 @@ export default function AssetReportsPage() {
       title: t("Asset By Sensitivity"),
       description: t("Assets grouped by sensitivity classification"),
       column1Header: t("Asset Sensitivity"),
-      getColumn1Value: (asset) => asset.sensitivity?.name || "",
+      getColumn1Value: (asset) => getSensitivityName(asset),
     },
   ];
 
@@ -144,7 +200,7 @@ export default function AssetReportsPage() {
     paginatedData.forEach((asset) => {
       const values = [
         activeConfig.getColumn1Value(asset),
-        asset.name,
+        getAssetName(asset),
       ];
       csvRows.push(values.map((val) => `"${(val || "").replace(/"/g, '""')}"`).join(","));
     });
@@ -279,7 +335,7 @@ export default function AssetReportsPage() {
                           <td className="ps-3 sm:ps-4 py-4 text-sm text-slate-700">
                             {activeConfig?.getColumn1Value(asset) || "-"}
                           </td>
-                          <td className="pe-3 sm:pe-4 py-4 text-sm text-slate-700">{asset.name}</td>
+                          <td className="pe-3 sm:pe-4 py-4 text-sm text-slate-700">{getAssetName(asset)}</td>
                         </tr>
                       ))
                     )}
