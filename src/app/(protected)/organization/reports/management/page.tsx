@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef } from "react";
+import { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Download, Home } from "lucide-react";
@@ -24,7 +24,8 @@ import { useTranslatedData } from "@/hooks/useTranslatedData";
 interface Process {
   id: string;
   name: string;
-  department?: { name: string } | null;
+  departmentId?: string | null;
+  department?: { id: string; name: string } | null;
   criticality?: string | null;
   owner?: { fullName: string } | null;
   riskScore?: number | null;
@@ -61,6 +62,21 @@ function ManagementReportContent() {
   // Dynamic translations for user-entered data
   const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
   const { data: translatedKpis } = useTranslatedData(kpis, { modelName: 'KPI' });
+
+  // Extract unique departments for translation
+  const departments = (() => {
+    const map = new Map<string, { id: string; name: string }>();
+    processes.forEach(p => {
+      if (p.department?.id) map.set(p.department.id, p.department);
+    });
+    return Array.from(map.values());
+  })();
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+
+  const tDeptName = useCallback((id: string | null | undefined) => {
+    if (!id) return undefined;
+    return translatedDepartments.find(d => d.id === id)?.name;
+  }, [translatedDepartments]);
 
   const selectedOptions = searchParams.get("options")?.split(",") || [];
 
@@ -155,7 +171,7 @@ function ManagementReportContent() {
   // Calculate process by department data for pie chart
   const processByDepartmentData = Object.entries(
     translatedProcesses.reduce((acc, process) => {
-      const dept = process.department?.name || "Unassigned";
+      const dept = tDeptName(process.departmentId) || process.department?.name || t("Unassigned");
       acc[dept] = (acc[dept] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
@@ -164,7 +180,7 @@ function ManagementReportContent() {
   // Calculate process by criticality data for pie chart
   const processByCriticalityData = Object.entries(
     translatedProcesses.reduce((acc, process) => {
-      const crit = process.criticality || "Not Set";
+      const crit = process.criticality ? t(process.criticality) : t("Not Set");
       acc[crit] = (acc[crit] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
@@ -178,7 +194,7 @@ function ManagementReportContent() {
   // Calculate KPI by measurement for pie chart
   const kpiByMeasurementData = Object.entries(
     translatedKpis.reduce((acc, kpi) => {
-      const measurement = kpi.measurement || "Not Set";
+      const measurement = kpi.measurement ? t(kpi.measurement) : t("Not Set");
       acc[measurement] = (acc[measurement] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
@@ -200,7 +216,7 @@ function ManagementReportContent() {
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
-  ).map(([name, value]) => ({ name, value, fill: BAR_COLORS[name] || "#9ca3af" }));
+  ).map(([name, value]) => ({ name: t(name), value, fill: BAR_COLORS[name] || "#9ca3af" }));
 
   // Legend component for pie charts
   const ChartLegend = ({ data, colors }: { data: { name: string; value: number }[]; colors: string[] }) => {
@@ -272,7 +288,7 @@ function ManagementReportContent() {
           {selectedOptions.includes("process-by-department") && (
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">{t("Process by Department")}</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("Process By Department")}</h3>
               </div>
               <div className="p-3 sm:p-6">
                 {processByDepartmentData.length > 0 ? (

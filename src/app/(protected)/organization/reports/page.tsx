@@ -33,7 +33,7 @@ const categoryTabs = [
 
 // Management Report Options matching UAT exactly
 const managementReportOptions = [
-  { id: "process-by-department", label: "Process by Department", checked: true },
+  { id: "process-by-department", label: "Process By Department", checked: true },
   { id: "process-by-criticality", label: "Process by Criticality", checked: true },
   { id: "kpi-by-measurement", label: "KPI by Measurement", checked: true },
   { id: "kpi-by-performance", label: "KPI by Performance", checked: true },
