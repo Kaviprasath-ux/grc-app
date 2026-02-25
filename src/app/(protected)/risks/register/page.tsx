@@ -776,9 +776,10 @@ function RiskRegisterContent() {
                 {t("Upload a CSV file to import risks. Download the template first to see the required format.")}
               </p>
               <div className="bg-slate-50 p-3 rounded-md text-sm">
-                <p className="font-medium mb-1 text-slate-700">{t("Required columns:")}</p>
+                <p className="font-medium mb-1 text-slate-700">{t("Template columns:")}</p>
                 <p className="text-slate-500">
-                  {t("Risk name, Risk description, Department, Risk sources, Risk category, Potential threat, Associated vulnerabilities")}
+                  <span className="font-semibold text-red-600">{t("Risk name")}*</span>{", "}
+                  {t("Risk description, Department, Risk sources, Risk category, Potential threat, Associated vulnerabilities")}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -911,6 +912,31 @@ function RiskRegisterContent() {
                         row[header] = values[index] || "";
                       });
                       data.push(row);
+                    }
+
+                    // Validate Risk name is present in every row
+                    const riskNameKey = headers.find(h => h.toLowerCase().trim() === "risk name");
+                    if (!riskNameKey) {
+                      toast({
+                        title: t("Error"),
+                        description: t("CSV must have a \"Risk name\" column"),
+                        variant: "destructive",
+                      });
+                      setImportLoading(false);
+                      return;
+                    }
+                    const emptyNameRows = data
+                      .map((row, i) => ({ row: i + 2, name: row[riskNameKey] || "" }))
+                      .filter(r => !r.name.trim());
+                    if (emptyNameRows.length > 0) {
+                      const rowNums = emptyNameRows.slice(0, 5).map(r => r.row).join(", ");
+                      toast({
+                        title: t("Error"),
+                        description: t("Risk name is required. Missing in row(s): {rows}").replace("{rows}", rowNums),
+                        variant: "destructive",
+                      });
+                      setImportLoading(false);
+                      return;
                     }
 
                     // Send to API
