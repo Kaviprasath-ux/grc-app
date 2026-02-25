@@ -29,6 +29,10 @@ export async function POST(request: NextRequest) {
     const departmentId = formData.get("departmentId") as string;
     const auditFocus = (formData.get("auditFocus") as string) || "";
     const files = formData.getAll("files") as File[];
+    const targetLanguageFromForm = formData.get("target_language") as string;
+
+    // Get target language from form or cookie (defaults to 'en')
+    const targetLanguage = targetLanguageFromForm || request.cookies.get('NEXT_LOCALE')?.value || 'en';
 
     if (!departmentId) {
       console.log("[RunPod assess-risks] Abort: Department is required");
@@ -61,9 +65,12 @@ export async function POST(request: NextRequest) {
 
     const payload = new FormData();
     payload.append("department", department.name);
+    payload.append("target_language", targetLanguage);
     if (auditFocus.trim()) {
       payload.append("specific_audit_focus", auditFocus.trim());
     }
+
+    console.log("[RunPod assess-risks] Target language:", targetLanguage);
 
     const validFiles = files.filter(
       (f): f is File => f instanceof File && f.size > 0 && isAllowedFile(f.name, f.size)

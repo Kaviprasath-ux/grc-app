@@ -106,6 +106,15 @@ export const POST = withAuth(
     try {
       const { id: engagementId } = await context.params;
 
+      // Get target language from request body or cookie (defaults to 'en')
+      let targetLanguage = 'en';
+      try {
+        const body = await req.json();
+        targetLanguage = body.target_language || req.cookies.get('NEXT_LOCALE')?.value || 'en';
+      } catch {
+        targetLanguage = req.cookies.get('NEXT_LOCALE')?.value || 'en';
+      }
+
       const engagement = await prisma.auditEngagement.findUnique({
         where: { id: engagementId },
         include: { department: true },
@@ -134,10 +143,12 @@ export const POST = withAuth(
       form.append('engagement_title', engagementTitle);
       form.append('engagement_objective', engagementObjective);
       form.append('engagement_scope', engagementScope);
+      form.append('target_language', targetLanguage);
 
       const url = getExternalApiUrl('PYTHON_BACKEND', '/api/generate-audit-plan');
       console.log('[RunPod generate-audit-plan] POST /api/internal-audit/fieldwork/[id]/ai-workpapers/generate received');
       console.log('[RunPod generate-audit-plan] Request engagementId=' + engagementId + ', engagement_title=' + engagementTitle + ', objective=' + (engagementObjective || '(empty)') + ', scope=' + (engagementScope || '(empty)'));
+      console.log('[RunPod generate-audit-plan] Target language:', targetLanguage);
       console.log('[RunPod generate-audit-plan] Calling RunPod POST ' + url);
 
       const res = await fetch(url, {

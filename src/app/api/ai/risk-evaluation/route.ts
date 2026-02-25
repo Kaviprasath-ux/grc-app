@@ -38,7 +38,10 @@ async function handler(
 
     try {
         const body = await req.json();
-        const { processId, regenerate = false, persist = false } = body;
+        const { processId, regenerate = false, persist = false, target_language } = body;
+
+        // Get target language from body or cookie (defaults to 'en')
+        const targetLanguage = target_language || req.cookies.get('NEXT_LOCALE')?.value || 'en';
 
         if (!processId) {
             return missingFieldResponse("processId");
@@ -93,9 +96,11 @@ async function handler(
                 Process_name: process.name,
                 Process_description: process.description || "No description provided",
                 Department: process.department?.name || "General"
-            }
+            },
+            target_language: targetLanguage,
         };
         console.log("AI Request Payload:", JSON.stringify(requestPayload));
+        console.log("[Risk Evaluation] Target language:", targetLanguage);
 
         // Pre-flight Log
         const operation = await aiAuditService.logOperation({
