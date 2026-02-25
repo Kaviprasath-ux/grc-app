@@ -29,7 +29,7 @@ async function handler(
             return missingFieldResponse('policyId');
         }
 
-        // Fetch policy with AI fields
+        // Fetch policy with AI fields, attachments, and vault document links
         const policy = await prisma.policy.findUnique({
             where: { id: policyId },
             select: {
@@ -45,6 +45,19 @@ async function handler(
                         filePath: true,
                     },
                     orderBy: { createdAt: 'desc' },
+                    take: 1,
+                },
+                vaultDocumentLinks: {
+                    select: {
+                        document: {
+                            select: {
+                                id: true,
+                                fileName: true,
+                                filePath: true,
+                            },
+                        },
+                    },
+                    orderBy: { linkedAt: 'desc' },
                     take: 1,
                 },
             },
@@ -81,8 +94,8 @@ async function handler(
         // Get document ID from latest review or use policy ID
         const documentId = latestReview?.documentId || null;
 
-        // Check if there's an attachment
-        const hasAttachment = policy.attachments.length > 0;
+        // Check if there's an attachment (either direct or vault-linked)
+        const hasAttachment = policy.attachments.length > 0 || policy.vaultDocumentLinks.length > 0;
 
         return NextResponse.json({
             isIngested,
@@ -90,7 +103,11 @@ async function handler(
             jobId: policy.aiIngestJobId,
             documentId,
             hasAttachment,
-            attachment: policy.attachments[0] || null,
+            attachment: policy.attachments[0] || (policy.vaultDocumentLinks[0]?.document ? {
+                id: policy.vaultDocumentLinks[0].document.id,
+                fileName: policy.vaultDocumentLinks[0].document.fileName,
+                filePath: policy.vaultDocumentLinks[0].document.filePath,
+            } : null),
             latestReview: latestReview ? {
                 id: latestReview.id,
                 status: latestReview.status,

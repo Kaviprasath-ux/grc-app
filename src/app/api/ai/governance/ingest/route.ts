@@ -42,12 +42,17 @@ export async function POST(req: NextRequest) {
             return badRequestResponse("policyId is required");
         }
 
-        // Fetch policy details with attachments
+        // Fetch policy details with attachments and vault document links
         const policy = await prisma.policy.findUnique({
             where: { id: policyId },
             include: {
                 attachments: {
                     orderBy: { createdAt: 'desc' },
+                    take: 1,
+                },
+                vaultDocumentLinks: {
+                    include: { document: true },
+                    orderBy: { linkedAt: 'desc' },
                     take: 1,
                 },
             },
@@ -57,38 +62,47 @@ export async function POST(req: NextRequest) {
             return notFoundResponse("Policy");
         }
 
-        // If no file provided, read from disk using the latest attachment
+        // If no file provided, read from disk using the latest attachment or vault document
         if (!file) {
             const latestAttachment = policy.attachments[0];
-            if (!latestAttachment) {
+            const latestVaultLink = policy.vaultDocumentLinks[0];
+
+            // Determine which document to use (attachment takes priority, then vault)
+            const docSource = latestAttachment
+                ? { fileName: latestAttachment.fileName, fileType: latestAttachment.fileType, filePath: latestAttachment.filePath }
+                : latestVaultLink?.document
+                    ? { fileName: latestVaultLink.document.fileName, fileType: latestVaultLink.document.fileType, filePath: latestVaultLink.document.filePath }
+                    : null;
+
+            if (!docSource) {
                 return badRequestResponse("No document attached to this policy");
             }
 
-            if (!latestAttachment.filePath) {
-                return errorResponse(`File path not found for: ${latestAttachment.fileName}`, 404);
+            if (!docSource.filePath) {
+                return errorResponse(`File path not found for: ${docSource.fileName}`, 404);
             }
 
-            console.log(`[Governance Ingest] Reading file from disk: ${latestAttachment.fileName}`);
+            console.log(`[Governance Ingest] Reading file from disk: ${docSource.fileName}`);
 
-            const relativePath = latestAttachment.filePath.startsWith("/")
-                ? latestAttachment.filePath.slice(1)
-                : latestAttachment.filePath;
+            const relativePath = docSource.filePath.startsWith("/")
+                ? docSource.filePath.slice(1)
+                : docSource.filePath;
             const absolutePath = join(process.cwd(), relativePath);
             let fileBuffer: Buffer;
             try {
                 fileBuffer = await readFile(absolutePath);
             } catch {
-                return errorResponse(`File not found on disk: ${latestAttachment.fileName}`, 404);
+                return errorResponse(`File not found on disk: ${docSource.fileName}`, 404);
             }
 
-            const mimeType = latestAttachment.fileType === 'docx'
+            const mimeType = docSource.fileType === 'docx'
                 ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                : latestAttachment.fileType === 'pdf'
+                : docSource.fileType === 'pdf'
                     ? 'application/pdf'
                     : 'application/octet-stream';
 
-            file = new File([new Uint8Array(fileBuffer)], latestAttachment.fileName, { type: mimeType });
-            console.log(`[Governance Ingest] File loaded from disk: ${latestAttachment.fileName} (${fileBuffer.length} bytes)`);
+            file = new File([new Uint8Array(fileBuffer)], docSource.fileName, { type: mimeType });
+            console.log(`[Governance Ingest] File loaded from disk: ${docSource.fileName} (${fileBuffer.length} bytes)`);
         }
 
         // Canonical OpenAPI Payload construction
