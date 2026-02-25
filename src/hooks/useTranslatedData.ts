@@ -156,54 +156,34 @@ export function useTranslatedData<T extends object>(
 
     setIsLoading(true);
 
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
-    const RETRY_DELAY = 3000; // 3 seconds
-
-    const doFetch = () => {
-      fetch("/api/translations/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelName, recordIds, locale }),
-        signal: controller.signal,
+    fetch("/api/translations/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modelName, recordIds, locale }),
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Translation fetch failed: ${res.status}`);
+        return res.json();
       })
-        .then((res) => {
-          if (!res.ok) throw new Error(`Translation fetch failed: ${res.status}`);
-          return res.json();
-        })
-        .then((result: { translations: Record<string, Record<string, string>>; pendingCount?: number }) => {
-          if (controller.signal.aborted) return;
+      .then((result: { translations: Record<string, Record<string, string>> }) => {
+        if (controller.signal.aborted) return;
 
-          const translations = result.translations ?? {};
-          const pendingCount = result.pendingCount ?? 0;
-
-          setTranslatedData(overlayTranslations(dataRef.current ?? [], translations, idField));
-          setIsLoading(false);
-
-          if (pendingCount > 0 && retryCount < MAX_RETRIES) {
-            // Don't cache incomplete results — retry after delay
-            retryCount++;
-            retryTimer = setTimeout(doFetch, RETRY_DELAY);
-          } else {
-            // All translations arrived or max retries reached — cache result
-            setCache(cacheKey, translations);
-          }
-        })
-        .catch((err) => {
-          if (err.name === "AbortError") return;
-          console.error("Failed to fetch bulk translations:", err);
-          // On error, show original data
-          setTranslatedData(dataRef.current ?? []);
-          setIsLoading(false);
-        });
-    };
-
-    doFetch();
+        const translations = result.translations ?? {};
+        setTranslatedData(overlayTranslations(dataRef.current ?? [], translations, idField));
+        setIsLoading(false);
+        setCache(cacheKey, translations);
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        console.error("Failed to fetch bulk translations:", err);
+        // On error, show original data
+        setTranslatedData(dataRef.current ?? []);
+        setIsLoading(false);
+      });
 
     return () => {
       controller.abort();
-      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [dataKey, locale, modelName, idField]);
 
