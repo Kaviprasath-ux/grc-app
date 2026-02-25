@@ -1115,7 +1115,7 @@ export default function EvidencesMasterDataPage() {
             )}
           </div>
 
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             {newStep > 1 && (
               <Button variant="outline" size="sm" onClick={handleNewBack}>
                 {t("Previous")}
@@ -1472,7 +1472,7 @@ export default function EvidencesMasterDataPage() {
             </div>
           )}
 
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1488,7 +1488,7 @@ export default function EvidencesMasterDataPage() {
             <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">{t("Are you sure you want to delete this?")}</DialogDescription>
           </div>
-          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1508,7 +1508,7 @@ export default function EvidencesMasterDataPage() {
               {t("Are you sure you want to delete all")} {evidences.length} {t("evidences?")}
             </DialogDescription>
           </div>
-          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(false)}>
               {t("Cancel")}
             </Button>

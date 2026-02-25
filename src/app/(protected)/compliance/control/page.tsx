@@ -959,7 +959,7 @@ function ControlListPageContent() {
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:items-center ltr:sm:justify-end rtl:sm:justify-start gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Export")}
@@ -1461,7 +1461,7 @@ function ControlListPageContent() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex flex-row items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <span className="text-xs font-medium text-slate-400 me-auto">
+            <span className="text-xs font-medium text-slate-400 ltr:me-auto rtl:ms-auto rtl:order-last">
               {t("Step")} {createStep} {t("of")} 3
             </span>
             <Button variant="outline" onClick={() => {
@@ -1592,7 +1592,7 @@ function ControlListPageContent() {
               {t("Are you sure you want to delete all controls? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAll}
@@ -1655,7 +1655,7 @@ function ControlListPageContent() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsCreateDomainDialogOpen(false);
               setNewDomain({ code: "", name: "" });

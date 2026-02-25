@@ -460,7 +460,7 @@ export default function ControlsByFrameworkPage() {
                 <span className="text-sm text-slate-600 truncate">{control.domain?.name || "-"}</span>
 
                 {/* View Action */}
-                <div className="flex justify-end">
+                <div className="flex ltr:justify-end rtl:justify-start">
                   <Button
                     variant="ghost"
                     size="icon"

@@ -1817,7 +1817,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                           </span>
                                         </div>
                                       </div>
-                                      <div className="flex flex-wrap justify-end gap-2 mt-3">
+                                      <div className="flex flex-wrap ltr:justify-end rtl:justify-start gap-2 mt-3">
                                         <Button variant="outline" size="sm" className="h-7 text-xs text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 w-full sm:w-auto" onClick={(e) => { e.stopPropagation(); setSelectedRequirement(req); setIsAddExceptionOpen(true); }}>
                                           <AlertTriangle className="h-3 w-3 me-1.5" />
                                           {t("Add Exception")}
@@ -2315,7 +2315,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => { setReqErrors({}); setIsAddRequirementOpen(false); }}
@@ -2436,7 +2436,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -2578,7 +2578,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -2741,7 +2741,7 @@ export default function CustomerAdminFrameworkDetailPage({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setIsUpdateRequirementOpen(false)}

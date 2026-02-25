@@ -365,7 +365,7 @@ export default function GovernanceTemplatesPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
 
       {/* Action Buttons above card */}
-      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:items-center ltr:sm:justify-end rtl:sm:justify-start gap-2">
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Export")}
@@ -487,7 +487,7 @@ export default function GovernanceTemplatesPage() {
                 </div>
               </div>
             </div>
-            <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -747,7 +747,7 @@ export default function GovernanceTemplatesPage() {
               )}
             </div>
           </div>
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -779,7 +779,7 @@ export default function GovernanceTemplatesPage() {
               {t("Are you sure you want to delete")} &quot;{selectedTemplate?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}

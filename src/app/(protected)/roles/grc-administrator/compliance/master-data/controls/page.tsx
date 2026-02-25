@@ -966,7 +966,7 @@ export default function ControlsMasterDataPage() {
               </div>
 
               {/* Sticky Footer */}
-              <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+              <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                 {wizardStep > 1 && (
                   <Button
                     variant="outline"
@@ -1536,7 +1536,7 @@ export default function ControlsMasterDataPage() {
             </div>
           </div>
 
-          <div className="flex-shrink-0 flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1569,7 +1569,7 @@ export default function ControlsMasterDataPage() {
               {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}

@@ -1659,7 +1659,7 @@ export default function EvidenceDetailPage() {
 
       {/* Publish Button - visible only for CustomerAdministrator and Reviewer roles */}
       {hasAnyAttachments && evidence.status !== "Published" && (isCustomerAdmin || isReviewer) && (
-        <div className="flex justify-end">
+        <div className="flex ltr:justify-end rtl:justify-start">
           <Button onClick={handlePublishWithValidation} className="bg-green-600 hover:bg-green-700">
             <Check className="h-4 w-4 mr-2" />
             {t("Publish")}
@@ -2506,7 +2506,7 @@ export default function EvidenceDetailPage() {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+                    <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                       <Button
                         onClick={handleLinkControls}
                         disabled={selectedControlIds.length === 0}
@@ -2689,7 +2689,7 @@ export default function EvidenceDetailPage() {
               {t("Are you sure you want to delete this evidence? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
@@ -2780,7 +2780,7 @@ export default function EvidenceDetailPage() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
               <Button
                 onClick={handleUploadAttachment}
                 disabled={!selectedFile || uploading}
@@ -2817,7 +2817,7 @@ export default function EvidenceDetailPage() {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Close")}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2930,7 +2930,7 @@ export default function EvidenceDetailPage() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               className="rounded-lg"
@@ -3012,7 +3012,7 @@ export default function EvidenceDetailPage() {
               </div>
             )}
 
-            <div className="flex flex-row justify-end gap-2">
+            <div className="flex flex-row ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setSendBackDialogOpen(false)} className="w-full sm:w-auto">
                 {t("Cancel")}
               </Button>
@@ -3082,7 +3082,7 @@ export default function EvidenceDetailPage() {
               </div>
             )}
 
-            <div className="flex flex-row justify-end gap-2">
+            <div className="flex flex-row ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setResubmitDialogOpen(false)} className="w-full sm:w-auto">
                 {t("Cancel")}
               </Button>
@@ -3140,7 +3140,7 @@ export default function EvidenceDetailPage() {
                 {t("No comments yet")}
               </p>
             )}
-            <div className="flex justify-end">
+            <div className="flex ltr:justify-end rtl:justify-start">
               <Button variant="outline" onClick={() => setViewCycleCommentsOpen(false)}>
                 {t("Close")}
               </Button>

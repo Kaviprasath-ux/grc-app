@@ -406,7 +406,7 @@ export default function ReportsPage() {
               </ul>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsGenerateDialogOpen(false)}
@@ -616,7 +616,7 @@ export default function ReportsPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsManagementReportOpen(false)}

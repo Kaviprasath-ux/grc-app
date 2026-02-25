@@ -977,7 +977,7 @@ export default function ExceptionsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row items-center ltr:justify-end rtl:justify-start gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               className="w-full sm:w-auto"
@@ -1222,7 +1222,7 @@ export default function ExceptionsPage() {
       </div>
 
       {/* Action Button */}
-      <div className="flex sm:justify-end">
+      <div className="flex ltr:sm:justify-end rtl:sm:justify-start">
         <PermissionGate resource="compliance.exceptions" action="create">
           <Button size="sm" className="w-full sm:w-auto" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1775,7 +1775,7 @@ export default function ExceptionsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex flex-row items-center ltr:justify-end rtl:justify-start gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               className="w-full sm:w-auto"
@@ -1809,7 +1809,7 @@ export default function ExceptionsPage() {
               {t("Are you sure you want to delete exception")} &quot;{selectedException?.exceptionCode} - {selectedException?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel onClick={() => setSelectedException(null)}>
               {t("Cancel")}
             </AlertDialogCancel>

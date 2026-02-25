@@ -952,7 +952,7 @@ export default function GovernanceDetailPage() {
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex ltr:justify-end rtl:justify-start gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setEditDialogOpen(false)}
@@ -1097,7 +1097,7 @@ export default function GovernanceDetailPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex ltr:justify-end rtl:justify-start gap-2">
                         <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
                           {t("Cancel")}
                         </Button>
@@ -1138,7 +1138,7 @@ export default function GovernanceDetailPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex ltr:justify-end rtl:justify-start gap-2">
                         <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
                           {t("Cancel")}
                         </Button>
@@ -1398,7 +1398,7 @@ export default function GovernanceDetailPage() {
               {t("This will revert the status from Published to Approved. The document will need to be published again after any changes.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleUnpublish} className="bg-orange-600 hover:bg-orange-700">
               {t("Unpublish")}
@@ -1447,7 +1447,7 @@ export default function GovernanceDetailPage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex justify-end gap-2">
+                  <div className="flex ltr:justify-end rtl:justify-start gap-2">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -1591,7 +1591,7 @@ export default function GovernanceDetailPage() {
               </span>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2">
             <Button variant="outline" onClick={() => {
               setSignatureDialogOpen(false);
               clearSignature();
@@ -1664,7 +1664,7 @@ export default function GovernanceDetailPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex justify-end gap-2">
+                  <div className="flex ltr:justify-end rtl:justify-start gap-2">
                     <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
                       {t("Cancel")}
                     </Button>

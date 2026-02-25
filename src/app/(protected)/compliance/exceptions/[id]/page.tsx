@@ -708,7 +708,7 @@ export default function ExceptionDetailPage({
               </div>
             </div>
             {!isReadOnly && (
-              <div className="mt-5 flex justify-end">
+              <div className="mt-5 flex ltr:justify-end rtl:justify-start">
                 <Button size="sm" onClick={handleSave} disabled={saving}>
                   {saving ? t("Saving...") : t("Save")}
                 </Button>
@@ -939,7 +939,7 @@ export default function ExceptionDetailPage({
               {t("Are you sure you want to delete this exception? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
@@ -971,7 +971,7 @@ export default function ExceptionDetailPage({
               />
             </div>
           </div>
-          <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-row items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               type="button"
               variant="outline"
@@ -1021,7 +1021,7 @@ export default function ExceptionDetailPage({
               />
             </div>
           </div>
-          <div className="flex flex-row items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-row items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               type="button"
               variant="outline"

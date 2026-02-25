@@ -2004,7 +2004,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Action buttons at bottom right */}
-          <div className="flex flex-row items-center justify-end gap-3 mt-4">
+          <div className="flex flex-row items-center ltr:justify-end rtl:justify-start gap-3 mt-4">
             <Button
               variant="outline"
               onClick={handleDownloadSOAReport}
@@ -2269,7 +2269,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => { setReqErrors({}); setIsAddRequirementOpen(false); }}
@@ -2390,7 +2390,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2525,7 +2525,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2601,7 +2601,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2772,7 +2772,7 @@ export default function FrameworkDetailPage({
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsUpdateRequirementOpen(false)}

@@ -654,7 +654,7 @@ export default function EvidencesMasterDataPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:items-center ltr:sm:justify-end rtl:sm:justify-start gap-2">
         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
           <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Import")}
@@ -1086,7 +1086,7 @@ export default function EvidencesMasterDataPage() {
             )}
           </div>
 
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             {newStep > 1 && (
               <Button variant="outline" size="sm" onClick={handleNewBack}>
                 {t("Previous")}
@@ -1463,7 +1463,7 @@ export default function EvidencesMasterDataPage() {
             </div>
           )}
 
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1479,7 +1479,7 @@ export default function EvidencesMasterDataPage() {
             <DialogTitle className="text-base font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">{t("Are you sure you want to delete this?")}</DialogDescription>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1499,7 +1499,7 @@ export default function EvidencesMasterDataPage() {
               {t("Are you sure you want to delete all")} {evidences.length} {t("evidences?")}
             </DialogDescription>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(false)}>
               {t("Cancel")}
             </Button>

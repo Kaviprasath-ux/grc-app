@@ -1334,7 +1334,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -1474,7 +1474,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(false)}>
               {t("Cancel")}
             </Button>
@@ -1638,7 +1638,7 @@ export default function CustomerAdminFrameworkPage() {
             </div>
           </div>
           {/* Sticky Footer */}
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg shrink-0">
             <Button variant="outline" size="sm" onClick={handleCloseImportDialog}>
               {importSuccess ? t("Close") : t("Skip")}
             </Button>
@@ -1674,7 +1674,7 @@ export default function CustomerAdminFrameworkPage() {
           <div className="px-4 sm:px-6 py-4 sm:py-5">
             <p className="text-slate-600">{subscriptionErrorMessage}</p>
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex ltr:justify-end rtl:justify-start">
             <Button size="sm" onClick={() => setShowSubscriptionErrorDialog(false)}>
               {t("OK")}
             </Button>

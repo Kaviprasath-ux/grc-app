@@ -428,7 +428,7 @@ export default function DomainPage() {
 
 
           </div>
-          <div className="flex flex-row items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex flex-row items-center ltr:justify-end rtl:justify-start gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setIsDialogOpen(false); setDomainErrors({}); }}>
               {t("Cancel")}
             </Button>
@@ -448,7 +448,7 @@ export default function DomainPage() {
               {t("Are you sure you want to delete")} &quot;{domainToDelete?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel onClick={() => setDomainToDelete(null)}>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               {t("Delete")}

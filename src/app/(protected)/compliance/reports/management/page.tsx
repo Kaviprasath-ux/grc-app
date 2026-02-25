@@ -403,7 +403,7 @@ function ManagementReportContent() {
           </div>
           <div className="px-3 sm:px-5 py-4">
             {/* Legend */}
-            <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-6 mb-4">
+            <div className="flex flex-wrap items-center ltr:justify-end rtl:justify-start gap-3 sm:gap-6 mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-green-500 rounded"></div>
                 <span className="text-sm">{t("Compliant")}</span>

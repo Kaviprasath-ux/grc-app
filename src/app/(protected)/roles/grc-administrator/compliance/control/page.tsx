@@ -948,7 +948,7 @@ export default function GRCAdminControlListPage() {
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1075,7 +1075,7 @@ export default function GRCAdminControlListPage() {
               {t("Are you sure you want to delete all controls? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <AlertDialogFooter className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAll}

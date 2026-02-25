@@ -548,7 +548,7 @@ export default function RiskDetailPage() {
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button
                 variant="outline"
                 onClick={() => setEditDialogOpen(false)}
@@ -791,7 +791,7 @@ export default function RiskDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex ltr:justify-end rtl:justify-start gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setLinkControlDialogOpen(false)}

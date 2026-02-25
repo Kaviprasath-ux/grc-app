@@ -921,7 +921,7 @@ export default function KPIDetailPage({
             </div>
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+        <div className="mt-4 pt-4 border-t border-slate-100 flex ltr:justify-end rtl:justify-start">
           <Button onClick={handleSave} disabled={saving} className="bg-primary-600 hover:bg-primary-700">
             {saving ? t("Saving...") : t("Save Changes")}
           </Button>
@@ -986,7 +986,7 @@ export default function KPIDetailPage({
                     )}
                   </TableCell>
                   <TableCell className="py-3 text-sm pr-5">
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center ltr:justify-end rtl:justify-start gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1062,7 +1062,7 @@ export default function KPIDetailPage({
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setUpdateDialogOpen(false)}
@@ -1084,7 +1084,7 @@ export default function KPIDetailPage({
               {t("Are you sure you want to delete this?")}
             </AlertDialogDescription>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <AlertDialogCancel className="border-slate-200">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteReview} className="bg-semantic-error hover:bg-red-600">{t("Delete")}</AlertDialogAction>
           </div>
@@ -1183,7 +1183,7 @@ export default function KPIDetailPage({
               </Select>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setActionPlanDialogOpen(false)}
@@ -1284,7 +1284,7 @@ export default function KPIDetailPage({
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
