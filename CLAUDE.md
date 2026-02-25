@@ -171,6 +171,9 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 
 ## Git Workflow Rules (ALL CONTRIBUTORS)
 
+### MANDATORY: Never Auto-Commit or Auto-Push
+**NEVER commit or push unless the user explicitly asks you to.** Do not auto-commit after making changes. Wait for the user to say "commit", "push", "commit and push", etc.
+
 ### MANDATORY: Pull Before Commit
 **This rule applies to ALL users working on this repository, on ANY branch.**
 

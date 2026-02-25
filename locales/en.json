@@ -3193,5 +3193,7 @@
   "Reviewer": "Reviewer",
   "Contributor": "Contributor",
   "Department Reviewer": "Department Reviewer",
-  "Department Contributor": "Department Contributor"
+  "Department Contributor": "Department Contributor",
+  "Employee Size": "Employee Size",
+  "Branch Size": "Branch Size"
 }

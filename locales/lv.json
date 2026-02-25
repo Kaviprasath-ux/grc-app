@@ -3193,5 +3193,7 @@
   "Reviewer": "Pārskatītājs",
   "Contributor": "Līdzstrādnieks",
   "Department Reviewer": "Nodaļas pārskatītājs",
-  "Department Contributor": "Nodaļas līdzstrādnieks"
+  "Department Contributor": "Nodaļas līdzstrādnieks",
+  "Employee Size": "Darbinieku skaits",
+  "Branch Size": "Filiāļu skaits"
 }
