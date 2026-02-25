@@ -183,7 +183,7 @@ export const POST = withAuth(
           message: `A new finding "${finding.findingId}: ${finding.finding}" has been created for engagement ${engagement.auditId}.`,
           relatedEntityType: 'finding',
           relatedEntityId: finding.id,
-          link: `/internal-audit/fieldwork/${engagementId}/findings`,
+          link: `/internal-audit/fieldwork/${engagementId}`,
           metadata: {
             findingId: finding.findingId,
             findingTitle: finding.finding,

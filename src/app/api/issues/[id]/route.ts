@@ -146,7 +146,7 @@ export const PUT = withAuth(
             message: `Issue "${issue.title}" has been assigned to you.`,
             relatedEntityType: 'issue',
             relatedEntityId: issue.id,
-            link: `/organization/context/issues/${issue.id}`,
+            link: `/organization/context`,
             metadata: {
               issueTitle: issue.title,
               category: issue.category,
@@ -168,7 +168,7 @@ export const PUT = withAuth(
             message: `Issue "${issue.title}" has been marked as resolved.`,
             relatedEntityType: 'issue',
             relatedEntityId: issue.id,
-            link: `/organization/context/issues/${issue.id}`,
+            link: `/organization/context`,
             metadata: {
               issueTitle: issue.title,
               resolvedBy: session.name || 'User',
@@ -188,7 +188,7 @@ export const PUT = withAuth(
             message: `Issue "${issue.title}" has been rejected.`,
             relatedEntityType: 'issue',
             relatedEntityId: issue.id,
-            link: `/organization/context/issues/${issue.id}`,
+            link: `/organization/context`,
             metadata: {
               issueTitle: issue.title,
               rejectedBy: session.name || 'Reviewer',
@@ -225,7 +225,7 @@ export const PUT = withAuth(
                 message: `Issue "${issue.title}" has been submitted for closure and requires your review.`,
                 relatedEntityType: 'issue',
                 relatedEntityId: issue.id,
-                link: `/organization/context/issues/${issue.id}`,
+                link: `/organization/context`,
                 metadata: {
                   issueTitle: issue.title,
                   submittedBy: session.name || 'User',
@@ -247,7 +247,7 @@ export const PUT = withAuth(
             message: `Issue "${issue.title}" has been escalated and requires immediate attention.`,
             relatedEntityType: 'issue',
             relatedEntityId: issue.id,
-            link: `/organization/context/issues/${issue.id}`,
+            link: `/organization/context`,
             metadata: {
               issueTitle: issue.title,
               escalatedBy: session.name || 'Reviewer',

@@ -192,7 +192,7 @@ export const PUT = withAuth(
             entityType: 'Risk Response',
             entityId: id,
             entityName: `${existing.risk.riskId}: ${response.actionTitle}`,
-            link: `/risk-management/response/${existing.risk.id}`,
+            link: `/risks/response/${existing.risk.id}`,
           });
         }
       } else if (status === "Open" && existing.status === "Awaiting Approval") {
@@ -206,7 +206,7 @@ export const PUT = withAuth(
             entityId: id,
             entityName: `${existing.risk.riskId}: ${response.actionTitle}`,
             reason: notes || undefined,
-            link: `/risk-management/response/${existing.risk.id}`,
+            link: `/risks/response/${existing.risk.id}`,
           });
         }
       } else if (status === "Closed" && existing.status === "In-Progress") {

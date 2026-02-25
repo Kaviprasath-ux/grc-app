@@ -107,11 +107,10 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
     if (!notification.isRead) {
       await markAsRead(notification.id);
     }
-    // Navigation disabled for now - links lead to 404 pages
-    // TODO: Enable navigation once all notification link routes are implemented
-    // if (notification.link) {
-    //   router.push(notification.link);
-    // }
+    // Navigate to the linked page
+    if (notification.link) {
+      router.push(notification.link);
+    }
   };
 
   // Format notification time

@@ -313,7 +313,7 @@ export const POST = withAuth(
           message: `A new risk "${risk.riskId}: ${risk.name}" has been created and assigned to you. Risk Rating: ${risk.riskRating}`,
           relatedEntityType: 'risk',
           relatedEntityId: risk.id,
-          link: `/risk-management/register/${risk.id}`,
+          link: `/risks/register/${risk.id}/edit`,
           metadata: {
             riskCode: risk.riskId,
             riskName: risk.name,

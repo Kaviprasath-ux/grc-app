@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
           message: `You have been assigned as ${role} for process "${process.processCode}: ${process.name}"`,
           relatedEntityType: 'process',
           relatedEntityId: process.id,
-          link: `/organization/process/${process.id}`,
+          link: `/organization/process/${process.id}/edit`,
           metadata: {
             processCode: process.processCode,
             processName: process.name,
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
         message: `A new process "${process.processCode}: ${process.name}" has been created and assigned to you.`,
         relatedEntityType: 'process',
         relatedEntityId: process.id,
-        link: `/organization/process/${process.id}`,
+        link: `/organization/process/${process.id}/edit`,
         metadata: {
           processCode: process.processCode,
           processName: process.name,

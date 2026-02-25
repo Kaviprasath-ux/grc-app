@@ -158,7 +158,7 @@ export const PATCH = withAuth(
             entityType: 'Finding',
             entityId: findingId,
             entityName: updatedFinding.finding || `Finding #${updatedFinding.findingId}`,
-            link: `/internal-audit/capa-tracking/${findingId}`,
+            link: `/internal-audit/capa-tracking`,
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
@@ -191,7 +191,7 @@ export const PATCH = withAuth(
               entityType: 'Finding',
               entityId: findingId,
               entityName: updatedFinding.finding || `Finding #${updatedFinding.findingId}`,
-              link: `/internal-audit/capa-tracking/${findingId}`,
+              link: `/internal-audit/capa-tracking`,
               channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
             });
           }

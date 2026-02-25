@@ -491,7 +491,7 @@ class NotificationService {
       message: `Risk ${params.riskCode}: ${params.riskName} has been assigned to you`,
       relatedEntityType: 'risk',
       relatedEntityId: params.riskId,
-      link: `/risk-management/register/${params.riskId}`,
+      link: `/risks/register/${params.riskId}/edit`,
       channels: params.channels,
     });
   }
@@ -544,7 +544,7 @@ class NotificationService {
       message: `You have been assigned as ${params.role} for asset ${params.assetCode}: ${params.assetName}`,
       relatedEntityType: 'asset',
       relatedEntityId: params.assetId,
-      link: `/asset-management/inventory/${params.assetId}`,
+      link: `/assets/inventory`,
       channels: params.channels,
     });
   }
@@ -570,7 +570,7 @@ class NotificationService {
       message: `CAPA ${params.capaCode}: ${params.capaTitle} has been assigned to you`,
       relatedEntityType: 'capa',
       relatedEntityId: params.capaId,
-      link: `/internal-audit/capa-tracking/${params.capaId}`,
+      link: `/internal-audit/capa-tracking`,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
     });

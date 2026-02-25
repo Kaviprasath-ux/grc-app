@@ -134,7 +134,7 @@ export const POST = withAuth(
           entityId: process.id,
           entityName: process.name,
           commentPreview: comment.substring(0, 100),
-          link: `/organization/bia/${process.id}`,
+          link: `/organization/process/bia/${process.id}`,
         });
       }
 
@@ -148,7 +148,7 @@ export const POST = withAuth(
           entityId: process.id,
           entityName: process.name,
           reason: comment,
-          link: `/organization/bia/${process.id}`,
+          link: `/organization/process/bia/${process.id}`,
         });
       }
 

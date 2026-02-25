@@ -143,7 +143,7 @@ export const PUT = withAuth(
             message: `CAPA "${updated.capaId}: ${updated.title}" has been closed.`,
             relatedEntityType: 'capa',
             relatedEntityId: updated.id,
-            link: `/internal-audit/capa/${updated.id}`,
+            link: `/internal-audit/capa-tracking`,
             metadata: {
               capaId: updated.capaId,
               capaTitle: updated.title,
@@ -165,7 +165,7 @@ export const PUT = withAuth(
             message: `CAPA "${updated.capaId}: ${updated.title}" is now in progress and requires your action.`,
             relatedEntityType: 'capa',
             relatedEntityId: updated.id,
-            link: `/internal-audit/capa/${updated.id}`,
+            link: `/internal-audit/capa-tracking`,
             metadata: {
               capaId: updated.capaId,
               capaTitle: updated.title,
