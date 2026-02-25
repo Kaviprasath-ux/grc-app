@@ -245,6 +245,7 @@ export const POST = withAuth(
           relatedEntityId: exception.id,
           link: `/compliance/exceptions/${exception.id}`,
           metadata: {
+            entityName: exception.name,
             exceptionCode: exception.exceptionCode,
             exceptionName: exception.name,
             category: exception.category,
@@ -267,6 +268,7 @@ export const POST = withAuth(
           relatedEntityId: exception.id,
           link: `/compliance/exceptions/${exception.id}`,
           metadata: {
+            entityName: exception.name,
             exceptionCode: exception.exceptionCode,
             exceptionName: exception.name,
             category: exception.category,

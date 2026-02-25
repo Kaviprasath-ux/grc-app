@@ -251,6 +251,7 @@ export const PUT = withAuth(
             relatedEntityId: id,
             link: `/compliance/exceptions/${id}`,
             metadata: {
+              entityName: existing.name,
               exceptionCode: existing.exceptionCode,
               exceptionName: existing.name,
               deniedBy: session.name || 'Approver',
@@ -273,6 +274,7 @@ export const PUT = withAuth(
             relatedEntityId: id,
             link: `/compliance/exceptions/${id}`,
             metadata: {
+              entityName: existing.name,
               exceptionCode: existing.exceptionCode,
               exceptionName: existing.name,
               approvedBy: session.name || 'Approver',
@@ -294,6 +296,7 @@ export const PUT = withAuth(
             relatedEntityId: id,
             link: `/compliance/exceptions/${id}`,
             metadata: {
+              entityName: existing.name,
               exceptionCode: existing.exceptionCode,
               exceptionName: existing.name,
               authorizedBy: session.name || 'Authorizer',
@@ -318,6 +321,7 @@ export const PUT = withAuth(
             relatedEntityId: id,
             link: `/compliance/exceptions/${id}`,
             metadata: {
+              entityName: existing.name,
               exceptionCode: existing.exceptionCode,
               exceptionName: existing.name,
               sentBackBy: session.name || 'Reviewer',
@@ -340,6 +344,7 @@ export const PUT = withAuth(
             relatedEntityId: id,
             link: `/compliance/exceptions/${id}`,
             metadata: {
+              entityName: existing.name,
               exceptionCode: existing.exceptionCode,
               exceptionName: existing.name,
               closedBy: session.name || 'System',

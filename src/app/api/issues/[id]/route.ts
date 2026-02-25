@@ -148,6 +148,7 @@ export const PUT = withAuth(
             relatedEntityId: issue.id,
             link: `/organization/context`,
             metadata: {
+              entityName: issue.title,
               issueTitle: issue.title,
               category: issue.category,
               domain: issue.domain,
@@ -170,6 +171,7 @@ export const PUT = withAuth(
             relatedEntityId: issue.id,
             link: `/organization/context`,
             metadata: {
+              entityName: issue.title,
               issueTitle: issue.title,
               resolvedBy: session.name || 'User',
             },
@@ -190,6 +192,7 @@ export const PUT = withAuth(
             relatedEntityId: issue.id,
             link: `/organization/context`,
             metadata: {
+              entityName: issue.title,
               issueTitle: issue.title,
               rejectedBy: session.name || 'Reviewer',
             },
@@ -227,6 +230,7 @@ export const PUT = withAuth(
                 relatedEntityId: issue.id,
                 link: `/organization/context`,
                 metadata: {
+                  entityName: issue.title,
                   issueTitle: issue.title,
                   submittedBy: session.name || 'User',
                 },
@@ -249,6 +253,7 @@ export const PUT = withAuth(
             relatedEntityId: issue.id,
             link: `/organization/context`,
             metadata: {
+              entityName: issue.title,
               issueTitle: issue.title,
               escalatedBy: session.name || 'Reviewer',
             },

@@ -146,6 +146,7 @@ export const PUT = withAuth(
             relatedEntityId: kpi.id,
             link: `/compliance/kpis/${kpi.id}`,
             metadata: {
+              entityName: kpi.objective || kpi.code,
               kpiCode: kpi.code,
               kpiObjective: kpi.objective,
               oldScore: oldScore,

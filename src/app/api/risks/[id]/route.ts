@@ -512,6 +512,7 @@ export const PATCH = withAuth(
             relatedEntityId: risk.id,
             link: `/risks/register/${risk.id}/edit`,
             metadata: {
+              entityName: risk.name,
               riskCode: risk.riskId,
               riskName: risk.name,
               approvedBy: session.name || 'Reviewer',
@@ -533,6 +534,7 @@ export const PATCH = withAuth(
             relatedEntityId: risk.id,
             link: `/risks/register/${risk.id}/edit`,
             metadata: {
+              entityName: risk.name,
               riskCode: risk.riskId,
               riskName: risk.name,
               rejectedBy: session.name || 'Reviewer',
@@ -555,6 +557,7 @@ export const PATCH = withAuth(
             relatedEntityId: risk.id,
             link: `/risks/register/${risk.id}/edit`,
             metadata: {
+              entityName: risk.name,
               riskCode: risk.riskId,
               riskName: risk.name,
               submittedBy: session.name || 'User',

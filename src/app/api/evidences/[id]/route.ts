@@ -190,6 +190,7 @@ export const PUT = withAuth(
               relatedEntityId: updatedEvidence.id,
               link: `/compliance/evidence/${updatedEvidence.id}`,
               metadata: {
+                entityName: updatedEvidence.name,
                 evidenceCode: updatedEvidence.evidenceCode,
                 evidenceName: updatedEvidence.name,
                 submittedBy: session.name || 'User',
@@ -213,6 +214,7 @@ export const PUT = withAuth(
           relatedEntityId: updatedEvidence.id,
           link: `/compliance/evidence/${updatedEvidence.id}`,
           metadata: {
+            entityName: updatedEvidence.name,
             evidenceCode: updatedEvidence.evidenceCode,
             evidenceName: updatedEvidence.name,
             publishedBy: session.name || 'Reviewer',

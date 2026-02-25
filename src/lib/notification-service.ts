@@ -272,6 +272,13 @@ class NotificationService {
         return;
       }
 
+      // Auto-resolve actor name if not provided in metadata
+      let actorName = payload.metadata?.actorName as string | undefined;
+      if (!actorName && payload.actorId && payload.actorId !== 'system') {
+        const actorInfo = await getUserInfo(payload.actorId);
+        actorName = actorInfo?.name;
+      }
+
       // Map notification event to email template code
       const templateCode = this.getEmailTemplateCode(payload.event);
 
@@ -284,7 +291,7 @@ class NotificationService {
           : undefined,
         entityType: payload.relatedEntityType,
         entityName: payload.metadata?.entityName as string,
-        actorName: payload.metadata?.actorName as string,
+        actorName: actorName,
         dueDate: payload.metadata?.dueDate as string,
         controlCode: payload.metadata?.controlCode as string,
         riskCode: payload.metadata?.riskCode as string,
@@ -467,6 +474,7 @@ class NotificationService {
       link: `/compliance/evidence/${params.evidenceId}`,
       priority: NOTIFICATION_PRIORITIES.NORMAL,
       channels: params.channels,
+      metadata: { entityName: params.evidenceName, controlCode: params.controlCode },
     });
   }
 
@@ -493,6 +501,7 @@ class NotificationService {
       relatedEntityId: params.riskId,
       link: `/risks/register/${params.riskId}/edit`,
       channels: params.channels,
+      metadata: { entityName: params.riskName, riskCode: params.riskCode },
     });
   }
 
@@ -519,6 +528,7 @@ class NotificationService {
       relatedEntityId: params.controlId,
       link: `/compliance/control/${params.controlId}`,
       channels: params.channels,
+      metadata: { entityName: params.controlName, controlCode: params.controlCode },
     });
   }
 
@@ -546,6 +556,7 @@ class NotificationService {
       relatedEntityId: params.assetId,
       link: `/assets/inventory`,
       channels: params.channels,
+      metadata: { entityName: params.assetName, assetCode: params.assetCode, role: params.role },
     });
   }
 
@@ -573,6 +584,7 @@ class NotificationService {
       link: `/internal-audit/capa-tracking`,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
+      metadata: { entityName: params.capaTitle, capaCode: params.capaCode },
     });
   }
 
@@ -600,6 +612,7 @@ class NotificationService {
       relatedEntityId: params.engagementId,
       link: `/internal-audit/fieldwork/${params.engagementId}`,
       channels: params.channels,
+      metadata: { entityName: params.engagementName, engagementCode: params.engagementCode, role: params.role },
     });
   }
 
@@ -628,6 +641,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       channels: params.channels,
+      metadata: { entityName: params.entityName, commentPreview: params.commentPreview },
     });
   }
 
@@ -656,6 +670,7 @@ class NotificationService {
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
+      metadata: { entityName: params.entityName },
     });
   }
 
@@ -683,6 +698,7 @@ class NotificationService {
       relatedEntityId: params.entityId,
       link: params.link,
       channels: params.channels,
+      metadata: { entityName: params.entityName },
     });
   }
 
@@ -714,6 +730,7 @@ class NotificationService {
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
+      metadata: { entityName: params.entityName, reason: params.reason },
     });
   }
 
@@ -745,6 +762,7 @@ class NotificationService {
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
+      metadata: { entityName: params.entityName, reason: params.reason },
     });
   }
 
@@ -777,6 +795,7 @@ class NotificationService {
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.NORMAL,
       channels: params.channels,
+      metadata: { entityName: params.entityName },
     });
   }
 
@@ -808,6 +827,7 @@ class NotificationService {
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.NORMAL,
       channels: params.channels,
+      metadata: { entityName: params.requestName },
     });
   }
 
@@ -843,6 +863,7 @@ class NotificationService {
       link: params.link,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
+      metadata: { entityName: params.entityName, dueDate: params.dueDate.toLocaleDateString() },
     });
   }
 
@@ -865,6 +886,7 @@ class NotificationService {
       message: `Welcome ${params.userName}! Your account has been created successfully.`,
       link: '/dashboard',
       channels: params.channels,
+      metadata: { userName: params.userName },
     });
   }
 
@@ -895,6 +917,7 @@ class NotificationService {
       metadata: {
         issueId: params.issueId,
         evidenceName: params.evidenceName,
+        entityName: params.evidenceName,
       },
     });
   }

@@ -182,6 +182,7 @@ export const POST = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            metadata: { entityName: policy.name, policyCode: policy.code },
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
@@ -198,6 +199,7 @@ export const POST = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            metadata: { entityName: policy.name, policyCode: policy.code },
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }

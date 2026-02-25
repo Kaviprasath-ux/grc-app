@@ -29,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Upload, FileDown, FileUp,Download, RefreshCw, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Upload, FileDown, FileUp, Download, RefreshCw, AlertTriangle, Mail } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -823,16 +823,18 @@ export default function EmailTemplatesPage() {
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSeedTemplates}
-            disabled={seeding}
-            title={t("Seed default email templates")}
-          >
-            <RefreshCw className={`h-4 w-4 ltr:mr-2 rtl:ml-2 ${seeding ? 'animate-spin' : ''}`} />
-            {seeding ? t("Seeding...") : t("Seed Defaults")}
-          </Button>
+          {templates.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedTemplates}
+              disabled={seeding}
+              title={t("Replace all templates with default templates")}
+            >
+              <RefreshCw className={`h-4 w-4 ltr:mr-2 rtl:ml-2 ${seeding ? 'animate-spin' : ''}`} />
+              {seeding ? t("Replacing...") : t("Replace Defaults")}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -887,19 +889,42 @@ export default function EmailTemplatesPage() {
             {filteredTemplates.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={5}>
-                  <div className="py-16 text-center">
-                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
-                      <FileText className="h-6 w-6 text-primary-500" />
+                  {templates.length === 0 && filterCategory === "all" ? (
+                    <div className="py-20 text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
+                        <Mail className="h-8 w-8 text-primary-500" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                        {t("No Email Templates Configured")}
+                      </h3>
+                      <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
+                        {t("Load the default set of 88 professionally designed email templates for notifications, reminders, approvals, and more.")}
+                      </p>
+                      <Button
+                        size="lg"
+                        onClick={handleSeedTemplates}
+                        disabled={seeding}
+                        className="px-8 py-3 text-base font-semibold shadow-md hover:shadow-lg transition-all"
+                      >
+                        <Mail className={`h-5 w-5 ltr:mr-2.5 rtl:ml-2.5 ${seeding ? 'animate-pulse' : ''}`} />
+                        {seeding ? t("Loading Templates...") : t("Seed Default Templates")}
+                      </Button>
                     </div>
-                    <h3 className="text-base font-semibold text-slate-800 mb-1">
-                      {t("No Email Templates Found")}
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                      {filterCategory !== "all"
-                        ? t("No templates match the selected category filter.")
-                        : t("Get started by adding your first email template.")}
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="py-16 text-center">
+                      <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                        <FileText className="h-6 w-6 text-primary-500" />
+                      </div>
+                      <h3 className="text-base font-semibold text-slate-800 mb-1">
+                        {t("No Email Templates Found")}
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        {filterCategory !== "all"
+                          ? t("No templates match the selected category filter.")
+                          : t("Get started by adding your first email template.")}
+                      </p>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

@@ -145,6 +145,7 @@ export const PUT = withAuth(
             relatedEntityId: updated.id,
             link: `/internal-audit/capa-tracking`,
             metadata: {
+              entityName: updated.title,
               capaId: updated.capaId,
               capaTitle: updated.title,
               findingId: updated.finding?.findingId,
@@ -167,6 +168,7 @@ export const PUT = withAuth(
             relatedEntityId: updated.id,
             link: `/internal-audit/capa-tracking`,
             metadata: {
+              entityName: updated.title,
               capaId: updated.capaId,
               capaTitle: updated.title,
               findingId: updated.finding?.findingId,

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Locale } from "@/i18n/config";
 import { useNotifications, getNotificationStyle, Notification } from "@/hooks/useNotifications";
 import { useTranslatedRecord } from "@/hooks/useTranslatedData";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const dateFnsLocales: Record<string, typeof enUS> = { en: enUS, ar, lv };
 
@@ -60,6 +70,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
   const router = useRouter();
   const { locale, setLocale, t, locales, localeNames, localeFlags } = useLanguage();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const dateFnsLocale = dateFnsLocales[locale] || enUS;
 
   // Translate current user name
@@ -367,15 +378,37 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
               <span className="text-sm">{t("Settings")}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
-              <Link href="/login">
-                <LogOut className="me-3 h-4 w-4" />
-                <span className="text-sm font-medium">{t("Log out")}</span>
-              </Link>
+            <DropdownMenuItem
+              className="py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+              onClick={() => setShowLogoutDialog(true)}
+            >
+              <LogOut className="me-3 h-4 w-4" />
+              <span className="text-sm font-medium">{t("Log out")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent className={locale === "ar" ? "text-right" : ""}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Confirm Logout")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to log out? You will need to sign in again to access the application.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className={locale === "ar" ? "flex-row-reverse gap-2" : ""}>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
+            >
+              {t("Log out")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

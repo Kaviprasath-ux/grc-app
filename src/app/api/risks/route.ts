@@ -315,6 +315,7 @@ export const POST = withAuth(
           relatedEntityId: risk.id,
           link: `/risks/register/${risk.id}/edit`,
           metadata: {
+            entityName: risk.name,
             riskCode: risk.riskId,
             riskName: risk.name,
             riskRating: risk.riskRating,

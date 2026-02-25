@@ -297,6 +297,7 @@ export const PUT = withAuth(
           relatedEntityId: control.id,
           link: `/compliance/control/${control.id}`,
           metadata: {
+            entityName: control.name,
             controlCode: control.controlCode,
             controlName: control.name,
             previousStatus: existing.status,

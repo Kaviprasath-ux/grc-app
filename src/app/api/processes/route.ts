@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
           relatedEntityId: process.id,
           link: `/organization/process/${process.id}/edit`,
           metadata: {
+            entityName: process.name,
             processCode: process.processCode,
             processName: process.name,
             role: role,
@@ -178,6 +179,7 @@ export async function POST(request: NextRequest) {
         relatedEntityId: process.id,
         link: `/organization/process/${process.id}/edit`,
         metadata: {
+          entityName: process.name,
           processCode: process.processCode,
           processName: process.name,
           createdBy: session?.user?.name || 'User',

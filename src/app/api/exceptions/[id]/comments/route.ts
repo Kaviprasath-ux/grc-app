@@ -104,6 +104,7 @@ export const POST = withAuth(
           relatedEntityType: 'Exception',
           relatedEntityId: exception.id,
           link: `/compliance/exceptions/${exception.id}`,
+          metadata: { entityName: exception.name, commentPreview: content.substring(0, 100) },
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }

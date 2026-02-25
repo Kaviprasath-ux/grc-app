@@ -185,6 +185,8 @@ export const POST = withAuth(
           relatedEntityId: finding.id,
           link: `/internal-audit/fieldwork/${engagementId}`,
           metadata: {
+            entityName: finding.finding,
+            auditName: engagement.auditId,
             findingId: finding.findingId,
             findingTitle: finding.finding,
             severity: finding.severity,

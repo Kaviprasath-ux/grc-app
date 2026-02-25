@@ -9,6 +9,16 @@ import { cn } from "@/lib/utils";
 import { navigation, filterNavigationByPermissionsAndRole, type NavItem } from "@/lib/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -22,9 +32,10 @@ interface NavItemComponentProps {
   collapsed?: boolean;
   onNavigate?: () => void;
   onExpand?: () => void;
+  onLogoutClick?: () => void;
 }
 
-function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onExpand }: NavItemComponentProps) {
+function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onExpand, onLogoutClick }: NavItemComponentProps) {
   const pathname = usePathname();
   const { t, isRTL } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
@@ -50,7 +61,7 @@ function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onEx
       return (
         <div className="flex justify-center mb-1 px-2">
           <button
-            onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
+            onClick={() => onLogoutClick?.()}
             title={translatedName}
             className="flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50"
           >
@@ -143,7 +154,7 @@ function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onEx
     return (
       <div className="px-3 mb-1">
         <button
-          onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
+          onClick={() => onLogoutClick?.()}
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
             "text-slate-500 hover:text-red-600 hover:bg-red-50",
@@ -207,7 +218,8 @@ function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onEx
 
 export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: SidebarProps) {
   const { data: session, status } = useSession();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const filteredNavigation = useMemo(() => {
     if (!session?.user?.permissions || !session?.user?.roles) {
@@ -264,6 +276,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
                 collapsed={collapsed}
                 onNavigate={onNavigate}
                 onExpand={onToggleCollapse}
+                onLogoutClick={() => setShowLogoutDialog(true)}
               />
             ))
           )}
@@ -279,6 +292,27 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
           </div>
         </div>
       )}
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent className={isRTL ? "text-right" : ""}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Confirm Logout")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to log out? You will need to sign in again to access the application.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className={isRTL ? "flex-row-reverse gap-2" : ""}>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
+            >
+              {t("Log out")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }

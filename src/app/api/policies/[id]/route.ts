@@ -162,6 +162,7 @@ export const PUT = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            metadata: { entityName: policy.name },
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
@@ -179,6 +180,7 @@ export const PUT = withAuth(
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
             metadata: {
+              entityName: policy.name,
               policyName: policy.name,
               submittedBy: session.name || 'User',
             },
@@ -287,6 +289,7 @@ export const PATCH = withAuth(
             relatedEntityType: "policy",
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
+            metadata: { entityName: policy.name },
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
@@ -304,6 +307,7 @@ export const PATCH = withAuth(
             relatedEntityId: policy.id,
             link: `/compliance/governance/${policy.id}`,
             metadata: {
+              entityName: policy.name,
               policyName: policy.name,
               submittedBy: session.name || 'User',
             },

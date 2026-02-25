@@ -102,6 +102,7 @@ export const POST = withAuth(
           relatedEntityId: issue.id,
           link: `/organization/context`,
           metadata: {
+            entityName: issue.title,
             issueTitle: issue.title,
             actionType: actionType,
             actionTitle: title,

@@ -82,6 +82,7 @@ export const POST = withAuth(
           relatedEntityId: policy.id,
           link: `/compliance/governance/${policy.id}`,
           metadata: {
+            entityName: policy.name,
             policyName: policy.name,
             approvedBy: session.name || 'Approver',
           },

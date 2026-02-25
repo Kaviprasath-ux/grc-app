@@ -186,6 +186,11 @@ export async function POST(req: NextRequest) {
         relatedEntityType: 'customerAccount',
         relatedEntityId: result.customerAccount.id,
         link: '/dashboard',
+        metadata: {
+          entityName: result.customerAccount.name,
+          customerName: result.customerAccount.name,
+          userName: result.newUser.fullName,
+        },
         channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
       });
     }

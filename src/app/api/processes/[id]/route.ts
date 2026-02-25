@@ -168,6 +168,7 @@ export const PUT = withAuth(
             relatedEntityType: 'process',
             relatedEntityId: process.id,
             link: `/organization/process/${process.id}/edit`,
+            metadata: { entityName: process.name, processCode: process.processCode, role },
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
@@ -214,6 +215,7 @@ export const PUT = withAuth(
                 relatedEntityId: process.id,
                 link: `/organization/process/${process.id}/edit`,
                 metadata: {
+                  entityName: process.name,
                   processCode: process.processCode,
                   processName: process.name,
                   submittedBy: session.name || 'User',
@@ -237,6 +239,7 @@ export const PUT = withAuth(
             relatedEntityId: process.id,
             link: `/organization/process/${process.id}/edit`,
             metadata: {
+              entityName: process.name,
               processCode: process.processCode,
               processName: process.name,
               approvedBy: session.name || 'Approver',
@@ -258,6 +261,7 @@ export const PUT = withAuth(
             relatedEntityId: process.id,
             link: `/organization/process/${process.id}/edit`,
             metadata: {
+              entityName: process.name,
               processCode: process.processCode,
               processName: process.name,
               rejectedBy: session.name || 'Reviewer',
