@@ -248,48 +248,30 @@ export function useTranslatedRecord<T extends object>(
 
     setIsLoading(true);
 
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
-    const RETRY_DELAY = 3000;
-
-    const doFetch = () => {
-      fetch(`/api/translations/${modelName}/${recordId}?locale=${locale}`, {
-        signal: controller.signal,
+    fetch(`/api/translations/${modelName}/${recordId}?locale=${locale}`, {
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Translation fetch failed: ${res.status}`);
+        return res.json();
       })
-        .then((res) => {
-          if (!res.ok) throw new Error(`Translation fetch failed: ${res.status}`);
-          return res.json();
-        })
-        .then((result: { translations: Record<string, string>; pendingCount?: number }) => {
-          if (controller.signal.aborted) return;
+      .then((result: { translations: Record<string, string> }) => {
+        if (controller.signal.aborted) return;
 
-          const translations = result.translations ?? {};
-          const pendingCount = result.pendingCount ?? 0;
-
-          setTranslatedRecord(overlaySingleRecord(recordRef.current!, translations));
-          setIsLoading(false);
-
-          if (pendingCount > 0 && retryCount < MAX_RETRIES) {
-            retryCount++;
-            retryTimer = setTimeout(doFetch, RETRY_DELAY);
-          } else {
-            setCache(cacheKey, { [recordId]: translations });
-          }
-        })
-        .catch((err) => {
-          if (err.name === "AbortError") return;
-          console.error("Failed to fetch record translations:", err);
-          setTranslatedRecord(recordRef.current ?? null);
-          setIsLoading(false);
-        });
-    };
-
-    doFetch();
+        const translations = result.translations ?? {};
+        setTranslatedRecord(overlaySingleRecord(recordRef.current!, translations));
+        setIsLoading(false);
+        setCache(cacheKey, { [recordId]: translations });
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        console.error("Failed to fetch record translations:", err);
+        setTranslatedRecord(recordRef.current ?? null);
+        setIsLoading(false);
+      });
 
     return () => {
       controller.abort();
-      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [recordKey, locale, modelName, idField]);
 
