@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -41,6 +41,7 @@ interface Department {
 
 interface Auditor {
   id: string;
+  fullName: string;
   firstName: string;
   lastName: string;
 }
@@ -81,9 +82,22 @@ export default function FieldworkPage() {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
+  // Collect unique assigned auditors from engagements for translation
+  const assignedAuditorUsers = useMemo(() => {
+    const map = new Map<string, { id: string; fullName: string; firstName: string; lastName: string }>();
+    for (const e of engagements) {
+      if (e.assignedAuditor && !map.has(e.assignedAuditor.id)) {
+        map.set(e.assignedAuditor.id, e.assignedAuditor);
+      }
+    }
+    return Array.from(map.values());
+  }, [engagements]);
+
   // Dynamic translation hooks
   const { data: translatedEngagements } = useTranslatedData(engagements, { modelName: 'AuditEngagement' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedAuditors } = useTranslatedData(auditors, { modelName: 'User' });
+  const { data: translatedAssignedAuditors } = useTranslatedData(assignedAuditorUsers, { modelName: 'User' });
 
   // Detail Modal
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -162,6 +176,8 @@ export default function FieldworkPage() {
 
   const getAuditorName = (engagement: Engagement) => {
     if (engagement.assignedAuditor) {
+      const translated = translatedAssignedAuditors.find(a => a.id === engagement.assignedAuditor?.id);
+      if (translated) return translated.fullName || `${translated.firstName} ${translated.lastName}`;
       return `${engagement.assignedAuditor.firstName} ${engagement.assignedAuditor.lastName}`;
     }
     if (engagement.assignedAuditors && engagement.assignedAuditors.length > 0) {
@@ -346,9 +362,9 @@ export default function FieldworkPage() {
               </SelectTrigger>
               <SelectContent className="bg-white">
                 <SelectItem value="all">{t("All Auditors")}</SelectItem>
-                {auditors.map((auditor) => (
+                {translatedAuditors.map((auditor) => (
                   <SelectItem key={auditor.id} value={auditor.id}>
-                    {auditor.firstName} {auditor.lastName}
+                    {auditor.fullName || `${auditor.firstName} ${auditor.lastName}`}
                   </SelectItem>
                 ))}
               </SelectContent>

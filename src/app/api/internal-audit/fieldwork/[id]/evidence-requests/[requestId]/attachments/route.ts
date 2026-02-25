@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 import { saveUploadedFile } from '@/lib/file-upload';
+import { translateRecord, isTranslationConfigured } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string; requestId: string }>;
@@ -103,6 +104,11 @@ export const POST = withAuth(
               filePath: urlPath,
             },
           });
+
+          // Translate file name
+          if (session.customerAccountId && isTranslationConfigured()) {
+            void translateRecord(session.customerAccountId, 'FieldworkEvidenceAttachment', attachment.id, { fileName: file.name }).catch(() => {});
+          }
 
           uploadedFiles.push({
             id: attachment.id,

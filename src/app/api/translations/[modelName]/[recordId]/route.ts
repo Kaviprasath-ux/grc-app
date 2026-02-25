@@ -7,10 +7,9 @@
  * Works for ALL locales including "en" — records may have been entered
  * in any language, so English translations may exist in the DB.
  *
- * This endpoint only READS existing translations — it does NOT trigger
- * new translations. Translations are created only when records are
- * explicitly created or edited (via translateRecord in API handlers
- * and triggerTranslation on the frontend).
+ * Read-only: This endpoint only returns existing translations.
+ * Translations are created/updated when records are created or edited
+ * (via POST /api/translations/translate).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -55,7 +54,6 @@ export const GET = withAuthOnly(async (req: NextRequest, context: RouteContext, 
       locale
     );
 
-    // Return existing translations only — no background auto-translate
     return NextResponse.json({
       translations,
       pendingCount: 0,

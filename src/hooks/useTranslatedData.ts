@@ -112,12 +112,17 @@ export function useTranslatedData<T extends object>(
   const dataRef = useRef(data);
   dataRef.current = data;
 
-  // Stable key derived from record IDs — only changes when actual records change
+  // Stable key derived from record content — changes when records change (IDs or values)
   const dataKey = useMemo(() => {
     if (!data || data.length === 0) return "";
-    return data
-      .map((item) => (item as Record<string, unknown>)[idField])
-      .join(",");
+    try {
+      return JSON.stringify(data);
+    } catch {
+      // Fallback for non-serializable data
+      return data
+        .map((item) => (item as Record<string, unknown>)[idField])
+        .join(",");
+    }
   }, [data, idField]);
 
   useEffect(() => {
@@ -155,6 +160,8 @@ export function useTranslatedData<T extends object>(
     abortRef.current = controller;
 
     setIsLoading(true);
+    // Immediately show fresh (untranslated) data while translations load
+    setTranslatedData(currentData);
 
     fetch("/api/translations/bulk", {
       method: "POST",
@@ -210,10 +217,14 @@ export function useTranslatedRecord<T extends object>(
   const recordRef = useRef(record);
   recordRef.current = record;
 
-  // Stable key from record ID
+  // Stable key from record content — changes when record values change
   const recordKey = useMemo(() => {
     if (!record) return "";
-    return String((record as Record<string, unknown>)[idField] ?? "");
+    try {
+      return JSON.stringify(record);
+    } catch {
+      return String((record as Record<string, unknown>)[idField] ?? "");
+    }
   }, [record, idField]);
 
   useEffect(() => {
@@ -247,6 +258,8 @@ export function useTranslatedRecord<T extends object>(
     abortRef.current = controller;
 
     setIsLoading(true);
+    // Immediately show fresh (untranslated) record while translations load
+    setTranslatedRecord(currentRecord);
 
     fetch(`/api/translations/${modelName}/${recordId}?locale=${locale}`, {
       signal: controller.signal,

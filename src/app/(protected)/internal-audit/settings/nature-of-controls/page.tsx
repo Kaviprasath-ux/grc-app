@@ -133,23 +133,23 @@ export default function NatureOfControlsPage() {
         setDialogOpen(false);
         fetchItems();
         toast({
-          title: "Success",
-          description: editItem ? "Nature of control updated successfully" : "Nature of control created successfully",
+          title: t("Success"),
+          description: editItem ? t("Nature of control updated successfully") : t("Nature of control created successfully"),
         });
       } else {
         const data = await response.json();
         toast({
           variant: "destructive",
-          title: "Error",
-          description: data.error || "Failed to save nature of control",
+          title: t("Error"),
+          description: data.error || t("Failed to save nature of control"),
         });
       }
     } catch (error) {
       console.error("Failed to save:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to save nature of control",
+        title: t("Error"),
+        description: t("Failed to save nature of control"),
       });
     } finally {
       setSaving(false);
@@ -172,8 +172,8 @@ export default function NatureOfControlsPage() {
       if (response.ok) {
         fetchItems();
         toast({
-          title: "Success",
-          description: "Nature of control deleted successfully",
+          title: t("Success"),
+          description: t("Nature of control deleted successfully"),
         });
         setDeleteDialogOpen(false);
         setItemToDelete(null);
@@ -181,8 +181,8 @@ export default function NatureOfControlsPage() {
         const data = await response.json();
         toast({
           variant: "destructive",
-          title: "Error",
-          description: data.error || "Failed to delete nature of control",
+          title: t("Error"),
+          description: data.error || t("Failed to delete nature of control"),
         });
         setDeleteDialogOpen(false);
         setItemToDelete(null);
@@ -191,8 +191,8 @@ export default function NatureOfControlsPage() {
       console.error("Failed to delete:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to delete nature of control",
+        title: t("Error"),
+        description: t("Failed to delete nature of control"),
       });
       setDeleteDialogOpen(false);
       setItemToDelete(null);

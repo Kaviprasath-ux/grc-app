@@ -868,6 +868,18 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const handleAIReview = async () => {
     if (selectedEvidenceIds.length === 0) { setAiReviewSelectionError(t("Please select at least one evidence request")); return; }
+
+    // Check if any selected evidence request is missing attachments
+    const missingAttachments = evidenceRequests
+      .filter((er) => selectedEvidenceIds.includes(er.id))
+      .filter((er) => !er.attachments || er.attachments.length === 0);
+
+    if (missingAttachments.length > 0) {
+      const titles = missingAttachments.map((er) => `"${er.title}"`).join(", ");
+      setAiReviewSelectionError(t("Attachment not present. Please add attachments for") + ": " + titles);
+      return;
+    }
+
     setAiReviewSelectionError("");
     setGeneratingAIReview(true);
     try {
@@ -1443,13 +1455,14 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                     <Button variant="ghost" size="icon" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)} className="h-8 w-8"><Paperclip className="h-5 w-5 text-slate-700" /></Button>
                                   </div>
                                 </div>
-                                {er.status === 'Pending' && (
-                                  <div className="flex ltr:justify-end rtl:justify-start mt-4">
-                                    <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setAuditeeClariEvidence(er); setRespondDialogOpen(true); }}>{t("Submit Response")}</Button>
-                                  </div>
-                                )}
                               </div>
                             ))}
+                            {/* Single Submit Response Button for all pending requests */}
+                            {filteredEvidenceRequests.some((er) => er.status === 'Pending') && (
+                              <div className="flex ltr:justify-end rtl:justify-start mt-4">
+                                <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setRespondDialogOpen(true); }}>{t("Submit Response")}</Button>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div className="text-center py-12">

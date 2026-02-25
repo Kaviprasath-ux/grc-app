@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 import { saveUploadedFile } from '@/lib/file-upload';
+import { translateRecord, isTranslationConfigured } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ findingId: string }>;
@@ -48,7 +49,7 @@ export const GET = withAuth(
 
 // POST /api/internal-audit/findings/[findingId]/attachments - Upload attachments
 export const POST = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { findingId } = await context.params;
 
@@ -92,6 +93,11 @@ export const POST = withAuth(
               filePath: urlPath,
             },
           });
+
+          // Translate file name
+          if (session.customerAccountId && isTranslationConfigured()) {
+            void translateRecord(session.customerAccountId, 'FindingAttachment', attachment.id, { fileName: file.name }).catch(() => {});
+          }
 
           uploadedFiles.push({
             id: attachment.id,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
-import { translateRecord } from '@/lib/translation-service';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string; findingId: string }>;
@@ -155,7 +155,7 @@ export const PATCH = withAuth(
       }
 
       // Fire-and-forget: translate finding fields
-      if (existingFinding.customerAccountId) void translateRecord(existingFinding.customerAccountId, 'InternalAuditFinding', updatedFinding.id, { title: updatedFinding.finding, description: updatedFinding.description, recommendation: updatedFinding.recommendation });
+      if (existingFinding.customerAccountId) void translateRecord(existingFinding.customerAccountId, 'InternalAuditFinding', updatedFinding.id, { title: updatedFinding.finding, description: updatedFinding.description, recommendation: updatedFinding.recommendation, criteria: updatedFinding.criteria, condition: updatedFinding.condition, cause: updatedFinding.cause, effect: updatedFinding.effect });
 
       return NextResponse.json({
         id: updatedFinding.id,
@@ -215,6 +215,9 @@ export const DELETE = withAuth(
       await prisma.internalAuditFinding.delete({
         where: { id: findingId },
       });
+
+      // Fire-and-forget: delete translations for removed finding
+      if (existingFinding.customerAccountId) void deleteRecordTranslations(existingFinding.customerAccountId, 'InternalAuditFinding', findingId);
 
       return NextResponse.json({ message: 'Finding deleted successfully' });
     } catch (error) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string; requestId: string }>;
@@ -158,6 +159,9 @@ export const PATCH = withAuth(
         });
       }
 
+      // Fire-and-forget: translate evidence request fields
+      if (customerAccountId) void translateRecord(customerAccountId, 'FieldworkEvidenceRequest', updatedRequest.id, { title: updatedRequest.title, description: updatedRequest.description });
+
       return NextResponse.json({
         id: updatedRequest.id,
         title: updatedRequest.title,
@@ -213,6 +217,12 @@ export const DELETE = withAuth(
       await prisma.fieldworkEvidenceRequest.delete({
         where: { id: requestId },
       });
+
+      // Fire-and-forget: delete translations for removed evidence request
+      if (existingRequest.engagementId) {
+        const eng = await prisma.auditEngagement.findUnique({ where: { id: existingRequest.engagementId }, select: { customerAccountId: true } });
+        if (eng?.customerAccountId) void deleteRecordTranslations(eng.customerAccountId, 'FieldworkEvidenceRequest', requestId);
+      }
 
       return NextResponse.json({ message: 'Evidence request deleted successfully' });
     } catch (error) {

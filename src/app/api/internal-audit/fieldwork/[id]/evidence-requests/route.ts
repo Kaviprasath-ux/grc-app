@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -134,6 +135,9 @@ export const POST = withAuth(
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
       }
+
+      // Fire-and-forget: translate evidence request fields
+      if (engagement.customerAccountId) void translateRecord(engagement.customerAccountId, 'FieldworkEvidenceRequest', evidenceRequest.id, { title: evidenceRequest.title, description: evidenceRequest.description });
 
       return NextResponse.json({
         id: evidenceRequest.id,

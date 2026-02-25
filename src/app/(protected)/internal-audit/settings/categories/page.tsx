@@ -133,23 +133,23 @@ export default function AuditCategoriesPage() {
         setDialogOpen(false);
         fetchCategories();
         toast({
-          title: "Success",
-          description: editItem ? "Category updated successfully" : "Category created successfully",
+          title: t("Success"),
+          description: editItem ? t("Category updated successfully") : t("Category created successfully"),
         });
       } else {
         const data = await response.json();
         toast({
           variant: "destructive",
-          title: "Error",
-          description: data.error || "Failed to save category",
+          title: t("Error"),
+          description: data.error || t("Failed to save category"),
         });
       }
     } catch (error) {
       console.error("Failed to save:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to save category",
+        title: t("Error"),
+        description: t("Failed to save category"),
       });
     } finally {
       setSaving(false);
@@ -172,8 +172,8 @@ export default function AuditCategoriesPage() {
       if (response.ok) {
         fetchCategories();
         toast({
-          title: "Success",
-          description: "Category deleted successfully",
+          title: t("Success"),
+          description: t("Category deleted successfully"),
         });
         setDeleteDialogOpen(false);
         setItemToDelete(null);
@@ -181,8 +181,8 @@ export default function AuditCategoriesPage() {
         const data = await response.json();
         toast({
           variant: "destructive",
-          title: "Error",
-          description: data.error || "Failed to delete category",
+          title: t("Error"),
+          description: data.error || t("Failed to delete category"),
         });
         setDeleteDialogOpen(false);
         setItemToDelete(null);
@@ -191,8 +191,8 @@ export default function AuditCategoriesPage() {
       console.error("Failed to delete:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to delete category",
+        title: t("Error"),
+        description: t("Failed to delete category"),
       });
       setDeleteDialogOpen(false);
       setItemToDelete(null);

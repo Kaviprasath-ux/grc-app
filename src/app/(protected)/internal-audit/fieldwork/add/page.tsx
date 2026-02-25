@@ -5,7 +5,7 @@ import { formatLocalDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { triggerTranslation } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,6 +101,10 @@ export default function AddEvidenceRequestPage() {
 
   // Selected engagement details
   const [selectedEngagement, setSelectedEngagement] = useState<Engagement | null>(null);
+
+  // Dynamic translation hooks
+  const { data: translatedEngagements } = useTranslatedData(engagements, { modelName: 'AuditEngagement' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
 
   useEffect(() => {
     fetchReferenceData();
@@ -313,7 +317,7 @@ export default function AddEvidenceRequestPage() {
               <SelectValue placeholder={t("Select Audit Engagement")} />
             </SelectTrigger>
             <SelectContent>
-              {engagements.map((engagement) => (
+              {translatedEngagements.map((engagement) => (
                 <SelectItem key={engagement.id} value={engagement.id}>
                   {engagement.auditId} - {engagement.engagementTitle}
                 </SelectItem>
@@ -450,7 +454,7 @@ export default function AddEvidenceRequestPage() {
               <SelectValue placeholder={t("Select Auditee")} />
             </SelectTrigger>
             <SelectContent>
-              {users.map((user) => (
+              {translatedUsers.map((user) => (
                 <SelectItem key={user.id} value={user.id}>
                   {getUserDisplayName(user)}
                 </SelectItem>

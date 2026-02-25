@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
 import path from "path";
 import { saveUploadedFile } from "@/lib/file-upload";
+import { translateRecord, isTranslationConfigured } from "@/lib/translation-service";
 
 // GET documents organized by category with pagination
 export const GET = withAuth(
@@ -166,6 +167,14 @@ export const POST = withAuth(
 
       // Store file binary via raw SQL (bypasses Prisma client cache on Vercel)
       await prisma.$executeRaw`UPDATE "InternalAuditDocument" SET "fileData" = ${Buffer.from(buffer)} WHERE "id" = ${document.id}`;
+
+      // Translate document name and file name
+      if (customerAccountId && isTranslationConfigured()) {
+        void translateRecord(customerAccountId, 'InternalAuditDocument', document.id, {
+          name: document.name,
+          fileName: originalName,
+        }).catch(() => {});
+      }
 
       return NextResponse.json(document, { status: 201 });
     } catch (error) {

@@ -170,7 +170,7 @@ export const POST = withAuth(
       });
 
       // Fire-and-forget: translate finding fields
-      if (customerAccountId) void translateRecord(customerAccountId, 'InternalAuditFinding', finding.id, { title: finding.finding, description: finding.description, recommendation: finding.recommendation });
+      if (customerAccountId) void translateRecord(customerAccountId, 'InternalAuditFinding', finding.id, { title: finding.finding, description: finding.description, recommendation: finding.recommendation, criteria: finding.criteria, condition: finding.condition, cause: finding.cause, effect: finding.effect });
 
       // Send FINDINGS_CREATED notification to the Audit Head
       if (auditHeadId && auditHeadId !== session.id) {

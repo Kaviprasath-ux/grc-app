@@ -102,6 +102,10 @@ interface Engagement {
   engagementTitle: string;
   department: Department | null;
   auditType: string | null;
+  auditTypeId: string | null;
+  assignedAuditorId: string | null;
+  assignedAuditor: { id: string; fullName: string; firstName: string; lastName: string } | null;
+  auditeeId: string | null;
   status: string;
   startDate: string | null;
   endDate: string | null;
@@ -249,11 +253,14 @@ export default function AuditPlanningPage() {
   const { data: translatedAuditRatings } = useTranslatedData(auditRatings, { modelName: 'AuditScoringRange' });
   const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'InternalAuditRisk' });
   const { data: translatedHistoricalRisks } = useTranslatedData(historicalRisks, { modelName: 'InternalAuditRisk' });
+  const { data: translatedAuditors } = useTranslatedData(auditors, { modelName: 'User' });
+  const { data: translatedAuditees } = useTranslatedData(auditees, { modelName: 'User' });
 
   useEffect(() => {
     fetchDepartments();
     fetchEngagements();
     fetchAvailableYears();
+    fetchAuditorsAndAuditees();
   }, []);
 
   useEffect(() => {
@@ -669,7 +676,7 @@ export default function AuditPlanningPage() {
         e.engagementTitle,
         translatedDepartments.find(d => d.id === e.department?.id)?.name || e.department?.name || "",
         e.auditType || "",
-        e.assignedAuditors.join("; "),
+        e.assignedAuditorId ? (translatedAuditors.find(u => u.id === e.assignedAuditorId)?.fullName || e.assignedAuditors.join("; ")) : e.assignedAuditors.join("; "),
         e.status
       ]);
 
@@ -1008,8 +1015,8 @@ export default function AuditPlanningPage() {
               <SelectValue placeholder={t("Select auditor")} />
             </SelectTrigger>
             <SelectContent>
-              {auditors.length > 0 ? (
-                auditors.map((user) => (
+              {translatedAuditors.length > 0 ? (
+                translatedAuditors.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.fullName}
                   </SelectItem>
@@ -1035,8 +1042,8 @@ export default function AuditPlanningPage() {
               <SelectValue placeholder={t("Select auditee")} />
             </SelectTrigger>
             <SelectContent>
-              {auditees.length > 0 ? (
-                auditees.map((user) => (
+              {translatedAuditees.length > 0 ? (
+                translatedAuditees.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.fullName}
                   </SelectItem>
@@ -1273,7 +1280,7 @@ export default function AuditPlanningPage() {
                           <TableCell className="py-3 text-sm text-slate-600 text-center">{task.plannedHours || "-"}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-600 text-center">{task.actualHours || "-"}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-600">
-                            {auditors.find((a) => a.id === task.auditorId)?.fullName || <span className="text-slate-400">-</span>}
+                            {translatedAuditors.find((a) => a.id === task.auditorId)?.fullName || <span className="text-slate-400">-</span>}
                           </TableCell>
                           <TableCell className="py-3 pe-5">
                             <div className="flex items-center gap-0.5">
@@ -1472,11 +1479,11 @@ export default function AuditPlanningPage() {
                   <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{engagement.auditId}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{engagement.engagementTitle}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{translatedDepartments.find(d => d.id === engagement.department?.id)?.name || engagement.department?.name || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{engagement.auditType || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{translatedAuditTypes.find(at => at.id === (engagement.auditTypeId || auditTypes.find(o => o.name === engagement.auditType)?.id))?.name || engagement.auditType || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">
-                    {engagement.assignedAuditors.length > 0
-                      ? engagement.assignedAuditors.join(", ")
-                      : "-"}
+                    {engagement.assignedAuditorId
+                      ? (translatedAuditors.find(u => u.id === engagement.assignedAuditorId)?.fullName || engagement.assignedAuditors.join(", ") || "-")
+                      : (engagement.assignedAuditors.length > 0 ? engagement.assignedAuditors.join(", ") : "-")}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{t(engagement.status)}</TableCell>
                   <TableCell className="py-3 pr-5">
@@ -1757,7 +1764,7 @@ export default function AuditPlanningPage() {
                   <SelectValue placeholder={t("Select auditor")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {auditors.map((user) => (
+                  {translatedAuditors.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
                     </SelectItem>

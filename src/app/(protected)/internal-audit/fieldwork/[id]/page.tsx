@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,7 @@ interface Department {
 
 interface Auditor {
   id: string;
+  fullName: string;
   firstName: string;
   lastName: string;
 }
@@ -401,6 +402,24 @@ export default function FieldworkDetailsPage() {
   const displayEngagement = translatedEngagement || engagement;
   const { data: translatedFindings } = useTranslatedData(findings, { modelName: 'InternalAuditFinding' });
   const { data: translatedEvidenceRequests } = useTranslatedData(evidenceRequests, { modelName: 'FieldworkEvidenceRequest' });
+  const { data: translatedAuditees } = useTranslatedData(auditees, { modelName: 'User' });
+
+  // Extract assigned auditor and department from engagement for translation
+  const assignedAuditorArray = useMemo(() => {
+    if (engagement?.assignedAuditor) return [engagement.assignedAuditor];
+    return [];
+  }, [engagement]);
+  const { data: translatedAssignedAuditors } = useTranslatedData(assignedAuditorArray, { modelName: 'User' });
+
+  const departmentArray = useMemo(() => {
+    if (engagement?.department) return [engagement.department];
+    return [];
+  }, [engagement]);
+  const { data: translatedDepartments } = useTranslatedData(departmentArray, { modelName: 'Department' });
+
+  // Translation for single finding detail view
+  const { data: translatedFindingForView } = useTranslatedRecord(selectedFindingForView, { modelName: 'InternalAuditFinding' });
+  const displayFindingForView = translatedFindingForView || selectedFindingForView;
 
   useEffect(() => {
     if (engagementId) {
@@ -612,6 +631,8 @@ export default function FieldworkDetailsPage() {
   const getAuditorName = () => {
     if (!engagement) return "-";
     if (engagement.assignedAuditor) {
+      const translated = translatedAssignedAuditors.find(u => u.id === engagement.assignedAuditor?.id);
+      if (translated?.fullName) return translated.fullName;
       return `${engagement.assignedAuditor.firstName} ${engagement.assignedAuditor.lastName}`;
     }
     if (engagement.assignedAuditors && engagement.assignedAuditors.length > 0) {
@@ -1492,6 +1513,17 @@ export default function FieldworkDetailsPage() {
       return;
     }
 
+    // Check if any selected evidence request is missing attachments
+    const missingAttachments = evidenceRequests
+      .filter((er) => selectedEvidenceIds.includes(er.id))
+      .filter((er) => !er.attachments || er.attachments.length === 0);
+
+    if (missingAttachments.length > 0) {
+      const titles = missingAttachments.map((er) => `"${er.title}"`).join(", ");
+      toast.error(t("Attachment not present. Please add attachments for") + ": " + titles);
+      return;
+    }
+
     setGeneratingAIReview(true);
     try {
       const response = await fetch(
@@ -1924,7 +1956,7 @@ export default function FieldworkDetailsPage() {
           </div>
           <div>
             <Label className="text-slate-700 font-medium">{t("Department")}</Label>
-            <p className="mt-1">{engagement.department?.name || "-"}</p>
+            <p className="mt-1">{translatedDepartments[0]?.name || engagement.department?.name || "-"}</p>
           </div>
         </div>
       </CollapsibleSection>
@@ -3240,7 +3272,7 @@ export default function FieldworkDetailsPage() {
                   <SelectValue placeholder={t("Select person")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {auditees.map((user) => (
+                  {translatedAuditees.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
                     </SelectItem>
@@ -3329,7 +3361,7 @@ export default function FieldworkDetailsPage() {
               <Select
                 value={newEvidence.auditeeId}
                 onValueChange={(value) => {
-                  const selectedAuditee = auditees.find(a => a.id === value);
+                  const selectedAuditee = translatedAuditees.find(a => a.id === value);
                   setNewEvidence({
                     ...newEvidence,
                     auditeeId: value,
@@ -3341,7 +3373,7 @@ export default function FieldworkDetailsPage() {
                   <SelectValue placeholder={t("Select auditee")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {auditees.map((auditee) => (
+                  {translatedAuditees.map((auditee) => (
                     <SelectItem key={auditee.id} value={auditee.id}>
                       {auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}
                     </SelectItem>
@@ -4028,7 +4060,7 @@ export default function FieldworkDetailsPage() {
                 <Select
                   value={editEvidence.auditeeId}
                   onValueChange={(value) => {
-                    const selectedAuditee = auditees.find(a => a.id === value);
+                    const selectedAuditee = translatedAuditees.find(a => a.id === value);
                     setEditEvidence({
                       ...editEvidence,
                       auditeeId: value,
@@ -4050,7 +4082,7 @@ export default function FieldworkDetailsPage() {
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {auditees.map((auditee) => (
+                    {translatedAuditees.map((auditee) => (
                       <SelectItem key={auditee.id} value={auditee.id}>
                         {auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}
                       </SelectItem>
@@ -4715,7 +4747,7 @@ export default function FieldworkDetailsPage() {
               {/* Audit Plan */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Audit Plan")}</Label>
-                <p className="mt-1 text-sm text-slate-900">{selectedFindingForView.engagement?.engagementTitle || '-'}</p>
+                <p className="mt-1 text-sm text-slate-900">{displayEngagement?.engagementTitle || selectedFindingForView.engagement?.engagementTitle || '-'}</p>
               </div>
 
               {/* Finding Details */}
@@ -4724,7 +4756,7 @@ export default function FieldworkDetailsPage() {
 
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Finding Title")}</Label>
-                  <p className="mt-1 text-sm text-slate-900">{selectedFindingForView.finding || '-'}</p>
+                  <p className="mt-1 text-sm text-slate-900">{displayFindingForView?.title || selectedFindingForView.title || '-'}</p>
                 </div>
 
                 <div>
@@ -4743,27 +4775,27 @@ export default function FieldworkDetailsPage() {
 
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Criteria (What should be)")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.criteria || '-'}</p>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{displayFindingForView?.criteria || selectedFindingForView.criteria || '-'}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Condition (What is)")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.condition || '-'}</p>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{displayFindingForView?.condition || selectedFindingForView.condition || '-'}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Cause (Why it happened)")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.cause || '-'}</p>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{displayFindingForView?.cause || selectedFindingForView.cause || '-'}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Effect (The consequence)")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.effect || '-'}</p>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{displayFindingForView?.effect || selectedFindingForView.effect || '-'}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Recommendation")}</Label>
-                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{selectedFindingForView.recommendation || '-'}</p>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">{displayFindingForView?.recommendation || selectedFindingForView.recommendation || '-'}</p>
                 </div>
 
                 {selectedFindingForView.attachments && selectedFindingForView.attachments.length > 0 ? (

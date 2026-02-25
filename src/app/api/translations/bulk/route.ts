@@ -9,9 +9,9 @@
  * Works for ALL locales including "en" — records may have been entered
  * in any language, so English translations may exist in the DB.
  *
- * Only returns existing cached translations. Does NOT auto-translate
- * records that have no translations. Records are only translated when
- * explicitly saved/created via triggerTranslation().
+ * Read-only: This endpoint only returns existing translations.
+ * Translations are created/updated when records are created or edited
+ * (via POST /api/translations/translate).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -43,7 +43,6 @@ function hasWrongScript(text: string, locale: string): boolean {
 
   return false;
 }
-
 
 export const POST = withAuthOnly(async (req: NextRequest, _context, session) => {
   try {
@@ -91,12 +90,13 @@ export const POST = withAuthOnly(async (req: NextRequest, _context, session) => 
       locale
     );
 
-    // Check for invalid translations (wrong script) and remove them
+    // Clean up invalid translations (wrong script for locale)
     for (const id of recordIds) {
       if (translations[id]) {
         const fields = translations[id];
         const hasInvalid = Object.values(fields).some(text => hasWrongScript(text, locale));
         if (hasInvalid) {
+          // Delete bad translations so they don't keep showing
           await prisma.dynamicTranslation.deleteMany({
             where: {
               customerAccountId: session.customerAccountId,
@@ -112,8 +112,6 @@ export const POST = withAuthOnly(async (req: NextRequest, _context, session) => 
 
     console.log(`[BULK-TRANSLATE] ${modelName} [${locale}]: ${recordIds.length} requested, ${Object.keys(translations).length} cached`);
 
-    // Only return existing translations — no background auto-translate.
-    // Records are translated only when explicitly saved/created via triggerTranslation().
     return NextResponse.json({ translations, pendingCount: 0 });
   } catch (error) {
     console.error('Bulk translations error:', error);

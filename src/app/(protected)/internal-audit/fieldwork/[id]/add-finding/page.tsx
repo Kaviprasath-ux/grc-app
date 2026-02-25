@@ -5,7 +5,7 @@ import { formatLocalDate } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { triggerTranslation } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -80,6 +80,9 @@ export default function AddFindingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Dynamic translation hooks
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
 
   useEffect(() => {
     const loadData = async () => {
@@ -464,7 +467,7 @@ export default function AddFindingPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("Select person")}</SelectItem>
-                  {users.map((user) => (
+                  {translatedUsers.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName || `${user.firstName} ${user.lastName}`}
                     </SelectItem>

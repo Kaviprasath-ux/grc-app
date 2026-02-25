@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatLocalDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,13 +91,13 @@ interface UploadedFile {
   type: string;
 }
 
-const defaultTasks: AuditTask[] = [
-  { id: "1", task: "Audit Preparation & Update", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
-  { id: "2", task: "Documentation Review", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
-  { id: "3", task: "Sample Selection", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
-  { id: "4", task: "Result of Previous Audit", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
-  { id: "5", task: "Related Policies", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
-  { id: "6", task: "Related Procedures", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
+const defaultTaskKeys = [
+  "Audit Preparation & Update",
+  "Documentation Review",
+  "Sample Selection",
+  "Result of Previous Audit",
+  "Related Policies",
+  "Related Procedures",
 ];
 
 export default function AddEngagementPage() {
@@ -134,8 +135,29 @@ export default function AddEngagementPage() {
     relatedPolicies: "",
   });
 
-  // Tasks
-  const [tasks, setTasks] = useState<AuditTask[]>(defaultTasks);
+  // Tasks — initialize with English keys, then translate via effect
+  const [tasks, setTasks] = useState<AuditTask[]>(() =>
+    defaultTaskKeys.map((key, i) => ({
+      id: String(i + 1),
+      task: key,
+      done: false,
+      plannedHours: "",
+      actualHours: "",
+      auditorId: "",
+      comments: "",
+    }))
+  );
+
+  // Translate default task names when translations become available (e.g. Arabic)
+  useEffect(() => {
+    setTasks(prev => prev.map((task) => {
+      const keyIndex = defaultTaskKeys.indexOf(task.task);
+      if (keyIndex !== -1) {
+        return { ...task, task: t(defaultTaskKeys[keyIndex]) };
+      }
+      return task;
+    }));
+  }, [t]);
 
   // File uploads
   const attachFileRef = useRef<HTMLInputElement>(null);
@@ -365,6 +387,16 @@ export default function AddEngagementPage() {
       });
 
       if (response.ok) {
+        const savedEngagement = await response.json().catch(() => null);
+        if (savedEngagement?.id) {
+          triggerTranslation('AuditEngagement', savedEngagement.id, {
+            engagementTitle: formData.engagementTitle,
+            engagementObjective: formData.engagementObjective,
+            engagementScope: formData.engagementScope,
+            initialObservation: formData.initialObservation || null,
+            relatedPolicies: formData.relatedPolicies || null,
+          });
+        }
         toast.success(t("Engagement created successfully"));
         router.push("/internal-audit/audit-planning");
       } else {
@@ -378,6 +410,16 @@ export default function AddEngagementPage() {
       setSaving(false);
     }
   };
+
+  // Dynamic data translation hooks — BEFORE early returns
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'InternalAuditRisk' });
+  const { data: translatedHistoricalRisks } = useTranslatedData(historicalRisks, { modelName: 'InternalAuditRisk' });
+  const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
+  const { data: translatedAuditRatings } = useTranslatedData(auditRatings, { modelName: 'AuditScoringRange' });
+  const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
+  const { data: translatedAuditors } = useTranslatedData(auditors, { modelName: 'User' });
+  const { data: translatedAuditees } = useTranslatedData(auditees, { modelName: 'User' });
 
   if (loading) {
     return (
@@ -486,7 +528,7 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Department")} />
             </SelectTrigger>
             <SelectContent>
-              {departments.map((dept) => (
+              {translatedDepartments.map((dept) => (
                 <SelectItem key={dept.id} value={dept.id}>
                   {dept.name}
                 </SelectItem>
@@ -508,8 +550,8 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Risk")} />
             </SelectTrigger>
             <SelectContent>
-              {risks.length > 0 ? (
-                risks.map((risk) => (
+              {translatedRisks.length > 0 ? (
+                translatedRisks.map((risk) => (
                   <SelectItem key={risk.id} value={risk.id}>
                     {risk.riskId} - {risk.riskName}
                   </SelectItem>
@@ -527,9 +569,9 @@ export default function AddEngagementPage() {
         <div className="space-y-2">
           <Label className="text-blue-800">{t("Historical Risks (For reference, last year)")}</Label>
           <div className="border rounded-lg p-4 min-h-[60px] bg-gray-50">
-            {historicalRisks.length > 0 ? (
+            {translatedHistoricalRisks.length > 0 ? (
               <ul className="space-y-1">
-                {historicalRisks.map((risk) => (
+                {translatedHistoricalRisks.map((risk) => (
                   <li key={risk.id} className="text-sm">
                     {risk.riskId} - {risk.riskName} ({risk.riskLevel || t("N/A")})
                   </li>
@@ -552,8 +594,8 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Audit Rating")} />
             </SelectTrigger>
             <SelectContent>
-              {auditRatings.length > 0 ? (
-                auditRatings.map((rating) => (
+              {translatedAuditRatings.length > 0 ? (
+                translatedAuditRatings.map((rating) => (
                   <SelectItem key={rating.id} value={rating.label}>
                     {rating.label}
                   </SelectItem>
@@ -578,8 +620,8 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Audit Type")} />
             </SelectTrigger>
             <SelectContent>
-              {auditTypes.length > 0 ? (
-                auditTypes.map((type) => (
+              {translatedAuditTypes.length > 0 ? (
+                translatedAuditTypes.map((type) => (
                   <SelectItem key={type.id} value={type.name}>
                     {type.name}
                   </SelectItem>
@@ -606,8 +648,8 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Auditor")} />
             </SelectTrigger>
             <SelectContent>
-              {auditors.length > 0 ? (
-                auditors.map((user) => (
+              {translatedAuditors.length > 0 ? (
+                translatedAuditors.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.fullName}
                   </SelectItem>
@@ -632,8 +674,8 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Auditee")} />
             </SelectTrigger>
             <SelectContent>
-              {auditees.length > 0 ? (
-                auditees.map((user) => (
+              {translatedAuditees.length > 0 ? (
+                translatedAuditees.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.fullName}
                   </SelectItem>
@@ -658,8 +700,8 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Process")} />
             </SelectTrigger>
             <SelectContent>
-              {processes.length > 0 ? (
-                processes.map((process) => (
+              {translatedProcesses.length > 0 ? (
+                translatedProcesses.map((process) => (
                   <SelectItem key={process.id} value={process.id}>
                     {process.name}
                   </SelectItem>

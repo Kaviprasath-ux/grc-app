@@ -129,6 +129,7 @@ export default function UserManagementPage() {
     firstName: "",
     lastName: "",
     fullName: "",
+    userName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -206,7 +207,7 @@ export default function UserManagementPage() {
       firstName: "",
       lastName: "",
       fullName: "",
-      userName: nextUserId, // Auto-populate with generated ID
+      userName: "",
       email: "",
       designation: "",
       departmentId: "",
@@ -218,6 +219,7 @@ export default function UserManagementPage() {
       firstName: "",
       lastName: "",
       fullName: "",
+      userName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -246,6 +248,7 @@ export default function UserManagementPage() {
       firstName: "",
       lastName: "",
       fullName: "",
+      userName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -304,6 +307,7 @@ export default function UserManagementPage() {
       firstName: "",
       lastName: "",
       fullName: "",
+      userName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -316,12 +320,17 @@ export default function UserManagementPage() {
       firstName: "",
       lastName: "",
       fullName: "",
+      userName: "",
       email: "",
       password: "",
       confirmPassword: "",
       roles: "",
     };
 
+    if (!editItem && !formData.userName.trim()) {
+      newErrors.userName = t("Username is required");
+      hasError = true;
+    }
     if (!formData.firstName.trim()) {
       newErrors.firstName = t("First Name is required");
       hasError = true;
@@ -366,14 +375,12 @@ export default function UserManagementPage() {
       const url = editItem ? `/api/internal-audit/users/${editItem.id}` : "/api/internal-audit/users";
       const method = editItem ? "PUT" : "POST";
 
-      // For new users, always use auto-generated ID. For edit, keep existing userName.
-      const userIdToUse = editItem ? formData.userName : nextUserId;
       const body: any = {
-        userId: userIdToUse, // API requires userId
+        userId: nextUserId, // Auto-generated user ID
         firstName: formData.firstName,
         lastName: formData.lastName,
         fullName: formData.fullName || `${formData.firstName} ${formData.lastName}`,
-        userName: userIdToUse, // Use same value for userName
+        userName: formData.userName, // Username entered by user
         email: formData.email,
         designation: formData.designation || null,
         departmentId: formData.departmentId || null,
@@ -624,7 +631,7 @@ export default function UserManagementPage() {
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-5">
-              {/* Row 1: User ID (System Generated) */}
+              {/* Row 1: User ID & Username */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("User ID")} <span className="text-xs text-slate-500">({t("Auto-generated")})</span></Label>
@@ -633,6 +640,20 @@ export default function UserManagementPage() {
                     disabled
                     className="mt-1.5 w-full bg-slate-50"
                   />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Username")} <span className="text-red-500">*</span></Label>
+                  <Input
+                    value={formData.userName}
+                    onChange={(e) => {
+                      setFormData({ ...formData, userName: e.target.value });
+                      setFormErrors({ ...formErrors, userName: "" });
+                    }}
+                    placeholder={t("Enter username")}
+                    disabled={!!editItem}
+                    className={`mt-1.5 w-full ${editItem ? "bg-slate-50" : "bg-white"} ${formErrors.userName ? "border-red-500" : ""}`}
+                  />
+                  {formErrors.userName && <p className="text-sm text-red-500 mt-1">{formErrors.userName}</p>}
                 </div>
               </div>
 
