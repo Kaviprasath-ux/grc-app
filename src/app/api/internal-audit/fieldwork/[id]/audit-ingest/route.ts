@@ -21,8 +21,9 @@ function resolveDiskPath(att: { filePath: string }): string {
 
 /**
  * POST /api/internal-audit/fieldwork/[id]/audit-ingest
- * Accepts evidenceRequestIds, loads attachments from disk, calls RunPod POST /api/simple_ingest, returns job_id.
- * simple_ingest expects multipart/form-data: customer_id (required), files (required).
+ * Accepts evidenceRequestIds, loads attachments from disk, calls RunPod POST /api/audit_ingest, returns job_id.
+ * audit_ingest expects multipart/form-data: customer_id, audit_id, doc_type, artifact_id, files (all required).
+ * This aligns with audit_query which queries by customer_id, audit_id, artifact_id.
  */
 export const POST = withAuth(
   async (req: NextRequest, context: RouteContext) => {
@@ -95,12 +96,12 @@ export const POST = withAuth(
       );
 
       console.log(
-        '[RunPod simple_ingest] evidenceRequestIds=' + JSON.stringify(evidenceRequestIds) +
+        '[RunPod audit_ingest] evidenceRequestIds=' + JSON.stringify(evidenceRequestIds) +
         ', requests=' + evidenceRequests.length +
         ', totalAttachments=' + allAttachments.length
       );
       evidenceRequests.forEach((er) => {
-        console.log('[RunPod simple_ingest] request ' + er.id + ' ("' + er.title + '"): ' + er.attachments.length + ' attachment(s)');
+        console.log('[RunPod audit_ingest] request ' + er.id + ' ("' + er.title + '"): ' + er.attachments.length + ' attachment(s)');
       });
 
       if (allAttachments.length === 0) {
@@ -111,8 +112,18 @@ export const POST = withAuth(
       }
 
       const form = new FormData();
-      const customerId = engagement.id;
+      // Use customerAccountId for proper tenant isolation, audit_id for audit context
+      const customerId = engagement.customerAccountId;
+      const auditId = engagement.auditId;
+      const artifactId = engagementId; // Use engagement ID as artifact for grouping
+      // Use first evidence request ID as document_id (required by RunPod)
+      const documentId = evidenceRequestIds[0];
+
       form.append('customer_id', customerId);
+      form.append('audit_id', auditId);
+      form.append('doc_type', 'fieldwork_evidence');
+      form.append('artifact_id', artifactId);
+      form.append('document_id', documentId);
 
       let appended = 0;
       const missing: string[] = [];
@@ -120,7 +131,7 @@ export const POST = withAuth(
         const diskPath = resolveDiskPath(att);
         if (!existsSync(diskPath)) {
           missing.push(diskPath);
-          console.warn('[RunPod simple_ingest] File not found, skipping: ' + diskPath);
+          console.warn('[RunPod audit_ingest] File not found, skipping: ' + diskPath);
           continue;
         }
         const buf = await readFile(diskPath);
@@ -129,7 +140,7 @@ export const POST = withAuth(
       }
 
       if (missing.length) {
-        console.log('[RunPod simple_ingest] Missing files (' + missing.length + '): ' + missing.slice(0, 5).join(', ') + (missing.length > 5 ? '...' : ''));
+        console.log('[RunPod audit_ingest] Missing files (' + missing.length + '): ' + missing.slice(0, 5).join(', ') + (missing.length > 5 ? '...' : ''));
       }
 
       if (appended === 0) {
@@ -139,9 +150,10 @@ export const POST = withAuth(
         );
       }
 
-      const url = getExternalApiUrl('PYTHON_BACKEND', '/api/simple_ingest');
-      console.log('[RunPod simple_ingest] POST /api/internal-audit/fieldwork/[id]/audit-ingest received');
-      console.log('[RunPod simple_ingest] engagementId=' + engagementId + ', files=' + appended + ', calling RunPod ' + url);
+      const url = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_ingest');
+      console.log('[RunPod audit_ingest] POST /api/internal-audit/fieldwork/[id]/audit-ingest received');
+      console.log('[RunPod audit_ingest] engagementId=' + engagementId + ', customerId=' + customerId + ', auditId=' + auditId + ', documentId=' + documentId + ', files=' + appended);
+      console.log('[RunPod audit_ingest] Calling RunPod ' + url);
 
       const res = await fetch(url, {
         method: 'POST',
@@ -150,11 +162,11 @@ export const POST = withAuth(
       });
 
       const resText = await res.text();
-      console.log('[RunPod simple_ingest] RunPod response status: ' + res.status);
-      console.log('[RunPod simple_ingest] RunPod response body: ' + resText);
+      console.log('[RunPod audit_ingest] RunPod response status: ' + res.status);
+      console.log('[RunPod audit_ingest] RunPod response body: ' + resText);
 
       if (!res.ok) {
-        let errBody: { error?: string; detail?: unknown } = { error: 'Simple ingest failed' };
+        let errBody: { error?: string; detail?: unknown } = { error: 'Audit ingest failed' };
         try {
           const j = JSON.parse(resText);
           if (j.detail) errBody.detail = j.detail;
@@ -183,12 +195,12 @@ export const POST = withAuth(
         );
       }
 
-      console.log('[RunPod simple_ingest] Success, job_id=' + jobId);
+      console.log('[RunPod audit_ingest] Success, job_id=' + jobId);
       return NextResponse.json({ job_id: jobId });
     } catch (error) {
-      console.error('[RunPod simple_ingest] Error:', error);
+      console.error('[RunPod audit_ingest] Error:', error);
       return NextResponse.json(
-        { error: 'Failed to run simple ingest' },
+        { error: 'Failed to run audit ingest' },
         { status: 500 }
       );
     }

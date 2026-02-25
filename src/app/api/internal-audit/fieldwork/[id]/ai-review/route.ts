@@ -34,7 +34,7 @@ function extractReviewFromQueryResponse(data: unknown): string {
 
 /**
  * POST /api/internal-audit/fieldwork/[id]/ai-review
- * AI Review flow: simple_ingest via audit-ingest (then poll status/result) -> audit_query.
+ * AI Review flow: audit_ingest via audit-ingest (then poll status/result) -> audit_query.
  * Returns RunPod audit_query response as review.
  */
 export const POST = withAuth(
@@ -193,9 +193,10 @@ export const POST = withAuth(
         headers: { 'Content-Type': 'application/json', cookie },
         body: JSON.stringify({
           question,
-          customer_id: engagement.id,
+          // Use customerAccountId for tenant isolation (must match what was used in ingest)
+          customer_id: engagement.customerAccountId,
           audit_id: engagement.auditId,
-          artifact_id: engagement.id,
+          artifact_id: engagementId,
         }),
       });
 

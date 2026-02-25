@@ -55,9 +55,10 @@ export const POST = withAuth(
         );
       }
 
-      const customerId = body.customer_id ?? engagement.id;
+      // Use customerAccountId for tenant isolation (must match what was used in ingest)
+      const customerId = body.customer_id ?? engagement.customerAccountId;
       const auditId = body.audit_id ?? engagement.auditId;
-      const artifactId = body.artifact_id ?? engagement.id;
+      const artifactId = body.artifact_id ?? engagementId;
 
       const payload = {
         question,
@@ -68,7 +69,8 @@ export const POST = withAuth(
 
       const url = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_query');
       console.log('[RunPod audit_query] POST /api/internal-audit/fieldwork/[id]/audit-query received');
-      console.log('[RunPod audit_query] engagementId=' + engagementId + ', question=' + question.slice(0, 80) + '...');
+      console.log('[RunPod audit_query] engagementId=' + engagementId + ', customerId=' + customerId + ', auditId=' + auditId);
+      console.log('[RunPod audit_query] question=' + question.slice(0, 80) + '...');
       console.log('[RunPod audit_query] Calling RunPod POST ' + url);
 
       const res = await fetch(url, {

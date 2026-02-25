@@ -8,7 +8,7 @@ interface RouteContext {
 
 /**
  * GET /api/internal-audit/fieldwork/[id]/audit-ingest/result/[jobId]
- * Proxies to RunPod GET /api/simple_ingest_result/{job_id}.
+ * Proxies to RunPod GET /api/audit_ingest_result/{job_id}.
  */
 export const GET = withAuth(
   async (req: NextRequest, context: RouteContext) => {
@@ -23,8 +23,8 @@ export const GET = withAuth(
         );
       }
 
-      const url = getExternalApiUrl('PYTHON_BACKEND', '/api/simple_ingest_result/' + encodeURIComponent(jobId));
-      console.log('[RunPod simple_ingest_result] GET engagementId=' + engagementId + ', jobId=' + jobId + ', url=' + url);
+      const url = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_ingest_result/' + encodeURIComponent(jobId));
+      console.log('[RunPod audit_ingest_result] GET engagementId=' + engagementId + ', jobId=' + jobId + ', url=' + url);
 
       const res = await fetch(url, {
         method: 'GET',
@@ -32,10 +32,10 @@ export const GET = withAuth(
       });
 
       const resText = await res.text();
-      console.log('[RunPod simple_ingest_result] RunPod response status: ' + res.status + ', body: ' + resText);
+      console.log('[RunPod audit_ingest_result] RunPod response status: ' + res.status + ', body: ' + resText);
 
       if (!res.ok) {
-        let errBody: { error?: string; detail?: unknown } = { error: 'Simple ingest result fetch failed' };
+        let errBody: { error?: string; detail?: unknown } = { error: 'Audit ingest result fetch failed' };
         try {
           const j = JSON.parse(resText);
           if (j.detail) errBody.detail = j.detail;
@@ -58,9 +58,9 @@ export const GET = withAuth(
 
       return NextResponse.json(data);
     } catch (error) {
-      console.error('[RunPod simple_ingest_result] Error:', error);
+      console.error('[RunPod audit_ingest_result] Error:', error);
       return NextResponse.json(
-        { error: 'Failed to get simple ingest result' },
+        { error: 'Failed to get audit ingest result' },
         { status: 500 }
       );
     }

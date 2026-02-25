@@ -474,11 +474,14 @@ async function main() {
   ];
 
   let evidenceCount = 0;
+  let attachmentCount = 0;
+  const createdEvidenceRequests: Array<{ id: string; status: string; title: string }> = [];
+
   for (const req of evidenceRequests) {
     const engId = createdEngagements[req.engagementId];
     if (!engId) continue;
 
-    await prisma.fieldworkEvidenceRequest.create({
+    const created = await prisma.fieldworkEvidenceRequest.create({
       data: {
         engagementId: engId,
         title: req.title,
@@ -491,9 +494,58 @@ async function main() {
         dueDate: new Date('2026-02-15'),
       },
     });
+    createdEvidenceRequests.push({ id: created.id, status: req.status, title: req.title });
     evidenceCount++;
   }
   console.log(`  ✓ Created ${evidenceCount} evidence requests`);
+
+  // ==================== CREATE SAMPLE ATTACHMENTS ====================
+  console.log('\n📄 Creating Sample Attachments for Evidence Requests...');
+
+  // Sample attachment data for different evidence types
+  const sampleAttachments: Record<string, Array<{ fileName: string; fileType: string; fileSize: number }>> = {
+    'Payroll Register for January 2026': [
+      { fileName: 'Payroll_Register_Jan2026.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', fileSize: 245760 },
+      { fileName: 'Payroll_Summary_Jan2026.pdf', fileType: 'application/pdf', fileSize: 125000 },
+    ],
+    'Vendor Master List': [
+      { fileName: 'Vendor_Master_List_2026.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', fileSize: 189440 },
+      { fileName: 'Vendor_Bank_Details.pdf', fileType: 'application/pdf', fileSize: 98304 },
+    ],
+    'User Access Review Report': [
+      { fileName: 'Q4_2025_Access_Review.pdf', fileType: 'application/pdf', fileSize: 512000 },
+      { fileName: 'Access_Review_Evidence_Screenshots.zip', fileType: 'application/zip', fileSize: 2048000 },
+      { fileName: 'User_Access_Matrix.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', fileSize: 156000 },
+    ],
+    'Bank Reconciliation Statements': [
+      { fileName: 'Bank_Recon_Oct2025.pdf', fileType: 'application/pdf', fileSize: 89000 },
+      { fileName: 'Bank_Recon_Nov2025.pdf', fileType: 'application/pdf', fileSize: 92000 },
+      { fileName: 'Bank_Recon_Dec2025.pdf', fileType: 'application/pdf', fileSize: 95000 },
+    ],
+  };
+
+  // Add attachments to evidence requests that are Submitted or Reviewed
+  for (const evReq of createdEvidenceRequests) {
+    if (evReq.status === 'Submitted' || evReq.status === 'Reviewed') {
+      const attachments = sampleAttachments[evReq.title];
+      if (attachments) {
+        for (const att of attachments) {
+          await prisma.fieldworkEvidenceAttachment.create({
+            data: {
+              evidenceRequestId: evReq.id,
+              fileName: att.fileName,
+              fileType: att.fileType,
+              fileSize: att.fileSize,
+              filePath: `/uploads/internal-audit/evidence/${evReq.id}/${att.fileName}`,
+              uploadedBy: 'Seeded Data',
+            },
+          });
+          attachmentCount++;
+        }
+      }
+    }
+  }
+  console.log(`  ✓ Created ${attachmentCount} sample attachments`);
 
   // ==================== SUMMARY ====================
   console.log('\n' + '='.repeat(60));
@@ -505,6 +557,7 @@ async function main() {
    • Audit Engagements: ${Object.keys(createdEngagements).length}
    • Audit Findings: ${findings.length}
    • Evidence Requests: ${evidenceCount}
+   • Evidence Attachments: ${attachmentCount}
 
 👤 Test Accounts:
    • Audit Head: david.audit / 1
@@ -515,6 +568,9 @@ async function main() {
    • ${findings.filter(f => f.status === 'Open').length} Open findings
    • ${findings.filter(f => f.status === 'Under Review').length} Under Review findings
    • ${findings.filter(f => f.status === 'In Progress').length} In Progress findings
+
+📎 AI Review Ready:
+   • Evidence requests with attachments can now be reviewed by AI
 `);
 }
 
