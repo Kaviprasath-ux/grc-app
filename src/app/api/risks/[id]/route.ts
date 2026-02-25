@@ -494,7 +494,7 @@ export const PATCH = withAuth(
             entityId: risk.id,
             entityName: `${risk.riskId}: ${risk.name}`,
             reason: body.responseComment,
-            link: `/risk-management/register/${risk.id}`,
+            link: `/risks/register/${risk.id}/edit`,
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
@@ -510,7 +510,7 @@ export const PATCH = withAuth(
             message: `Risk "${risk.riskId}: ${risk.name}" has been approved.`,
             relatedEntityType: 'risk',
             relatedEntityId: risk.id,
-            link: `/risk-management/register/${risk.id}`,
+            link: `/risks/register/${risk.id}/edit`,
             metadata: {
               riskCode: risk.riskId,
               riskName: risk.name,
@@ -531,7 +531,7 @@ export const PATCH = withAuth(
             message: `Risk "${risk.riskId}: ${risk.name}" has been rejected.${body.responseComment ? ' Reason: ' + body.responseComment : ''}`,
             relatedEntityType: 'risk',
             relatedEntityId: risk.id,
-            link: `/risk-management/register/${risk.id}`,
+            link: `/risks/register/${risk.id}/edit`,
             metadata: {
               riskCode: risk.riskId,
               riskName: risk.name,
@@ -553,7 +553,7 @@ export const PATCH = withAuth(
             message: `Risk "${risk.riskId}: ${risk.name}" has been submitted for approval.`,
             relatedEntityType: 'risk',
             relatedEntityId: risk.id,
-            link: `/risk-management/register/${risk.id}`,
+            link: `/risks/register/${risk.id}/edit`,
             metadata: {
               riskCode: risk.riskId,
               riskName: risk.name,

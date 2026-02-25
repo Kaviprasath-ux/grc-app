@@ -145,7 +145,7 @@ export async function GET(req: NextRequest) {
           entityId: finding.id,
           entityName: finding.finding || `Finding #${finding.findingId}`,
           dueDate: finding.targetDate,
-          link: `/internal-audit/capa-tracking/${finding.id}`,
+          link: `/internal-audit/capa-tracking`,
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
         counts.capa++;

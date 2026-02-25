@@ -189,7 +189,7 @@ export const POST = withAuth(
           message: `Issue "${issue.title}" has been created and assigned to you. Category: ${issue.category}, Domain: ${issue.domain}`,
           relatedEntityType: 'issue',
           relatedEntityId: issue.id,
-          link: `/organization/context/issues/${issue.id}`,
+          link: `/organization/context`,
           metadata: {
             issueTitle: issue.title,
             category: issue.category,

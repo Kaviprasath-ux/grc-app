@@ -295,7 +295,7 @@ export const PUT = withAuth(
           message: `Control "${control.controlCode}: ${control.name}" is now marked as Compliant.`,
           relatedEntityType: 'control',
           relatedEntityId: control.id,
-          link: `/compliance/controls/${control.id}`,
+          link: `/compliance/control/${control.id}`,
           metadata: {
             controlCode: control.controlCode,
             controlName: control.name,

@@ -100,7 +100,7 @@ export const POST = withAuth(
           message: `New planned action "${title || actionType}" has been raised for issue "${issue.title}"`,
           relatedEntityType: 'issue',
           relatedEntityId: issue.id,
-          link: `/organization/context/issues/${issue.id}`,
+          link: `/organization/context`,
           metadata: {
             issueTitle: issue.title,
             actionType: actionType,

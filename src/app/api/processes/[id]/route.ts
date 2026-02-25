@@ -167,7 +167,7 @@ export const PUT = withAuth(
             message: `You have been assigned as ${role} for process "${process.name}"`,
             relatedEntityType: 'process',
             relatedEntityId: process.id,
-            link: `/organization/process/${process.id}`,
+            link: `/organization/process/${process.id}/edit`,
             channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
           });
         }
@@ -212,7 +212,7 @@ export const PUT = withAuth(
                 message: `Process "${process.processCode}: ${process.name}" has been submitted for your approval.`,
                 relatedEntityType: 'process',
                 relatedEntityId: process.id,
-                link: `/organization/process/${process.id}`,
+                link: `/organization/process/${process.id}/edit`,
                 metadata: {
                   processCode: process.processCode,
                   processName: process.name,
@@ -235,7 +235,7 @@ export const PUT = withAuth(
             message: `Process "${process.processCode}: ${process.name}" has been approved.`,
             relatedEntityType: 'process',
             relatedEntityId: process.id,
-            link: `/organization/process/${process.id}`,
+            link: `/organization/process/${process.id}/edit`,
             metadata: {
               processCode: process.processCode,
               processName: process.name,
@@ -256,7 +256,7 @@ export const PUT = withAuth(
             message: `Process "${process.processCode}: ${process.name}" has been rejected.`,
             relatedEntityType: 'process',
             relatedEntityId: process.id,
-            link: `/organization/process/${process.id}`,
+            link: `/organization/process/${process.id}/edit`,
             metadata: {
               processCode: process.processCode,
               processName: process.name,

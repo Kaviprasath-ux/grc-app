@@ -136,7 +136,7 @@ export const PATCH = withAuthOnly(async (
           entityType: 'Issue Action',
           entityId: action.id,
           entityName: action.actionType || 'Action',
-          link: `/organization/context/issues/${issueId}`,
+          link: `/organization/context`,
         });
       }
 
@@ -190,7 +190,7 @@ export const PATCH = withAuthOnly(async (
           entityId: action.id,
           entityName: existingAction.actionType || 'Action',
           reason: comment,
-          link: `/organization/context/issues/${issueId}`,
+          link: `/organization/context`,
         });
       }
 
