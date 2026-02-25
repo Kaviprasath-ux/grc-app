@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
@@ -164,6 +164,7 @@ export default function ProcessPage() {
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const { t, isRTL } = useLanguage();
+  const searchParams = useSearchParams();
 
   // Check if user is DepartmentReviewer (needs to see assigned processes and approve)
   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
@@ -178,7 +179,7 @@ export default function ProcessPage() {
   const canAddProcess = isCustomerAdministrator || isContributor || isDepartmentContributor;
   const userDepartmentId = session?.user?.departmentId;
 
-  const [activeTab, setActiveTab] = useState("repository");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "repository");
   const [processes, setProcesses] = useState<Process[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
