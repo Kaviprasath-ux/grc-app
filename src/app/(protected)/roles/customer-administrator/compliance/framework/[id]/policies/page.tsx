@@ -12,6 +12,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -99,6 +100,7 @@ export default function PoliciesByFrameworkPage() {
 
   // All policies extracted from framework controls (de-duplicated)
   const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
+  const { data: translatedPolicies } = useTranslatedData(allPolicies, { modelName: 'Policy' });
   const [loading, setLoading] = useState(true);
   const [activeDocType, setActiveDocType] = useState<string>("Policy");
   const [search, setSearch] = useState("");
@@ -211,7 +213,7 @@ export default function PoliciesByFrameworkPage() {
 
   // Filter by document type and search
   const filteredPolicies = useMemo(() => {
-    let filtered = allPolicies;
+    let filtered = translatedPolicies;
 
     // Filter by document type
     if (activeDocType) {
@@ -229,7 +231,7 @@ export default function PoliciesByFrameworkPage() {
     }
 
     return filtered;
-  }, [allPolicies, activeDocType, search]);
+  }, [translatedPolicies, activeDocType, search]);
 
   // Client-side pagination
   const total = filteredPolicies.length;

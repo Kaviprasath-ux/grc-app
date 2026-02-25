@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,7 @@ import {
 } from "lucide-react";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 import Link from "next/link";
 
@@ -146,6 +147,26 @@ export default function GRCAdminControlListPage() {
   const [domains, setDomains] = useState<ControlDomain[]>([]);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+
+  // Dynamic data translation hooks
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+
+  // Lookup maps for translated nested data in table rows
+  const domainNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDomains.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDomains]);
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedUsers.forEach(u => map.set(u.id, u.fullName));
+    return map;
+  }, [translatedUsers]);
 
   // Create dialog
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -238,7 +259,7 @@ export default function GRCAdminControlListPage() {
     }
   };
 
-  const sortedControls = [...controls].sort((a, b) => {
+  const sortedControls = [...translatedControls].sort((a, b) => {
     let aValue = "";
     let bValue = "";
 
@@ -260,8 +281,8 @@ export default function GRCAdminControlListPage() {
         bValue = b.status || "";
         break;
       case "domain":
-        aValue = a.domain?.name || "";
-        bValue = b.domain?.name || "";
+        aValue = (a.domain?.id ? domainNameMap.get(a.domain.id) : null) || a.domain?.name || "";
+        bValue = (b.domain?.id ? domainNameMap.get(b.domain.id) : null) || b.domain?.name || "";
         break;
       default:
         aValue = a.name || "";
@@ -306,6 +327,16 @@ export default function GRCAdminControlListPage() {
 
       if (response.ok) {
         const result = await response.json();
+        // Trigger translations for each imported control
+        if (result.importedRecords) {
+          for (const c of result.importedRecords) {
+            triggerTranslation('Control', c.id, {
+              name: c.name,
+              description: c.description,
+              controlQuestion: c.controlQuestion,
+            });
+          }
+        }
         toast({ title: t("Success"), description: t("Successfully imported") + ` ${result.imported} ` + t("control(s)") });
         setIsImportDialogOpen(false);
         setImportFile(null);
@@ -366,6 +397,14 @@ export default function GRCAdminControlListPage() {
         body: JSON.stringify(newControl),
       });
       if (response.ok) {
+        const responseData = await response.json().catch(() => null);
+        if (responseData?.id) {
+          triggerTranslation('Control', responseData.id, {
+            name: newControl.name,
+            description: newControl.description || null,
+            controlQuestion: newControl.controlQuestion || null,
+          });
+        }
         toast({ title: t("Success"), description: t("Control created successfully") });
         setIsCreateDialogOpen(false);
         setCreateStep(1);
@@ -400,8 +439,8 @@ export default function GRCAdminControlListPage() {
 
   // GRC Admin has access to all users and departments (no customer scoping)
   const getFilteredUsers = () => {
-    if (!newControl.departmentId) return users;
-    return users.filter((u) => u.departmentId === newControl.departmentId);
+    if (!newControl.departmentId) return translatedUsers;
+    return translatedUsers.filter((u) => u.departmentId === newControl.departmentId);
   };
 
   // Show loading state while permissions are being fetched
@@ -500,7 +539,7 @@ export default function GRCAdminControlListPage() {
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
               <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-              {frameworks.map((f) => (
+              {translatedFrameworks.map((f) => (
                 <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
               ))}
             </SelectContent>
@@ -672,10 +711,10 @@ export default function GRCAdminControlListPage() {
                     <TableCell className="py-3 text-sm text-slate-700">{control.status}</TableCell>
                   )}
                   {visibleColumns.assignee && (
-                    <TableCell className="py-3 text-sm text-slate-700">{control.assignee?.fullName || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{(control.assignee?.id ? userNameMap.get(control.assignee.id) : null) || control.assignee?.fullName || "-"}</TableCell>
                   )}
                   {visibleColumns.domain && (
-                    <TableCell className="py-3 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{(control.domain?.id ? domainNameMap.get(control.domain.id) : null) || control.domain?.name || "-"}</TableCell>
                   )}
                   <TableCell className="py-3 pr-5"></TableCell>
                 </TableRow>
@@ -738,7 +777,7 @@ export default function GRCAdminControlListPage() {
                           <SelectValue placeholder={t("Select domain")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                          {domains.map((d) => (
+                          {translatedDomains.map((d) => (
                             <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -819,7 +858,7 @@ export default function GRCAdminControlListPage() {
                           <SelectValue placeholder={t("Select department")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                          {departments.map((d) => (
+                          {translatedDepartments.map((d) => (
                             <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -837,7 +876,7 @@ export default function GRCAdminControlListPage() {
                           <SelectValue placeholder={t("Select owner")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                          {users.map((u) => (
+                          {translatedUsers.map((u) => (
                             <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                           ))}
                         </SelectContent>
@@ -872,7 +911,7 @@ export default function GRCAdminControlListPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                     <div>
                       <span className="text-slate-400">{t("Domain")}:</span>
-                      <p className="font-medium">{domains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
+                      <p className="font-medium">{translatedDomains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
                     </div>
                     <div>
                       <span className="text-slate-400">{t("Control Name")}:</span>
@@ -892,15 +931,15 @@ export default function GRCAdminControlListPage() {
                     </div>
                     <div>
                       <span className="text-slate-400">{t("Department")}:</span>
-                      <p className="font-medium">{departments.find(d => d.id === newControl.departmentId)?.name || "-"}</p>
+                      <p className="font-medium">{translatedDepartments.find(d => d.id === newControl.departmentId)?.name || "-"}</p>
                     </div>
                     <div>
                       <span className="text-slate-400">{t("Owner")}:</span>
-                      <p className="font-medium">{users.find(u => u.id === newControl.ownerId)?.fullName || "-"}</p>
+                      <p className="font-medium">{translatedUsers.find(u => u.id === newControl.ownerId)?.fullName || "-"}</p>
                     </div>
                     <div>
                       <span className="text-slate-400">{t("Assignee")}:</span>
-                      <p className="font-medium">{users.find(u => u.id === newControl.assigneeId)?.fullName || "-"}</p>
+                      <p className="font-medium">{translatedUsers.find(u => u.id === newControl.assigneeId)?.fullName || "-"}</p>
                     </div>
                   </div>
                 </div>

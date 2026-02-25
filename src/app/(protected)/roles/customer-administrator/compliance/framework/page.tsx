@@ -675,6 +675,37 @@ export default function CustomerAdminFrameworkPage() {
         description: `${t("Subscribed to")} "${masterData.name}" ${t("with")} ${clonedRequirementsCount} ${t("requirements and")} ${clonedControlsCount} ${t("controls")}`,
       });
 
+      // Fire-and-forget: trigger translations for all cloned records
+      triggerTranslation('Framework', newFrameworkId, {
+        name: masterData.name,
+        description: masterData.description,
+        country: masterData.country,
+        industry: masterData.industry,
+      });
+
+      for (const control of allControls) {
+        const newCtrlId = controlIdMap[control.id];
+        if (newCtrlId) {
+          triggerTranslation('Control', newCtrlId, {
+            name: control.name,
+            description: control.description,
+            controlQuestion: control.controlQuestion,
+          });
+        }
+      }
+
+      if (masterData.requirements) {
+        for (const req of masterData.requirements) {
+          const newReqId = requirementIdMap[req.id];
+          if (newReqId) {
+            triggerTranslation('Requirement', newReqId, {
+              name: req.name,
+              description: req.description,
+            });
+          }
+        }
+      }
+
       // Refresh frameworks list
       await fetchFrameworks();
 

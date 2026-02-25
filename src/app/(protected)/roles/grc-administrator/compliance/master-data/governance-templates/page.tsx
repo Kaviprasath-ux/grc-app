@@ -54,6 +54,7 @@ import {
   Home,
   FileText,
 } from "lucide-react";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
 interface Template {
@@ -97,6 +98,9 @@ export default function GovernanceTemplatesPage() {
   const [dragOver, setDragOver] = useState(false);
   const [fileError, setFileError] = useState("");
   const [templateErrors, setTemplateErrors] = useState<Record<string, string>>({});
+
+  // Dynamic translation hooks for display
+  const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'GovernanceTemplate' });
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -192,6 +196,8 @@ export default function GovernanceTemplatesPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('GovernanceTemplate', savedData.id, { name: savedData.name });
         setCreateDialogOpen(false);
         resetForm();
         fetchTemplates();
@@ -212,6 +218,8 @@ export default function GovernanceTemplatesPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('GovernanceTemplate', savedData.id, { name: savedData.name });
         setEditDialogOpen(false);
         setSelectedTemplate(null);
         resetForm();
@@ -301,7 +309,7 @@ export default function GovernanceTemplatesPage() {
     });
   };
 
-  const filteredTemplates = templates.filter(
+  const filteredTemplates = translatedTemplates.filter(
     (t) =>
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.governanceType.toLowerCase().includes(searchTerm.toLowerCase())

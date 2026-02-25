@@ -47,6 +47,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
 interface Evidence {
@@ -167,6 +168,12 @@ export default function EvidencesMasterDataPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importName, setImportName] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
+
+  // Dynamic translation hooks for display
+  const { data: translatedEvidences } = useTranslatedData(evidences, { modelName: 'Evidence' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedControlDomains } = useTranslatedData(controlDomains, { modelName: 'ControlDomain' });
 
   const fetchEvidences = useCallback(async () => {
     try {
@@ -350,6 +357,11 @@ export default function EvidencesMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('Evidence', savedData.id, {
+          name: savedData.name,
+          description: savedData.description,
+        });
         toast({
           title: t("Success"),
           description: t("Evidence created successfully"),
@@ -412,6 +424,11 @@ export default function EvidencesMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('Evidence', savedData.id, {
+          name: savedData.name,
+          description: savedData.description,
+        });
         toast({
           title: t("Success"),
           description: t("Evidence updated successfully"),
@@ -531,7 +548,7 @@ export default function EvidencesMasterDataPage() {
             else if (header === "Evidence Requirement") evidenceData.description = values[index];
           });
 
-          await fetch("/api/evidences", {
+          const importRes = await fetch("/api/evidences", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -539,6 +556,13 @@ export default function EvidencesMasterDataPage() {
               status: "Draft",
             }),
           });
+          if (importRes.ok) {
+            const savedData = await importRes.json();
+            triggerTranslation('Evidence', savedData.id, {
+              name: savedData.name,
+              description: savedData.description,
+            });
+          }
         }
 
         toast({
@@ -566,7 +590,7 @@ export default function EvidencesMasterDataPage() {
   const selectedDomains = [...new Set(selectedControls.map((c) => c.domain?.name).filter(Boolean))];
 
   // Filter evidences based on search
-  const filteredEvidences = evidences.filter(
+  const filteredEvidences = translatedEvidences.filter(
     (e) =>
       e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.evidenceCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -875,7 +899,7 @@ export default function EvidencesMasterDataPage() {
                         <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {departments.map((dept) => (
+                        {translatedDepartments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
                           </SelectItem>
@@ -946,7 +970,7 @@ export default function EvidencesMasterDataPage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       <SelectItem value="_all">{t("All Domains")}</SelectItem>
-                      {controlDomains.map((domain) => (
+                      {translatedControlDomains.map((domain) => (
                         <SelectItem key={domain.id} value={domain.id}>
                           {domain.name}
                         </SelectItem>
@@ -1074,7 +1098,7 @@ export default function EvidencesMasterDataPage() {
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                   <p className="mt-1 text-slate-800">
-                    {departments.find((d) => d.id === newFormData.departmentId)?.name || "-"}
+                    {translatedDepartments.find((d) => d.id === newFormData.departmentId)?.name || "-"}
                   </p>
                 </div>
                 {newFormData.description && (

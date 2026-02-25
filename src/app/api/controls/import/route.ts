@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
-import { translateRecord } from "@/lib/translation-service";
 
 // POST import controls from CSV
 export const POST = withAuth(
@@ -134,23 +133,13 @@ export const POST = withAuth(
       }
     }
 
-    // Fire-and-forget translations in background (don't block response)
-    if (customerAccountId && importedControls.length > 0) {
-      for (const c of importedControls) {
-        void translateRecord(customerAccountId, 'Control', c.id, {
-          name: c.name,
-          description: c.description,
-          controlQuestion: c.controlQuestion,
-        });
-      }
-    }
-
     console.log(`[IMPORT] Controls import complete: ${imported} imported, ${skipped} skipped, ${errors.length} errors`, errors);
 
     return NextResponse.json({
       imported,
       skipped,
       errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
+      importedRecords: importedControls,
     });
   } catch (error) {
     console.error("Error importing controls:", error);

@@ -20,6 +20,7 @@ import {
   Eye,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
 interface Control {
@@ -67,6 +68,7 @@ export default function ControlsByFrameworkPage() {
   const { t } = useLanguage();
 
   const [allControls, setAllControls] = useState<Control[]>([]);
+  const { data: translatedControls } = useTranslatedData(allControls, { modelName: 'Control' });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -129,23 +131,23 @@ export default function ControlsByFrameworkPage() {
   // Unique domains and groupings for filter dropdowns
   const uniqueDomains = useMemo(() => {
     const domains = new Map<string, string>();
-    allControls.forEach(c => {
+    translatedControls.forEach(c => {
       if (c.domain?.id && c.domain?.name) domains.set(c.domain.id, c.domain.name);
     });
     return Array.from(domains.entries()).map(([id, name]) => ({ id, name }));
-  }, [allControls]);
+  }, [translatedControls]);
 
   const uniqueGroupings = useMemo(() => {
     const groupings = new Set<string>();
-    allControls.forEach(c => {
+    translatedControls.forEach(c => {
       if (c.functionalGrouping) groupings.add(c.functionalGrouping);
     });
     return Array.from(groupings).sort();
-  }, [allControls]);
+  }, [translatedControls]);
 
   // Filtered controls
   const filteredControls = useMemo(() => {
-    return allControls.filter((control) => {
+    return translatedControls.filter((control) => {
       if (search.trim()) {
         const searchLower = search.toLowerCase().trim();
         const matchesCode = control.controlCode?.toLowerCase().includes(searchLower);
@@ -157,7 +159,7 @@ export default function ControlsByFrameworkPage() {
       if (domainFilter !== "all" && control.domain?.id !== domainFilter) return false;
       return true;
     });
-  }, [allControls, search, statusFilter, groupingFilter, domainFilter]);
+  }, [translatedControls, search, statusFilter, groupingFilter, domainFilter]);
 
   // Sorted controls
   const sortedControls = useMemo(() => {

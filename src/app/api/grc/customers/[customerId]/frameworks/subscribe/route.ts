@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { translateRecord } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ customerId: string }>;
@@ -163,7 +164,10 @@ export async function POST(req: NextRequest, context: RouteContext) {
     const frameworkStatus = action === "subscribe" ? "Subscribed" : "Suggested";
 
     // Clone framework and all related data in a transaction
-    const clonedFramework = await prisma.$transaction(async (tx) => {
+    // Collect all controls map at outer scope for translation use
+    let allControlsMap: Map<string, typeof sourceFramework.controls[0]> = new Map();
+
+    const txResult = await prisma.$transaction(async (tx) => {
       // 1. Create the cloned framework with reference to source
       const newFramework = await tx.framework.create({
         data: {
@@ -205,7 +209,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
       // 3. Collect ALL controls - from direct links, requirements, and evidences
       // This ensures we don't miss controls that are only linked via RequirementControl or EvidenceControl
-      const allControlsMap = new Map<string, typeof sourceFramework.controls[0]>();
+      allControlsMap = new Map<string, typeof sourceFramework.controls[0]>();
 
       // Add controls directly linked to framework
       for (const ctrl of sourceFramework.controls) {
@@ -526,8 +530,18 @@ export async function POST(req: NextRequest, context: RouteContext) {
       console.log(`  - Evidences processed: ${evidenceIdMap.size}`);
       console.log(`  - Policies processed: ${policyIdMap.size}`);
 
-      return newFramework;
+      return {
+        framework: newFramework,
+        controlIdMap,
+        requirementIdMap,
+        categoryIdMap,
+        evidenceIdMap,
+        policyIdMap,
+        domainIdMap,
+      };
     });
+
+    const clonedFramework = txResult.framework;
 
     // Increment frameworksUsed in the active subscription plan
     if (action === "subscribe") {
@@ -546,6 +560,102 @@ export async function POST(req: NextRequest, context: RouteContext) {
         });
       }
     }
+
+    // Fire-and-forget: translate all newly created records in background
+    // This doesn't block the response — translations will be available on next page load
+    void (async () => {
+      try {
+        console.log(`[SUBSCRIBE-TRANSLATE] Starting background translations for "${sourceFramework.name}"...`);
+
+        // 1. Translate the framework itself
+        void translateRecord(customerAccountId, 'Framework', clonedFramework.id, {
+          name: sourceFramework.name,
+          description: sourceFramework.description,
+          country: sourceFramework.country,
+          industry: sourceFramework.industry,
+        });
+
+        // 2. Translate requirement categories
+        for (const cat of sourceFramework.requirementCategories) {
+          const newCatId = txResult.categoryIdMap.get(cat.id);
+          if (newCatId) {
+            void translateRecord(customerAccountId, 'RequirementCategory', newCatId, {
+              name: cat.name,
+              description: cat.description,
+            });
+          }
+        }
+
+        // 3. Translate requirements
+        for (const req of sourceFramework.requirements) {
+          const newReqId = txResult.requirementIdMap.get(req.id);
+          if (newReqId) {
+            void translateRecord(customerAccountId, 'Requirement', newReqId, {
+              name: req.name,
+              description: req.description,
+            });
+          }
+        }
+
+        // 4. Translate newly created controls (skip reused ones — they already have translations)
+        const allControls = Array.from(allControlsMap.values());
+        for (const ctrl of allControls) {
+          const newCtrlId = txResult.controlIdMap.get(ctrl.id);
+          if (newCtrlId && newCtrlId !== ctrl.id) {
+            void translateRecord(customerAccountId, 'Control', newCtrlId, {
+              name: ctrl.name,
+              description: ctrl.description,
+              controlQuestion: ctrl.controlQuestion,
+            });
+          }
+        }
+
+        // 5. Translate newly created domains
+        for (const ctrl of allControls) {
+          if (ctrl.domain && ctrl.domainId) {
+            const newDomainId = txResult.domainIdMap.get(ctrl.domainId);
+            if (newDomainId && newDomainId !== ctrl.domainId) {
+              void translateRecord(customerAccountId, 'ControlDomain', newDomainId, {
+                name: ctrl.domain.name,
+              });
+            }
+          }
+        }
+
+        // 6. Translate newly created evidences
+        for (const ev of sourceFramework.evidences) {
+          const newEvId = txResult.evidenceIdMap.get(ev.id);
+          if (newEvId && newEvId !== ev.id) {
+            void translateRecord(customerAccountId, 'Evidence', newEvId, {
+              name: ev.name,
+              description: ev.description,
+            });
+          }
+        }
+
+        // 7. Translate newly created policies
+        const allPolicies = new Map<string, { name: string }>();
+        for (const ctrl of allControls) {
+          for (const pc of ctrl.policyControls) {
+            if (!allPolicies.has(pc.policyId)) {
+              allPolicies.set(pc.policyId, { name: pc.policy.name });
+            }
+          }
+        }
+        for (const [oldPolicyId, policyData] of allPolicies) {
+          const newPolicyId = txResult.policyIdMap.get(oldPolicyId);
+          if (newPolicyId && newPolicyId !== oldPolicyId) {
+            void translateRecord(customerAccountId, 'Policy', newPolicyId, {
+              name: policyData.name,
+            });
+          }
+        }
+
+        console.log(`[SUBSCRIBE-TRANSLATE] Background translation requests dispatched for "${sourceFramework.name}"`);
+      } catch (err) {
+        console.error(`[SUBSCRIBE-TRANSLATE] Error dispatching translations:`, err);
+      }
+    })();
 
     return NextResponse.json(
       {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X, Home, ChevronRight } from "lucide-react";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
 interface Control {
@@ -179,6 +180,62 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
   const [allRisks, setAllRisks] = useState<Risk[]>([]);
   const [allRequirements, setAllRequirements] = useState<Requirement[]>([]);
 
+  // Dynamic data translation hooks
+  const { data: translatedControl } = useTranslatedRecord(control, { modelName: 'Control' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedAllRisks } = useTranslatedData(allRisks, { modelName: 'Risk' });
+  const { data: translatedAllRequirements } = useTranslatedData(allRequirements, { modelName: 'Requirement' });
+
+  // Translate nested arrays from control
+  const requirementArray = useMemo(() => control?.requirements?.map(rc => rc.requirement) || [], [control?.requirements]);
+  const { data: translatedRequirements } = useTranslatedData(requirementArray, { modelName: 'Requirement' });
+
+  const policyArray = useMemo(() => control?.policyControls?.map(pc => pc.policy) || [], [control?.policyControls]);
+  const { data: translatedPolicies } = useTranslatedData(policyArray, { modelName: 'Policy' });
+
+  const evidenceArray = useMemo(() => control?.evidences || [], [control?.evidences]);
+  const { data: translatedEvidences } = useTranslatedData(evidenceArray, { modelName: 'Evidence' });
+
+  const exceptionArray = useMemo(() => control?.exceptions || [], [control?.exceptions]);
+  const { data: translatedExceptions } = useTranslatedData(exceptionArray, { modelName: 'Exception' });
+
+  const riskArray = useMemo(() => control?.controlRisks?.map(cr => cr.risk) || [], [control?.controlRisks]);
+  const { data: translatedRisks } = useTranslatedData(riskArray, { modelName: 'Risk' });
+
+  // Translate nested single objects
+  const domainArray = useMemo(() => control?.domain ? [control.domain] : [], [control?.domain]);
+  const { data: translatedDomainArr } = useTranslatedData(domainArray, { modelName: 'ControlDomain' });
+  const translatedDomainName = translatedDomainArr[0]?.name || control?.domain?.name;
+
+  const frameworkArray = useMemo(() => control?.framework ? [control.framework] : [], [control?.framework]);
+  const { data: translatedFrameworkArr } = useTranslatedData(frameworkArray, { modelName: 'Framework' });
+  const translatedFrameworkName = translatedFrameworkArr[0]?.name || control?.framework?.name;
+
+  const ownerArray = useMemo(() => control?.owner ? [control.owner] : [], [control?.owner]);
+  const { data: translatedOwnerArr } = useTranslatedData(ownerArray, { modelName: 'User' });
+  const translatedOwnerName = translatedOwnerArr[0]?.fullName || control?.owner?.fullName;
+
+  // Lookup helpers
+  const tDept = useCallback((deptId: string | undefined, fallback: string) => {
+    if (!deptId) return fallback;
+    return translatedDepartments.find(d => d.id === deptId)?.name || fallback;
+  }, [translatedDepartments]);
+
+  const tUser = useCallback((userId: string | undefined, fallback: string) => {
+    if (!userId) return fallback;
+    return translatedUsers.find(u => u.id === userId)?.fullName || fallback;
+  }, [translatedUsers]);
+
+  const tReq = useCallback((reqId: string) => {
+    return translatedRequirements.find(r => r.id === reqId)?.name || translatedAllRequirements.find(r => r.id === reqId)?.name;
+  }, [translatedRequirements, translatedAllRequirements]);
+
+  const tRisk = useCallback((riskId: string) => {
+    return translatedRisks.find(r => r.id === riskId)?.name || translatedAllRisks.find(r => r.id === riskId)?.name;
+  }, [translatedRisks, translatedAllRisks]);
+
   useEffect(() => {
     fetchControl();
     fetchFilterOptions();
@@ -245,6 +302,11 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
       if (response.ok) {
         setIsEditDialogOpen(false);
         fetchControl();
+        triggerTranslation('Control', controlId, {
+          name: editData.name || '',
+          description: editData.description || '',
+          controlQuestion: editData.controlQuestion || '',
+        });
       }
     } catch (error) {
       console.error("Error updating control:", error);
@@ -373,7 +435,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{control.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{translatedControl?.name || control.name}</h1>
             <Badge className={getStatusBadgeColor(control.status)}>{control.status}</Badge>
           </div>
           <p className="text-sm text-slate-500">{control.controlCode}</p>
@@ -393,11 +455,11 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <Label className="text-muted-foreground">{t("Domain")}</Label>
-              <p className="font-medium">{control.domain?.name || "-"}</p>
+              <p className="font-medium">{translatedDomainName || "-"}</p>
             </div>
             <div>
               <Label className="text-muted-foreground">{t("Framework")}</Label>
-              <p className="font-medium">{control.framework?.name || "-"}</p>
+              <p className="font-medium">{translatedFrameworkName || "-"}</p>
             </div>
             {/* Inline Editable Department */}
             <div>
@@ -407,7 +469,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                   <SelectValue placeholder={t("Select department")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((d) => (
+                  {translatedDepartments.map((d) => (
                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -419,7 +481,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
             </div>
             <div>
               <Label className="text-muted-foreground">{t("Owner")}</Label>
-              <p className="font-medium">{control.owner?.fullName || "-"}</p>
+              <p className="font-medium">{translatedOwnerName || "-"}</p>
             </div>
             {/* Inline Editable Assignee */}
             <div>
@@ -429,7 +491,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                   <SelectValue placeholder={t("Select assignee")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((u) => (
+                  {translatedUsers.map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                   ))}
                 </SelectContent>
@@ -470,7 +532,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                   variant="outline"
                   className="flex items-center gap-1"
                 >
-                  {cr.risk.riskId} - {cr.risk.name}
+                  {cr.risk.riskId} - {tRisk(cr.risk.id) || cr.risk.name}
                   <button
                     onClick={() => handleRemoveRisk(cr.risk.id)}
                     className="ltr:ml-1 rtl:mr-1 hover:text-red-500"
@@ -488,13 +550,13 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
           {control.description && (
             <div className="mt-4">
               <Label className="text-muted-foreground">{t("Description")}</Label>
-              <p className="mt-1">{control.description}</p>
+              <p className="mt-1">{translatedControl?.description || control.description}</p>
             </div>
           )}
           {control.controlQuestion && (
             <div className="mt-4">
               <Label className="text-muted-foreground">{t("Control Question")}</Label>
-              <p className="mt-1">{control.controlQuestion}</p>
+              <p className="mt-1">{translatedControl?.controlQuestion || control.controlQuestion}</p>
             </div>
           )}
         </CardContent>
@@ -540,7 +602,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 {control.requirements?.map((rc) => (
                   <TableRow key={rc.requirement.id}>
                     <TableCell>{rc.requirement.code}</TableCell>
-                    <TableCell>{rc.requirement.name}</TableCell>
+                    <TableCell>{tReq(rc.requirement.id) || rc.requirement.name}</TableCell>
                     <TableCell>{rc.requirement.framework?.name || "-"}</TableCell>
                   </TableRow>
                 ))}
@@ -568,16 +630,19 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {control.policyControls?.map((pc) => (
-                  <TableRow key={pc.policy.id}>
-                    <TableCell>{pc.policy.code}</TableCell>
-                    <TableCell>{pc.policy.name}</TableCell>
-                    <TableCell>{pc.policy.documentType}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{pc.policy.status}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {control.policyControls?.map((pc) => {
+                  const translatedPolicy = translatedPolicies.find(p => p.id === pc.policy.id);
+                  return (
+                    <TableRow key={pc.policy.id}>
+                      <TableCell>{pc.policy.code}</TableCell>
+                      <TableCell>{translatedPolicy?.name || pc.policy.name}</TableCell>
+                      <TableCell>{pc.policy.documentType}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{pc.policy.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {(!control.policyControls || control.policyControls.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
@@ -603,17 +668,20 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {control.evidences?.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell>{e.evidenceCode}</TableCell>
-                    <TableCell>{e.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{e.status}</Badge>
-                    </TableCell>
-                    <TableCell>{e.assignee?.fullName || "-"}</TableCell>
-                    <TableCell>{e.dueDate ? new Date(e.dueDate).toLocaleDateString() : "-"}</TableCell>
-                  </TableRow>
-                ))}
+                {control.evidences?.map((e) => {
+                  const translatedEvidence = translatedEvidences.find(ev => ev.id === e.id);
+                  return (
+                    <TableRow key={e.id}>
+                      <TableCell>{e.evidenceCode}</TableCell>
+                      <TableCell>{translatedEvidence?.name || e.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{e.status}</Badge>
+                      </TableCell>
+                      <TableCell>{e.assignee?.fullName || "-"}</TableCell>
+                      <TableCell>{e.dueDate ? new Date(e.dueDate).toLocaleDateString() : "-"}</TableCell>
+                    </TableRow>
+                  );
+                })}
                 {(!control.evidences || control.evidences.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
@@ -639,17 +707,20 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {control.exceptions?.map((ex) => (
-                  <TableRow key={ex.id}>
-                    <TableCell>{ex.exceptionCode}</TableCell>
-                    <TableCell>{ex.name}</TableCell>
-                    <TableCell>{ex.category}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{ex.status}</Badge>
-                    </TableCell>
-                    <TableCell>{ex.endDate ? new Date(ex.endDate).toLocaleDateString() : "-"}</TableCell>
-                  </TableRow>
-                ))}
+                {control.exceptions?.map((ex) => {
+                  const translatedEx = translatedExceptions.find(e => e.id === ex.id);
+                  return (
+                    <TableRow key={ex.id}>
+                      <TableCell>{ex.exceptionCode}</TableCell>
+                      <TableCell>{translatedEx?.name || ex.name}</TableCell>
+                      <TableCell>{ex.category}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{ex.status}</Badge>
+                      </TableCell>
+                      <TableCell>{ex.endDate ? new Date(ex.endDate).toLocaleDateString() : "-"}</TableCell>
+                    </TableRow>
+                  );
+                })}
                 {(!control.exceptions || control.exceptions.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
@@ -678,7 +749,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 {control.controlRisks?.map((cr) => (
                   <TableRow key={cr.risk.id}>
                     <TableCell>{cr.risk.riskId}</TableCell>
-                    <TableCell>{cr.risk.name}</TableCell>
+                    <TableCell>{tRisk(cr.risk.id) || cr.risk.name}</TableCell>
                     <TableCell>
                       <Badge className={getRiskRatingColor(cr.risk.riskRating)}>
                         {cr.risk.riskRating}
@@ -909,7 +980,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                   <SelectValue placeholder={t("Select domain")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {domains.map((d) => (
+                  {translatedDomains.map((d) => (
                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -920,7 +991,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
             <div className="col-span-2">
               <Label>{t("Requirement")}</Label>
               <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto">
-                {allRequirements.map((req) => (
+                {translatedAllRequirements.map((req) => (
                   <div key={req.id} className="flex items-center space-x-2 py-1">
                     <Checkbox
                       id={`req-${req.id}`}
@@ -939,7 +1010,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                     </Label>
                   </div>
                 ))}
-                {allRequirements.length === 0 && (
+                {translatedAllRequirements.length === 0 && (
                   <p className="text-muted-foreground text-sm">{t("No requirements available")}</p>
                 )}
               </div>
@@ -964,16 +1035,16 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
             <DialogTitle>{t("Select Risks")}</DialogTitle>
           </DialogHeader>
           <div className="max-h-64 overflow-y-auto">
-            {allRisks.length > 0 && (
+            {translatedAllRisks.length > 0 && (
               <div className="flex items-center space-x-2 py-2 border-b mb-1">
                 <Checkbox
                   id="risk-select-all"
-                  checked={allRisks.length > 0 && allRisks.every(r => selectedRiskIds.includes(r.id))}
+                  checked={translatedAllRisks.length > 0 && translatedAllRisks.every(r => selectedRiskIds.includes(r.id))}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setSelectedRiskIds([...new Set([...selectedRiskIds, ...allRisks.map(r => r.id)])]);
+                      setSelectedRiskIds([...new Set([...selectedRiskIds, ...translatedAllRisks.map(r => r.id)])]);
                     } else {
-                      const allRiskIdSet = new Set(allRisks.map(r => r.id));
+                      const allRiskIdSet = new Set(translatedAllRisks.map(r => r.id));
                       setSelectedRiskIds(selectedRiskIds.filter(id => !allRiskIdSet.has(id)));
                     }
                   }}
@@ -983,7 +1054,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 </Label>
               </div>
             )}
-            {allRisks.map((risk) => (
+            {translatedAllRisks.map((risk) => (
               <div key={risk.id} className="flex items-center space-x-2 py-2">
                 <Checkbox
                   id={`risk-${risk.id}`}
@@ -1001,7 +1072,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
                 </Label>
               </div>
             ))}
-            {allRisks.length === 0 && (
+            {translatedAllRisks.length === 0 && (
               <p className="text-muted-foreground">{t("No risks available")}</p>
             )}
           </div>

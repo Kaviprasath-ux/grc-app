@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -60,6 +60,7 @@ import {
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import { isValidName } from "@/lib/validations";
 import Link from "next/link";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Policy {
   id: string;
@@ -137,6 +138,27 @@ export default function GRCAdminGovernancePage() {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
+
+  // Dynamic translations for user-entered data
+  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'Policy' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+
+  // Lookup maps for translated nested data
+  const departmentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDepartments.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDepartments]);
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedUsers.forEach(u => map.set(u.id, u.fullName));
+    return map;
+  }, [translatedUsers]);
 
   // Create dialog
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -258,6 +280,10 @@ export default function GRCAdminGovernancePage() {
         }),
       });
       if (response.ok) {
+        const responseData = await response.json().catch(() => null);
+        if (responseData?.id) {
+          triggerTranslation('Policy', responseData.id, { name: newPolicy.name });
+        }
         setIsCreateDialogOpen(false);
         resetCreateDialog();
         fetchPolicies();
@@ -368,7 +394,7 @@ export default function GRCAdminGovernancePage() {
   };
 
   // Filter controls for Step 2
-  const filteredControls = controls.filter((control) => {
+  const filteredControls = translatedControls.filter((control) => {
     const matchesSearch = !controlSearch ||
       control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
       control.controlCode.toLowerCase().includes(controlSearch.toLowerCase());
@@ -379,14 +405,14 @@ export default function GRCAdminGovernancePage() {
 
   // Filter users for Assignee dropdown based on selected department
   const getFilteredUsers = () => {
-    if (!newPolicy.departmentId) return users;
-    return users.filter((u) => u.departmentId === newPolicy.departmentId);
+    if (!newPolicy.departmentId) return translatedUsers;
+    return translatedUsers.filter((u) => u.departmentId === newPolicy.departmentId);
   };
 
   // Filter users for Edit Assignee dropdown
   const getFilteredEditUsers = () => {
-    if (!editData.departmentId) return users;
-    return users.filter((u) => u.departmentId === editData.departmentId);
+    if (!editData.departmentId) return translatedUsers;
+    return translatedUsers.filter((u) => u.departmentId === editData.departmentId);
   };
 
   const openEditDialog = (policy: Policy) => {
@@ -415,6 +441,7 @@ export default function GRCAdminGovernancePage() {
         body: JSON.stringify(editData),
       });
       if (response.ok) {
+        triggerTranslation('Policy', editingPolicy.id, { name: editData.name });
         setIsEditDialogOpen(false);
         setEditingPolicy(null);
         fetchPolicies();
@@ -555,7 +582,7 @@ export default function GRCAdminGovernancePage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-                      {frameworks.map((f) => (
+                      {translatedFrameworks.map((f) => (
                         <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -600,7 +627,7 @@ export default function GRCAdminGovernancePage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    policies.map((policy) => (
+                    translatedPolicies.map((policy) => (
                       <TableRow
                         key={policy.id}
                         className="border-b border-slate-100 last:border-0 cursor-pointer"
@@ -613,9 +640,9 @@ export default function GRCAdminGovernancePage() {
                             {policy.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{(policy.assignee?.id ? userNameMap.get(policy.assignee.id) : null) || policy.assignee?.fullName || "-"}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{(policy.approver?.id ? userNameMap.get(policy.approver.id) : null) || policy.approver?.fullName || "-"}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{(policy.department?.id ? departmentNameMap.get(policy.department.id) : null) || policy.department?.name || "-"}</TableCell>
                         <TableCell className="py-3 pr-5">
                           <div className="flex items-center gap-0.5">
                             <PermissionGate resource="compliance.governance" action="edit">
@@ -732,7 +759,7 @@ export default function GRCAdminGovernancePage() {
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      {departments.map((d) => (
+                      {translatedDepartments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -847,7 +874,7 @@ export default function GRCAdminGovernancePage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">{t("All Domains")}</SelectItem>
-                      {domains.map((d) => (
+                      {translatedDomains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -936,13 +963,13 @@ export default function GRCAdminGovernancePage() {
                   <div>
                     <Label className="text-slate-500 text-sm">{t("Department")}</Label>
                     <p className="font-medium text-slate-900">
-                      {departments.find((d) => d.id === newPolicy.departmentId)?.name || "-"}
+                      {translatedDepartments.find((d) => d.id === newPolicy.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
                     <Label className="text-slate-500 text-sm">{t("Assignee")}</Label>
                     <p className="font-medium text-slate-900">
-                      {users.find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
+                      {translatedUsers.find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>
@@ -956,7 +983,7 @@ export default function GRCAdminGovernancePage() {
                     <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Controls")}:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedControlIds.map((id) => {
-                        const control = controls.find((c) => c.id === id);
+                        const control = translatedControls.find((c) => c.id === id);
                         return control ? (
                           <Badge key={id} variant="outline">
                             {control.controlCode}
@@ -1163,7 +1190,7 @@ export default function GRCAdminGovernancePage() {
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>

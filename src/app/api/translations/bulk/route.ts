@@ -9,16 +9,41 @@
  * Works for ALL locales including "en" — records may have been entered
  * in any language, so English translations may exist in the DB.
  *
- * This endpoint only READS existing translations — it does NOT trigger
- * new translations. Translations are created only when records are
- * explicitly created or edited (via translateRecord in API handlers
- * and triggerTranslation on the frontend).
+ * Only returns existing cached translations. Does NOT auto-translate
+ * records that have no translations. Records are only translated when
+ * explicitly saved/created via triggerTranslation().
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuthOnly } from '@/lib/api-auth';
 import { getBulkTranslations } from '@/lib/translation-service';
 import { isTranslatable } from '@/lib/translation-config';
+import prisma from '@/lib/prisma';
+
+/**
+ * Check if a translation contains obviously WRONG script for the target locale.
+ * Only flags translations that contain script from a clearly wrong language
+ * (e.g. Chinese/Japanese/Korean text when translating to Arabic).
+ * Does NOT require target script to be present — proper nouns like "Dom2"
+ * correctly stay in Latin script even for Arabic translations.
+ */
+function hasWrongScript(text: string, locale: string): boolean {
+  if (!text || text.trim().length === 0) return false;
+
+  const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(text);
+
+  // Arabic locale should never contain CJK characters
+  if (locale === 'ar' && hasCJK) return true;
+
+  // Latvian locale should never contain CJK or Arabic characters
+  if (locale === 'lv') {
+    const hasArabic = /[\u0600-\u06FF]/.test(text);
+    if (hasCJK || hasArabic) return true;
+  }
+
+  return false;
+}
+
 
 export const POST = withAuthOnly(async (req: NextRequest, _context, session) => {
   try {
@@ -66,7 +91,29 @@ export const POST = withAuthOnly(async (req: NextRequest, _context, session) => 
       locale
     );
 
-    // Return existing translations only — no background auto-translate
+    // Check for invalid translations (wrong script) and remove them
+    for (const id of recordIds) {
+      if (translations[id]) {
+        const fields = translations[id];
+        const hasInvalid = Object.values(fields).some(text => hasWrongScript(text, locale));
+        if (hasInvalid) {
+          await prisma.dynamicTranslation.deleteMany({
+            where: {
+              customerAccountId: session.customerAccountId,
+              modelName,
+              recordId: id,
+              locale,
+            },
+          });
+          delete translations[id];
+        }
+      }
+    }
+
+    console.log(`[BULK-TRANSLATE] ${modelName} [${locale}]: ${recordIds.length} requested, ${Object.keys(translations).length} cached`);
+
+    // Only return existing translations — no background auto-translate.
+    // Records are translated only when explicitly saved/created via triggerTranslation().
     return NextResponse.json({ translations, pendingCount: 0 });
   } catch (error) {
     console.error('Bulk translations error:', error);

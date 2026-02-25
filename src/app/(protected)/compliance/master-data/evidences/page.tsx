@@ -83,7 +83,7 @@ interface Department {
 
 interface User {
   id: string;
-  name: string;
+  fullName: string;
   departmentId?: string;
   userRoles?: { role: { name: string } }[];
 }
@@ -905,7 +905,7 @@ export default function EvidencesMasterDataPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {filteredUsers.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
-                          {user.name}
+                          {user.fullName}
                         </SelectItem>
                       ))}
                     </SelectContent>

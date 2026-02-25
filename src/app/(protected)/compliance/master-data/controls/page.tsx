@@ -530,6 +530,16 @@ export default function ControlsMasterDataPage() {
 
       if (response.ok) {
         const result = await response.json();
+        // Trigger translations from frontend for each imported control
+        if (result.importedRecords) {
+          for (const c of result.importedRecords) {
+            triggerTranslation('Control', c.id, {
+              name: c.name,
+              description: c.description,
+              controlQuestion: c.controlQuestion,
+            });
+          }
+        }
         toast({
           title: t("Success"),
           description: `${t("Import completed")}: ${result.imported} ${t("controls imported")}${result.skipped ? `, ${result.skipped} ${t("skipped")}` : ""}`,

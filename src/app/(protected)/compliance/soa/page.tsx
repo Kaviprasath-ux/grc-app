@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface SOAEntry {
   id: string;
@@ -107,6 +108,9 @@ export default function SOAPage() {
 
   // Reference data
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
+
+  const { data: translatedEntries } = useTranslatedData(entries, { modelName: 'Requirement' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
 
   // Edit form
   const [editForm, setEditForm] = useState({
@@ -188,7 +192,7 @@ export default function SOAPage() {
     }
   };
 
-  const filteredEntries = entries.filter(
+  const filteredEntries = translatedEntries.filter(
     (e) =>
       e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -196,13 +200,13 @@ export default function SOAPage() {
 
   // Calculate statistics
   const stats = {
-    total: entries.length,
-    applicable: entries.filter((e) => e.applicability === "Applicable").length,
-    notApplicable: entries.filter((e) => e.applicability === "Not Applicable")
+    total: translatedEntries.length,
+    applicable: translatedEntries.filter((e) => e.applicability === "Applicable").length,
+    notApplicable: translatedEntries.filter((e) => e.applicability === "Not Applicable")
       .length,
-    implemented: entries.filter((e) => e.implementationStatus === "Implemented")
+    implemented: translatedEntries.filter((e) => e.implementationStatus === "Implemented")
       .length,
-    compliant: entries.filter((e) => e.controlCompliance === "Compliant").length,
+    compliant: translatedEntries.filter((e) => e.controlCompliance === "Compliant").length,
   };
 
   if (loading) {
@@ -329,7 +333,7 @@ export default function SOAPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t("All frameworks")}</SelectItem>
-                    {frameworks.map((f) => (
+                    {translatedFrameworks.map((f) => (
                       <SelectItem key={f.id} value={f.id}>
                         {f.name}
                       </SelectItem>

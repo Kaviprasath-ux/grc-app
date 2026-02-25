@@ -21,6 +21,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
 interface EvidenceControl {
@@ -99,6 +100,7 @@ export default function EvidenceByFrameworkPage() {
 
   // All evidence extracted from framework controls (de-duplicated)
   const [allEvidences, setAllEvidences] = useState<Evidence[]>([]);
+  const { data: translatedEvidences } = useTranslatedData(allEvidences, { modelName: 'Evidence' });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -201,18 +203,18 @@ export default function EvidenceByFrameworkPage() {
   // Filter by search term
   const filteredEvidences = useMemo(() => {
     if (!searchTerm.trim()) {
-      return allEvidences;
+      return translatedEvidences;
     }
 
     const searchLower = searchTerm.toLowerCase().trim();
-    return allEvidences.filter((evidence) => {
+    return translatedEvidences.filter((evidence) => {
       const matchesCode = evidence.evidenceCode?.toLowerCase().includes(searchLower);
       const matchesName = evidence.name?.toLowerCase().includes(searchLower);
       const matchesDomain = evidence.domain?.toLowerCase().includes(searchLower);
       const matchesAssignee = evidence.assignee?.fullName?.toLowerCase().includes(searchLower);
       return matchesCode || matchesName || matchesDomain || matchesAssignee;
     });
-  }, [allEvidences, searchTerm]);
+  }, [translatedEvidences, searchTerm]);
 
   // Client-side pagination
   const total = filteredEvidences.length;

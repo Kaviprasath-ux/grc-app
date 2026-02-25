@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronLeft, ChevronRight, Home, Layers } from "lucide-react";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
 interface ControlDomain {
@@ -66,6 +67,9 @@ export default function DomainMasterDataPage() {
   });
   const [domainErrors, setDomainErrors] = useState<Record<string, string>>({});
 
+  // Dynamic translation hooks for display
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+
   const fetchDomains = useCallback(async () => {
     try {
       const response = await fetch("/api/control-domains");
@@ -99,6 +103,8 @@ export default function DomainMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('ControlDomain', savedData.id, { name: savedData.name });
         setCreateDialogOpen(false);
         resetForm();
         fetchDomains();
@@ -124,6 +130,8 @@ export default function DomainMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('ControlDomain', savedData.id, { name: savedData.name });
         setEditDialogOpen(false);
         setSelectedDomain(null);
         resetForm();
@@ -236,11 +244,15 @@ export default function DomainMasterDataPage() {
       for (const line of lines) {
         const [code, name] = line.split(",").map((s) => s.replace(/"/g, "").trim());
         if (name) {
-          await fetch("/api/control-domains", {
+          const importRes = await fetch("/api/control-domains", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ code, name }),
           });
+          if (importRes.ok) {
+            const savedData = await importRes.json();
+            triggerTranslation('ControlDomain', savedData.id, { name: savedData.name });
+          }
         }
       }
       setImportDialogOpen(false);
@@ -253,7 +265,7 @@ export default function DomainMasterDataPage() {
     }
   };
 
-  const filteredDomains = domains.filter(
+  const filteredDomains = translatedDomains.filter(
     (d) =>
       d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (d.code && d.code.toLowerCase().includes(searchTerm.toLowerCase()))

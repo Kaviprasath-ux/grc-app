@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Risk {
   id: string;
@@ -159,6 +160,10 @@ export default function RiskDetailPage() {
   const [availableControls, setAvailableControls] = useState<Control[]>([]);
   const [selectedControlId, setSelectedControlId] = useState("");
 
+  const { data: tRisk } = useTranslatedRecord(risk, { modelName: 'Risk' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedControls } = useTranslatedData(availableControls, { modelName: 'Control' });
+
   const fetchRisk = useCallback(async () => {
     try {
       const response = await fetch(`/api/risks/${id}`);
@@ -249,6 +254,7 @@ export default function RiskDetailPage() {
       });
 
       if (response.ok) {
+        triggerTranslation('Risk', id, { name: editForm.name, description: editForm.description });
         setEditDialogOpen(false);
         fetchRisk();
       }
@@ -306,13 +312,13 @@ export default function RiskDetailPage() {
           {t("Risk Control Matrix")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{risk.riskId}</span>
+        <span className="text-primary-700 font-medium">{tRisk?.riskId || risk.riskId}</span>
       </nav>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-xl sm:text-2xl font-bold">{risk.riskId}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{tRisk?.riskId || risk.riskId}</h1>
           <Badge
             className={riskRatingColors[risk.riskRating || "Low"]}
           >
@@ -523,7 +529,7 @@ export default function RiskDetailPage() {
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
                       </SelectItem>
@@ -691,24 +697,24 @@ export default function RiskDetailPage() {
             <div className="space-y-4">
               <div>
                 <Label className="text-slate-500">{t("Category")}</Label>
-                <p className="font-medium">{risk.category ? t(risk.category) : "-"}</p>
+                <p className="font-medium">{(tRisk?.category || risk.category) ? t(tRisk?.category || risk.category!) : "-"}</p>
               </div>
               <div>
                 <Label className="text-slate-500">{t("Mitigation Status")}</Label>
-                <p className="font-medium">{risk.mitigationStatus ? t(risk.mitigationStatus) : "-"}</p>
+                <p className="font-medium">{(tRisk?.mitigationStatus || risk.mitigationStatus) ? t(tRisk?.mitigationStatus || risk.mitigationStatus!) : "-"}</p>
               </div>
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-slate-400" />
                 <div>
                   <Label className="text-slate-500">{t("Owner")}</Label>
-                  <p className="font-medium">{risk.owner || "-"}</p>
+                  <p className="font-medium">{tRisk?.owner || risk.owner || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-slate-400" />
                 <div>
                   <Label className="text-slate-500">{t("Department")}</Label>
-                  <p className="font-medium">{risk.department?.name || "-"}</p>
+                  <p className="font-medium">{tRisk?.department?.name || risk.department?.name || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -716,8 +722,8 @@ export default function RiskDetailPage() {
                 <div>
                   <Label className="text-slate-500">{t("Due Date")}</Label>
                   <p className="font-medium">
-                    {risk.dueDate
-                      ? new Date(risk.dueDate).toLocaleDateString()
+                    {(tRisk?.dueDate || risk.dueDate)
+                      ? new Date((tRisk?.dueDate || risk.dueDate)!).toLocaleDateString()
                       : "-"}
                   </p>
                 </div>
@@ -732,8 +738,8 @@ export default function RiskDetailPage() {
             <CardTitle>{t("Description")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {risk.description ? (
-              <p className="whitespace-pre-wrap">{risk.description}</p>
+            {(tRisk?.description || risk.description) ? (
+              <p className="whitespace-pre-wrap">{tRisk?.description || risk.description}</p>
             ) : (
               <p className="text-slate-500 italic">{t("No description provided")}</p>
             )}
@@ -772,7 +778,7 @@ export default function RiskDetailPage() {
                     <SelectValue placeholder={t("Select a control")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableControls
+                    {translatedControls
                       .filter(
                         (c) =>
                           !linkedControls.find((lc) => lc.control.id === c.id)

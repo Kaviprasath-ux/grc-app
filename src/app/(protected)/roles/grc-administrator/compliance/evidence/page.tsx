@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,7 @@ import {
 import Link from "next/link";
 import { isValidName } from "@/lib/validations";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Evidence {
   id: string;
@@ -170,6 +171,27 @@ export default function GRCAdminEvidencePage() {
   const [controls, setControls] = useState<Control[]>([]);
   const [controlDomains, setControlDomains] = useState<ControlDomain[]>([]);
   const [customerAccounts, setCustomerAccounts] = useState<CustomerAccount[]>([]);
+
+  // Dynamic translations for user-entered data
+  const { data: translatedEvidences } = useTranslatedData(evidences, { modelName: 'Evidence' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedControlDomains } = useTranslatedData(controlDomains, { modelName: 'ControlDomain' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+
+  // Lookup maps for translated nested data
+  const departmentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDepartments.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDepartments]);
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedUsers.forEach(u => map.set(u.id, u.fullName));
+    return map;
+  }, [translatedUsers]);
 
   // Create form
   const [createForm, setCreateForm] = useState({
@@ -295,7 +317,7 @@ export default function GRCAdminEvidencePage() {
   })();
 
   // Filtered controls for step 2
-  const filteredControls = controls.filter((c) => {
+  const filteredControls = translatedControls.filter((c) => {
     if (controlFilters.domainId && c.domain?.id !== controlFilters.domainId) return false;
     if (controlFilters.frameworkId && c.framework?.id !== controlFilters.frameworkId) return false;
     if (controlFilters.functionalGrouping && c.functionalGrouping !== controlFilters.functionalGrouping) return false;
@@ -331,6 +353,10 @@ export default function GRCAdminEvidencePage() {
       });
 
       if (response.ok) {
+        const savedEvidence = await response.json().catch(() => null);
+        if (savedEvidence?.id) {
+          triggerTranslation('Evidence', savedEvidence.id, { name: createForm.name, description: createForm.description });
+        }
         setCreateDialogOpen(false);
         resetCreateForm();
         fetchEvidences();
@@ -558,7 +584,7 @@ export default function GRCAdminEvidencePage() {
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                 <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-                {frameworks.map((f) => (
+                {translatedFrameworks.map((f) => (
                   <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -586,7 +612,7 @@ export default function GRCAdminEvidencePage() {
                   {t("Loading...")}
                 </TableCell>
               </TableRow>
-            ) : evidences.length === 0 ? (
+            ) : translatedEvidences.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="py-0">
                   <div className="py-16 text-center">
@@ -603,7 +629,7 @@ export default function GRCAdminEvidencePage() {
                 </TableCell>
               </TableRow>
             ) : (
-              evidences.map((evidence) => (
+              translatedEvidences.map((evidence) => (
                 <TableRow
                   key={evidence.id}
                   className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors"
@@ -622,8 +648,8 @@ export default function GRCAdminEvidencePage() {
                       {t(evidence.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-3.5 text-sm text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
-                  <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{evidence.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3.5 text-sm text-slate-600">{(evidence.assignee?.id ? userNameMap.get(evidence.assignee.id) : null) || evidence.assignee?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3.5 pe-5 text-sm text-slate-600">{(evidence.department?.id ? departmentNameMap.get(evidence.department.id) : null) || evidence.department?.name || "-"}</TableCell>
                 </TableRow>
               ))
             )}
@@ -839,7 +865,7 @@ export default function GRCAdminEvidencePage() {
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">{t("All Domains")}</SelectItem>
-                      {controlDomains.map((d) => (
+                      {translatedControlDomains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -945,7 +971,7 @@ export default function GRCAdminEvidencePage() {
                     <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Controls")}:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedControlIds.map((id) => {
-                        const control = controls.find((c) => c.id === id);
+                        const control = translatedControls.find((c) => c.id === id);
                         return control ? (
                           <Badge key={id} variant="outline">
                             {control.controlCode}

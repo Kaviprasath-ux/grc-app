@@ -20,6 +20,7 @@ import {
 import { ChevronDown, ChevronRight, Link2, Unlink, Home } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface LinkedControl {
   id: string;
@@ -79,6 +80,9 @@ export default function RiskComplianceMatrixPage() {
   const [loading, setLoading] = useState(true);
   const [expandedRisks, setExpandedRisks] = useState<Set<string>>(new Set());
   const [expandedControls, setExpandedControls] = useState<Set<string>>(new Set());
+
+  const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'Risk' });
+
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const pageSize = 10;
@@ -190,14 +194,14 @@ export default function RiskComplianceMatrixPage() {
 
       {/* Risk Accordion List */}
       <div className="space-y-3">
-        {risks.length === 0 ? (
+        {translatedRisks.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-gray-500">{t("riskComplianceMatrix.noRisksFound")}</p>
             </CardContent>
           </Card>
         ) : (
-          risks.map((risk) => (
+          translatedRisks.map((risk) => (
             <Card key={risk.id} className="overflow-hidden">
               {/* Risk Header - Collapsible Trigger */}
               <Collapsible

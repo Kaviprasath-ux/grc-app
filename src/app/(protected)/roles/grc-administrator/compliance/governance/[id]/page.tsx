@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -62,6 +62,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Policy {
   id: string;
@@ -265,6 +266,26 @@ export default function GovernanceDetailPage() {
   const [availableControls, setAvailableControls] = useState<Control[]>([]);
   const [selectedControlId, setSelectedControlId] = useState("");
 
+  // Dynamic translation hooks
+  const { data: translatedPolicy } = useTranslatedRecord(policy, { modelName: 'Policy' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedControls } = useTranslatedData(availableControls, { modelName: 'Control' });
+
+  // Lookup maps for translated nested data
+  const departmentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedDepartments.forEach(d => map.set(d.id, d.name));
+    return map;
+  }, [translatedDepartments]);
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    translatedUsers.forEach(u => map.set(u.id, u.fullName));
+    return map;
+  }, [translatedUsers]);
+
   const fetchPolicy = useCallback(async () => {
     try {
       const response = await fetch(`/api/policies/${id}`);
@@ -357,6 +378,7 @@ export default function GovernanceDetailPage() {
       });
 
       if (response.ok) {
+        triggerTranslation('Policy', id, { name: editForm.name, description: editForm.description });
         setEditDialogOpen(false);
         fetchPolicy();
       }
@@ -881,7 +903,7 @@ export default function GovernanceDetailPage() {
                       <SelectValue placeholder={t("Select framework")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {frameworks.map((f) => (
+                      {translatedFrameworks.map((f) => (
                         <SelectItem key={f.id} value={f.id}>
                           {f.name}
                         </SelectItem>
@@ -901,7 +923,7 @@ export default function GovernanceDetailPage() {
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments.map((d) => (
+                      {translatedDepartments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.name}
                         </SelectItem>
@@ -964,7 +986,7 @@ export default function GovernanceDetailPage() {
       {/* Policy Name and Status */}
       <div>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl sm:text-2xl font-bold">{policy.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{translatedPolicy?.name || policy.name}</h1>
           <Badge className={statusColors[policy.status] || "bg-slate-100"}>
             {policy.status}
           </Badge>
@@ -1036,13 +1058,13 @@ export default function GovernanceDetailPage() {
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="font-medium mt-1">{policy.department?.name || "-"}</p>
+                <p className="font-medium mt-1">{(policy.department?.id ? departmentNameMap.get(policy.department.id) : null) || policy.department?.name || "-"}</p>
               )}
             </div>
 
@@ -1050,7 +1072,7 @@ export default function GovernanceDetailPage() {
             <div>
               <Label className="text-muted-foreground text-sm">{t("Assigned To")}</Label>
               <div className="flex items-center gap-2 mt-1">
-                <span className="font-medium">{policy.assignee?.fullName || "-"}</span>
+                <span className="font-medium">{(policy.assignee?.id ? userNameMap.get(policy.assignee.id) : null) || policy.assignee?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
                   <Dialog open={assigneeDialogOpen} onOpenChange={setAssigneeDialogOpen}>
                     <DialogTrigger asChild>
@@ -1069,7 +1091,7 @@ export default function GovernanceDetailPage() {
                             <SelectValue placeholder={t("Select assignee")} />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((u) => (
+                            {translatedUsers.map((u) => (
                               <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1091,7 +1113,7 @@ export default function GovernanceDetailPage() {
             <div>
               <Label className="text-muted-foreground text-sm">{t("Approvers")}</Label>
               <div className="flex items-center gap-2 mt-1">
-                <span className="font-medium">{policy.approver?.fullName || "-"}</span>
+                <span className="font-medium">{(policy.approver?.id ? userNameMap.get(policy.approver.id) : null) || policy.approver?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
                   <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
                     <DialogTrigger asChild>
@@ -1110,7 +1132,7 @@ export default function GovernanceDetailPage() {
                             <SelectValue placeholder={t("Select approver")} />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((u) => (
+                            {translatedUsers.map((u) => (
                               <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1183,7 +1205,7 @@ export default function GovernanceDetailPage() {
           {policy.description && (
             <div className="mt-6">
               <Label className="text-muted-foreground text-sm">{t("Description")}</Label>
-              <p className="mt-1">{policy.description}</p>
+              <p className="mt-1">{translatedPolicy?.description || policy.description}</p>
             </div>
           )}
         </CardContent>
@@ -1321,15 +1343,15 @@ export default function GovernanceDetailPage() {
                   <Label className="text-muted-foreground text-sm">{t("Approved By")}</Label>
                   {policy.approver ? (
                     <div className="mt-1 p-3 bg-muted rounded-lg space-y-1">
-                      <p className="font-medium">{policy.approver.fullName}</p>
+                      <p className="font-medium">{(policy.approver.id ? userNameMap.get(policy.approver.id) : null) || policy.approver.fullName}</p>
                       {(() => {
                         // Find the approver in users array to get full details
-                        const approverUser = users.find(u => u.id === policy.approverId);
+                        const approverUser = translatedUsers.find(u => u.id === policy.approverId);
                         return (
                           <>
                             {approverUser?.department && (
                               <p className="text-sm text-muted-foreground">
-                                {t("Department")}: {approverUser.department.name}
+                                {t("Department")}: {(approverUser.department.id ? departmentNameMap.get(approverUser.department.id) : null) || approverUser.department.name}
                               </p>
                             )}
                             {approverUser?.designation && (
@@ -1632,7 +1654,7 @@ export default function GovernanceDetailPage() {
                         <SelectValue placeholder={t("Select a control")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableControls
+                        {translatedControls
                           .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
                           .map((control) => (
                             <SelectItem key={control.id} value={control.id}>

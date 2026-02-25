@@ -58,6 +58,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
 interface ControlDomain {
@@ -167,6 +168,15 @@ export default function ControlsMasterDataPage() {
     ? users.filter((u) => u.departmentId === formData.departmentId)
     : users;
 
+  // Dynamic translation hooks for display
+  const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'ControlDomain' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const translatedFilteredUsers = formData.departmentId
+    ? translatedUsers.filter((u: User) => u.departmentId === formData.departmentId)
+    : translatedUsers;
+
   const fetchControls = useCallback(async () => {
     try {
       const params = new URLSearchParams({
@@ -260,6 +270,12 @@ export default function ControlsMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('Control', savedData.id, {
+          name: savedData.name,
+          description: savedData.description,
+          controlQuestion: savedData.controlQuestion,
+        });
         setCreateDialogOpen(false);
         setWizardStep(1);
         resetForm();
@@ -302,6 +318,12 @@ export default function ControlsMasterDataPage() {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+        triggerTranslation('Control', savedData.id, {
+          name: savedData.name,
+          description: savedData.description,
+          controlQuestion: savedData.controlQuestion,
+        });
         setEditDialogOpen(false);
         setSelectedControl(null);
         resetForm();
@@ -509,6 +531,12 @@ export default function ControlsMasterDataPage() {
             });
 
             if (response.ok) {
+              const savedData = await response.json();
+              triggerTranslation('Control', savedData.id, {
+                name: savedData.name,
+                description: savedData.description,
+                controlQuestion: savedData.controlQuestion,
+              });
               successCount++;
             } else {
               errorCount++;
@@ -686,7 +714,7 @@ export default function ControlsMasterDataPage() {
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           <SelectItem value="none">{t("Select domain")}</SelectItem>
-                          {domains.map((d) => (
+                          {translatedDomains.map((d) => (
                             <SelectItem key={d.id} value={d.id}>
                               {d.name}
                             </SelectItem>
@@ -813,7 +841,7 @@ export default function ControlsMasterDataPage() {
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           <SelectItem value="none">{t("Select department")}</SelectItem>
-                          {departments.map((d) => (
+                          {translatedDepartments.map((d) => (
                             <SelectItem key={d.id} value={d.id}>
                               {d.name}
                             </SelectItem>
@@ -845,7 +873,7 @@ export default function ControlsMasterDataPage() {
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           <SelectItem value="none">{t("Select assignee")}</SelectItem>
-                          {filteredUsers.map((u) => (
+                          {translatedFilteredUsers.map((u: User) => (
                             <SelectItem key={u.id} value={u.id}>
                               {u.fullName}
                             </SelectItem>
@@ -900,7 +928,7 @@ export default function ControlsMasterDataPage() {
                           {t("Control Domain")}
                         </p>
                         <p className="text-sm text-slate-800">
-                          {domains.find((d) => d.id === formData.domainId)?.name ||
+                          {translatedDomains.find((d) => d.id === formData.domainId)?.name ||
                             "-"}
                         </p>
                       </div>
@@ -919,7 +947,7 @@ export default function ControlsMasterDataPage() {
                           {t("Department")}
                         </p>
                         <p className="text-sm text-slate-800">
-                          {departments.find((d) => d.id === formData.departmentId)
+                          {translatedDepartments.find((d) => d.id === formData.departmentId)
                             ?.name || "-"}
                         </p>
                       </div>
@@ -928,7 +956,7 @@ export default function ControlsMasterDataPage() {
                           {t("Assignee")}
                         </p>
                         <p className="text-sm text-slate-800">
-                          {users.find((u) => u.id === formData.assigneeId)
+                          {translatedUsers.find((u: User) => u.id === formData.assigneeId)
                             ?.fullName || "-"}
                         </p>
                       </div>
@@ -1020,7 +1048,7 @@ export default function ControlsMasterDataPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {controls.length === 0 ? (
+            {translatedControls.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="py-0">
                   <div className="py-16 text-center">
@@ -1037,13 +1065,13 @@ export default function ControlsMasterDataPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              controls.map((control) => (
+              translatedControls.map((control) => (
                 <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                   <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4 max-w-[200px] truncate">
                     {control.name}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
-                    {control.domain?.name || "-"}
+                    {(control.domain?.id ? translatedDomains.find(d => d.id === control.domain?.id)?.name : null) || control.domain?.name || "-"}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">
                     {control.controlCode}
@@ -1186,7 +1214,7 @@ export default function ControlsMasterDataPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">{t("None")}</SelectItem>
-                    {domains.map((d) => (
+                    {translatedDomains.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
                       </SelectItem>
@@ -1309,7 +1337,7 @@ export default function ControlsMasterDataPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">{t("None")}</SelectItem>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
                       </SelectItem>
@@ -1335,7 +1363,7 @@ export default function ControlsMasterDataPage() {
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">{t("None")}</SelectItem>
-                    {filteredUsers.map((u) => (
+                    {translatedFilteredUsers.map((u: User) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.fullName}
                       </SelectItem>
