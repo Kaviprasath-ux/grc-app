@@ -290,6 +290,15 @@ The app also translates **user-entered data** (risk names, control descriptions,
 - **Translation config**: `src/lib/translation-config.ts` — Registry of all translatable models and fields
 - **DB storage**: `DynamicTranslation` table stores translations per record/field/locale
 
+**IMPORTANT: Translations Only on Create/Edit**
+
+Translations are **NOT** triggered automatically when viewing pages. They are **only** triggered when a record is explicitly created or edited:
+- **Server-side**: API route handlers call `translateRecord()` after create/update operations
+- **Client-side**: Frontend forms call `triggerTranslation()` after successful API responses
+- **Bulk endpoint** (`/api/translations/bulk`): Only reads existing translations from the DB — does NOT auto-translate missing records
+
+**DO NOT** add background auto-translate logic to the bulk endpoint or `useTranslatedData` hook. If a record has no translations, it simply displays the original text until the record is edited.
+
 **IMPORTANT: Multi-Language Data Entry Support**
 
 Users can create/edit records in ANY language (not just English). The system:
@@ -306,23 +315,30 @@ Users can create/edit records in ANY language (not just English). The system:
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 ```
 
-2. **Add translation hook for list data:**
+2. **Add translation hook for list data (read-only, fetches existing translations):**
 ```typescript
 const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'Risk' });
 // Use translatedRisks instead of risks for display
 ```
 
-3. **Add triggerTranslation after create/edit:**
+3. **Add triggerTranslation after create/edit (this is the ONLY place translations are triggered):**
 ```typescript
 // After successful API response
 triggerTranslation('Risk', savedRisk.id, { name: savedRisk.name, description: savedRisk.description });
 ```
 
-4. **Register new models** in `src/lib/translation-config.ts` if not already listed.
+4. **Add translateRecord in API route handlers (server-side trigger on create/edit):**
+```typescript
+// In POST/PUT API handlers, after successful DB write
+if (customerAccountId) void translateRecord(customerAccountId, 'Risk', risk.id, { name: risk.name, description: risk.description });
+```
+
+5. **Register new models** in `src/lib/translation-config.ts` if not already listed.
 
 **Key Rules:**
 - `triggerTranslation()` auto-reads the current locale from `localStorage` — no need to pass it manually
 - The Python backend API auto-detects source language and translates accordingly
+- `useTranslatedData` only fetches existing translations — it never triggers new ones
 - For lookup helpers (e.g., showing translated names in dropdowns), use the `useCallback` pattern:
 ```typescript
 const tCat = useCallback((id: string) => translatedCategories.find(c => c.id === id)?.name, [translatedCategories]);
