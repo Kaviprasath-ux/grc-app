@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // Design system aligned colors
 const ROOT_COLOR = "#4F46E5"; // primary-600 - indigo for root node
@@ -42,9 +43,10 @@ interface TreeNode extends UserNode {
 }
 
 // Single org chart node with design system colors
-function OrgChartNode({ node, isRoot = false, showDepartment = true, mirrored = false }: { node: TreeNode; isRoot?: boolean; showDepartment?: boolean; mirrored?: boolean }) {
+function OrgChartNode({ node, isRoot = false, showDepartment = true, mirrored = false, tDeptName }: { node: TreeNode; isRoot?: boolean; showDepartment?: boolean; mirrored?: boolean; tDeptName?: (id: string | null | undefined) => string | undefined }) {
   const roleName = node.userRoles?.[0]?.role?.name || node.role;
   const headerColor = isRoot ? ROOT_COLOR : NODE_COLOR;
+  const deptDisplayName = tDeptName?.(node.departmentId || node.department?.id) || node.department?.name;
 
   return (
     <div className="flex flex-col items-center" style={mirrored ? { transform: 'scaleX(-1)' } : undefined}>
@@ -83,9 +85,9 @@ function OrgChartNode({ node, isRoot = false, showDepartment = true, mirrored = 
           )}>
             {node.fullName}
           </p>
-          {showDepartment && node.department?.name && (
+          {showDepartment && deptDisplayName && (
             <p className="text-xs text-slate-500 truncate mt-0.5">
-              {node.department.name}
+              {deptDisplayName}
             </p>
           )}
         </div>
@@ -109,7 +111,7 @@ function getSubtreeWidth(node: TreeNode): number {
 }
 
 // Recursive tree rendering with proper connected lines
-function OrgChartTree({ nodes, level = 0, showDepartment = true, mirrored = false }: { nodes: TreeNode[]; level?: number; showDepartment?: boolean; mirrored?: boolean }) {
+function OrgChartTree({ nodes, level = 0, showDepartment = true, mirrored = false, tDeptName }: { nodes: TreeNode[]; level?: number; showDepartment?: boolean; mirrored?: boolean; tDeptName?: (id: string | null | undefined) => string | undefined }) {
   if (nodes.length === 0) return null;
 
   return (
@@ -134,7 +136,7 @@ function OrgChartTree({ nodes, level = 0, showDepartment = true, mirrored = fals
 
           return (
             <div key={node.id} className="flex flex-col items-center">
-              <OrgChartNode node={node} isRoot={level === 0} showDepartment={showDepartment} mirrored={mirrored} />
+              <OrgChartNode node={node} isRoot={level === 0} showDepartment={showDepartment} mirrored={mirrored} tDeptName={tDeptName} />
 
               {/* Connector lines to children */}
               {childCount > 0 && (
@@ -197,7 +199,7 @@ function OrgChartTree({ nodes, level = 0, showDepartment = true, mirrored = fals
                         className="flex flex-col items-center"
                         style={{ width: `${childWidths[idx]}px` }}
                       >
-                        <OrgChartTree nodes={[child]} level={level + 1} showDepartment={showDepartment} mirrored={mirrored} />
+                        <OrgChartTree nodes={[child]} level={level + 1} showDepartment={showDepartment} mirrored={mirrored} tDeptName={tDeptName} />
                       </div>
                     ))}
                   </div>
@@ -220,6 +222,22 @@ export function OrgChart() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("role");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("");
+
+  // Translate users and departments
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+
+  // Build a map of translated users keyed by id for fast lookup
+  const translatedUserMap = useMemo(() => {
+    const map = new Map<string, UserNode>();
+    translatedUsers.forEach(u => map.set(u.id, u));
+    return map;
+  }, [translatedUsers]);
+
+  const tDeptName = useCallback((id: string | null | undefined) => {
+    if (!id) return undefined;
+    return translatedDepartments.find(d => d.id === id)?.name;
+  }, [translatedDepartments]);
 
   useEffect(() => {
     fetchData();
@@ -442,18 +460,18 @@ export function OrgChart() {
     const departmentNode: TreeNode = {
       id: `dept-${departmentId}`,
       fullName: deptName,
-      designation: "Department",
+      designation: t("Department"),
       role: "",
       children: topRoots,
     };
 
     return [departmentNode];
-  }, []);
+  }, [t]);
 
-  const roleTree = buildTree(users);
-  const selectedDepartment = departments.find(d => d.id === selectedDepartmentId);
+  const roleTree = buildTree(translatedUsers);
+  const selectedDepartment = translatedDepartments.find(d => d.id === selectedDepartmentId);
   const departmentTree = viewMode === "department" && selectedDepartmentId && selectedDepartment
-    ? buildDepartmentTree(users, selectedDepartmentId, selectedDepartment.name)
+    ? buildDepartmentTree(translatedUsers, selectedDepartmentId, selectedDepartment.name)
     : [];
   const tree = viewMode === "role" ? roleTree : departmentTree;
 
@@ -500,7 +518,7 @@ export function OrgChart() {
                 <SelectValue placeholder={t("Select department")} />
               </SelectTrigger>
               <SelectContent>
-                {departments.map((dept) => (
+                {translatedDepartments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -525,7 +543,7 @@ export function OrgChart() {
       ) : (
         <div className="overflow-x-auto" style={isRTL ? { direction: 'rtl' } : undefined}>
           <div className="min-w-max px-6 py-6" style={isRTL ? { transform: 'scaleX(-1)' } : undefined}>
-            <OrgChartTree nodes={tree} showDepartment={viewMode === "role"} mirrored={isRTL} />
+            <OrgChartTree nodes={tree} showDepartment={viewMode === "role"} mirrored={isRTL} tDeptName={tDeptName} />
           </div>
         </div>
       )}
