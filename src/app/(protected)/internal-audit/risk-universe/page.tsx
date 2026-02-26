@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -12,6 +12,7 @@ import { ChevronRight, Home, Building2, ShieldAlert, AlertTriangle, BarChart3 } 
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface RiskItem {
   id: string;
@@ -71,8 +72,23 @@ export default function RiskUniversePage() {
     }
   };
 
+  // Dynamic data translation — flatten nested structures for translation hooks
+  const deptsArray = data?.departments || [];
+  const { data: translatedDepts } = useTranslatedData(deptsArray, { modelName: 'Department' });
+  const flatRisks = useMemo(() => deptsArray.flatMap(d => d.risks), [deptsArray]);
+  const { data: translatedRisks } = useTranslatedData(flatRisks, { modelName: 'InternalAuditRisk' });
+
+  // Reconstruct nested structure with translated data
+  const translatedDepartments = useMemo(() => {
+    const riskMap = new Map(translatedRisks.map(r => [r.id, r]));
+    return translatedDepts.map(dept => ({
+      ...dept,
+      risks: dept.risks.map(r => riskMap.get(r.id) || r),
+    }));
+  }, [translatedDepts, translatedRisks]);
+
   // Compute summary stats
-  const allRisks = data?.departments.flatMap(d => d.risks) || [];
+  const allRisks = translatedDepartments.flatMap(d => d.risks);
   const extremeCount = allRisks.filter(r => r.riskLevel === "Extreme").length;
   const highCount = allRisks.filter(r => r.riskLevel === "High").length;
   const mediumCount = allRisks.filter(r => r.riskLevel === "Medium").length;
@@ -230,17 +246,17 @@ export default function RiskUniversePage() {
             {/* Scrollable container */}
             <div className="overflow-x-auto pb-4">
               {/* Horizontal line connecting departments */}
-              {data?.departments && data.departments.length > 0 && (
+              {translatedDepartments.length > 0 && (
                 <div className="flex mb-4">
-                  <div className="h-0.5 bg-slate-200 flex-1" style={{ minWidth: `${data.departments.length * 160}px` }}></div>
+                  <div className="h-0.5 bg-slate-200 flex-1" style={{ minWidth: `${translatedDepartments.length * 160}px` }}></div>
                 </div>
               )}
 
               {/* Department branches */}
               <TooltipProvider>
                 <div className="flex gap-6" style={{ minWidth: 'max-content' }}>
-                  {data?.departments && data.departments.length > 0 ? (
-                    data.departments.map((dept) => (
+                  {translatedDepartments.length > 0 ? (
+                    translatedDepartments.map((dept) => (
                       <div key={dept.id} className="flex flex-col items-center flex-shrink-0">
                         {/* Vertical line to department */}
                         <div className="w-0.5 h-4 bg-slate-200"></div>
@@ -315,7 +331,7 @@ export default function RiskUniversePage() {
             </div>
 
             {/* Empty state */}
-            {(!data?.departments || data.departments.length === 0) && (
+            {translatedDepartments.length === 0 && (
               <div className="text-center py-16">
                 <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
                   <ShieldAlert className="h-7 w-7 text-slate-300" />

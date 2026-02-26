@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import {
   AlertTriangle,
   CheckCircle,
@@ -215,6 +216,9 @@ export default function InternalAuditDashboard() {
   const canDrillDown =
     session?.user?.roles?.includes("AuditHead") ||
     session?.user?.roles?.includes("AuditManager");
+
+  // Dynamic data translation for audit plan entries
+  const { data: translatedAuditPlan } = useTranslatedData(data?.annualAuditPlan || [], { modelName: 'AuditEngagement' });
 
   useEffect(() => {
     fetchDashboard();
@@ -1012,8 +1016,8 @@ export default function InternalAuditDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.annualAuditPlan && data.annualAuditPlan.length > 0 ? (
-                  data.annualAuditPlan.map((audit) => (
+                {translatedAuditPlan.length > 0 ? (
+                  translatedAuditPlan.map((audit) => (
                     <TableRow
                       key={audit.id}
                       className={`border-b border-slate-100 last:border-0 ${canDrillDown ? "cursor-pointer hover:bg-slate-50/50" : ""}`}

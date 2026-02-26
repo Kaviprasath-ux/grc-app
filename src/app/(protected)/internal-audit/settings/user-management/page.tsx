@@ -402,7 +402,7 @@ export default function UserManagementPage() {
         const savedItem = await response.json().catch(() => null);
         const recordId = editItem ? editItem.id : savedItem?.id;
         if (recordId) {
-          triggerTranslation('User', recordId, { fullName: body.fullName });
+          triggerTranslation('User', recordId, { fullName: body.fullName, firstName: body.firstName, lastName: body.lastName, designation: body.designation });
         }
         setDialogOpen(false);
         fetchData();

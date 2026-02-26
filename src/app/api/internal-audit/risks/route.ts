@@ -93,24 +93,70 @@ export const POST = withAuth(
       }
       const riskId = `RID${String(maxRiskNumber + 1).padStart(3, "0")}`;
 
-      // Calculate scores if not provided
+      // Fetch scoring config for this tenant
+      const scoringConfig = await prisma.auditScoringConfig.findFirst({
+        where: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
+      });
+      const piCalcType = scoringConfig?.probabilityImpactCalcType || "Product of all";
+      const rrCalcType = scoringConfig?.riskRatingCalcType || "Product of all";
+
+      // Calculate inherent score based on configured method
       let inherentScore = body.inherentScore;
       if (body.inherentLikelihood && body.inherentImpact && !inherentScore) {
-        inherentScore = body.inherentLikelihood * body.inherentImpact;
+        const likelihood = parseInt(body.inherentLikelihood);
+        const impact = parseInt(body.inherentImpact);
+        if (piCalcType === "Addition of all") {
+          inherentScore = likelihood + impact;
+        } else if (piCalcType === "High of all") {
+          inherentScore = Math.max(likelihood, impact);
+        } else {
+          inherentScore = likelihood * impact;
+        }
       }
 
+      // Calculate residual score based on configured method
       let residualScore = body.residualScore;
       if (body.residualLikelihood && body.residualImpact && !residualScore) {
-        residualScore = body.residualLikelihood * body.residualImpact;
+        const likelihood = parseInt(body.residualLikelihood);
+        const impact = parseInt(body.residualImpact);
+        if (piCalcType === "Addition of all") {
+          residualScore = likelihood + impact;
+        } else if (piCalcType === "High of all") {
+          residualScore = Math.max(likelihood, impact);
+        } else {
+          residualScore = likelihood * impact;
+        }
       }
 
-      // Determine risk level based on residual score
+      // Determine risk level using configured scoring ranges
       let riskLevel = "Low";
       if (residualScore) {
-        if (residualScore >= 250) riskLevel = "Extreme";
-        else if (residualScore >= 100) riskLevel = "High";
-        else if (residualScore >= 50) riskLevel = "Medium";
-        else riskLevel = "Low";
+        const scoringRanges = await prisma.auditScoringRange.findMany({
+          where: {
+            ...tenantFilter,
+            ...(auditHeadId ? { auditHeadId } : {}),
+            calculationType: rrCalcType,
+          },
+          orderBy: { lowValue: "desc" },
+        });
+
+        if (scoringRanges.length > 0) {
+          for (const range of scoringRanges) {
+            if (residualScore >= range.lowValue && (range.highValue === null || residualScore <= range.highValue)) {
+              riskLevel = range.label;
+              break;
+            }
+          }
+        } else {
+          // Fallback to default thresholds if no ranges configured
+          if (residualScore >= 250) riskLevel = "Extreme";
+          else if (residualScore >= 100) riskLevel = "High";
+          else if (residualScore >= 50) riskLevel = "Medium";
+          else riskLevel = "Low";
+        }
       }
 
       const risk = await prisma.internalAuditRisk.create({

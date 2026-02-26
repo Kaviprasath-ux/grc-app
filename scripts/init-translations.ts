@@ -2461,7 +2461,6 @@ const translations: [string, string, string][] = [
   ['Jan–Dec', 'يناير–ديسمبر', 'Jan–Dec'],
 
   // Evidence Detail Page - Other
-  ['Organization Wide', 'على مستوى المنظمة', 'Organizācijas mērogā'],
   ['No attachments for', 'لا توجد مرفقات لـ', 'Nav pielikumu par'],
   ['No attachments', 'لا توجد مرفقات', 'Nav pielikumu'],
 

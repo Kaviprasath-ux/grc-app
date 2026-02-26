@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import {
   Dialog,
   DialogContent,
@@ -69,6 +70,9 @@ export default function AIRecommendedRisksPage() {
   const [planResult, setPlanResult] = useState<FieldworkAuditPlanResponse | null>(null);
   const [addingToPlanning, setAddingToPlanning] = useState<number | null>(null);
   const [currentDepartmentId, setCurrentDepartmentId] = useState<string | null>(null);
+
+  // Dynamic data translation
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
 
   useEffect(() => {
     fetchDepartments();
@@ -214,7 +218,7 @@ export default function AIRecommendedRisksPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {departments.map((dept) => (
+        {translatedDepartments.map((dept) => (
           <Card key={dept.id}>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">

@@ -17,6 +17,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -59,6 +60,9 @@ export default function RiskIdentificationPage() {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+
+  // Dynamic data translation
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
 
   // Track which risks have been added to register (key: "searchId-riskIndex")
   const [addedRisks, setAddedRisks] = useState<Set<string>>(new Set());
@@ -170,7 +174,7 @@ export default function RiskIdentificationPage() {
         return;
       }
 
-      const deptName = departments.find((d) => d.id === selectedDepartment)?.name ?? "Unknown";
+      const deptName = translatedDepartments.find((d) => d.id === selectedDepartment)?.name ?? "Unknown";
       const generatedRisks = (data.generated_risks ?? []) as GeneratedRisk[];
       const total_risks = typeof data.total_risks === "number" ? data.total_risks : generatedRisks.length;
       const query = `${deptName}${auditFocus.trim() ? ` - ${auditFocus.trim()}` : ""}`;
@@ -272,6 +276,11 @@ export default function RiskIdentificationPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to add risk to register");
+      }
+
+      const savedRisk = await response.json().catch(() => null);
+      if (savedRisk?.id) {
+        triggerTranslation('InternalAuditRisk', savedRisk.id, { riskName: savedRisk.riskName, riskDescription: savedRisk.riskDescription });
       }
 
       // Mark as added
@@ -386,7 +395,7 @@ export default function RiskIdentificationPage() {
                   <SelectValue placeholder={t("Select department...")} />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  {departments.map((dept) => (
+                  {translatedDepartments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
                     </SelectItem>

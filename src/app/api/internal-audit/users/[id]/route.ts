@@ -239,7 +239,7 @@ export const PUT = withAuth(
       });
 
       // Trigger translation for the updated user
-      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'User', user.id, { fullName: user.fullName });
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'User', user.id, { fullName: user.fullName, firstName: user.firstName, lastName: user.lastName, designation: user.designation });
 
       const { password: _, ...safeUser } = user;
       return NextResponse.json({

@@ -292,7 +292,7 @@ export const POST = withAuth(
       });
 
       // Trigger translation for the new user
-      if (customerAccountId) void translateRecord(customerAccountId, 'User', user.id, { fullName: user.fullName });
+      if (customerAccountId) void translateRecord(customerAccountId, 'User', user.id, { fullName: user.fullName, firstName: user.firstName, lastName: user.lastName, designation: user.designation });
 
       // Remove password from response
       const { password: _, ...safeUser } = user;

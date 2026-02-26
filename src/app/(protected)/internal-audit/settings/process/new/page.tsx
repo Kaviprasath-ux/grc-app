@@ -27,6 +27,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Department {
   id: string;
@@ -96,6 +97,15 @@ export default function NewProcessPage() {
   const [frequencyError, setFrequencyError] = useState("");
   const [natureError, setNatureError] = useState("");
   const [locationError, setLocationError] = useState("");
+
+  // Dynamic data translation
+  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
+  const { data: translatedFrequencies } = useTranslatedData(processFrequencies, { modelName: 'ProcessFrequency' });
+  const { data: translatedNatures } = useTranslatedData(natureOfImplementations, { modelName: 'NatureOfImplementation' });
+  const { data: translatedLocations } = useTranslatedData(locations, { modelName: 'OrganizationLocation' });
+  const { data: translatedAssets } = useTranslatedData(assets, { modelName: 'Asset' });
+  const { data: translatedStakeholders } = useTranslatedData(stakeholders, { modelName: 'Stakeholder' });
 
   const TOTAL_STEPS = 3;
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -244,6 +254,10 @@ export default function NewProcessPage() {
       });
 
       if (response.ok) {
+        const saved = await response.json().catch(() => null);
+        if (saved?.id) {
+          triggerTranslation('Process', saved.id, { name: saved.name, description: saved.description });
+        }
         toast({ title: t("Success"), description: t("Process created successfully!") });
         router.push("/internal-audit/settings/process");
       } else {
@@ -274,6 +288,7 @@ export default function NewProcessPage() {
 
       if (response.ok) {
         const created = await response.json();
+        triggerTranslation('ProcessFrequency', created.id, { name: created.name });
         setProcessFrequencies(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
         setFormData(prev => ({ ...prev, processFrequency: created.name }));
         setShowFrequencyDialog(false);
@@ -307,6 +322,7 @@ export default function NewProcessPage() {
 
       if (response.ok) {
         const created = await response.json();
+        triggerTranslation('NatureOfImplementation', created.id, { name: created.name });
         setNatureOfImplementations(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
         setFormData(prev => ({ ...prev, natureOfImplementation: created.name }));
         setShowNatureDialog(false);
@@ -340,6 +356,7 @@ export default function NewProcessPage() {
 
       if (response.ok) {
         const created = await response.json();
+        triggerTranslation('OrganizationLocation', created.id, { name: created.name });
         setLocations(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
         setFormData(prev => ({ ...prev, location: created.name }));
         setShowLocationDialog(false);
@@ -459,7 +476,7 @@ export default function NewProcessPage() {
                       <SelectValue placeholder={t("Select Department")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments.map((dept) => (
+                      {translatedDepartments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
                         </SelectItem>
@@ -477,7 +494,7 @@ export default function NewProcessPage() {
                       <SelectValue placeholder={t("Select Owner")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((user) => (
+                      {translatedUsers.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.fullName}
                         </SelectItem>
@@ -500,7 +517,7 @@ export default function NewProcessPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {processFrequencies.map((f) => (
+                        {translatedFrequencies.map((f) => (
                           <SelectItem key={f.id} value={f.name}>
                             {f.name}
                           </SelectItem>
@@ -530,7 +547,7 @@ export default function NewProcessPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {natureOfImplementations.map((n) => (
+                        {translatedNatures.map((n) => (
                           <SelectItem key={n.id} value={n.name}>
                             {n.name}
                           </SelectItem>
@@ -562,7 +579,7 @@ export default function NewProcessPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {locations.map((loc) => (
+                      {translatedLocations.map((loc) => (
                         <SelectItem key={loc.id} value={loc.name}>
                           {loc.name}
                         </SelectItem>
@@ -607,7 +624,7 @@ export default function NewProcessPage() {
                           <SelectValue placeholder={t("Select Asset")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {assets.map((asset) => (
+                          {translatedAssets.map((asset) => (
                             <SelectItem key={asset.id} value={asset.id}>
                               {asset.name}
                             </SelectItem>
@@ -641,7 +658,7 @@ export default function NewProcessPage() {
                           <SelectValue placeholder={t("Select Stakeholder")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {stakeholders.map((stakeholder) => (
+                          {translatedStakeholders.map((stakeholder) => (
                             <SelectItem key={stakeholder.id} value={stakeholder.name}>
                               {stakeholder.name} {stakeholder.type && `(${stakeholder.type})`}
                             </SelectItem>

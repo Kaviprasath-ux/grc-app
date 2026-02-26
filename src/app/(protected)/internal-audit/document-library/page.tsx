@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface RecentSearch {
   id: string;
@@ -100,6 +101,11 @@ export default function DocumentLibraryPage() {
   const [regulationPage, setRegulationPage] = useState(1);
   const [reportPage, setReportPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Dynamic data translation hooks — must be before any early returns
+  const { data: translatedPolicies } = useTranslatedData(documents.policies, { modelName: 'InternalAuditDocument' });
+  const { data: translatedRegulations } = useTranslatedData(documents.regulations, { modelName: 'InternalAuditDocument' });
+  const { data: translatedAuditReports } = useTranslatedData(documents.auditReports, { modelName: 'InternalAuditDocument' });
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -300,6 +306,7 @@ export default function DocumentLibraryPage() {
 
         const doc = await response.json();
         uploadedDocIds.push(doc.id);
+        triggerTranslation('InternalAuditDocument', doc.id, { name: doc.name, fileName: doc.fileName });
       }
 
       toast.success(files.length > 1 ? t("Files uploaded successfully") : t("File uploaded successfully"));
@@ -740,7 +747,7 @@ export default function DocumentLibraryPage() {
             </div>
             <div className="p-4 sm:p-6">
               {renderUploadArea("Policy")}
-              {renderDocumentList(documents.policies, policyPage, setPolicyPage, "Policy")}
+              {renderDocumentList(translatedPolicies, policyPage, setPolicyPage, "Policy")}
             </div>
           </div>
         </TabsContent>
@@ -759,7 +766,7 @@ export default function DocumentLibraryPage() {
             <div className="p-4 sm:p-6">
               {renderUploadArea("Regulation")}
               {renderDocumentList(
-                documents.regulations,
+                translatedRegulations,
                 regulationPage,
                 setRegulationPage,
                 "Regulation"
@@ -782,7 +789,7 @@ export default function DocumentLibraryPage() {
             <div className="p-4 sm:p-6">
               {renderUploadArea("PreviousReport")}
               {renderDocumentList(
-                documents.auditReports,
+                translatedAuditReports,
                 reportPage,
                 setReportPage,
                 "PreviousReport"

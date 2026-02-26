@@ -82,6 +82,9 @@ export default function EditRiskPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
+  // Scoring config for calculation method
+  const [scoringConfig, setScoringConfig] = useState<{ probabilityImpactCalcType: string; riskRatingCalcType: string } | null>(null);
+
   // Reference data
   const [departments, setDepartments] = useState<Department[]>([]);
   const [categories, setCategories] = useState<AuditCategory[]>([]);
@@ -139,12 +142,13 @@ export default function EditRiskPage() {
 
   const fetchReferenceData = async () => {
     try {
-      const [deptRes, catRes, typeRes, probRes, impactRes] = await Promise.all([
+      const [deptRes, catRes, typeRes, probRes, impactRes, configRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/internal-audit/categories"),
         fetch("/api/internal-audit/audit-types"),
         fetch("/api/internal-audit/probability"),
         fetch("/api/internal-audit/impact"),
+        fetch("/api/internal-audit/scoring-config"),
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
@@ -152,6 +156,7 @@ export default function EditRiskPage() {
       if (typeRes.ok) setAuditTypes(await typeRes.json());
       if (probRes.ok) setProbabilities(await probRes.json());
       if (impactRes.ok) setImpacts(await impactRes.json());
+      if (configRes.ok) setScoringConfig(await configRes.json());
     } catch (error) {
       console.error("Failed to fetch reference data:", error);
     }
@@ -204,16 +209,22 @@ export default function EditRiskPage() {
     }
   };
 
+  const applyCalcMethod = (a: number, b: number, method: string) => {
+    if (method === "Addition of all") return a + b;
+    if (method === "High of all") return Math.max(a, b);
+    return a * b;
+  };
+
   const calculateInherentScore = () => {
     const likelihood = formData.inherentLikelihood ? parseInt(formData.inherentLikelihood) : 0;
     const impact = formData.inherentImpact ? parseInt(formData.inherentImpact) : 0;
-    return likelihood * impact;
+    return applyCalcMethod(likelihood, impact, scoringConfig?.probabilityImpactCalcType || "Product of all");
   };
 
   const calculateResidualScore = () => {
     const likelihood = formData.residualLikelihood ? parseInt(formData.residualLikelihood) : 0;
     const impact = formData.residualImpact ? parseInt(formData.residualImpact) : 0;
-    return likelihood * impact;
+    return applyCalcMethod(likelihood, impact, scoringConfig?.probabilityImpactCalcType || "Product of all");
   };
 
   // File upload handlers

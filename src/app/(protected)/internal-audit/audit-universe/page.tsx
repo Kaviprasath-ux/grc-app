@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +19,7 @@ import { Clock, CalendarDays, CheckCircle, AlertTriangle, PlayCircle, Home, Chev
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { FieldworkDetailModal } from "../fieldwork/FieldworkDetailModal";
 
 interface AuditItem {
@@ -51,6 +52,21 @@ export default function AuditUniversePage() {
   const [loading, setLoading] = useState(true);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedEngagementId, setSelectedEngagementId] = useState<string | null>(null);
+
+  // Dynamic data translation — flatten nested structures for translation hooks
+  const deptsArray = data?.departments || [];
+  const { data: translatedDepts } = useTranslatedData(deptsArray, { modelName: 'Department' });
+  const allAudits = useMemo(() => deptsArray.flatMap(d => d.audits), [deptsArray]);
+  const { data: translatedAudits } = useTranslatedData(allAudits, { modelName: 'AuditEngagement' });
+
+  // Reconstruct nested structure with translated data
+  const translatedDepartments = useMemo(() => {
+    const auditMap = new Map(translatedAudits.map(a => [a.id, a]));
+    return translatedDepts.map(dept => ({
+      ...dept,
+      audits: dept.audits.map(a => auditMap.get(a.id) || a),
+    }));
+  }, [translatedDepts, translatedAudits]);
 
   useEffect(() => {
     fetchAuditUniverse();
@@ -118,8 +134,8 @@ export default function AuditUniversePage() {
   };
 
   // Compute summary stats
-  const totalPlannedHours = data?.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0) || 0;
-  const totalActualHours = data?.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0) || 0;
+  const totalPlannedHours = translatedDepartments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0);
+  const totalActualHours = translatedDepartments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0);
   const totalVariance = totalActualHours - totalPlannedHours;
 
   if (loading) {
@@ -281,16 +297,16 @@ export default function AuditUniversePage() {
             {/* Scrollable container for horizontal line and departments */}
             <div className="overflow-x-auto pb-4">
               {/* Horizontal line connecting all departments */}
-              {data?.departments && data.departments.length > 0 && (
+              {translatedDepartments.length > 0 && (
                 <div className="flex mb-4">
-                  <div className="h-0.5 bg-slate-200 flex-1" style={{ minWidth: `${data.departments.length * 160}px` }}></div>
+                  <div className="h-0.5 bg-slate-200 flex-1" style={{ minWidth: `${translatedDepartments.length * 160}px` }}></div>
                 </div>
               )}
 
               {/* Department branches - single row */}
               <TooltipProvider>
                 <div className="flex gap-6" style={{ minWidth: 'max-content' }}>
-                  {data?.departments.map((dept) => (
+                  {translatedDepartments.map((dept) => (
                   <div key={dept.id} className="flex flex-col items-center flex-shrink-0">
                     {/* Vertical line to department */}
                     <div className="w-0.5 h-4 bg-slate-200"></div>
@@ -394,7 +410,7 @@ export default function AuditUniversePage() {
             </div>
 
             {/* Empty state */}
-            {(!data?.departments || data.departments.length === 0) && (
+            {translatedDepartments.length === 0 && (
               <div className="text-center py-16">
                 <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
                   <Building2 className="h-7 w-7 text-slate-300" />
@@ -408,7 +424,7 @@ export default function AuditUniversePage() {
       </div>
 
       {/* Hours Summary */}
-      {data?.departments && data.departments.length > 0 && (
+      {translatedDepartments.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Hours Summary by Department")}</h3>
@@ -425,7 +441,7 @@ export default function AuditUniversePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.departments.map((dept) => {
+              {translatedDepartments.map((dept) => {
                 const deptPlanned = dept.audits.reduce((sum, a) => sum + a.plannedHours, 0);
                 const deptActual = dept.audits.reduce((sum, a) => sum + a.actualHours, 0);
                 const variance = deptActual - deptPlanned;
@@ -466,7 +482,7 @@ export default function AuditUniversePage() {
                 </TableCell>
                 <TableCell className="text-right py-3">
                   <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 text-xs font-semibold text-primary-700">
-                    {data.totalAudits}
+                    {data?.totalAudits}
                   </span>
                 </TableCell>
                 <TableCell className="text-right py-3 text-sm font-semibold text-slate-800">
