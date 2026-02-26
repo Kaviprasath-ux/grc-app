@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, Home, X, CheckCircle2, AlertCircle, Settings2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2, ChevronRight, ChevronUp, ChevronDown, Home, X, CheckCircle2, AlertCircle, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { formatLocalDate } from "@/lib/utils";
@@ -47,6 +47,7 @@ import { useRiskSemanticMatch } from "@/hooks/useRiskSemanticMatch";
 import { DatePicker } from "@/components/ui/date-picker";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 interface Department {
   id: string;
@@ -2293,93 +2294,231 @@ export default function ProcessPage() {
                           : t("Review the AI-identified risks below. Remove any unwanted risks, then click 'Match with Library' to find duplicates.")}
                   </p>
                 </div>
-                <div className="space-y-4">
-                  {aiRisks.map((risk, idx) => (
-                    <div key={idx} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-white shadow-sm">
-                      <div className="flex justify-between items-start">
-                        <h5 className="font-semibold text-slate-900">{risk.name}</h5>
-                        <div className="flex items-center gap-2">
-                          <Badge className={
-                            (risk.riskRating || risk.risk_rating) === "High" ? "bg-error-light text-error-dark" :
-                              (risk.riskRating || risk.risk_rating) === "Medium" ? "bg-warning-light text-warning-dark" :
-                                "bg-success-light text-success-dark"
-                          }>
-                            {risk.riskRating || risk.risk_rating || "Medium"}
-                          </Badge>
-                          {/* Delete button - only show before semantic matching starts */}
-                          {!isSemanticLoading && !isSemanticPolling && !showMatchResults && !semanticMatchStats && !isSemanticRegistering && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => handleDeleteAiRisk(idx)}
-                              title={t("Remove this risk")}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm text-slate-600">{risk.description}</p>
+                <div className="space-y-3">
+                  {aiRisks.map((risk, idx) => {
+                    const riskRating = risk.riskRating || risk.risk_rating || "Medium";
+                    const canDelete = !isSemanticLoading && !isSemanticPolling && !showMatchResults && !semanticMatchStats && !isSemanticRegistering;
 
-                      {/* Handle both formats: from DB (threats array) and from AI (threats with vulnerabilities) */}
-                      {(risk.threats?.length > 0) && (
-                        <div className="space-y-2">
-                          <p className="text-xs font-bold text-slate-400 uppercase">{t("Threats & Vulnerabilities")}</p>
-                          <div className="space-y-2">
-                            {risk.threats.map((tm: any, tIdx: number) => {
-                              // Get threat name - handle string, object with name, or object with threat.name
-                              const threatName = typeof tm === "string"
-                                ? tm
-                                : (tm.name || tm.threat?.name || tm.threatId || "Unknown Threat");
-                              // Get vulnerabilities - they're nested in the threat object
-                              const vulnerabilities = tm.vulnerabilities || [];
+                    return (
+                      <Collapsible key={idx} defaultOpen={idx === 0} className="border border-slate-200 rounded-lg bg-white shadow-sm overflow-hidden">
+                        <CollapsibleTrigger className="w-full">
+                          <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-slate-900">{risk.name}</span>
+                              <Badge className={
+                                riskRating === "High" ? "bg-error-light text-error-dark" :
+                                  riskRating === "Medium" ? "bg-warning-light text-warning-dark" :
+                                    "bg-success-light text-success-dark"
+                              }>
+                                {riskRating}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteAiRisk(idx); }}
+                                  title={t("Remove this risk")}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <ChevronDown className="h-5 w-5 text-slate-400 transition-transform data-[state=open]:rotate-180" />
+                            </div>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="px-4 pb-4 space-y-4">
+                            {/* Risk Description */}
+                            <p className="text-sm text-slate-600">{risk.description}</p>
 
-                              return (
-                                <div key={tIdx} className="bg-slate-50 rounded-md p-2 space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-[10px] py-0 bg-orange-50 text-orange-700 border-orange-200">
-                                      {threatName}
-                                    </Badge>
-                                  </div>
-                                  {vulnerabilities.length > 0 && (
-                                    <div className="ltr:pl-3 rtl:pr-3 flex flex-wrap gap-1">
-                                      {vulnerabilities.map((vuln: string, vIdx: number) => (
-                                        <Badge key={vIdx} variant="outline" className="text-[9px] py-0 bg-red-50 text-red-600 border-red-200">
-                                          {vuln}
-                                        </Badge>
-                                      ))}
+                            {/* Threats with nested Controls and Vulnerabilities */}
+                            {(risk.threats?.length > 0) && (
+                              <div className="space-y-3">
+                                <p className="text-sm font-semibold text-primary-700">{t("AI Evaluated Threat")}</p>
+                                {risk.threats.map((tm: any, tIdx: number) => {
+                                  const threatName = typeof tm === "string"
+                                    ? tm
+                                    : (tm.name || tm.threat?.name || tm.threatId || "Unknown Threat");
+                                  const vulnerabilities = tm.vulnerabilities || [];
+                                  // Get controls from threat or from risk level
+                                  const threatControls = tm.controls || [];
+
+                                  return (
+                                    <Collapsible key={tIdx} defaultOpen={tIdx === 0} className="border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
+                                      <CollapsibleTrigger className="w-full">
+                                        <div className="flex items-center justify-between p-3 hover:bg-slate-100 transition-colors">
+                                          <span className="font-medium text-slate-800">{threatName}</span>
+                                          <div className="flex items-center gap-2">
+                                            {canDelete && (
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  // Remove threat from risk
+                                                  const updatedRisks = [...aiRisks];
+                                                  updatedRisks[idx].threats = updatedRisks[idx].threats.filter((_: any, i: number) => i !== tIdx);
+                                                  setAiRisks(updatedRisks);
+                                                }}
+                                                title={t("Remove this threat")}
+                                              >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                              </Button>
+                                            )}
+                                            <ChevronDown className="h-4 w-4 text-slate-400 transition-transform data-[state=open]:rotate-180" />
+                                          </div>
+                                        </div>
+                                      </CollapsibleTrigger>
+                                      <CollapsibleContent>
+                                        <div className="px-3 pb-3 space-y-4">
+                                          {/* AI Evaluated Controls */}
+                                          {(threatControls.length > 0 || risk.controls?.length > 0) && (
+                                            <div className="space-y-2">
+                                              <p className="text-sm font-semibold text-primary-700">{t("AI Evaluated Controls")}</p>
+                                              <div className="space-y-1.5">
+                                                {threatControls.map((ctrl: any, cIdx: number) => {
+                                                  const controlName = typeof ctrl === "string" ? ctrl : (ctrl.ControlName || ctrl.name || ctrl);
+                                                  return (
+                                                    <div key={cIdx} className="flex items-center justify-between bg-white border border-slate-200 rounded-md p-2">
+                                                      <span className="text-sm text-slate-700">{controlName}</span>
+                                                      {canDelete && (
+                                                        <Button
+                                                          variant="ghost"
+                                                          size="sm"
+                                                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                          onClick={() => {
+                                                            const updatedRisks = [...aiRisks];
+                                                            if (updatedRisks[idx].threats[tIdx].controls) {
+                                                              updatedRisks[idx].threats[tIdx].controls = updatedRisks[idx].threats[tIdx].controls.filter((_: any, i: number) => i !== cIdx);
+                                                              setAiRisks(updatedRisks);
+                                                            }
+                                                          }}
+                                                          title={t("Remove this control")}
+                                                        >
+                                                          <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                                {/* Show risk-level controls if no threat-level controls */}
+                                                {threatControls.length === 0 && (risk.controls || []).map((ctrl: string, cIdx: number) => (
+                                                  <div key={`ctrl-${cIdx}`} className="flex items-center justify-between bg-white border border-slate-200 rounded-md p-2">
+                                                    <span className="text-sm text-slate-700">{ctrl}</span>
+                                                    {canDelete && (
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => {
+                                                          const updatedRisks = [...aiRisks];
+                                                          updatedRisks[idx].controls = updatedRisks[idx].controls.filter((_: any, i: number) => i !== cIdx);
+                                                          setAiRisks(updatedRisks);
+                                                        }}
+                                                        title={t("Remove this control")}
+                                                      >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                      </Button>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* AI Evaluated Vulnerabilities */}
+                                          {vulnerabilities.length > 0 && (
+                                            <div className="space-y-2">
+                                              <p className="text-sm font-semibold text-primary-700">{t("AI Evaluated Vulnerabilities")}</p>
+                                              <div className="space-y-1.5">
+                                                {vulnerabilities.map((vuln: string, vIdx: number) => (
+                                                  <div key={vIdx} className="flex items-center justify-between bg-white border border-slate-200 rounded-md p-2">
+                                                    <span className="text-sm text-slate-700">{vuln}</span>
+                                                    {canDelete && (
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => {
+                                                          const updatedRisks = [...aiRisks];
+                                                          updatedRisks[idx].threats[tIdx].vulnerabilities = updatedRisks[idx].threats[tIdx].vulnerabilities.filter((_: any, i: number) => i !== vIdx);
+                                                          setAiRisks(updatedRisks);
+                                                        }}
+                                                        title={t("Remove this vulnerability")}
+                                                      >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                      </Button>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </CollapsibleContent>
+                                    </Collapsible>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Fallback: Show controls at risk level if no threats */}
+                            {(!risk.threats || risk.threats.length === 0) && (risk.controlRisks?.length > 0 || risk.controls?.length > 0) && (
+                              <div className="space-y-2">
+                                <p className="text-sm font-semibold text-primary-700">{t("AI Evaluated Controls")}</p>
+                                <div className="space-y-1.5">
+                                  {(risk.controlRisks || []).map((cr: any, cIdx: number) => (
+                                    <div key={cIdx} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md p-2">
+                                      <span className="text-sm text-slate-700">{cr.control?.name}</span>
+                                      {canDelete && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                          onClick={() => {
+                                            const updatedRisks = [...aiRisks];
+                                            updatedRisks[idx].controlRisks = updatedRisks[idx].controlRisks.filter((_: any, i: number) => i !== cIdx);
+                                            setAiRisks(updatedRisks);
+                                          }}
+                                          title={t("Remove this control")}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
                                     </div>
-                                  )}
+                                  ))}
+                                  {(risk.controls || []).map((ctrl: string, cIdx: number) => (
+                                    <div key={`ctrl-${cIdx}`} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md p-2">
+                                      <span className="text-sm text-slate-700">{ctrl}</span>
+                                      {canDelete && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                          onClick={() => {
+                                            const updatedRisks = [...aiRisks];
+                                            updatedRisks[idx].controls = updatedRisks[idx].controls.filter((_: any, i: number) => i !== cIdx);
+                                            setAiRisks(updatedRisks);
+                                          }}
+                                          title={t("Remove this control")}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Handle both formats: from DB (controlRisks) and from AI (controls string array) */}
-                      {(risk.controlRisks?.length > 0 || risk.controls?.length > 0) && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-bold text-slate-400 uppercase">{t("Suggested Controls")}</p>
-                          <div className="space-y-1">
-                            {(risk.controlRisks || []).map((cr: any, cIdx: number) => (
-                              <div key={cIdx} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-1.5 rounded">
-                                <span className="font-mono text-[10px] bg-slate-200 px-1 rounded">{cr.control?.functionalGrouping || "protect"}</span>
-                                <span className="flex-1">{cr.control?.name}</span>
                               </div>
-                            ))}
-                            {(risk.controls || []).map((ctrl: string, cIdx: number) => (
-                              <div key={`ctrl-${cIdx}`} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-1.5 rounded">
-                                <span className="font-mono text-[10px] bg-slate-200 px-1 rounded">protect</span>
-                                <span className="flex-1">{ctrl}</span>
-                              </div>
-                            ))}
+                            )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  })}
                 </div>
               </div>
             ) : (
