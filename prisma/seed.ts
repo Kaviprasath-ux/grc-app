@@ -212,7 +212,7 @@ async function main() {
   const createdUsers: { [key: string]: string } = {};
   for (const user of users) {
     const created = await prisma.user.upsert({
-      where: { userName: user.userName },
+      where: { userId: user.userId },
       update: {
         customerAccountId, // Update existing users with customer account
         password: hashedPassword1, // Ensure password is updated for existing users
@@ -297,7 +297,7 @@ async function main() {
 
   // Create Superadmin user (GRCAdministrator) with their own CustomerAccount for data isolation
   const superadminUser = await prisma.user.upsert({
-    where: { userName: "superadmin" },
+    where: { userId: "SUPERADMIN-001" },
     update: {
       customerAccountId: grcAdminCustomerAccountId, // Ensure existing superadmin gets the account
       password: hashedPasswordBaarez, // Ensure password is updated for existing users
@@ -337,7 +337,7 @@ async function main() {
 
   // Create Second GRC Admin user for testing data isolation
   const grcAdmin2User = await prisma.user.upsert({
-    where: { userName: "grcadmin2" },
+    where: { userId: "GRCADMIN2-001" },
     update: {
       customerAccountId: grcAdmin2CustomerAccountId,
       password: hashedPasswordBaarez, // Ensure password is updated for existing users

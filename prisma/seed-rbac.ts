@@ -266,11 +266,12 @@ async function main() {
 
   for (let i = 0; i < testUsers.length; i++) {
     const testUser = testUsers[i];
+    const testUserId = `TEST-${String(i + 1).padStart(3, '0')}`;
     const user = await prisma.user.upsert({
-      where: { userName: testUser.userName },
+      where: { userId: testUserId },
       update: {},
       create: {
-        userId: `TEST-${String(i + 1).padStart(3, '0')}`,
+        userId: testUserId,
         userName: testUser.userName,
         email: testUser.email,
         firstName: testUser.firstName,
@@ -342,7 +343,7 @@ async function main() {
       console.log("  ✓ Superadmin with GRCAdministrator role already exists");
     } else {
       // Check if superadmin user exists (without the role)
-      let superadminUser = await prisma.user.findUnique({
+      let superadminUser = await prisma.user.findFirst({
         where: { userName: SUPERADMIN_CONFIG.userName },
       });
 

@@ -51,7 +51,7 @@ export const PUT = withAuth(
 
       // Check email uniqueness if email is being changed
       if (email && email !== existingUser.email) {
-        const emailExists = await prisma.user.findUnique({ where: { email } });
+        const emailExists = await prisma.user.findFirst({ where: { email, customerAccountId: existingUser.customerAccountId || undefined } });
         if (emailExists) {
           return NextResponse.json({ error: "Email already exists" }, { status: 409 });
         }

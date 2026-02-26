@@ -50,7 +50,7 @@ async function main() {
 
   // Create bts user
   const btsUser = await prisma.user.upsert({
-    where: { userName: "bts" },
+    where: { userId: "BTS-001" },
     update: {
       password: hashedPassword1,
       email: "bts@customer.com",
@@ -222,7 +222,7 @@ async function main() {
   for (const user of users) {
     const password = hashedPassword1;
     const created = await prisma.user.upsert({
-      where: { userName: user.userName },
+      where: { userId: user.userId },
       update: {
         password: password,
         customerAccountId, // Ensure customerAccountId is set on update

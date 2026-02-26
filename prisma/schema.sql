@@ -2404,10 +2404,13 @@ CREATE UNIQUE INDEX "Department_customerAccountId_name_key" ON "Department"("cus
 CREATE UNIQUE INDEX "User_userId_key" ON "User"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_userName_key" ON "User"("userName");
+CREATE INDEX "User_customerAccountId_idx" ON "User"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX "User_customerAccountId_userName_key" ON "User"("customerAccountId", "userName");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_customerAccountId_email_key" ON "User"("customerAccountId", "email");
 
 -- CreateIndex
 CREATE INDEX "OAuthAccount_userId_idx" ON "OAuthAccount"("userId");

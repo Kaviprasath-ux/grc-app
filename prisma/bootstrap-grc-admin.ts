@@ -60,7 +60,7 @@ async function bootstrapGRCAdministrator() {
     console.log("   ℹ Superadmin with GRCAdministrator role not found, creating...");
 
     // Check if superadmin user exists (without the role)
-    let superadminUser = await prisma.user.findUnique({
+    let superadminUser = await prisma.user.findFirst({
       where: { userName: SUPERADMIN_CONFIG.userName },
     });
 

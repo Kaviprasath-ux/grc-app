@@ -90,7 +90,7 @@ export async function getUserWithRoles(userId: string): Promise<UserWithRoles | 
  * Get a user by email with their roles
  */
 export async function getUserByEmailWithRoles(email: string): Promise<UserWithRoles | null> {
-  return prisma.user.findUnique({
+  return prisma.user.findFirst({
     where: { email },
     select: {
       id: true,
