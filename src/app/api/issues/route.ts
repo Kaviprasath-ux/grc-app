@@ -100,6 +100,8 @@ export const POST = withAuth(
       selectedRegulations,
       selectedProcesses,
       stakeholderNeeds,
+      evidenceId,
+      evidenceName,
     } = body;
 
       if (!title || !domain || !category) {
@@ -180,25 +182,38 @@ export const POST = withAuth(
 
       // Notify owner if different from creator
       if (ownerId && ownerId !== session.id && session.customerAccountId) {
-        await notificationService.send({
-          customerAccountId: session.customerAccountId,
-          actorId: session.id,
-          recipientId: ownerId,
-          event: NOTIFICATION_EVENTS.ISSUE_CREATED,
-          title: 'Issue Assigned to You',
-          message: `Issue "${issue.title}" has been created and assigned to you. Category: ${issue.category}, Domain: ${issue.domain}`,
-          relatedEntityType: 'issue',
-          relatedEntityId: issue.id,
-          link: `/organization/context`,
-          metadata: {
-            entityName: issue.title,
-            issueTitle: issue.title,
-            category: issue.category,
-            domain: issue.domain,
-            createdBy: session.name || 'User',
-          },
-          channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
-        });
+        // If issue was created from evidence review, use the evidence-specific notification
+        if (evidenceId) {
+          await notificationService.notifyIssueCreatedFromEvidence({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            assigneeId: ownerId,
+            evidenceId,
+            evidenceName: evidenceName || issue.title,
+            issueId: issue.id,
+            link: `/organization/context`,
+          });
+        } else {
+          await notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: ownerId,
+            event: NOTIFICATION_EVENTS.ISSUE_CREATED,
+            title: 'Issue Assigned to You',
+            message: `Issue "${issue.title}" has been created and assigned to you. Category: ${issue.category}, Domain: ${issue.domain}`,
+            relatedEntityType: 'issue',
+            relatedEntityId: issue.id,
+            link: `/organization/context`,
+            metadata: {
+              entityName: issue.title,
+              issueTitle: issue.title,
+              category: issue.category,
+              domain: issue.domain,
+              createdBy: session.name || 'User',
+            },
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
       }
 
       return NextResponse.json(issue, { status: 201 });
