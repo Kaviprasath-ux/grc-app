@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, ChevronRight, Home, Package, Mail } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, ChevronRight, Home, Package, Mail, Globe } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,12 @@ const settingCategories = [
     title: "Designation",
     description: "Employee designation settings",
     icon: Briefcase,
+  },
+  {
+    id: "translations",
+    title: "Translation Management",
+    description: "Manage dynamic translations",
+    icon: Globe,
   },
 ];
 
@@ -601,6 +607,8 @@ export default function OrganizationSettingsPage() {
               onClick={() => {
                 if (category.id === "bia") {
                   router.push("/organization/settings/bia");
+                } else if (category.id === "translations") {
+                  router.push("/organization/settings/translations");
                 } else {
                   setActiveCategory(category.id);
                 }

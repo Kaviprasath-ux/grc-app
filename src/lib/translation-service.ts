@@ -198,6 +198,25 @@ export function isTranslationConfigured(): boolean {
   return getProvider().isConfigured();
 }
 
+/**
+ * Translate a single text string to a target locale using the AI backend.
+ * Returns the translated text, or throws if not configured / fails.
+ */
+export async function translateSingleText(
+  text: string,
+  targetLocale: string
+): Promise<string> {
+  const p = getProvider();
+  if (!p.isConfigured()) {
+    throw new Error('Translation provider is not configured');
+  }
+  const [result] = await p.translate([text], targetLocale);
+  if (!result) {
+    throw new Error('Translation returned empty result');
+  }
+  return result;
+}
+
 // ==================== HASH UTILITY ====================
 
 function hashText(text: string): string {
