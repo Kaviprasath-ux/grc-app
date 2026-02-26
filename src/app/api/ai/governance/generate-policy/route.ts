@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
                 fileType: true,
                 fileSize: true,
                 filePath: true,
+                fileData: true, // For cloud deployment (Vercel)
             },
         });
 
@@ -147,12 +148,21 @@ export async function POST(req: NextRequest) {
             ? Array.from(frameworkNamesSet)
             : ["General"];
 
-        // Load template file from disk
+        // Load template file from disk or from database (Vercel)
         let templateBuffer: Buffer;
         try {
-            const absolutePath = path.join(process.cwd(), "public", governanceTemplate.filePath);
-            templateBuffer = await readFile(absolutePath);
-            console.log(`[Governance Generate] Loaded template from disk: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
+            // First try to load from fileData in database (for Vercel/cloud deployment)
+            if (governanceTemplate.fileData) {
+                templateBuffer = Buffer.from(governanceTemplate.fileData);
+                console.log(`[Governance Generate] Loaded template from database: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
+            } else {
+                // Fallback to disk - filePath is like /uploads/governance-templates/filename.docx
+                // Remove leading slash and join with process.cwd()
+                const relativePath = governanceTemplate.filePath.replace(/^\//, '');
+                const absolutePath = path.join(process.cwd(), relativePath);
+                templateBuffer = await readFile(absolutePath);
+                console.log(`[Governance Generate] Loaded template from disk: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
+            }
         } catch {
             console.error(`[Governance Generate] Template file not found on disk`);
             return errorResponse(`Template file not found: ${governanceTemplate.fileName}`, 404);
