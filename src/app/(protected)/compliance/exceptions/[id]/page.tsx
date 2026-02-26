@@ -260,7 +260,7 @@ export default function ExceptionDetailPage({
         description: translatedException.description || prev.description,
       }));
     }
-  }, [translatedException, exception]);
+  }, [translatedException?.name, translatedException?.description, exception?.id]);
 
   const handleSave = async () => {
     setSaving(true);

@@ -294,7 +294,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
         controlQuestion: translatedControl.controlQuestion || prev.controlQuestion,
       }));
     }
-  }, [translatedControl, control]);
+  }, [translatedControl?.name, translatedControl?.description, translatedControl?.controlQuestion, control?.id]);
 
   const fetchControl = async () => {
     try {

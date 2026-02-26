@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -483,7 +483,7 @@ export default function EvidenceDetailPage() {
       const currentCyclePeriod = getCurrentCycle(evidence.recurrence);
       setSelectedMonth(currentCyclePeriod);
     }
-  }, [evidence, selectedMonth]);
+  }, [evidence?.id, evidence?.recurrence, selectedMonth]);
 
   // Load cycle statuses from localStorage
   useEffect(() => {
@@ -498,10 +498,15 @@ export default function EvidenceDetailPage() {
   }, [evidence?.id, evidence?.recurrence]);
 
   // Auto-revert parent status: If parent is "Validated" but current cycle is not validated, revert to "Draft"
-  // This runs on page load/data fetch to handle cycle changes over time
+  // This runs once per evidence load to handle cycle changes over time
+  const statusSyncRanRef = useRef<string | null>(null);
+
   useEffect(() => {
     const syncParentStatusWithCurrentCycle = async () => {
       if (!evidence?.id || !evidence.recurrence) return;
+
+      // Only run once per evidence record load
+      if (statusSyncRanRef.current === evidence.id) return;
 
       // Safety: Never downgrade from Published
       if (evidence.status === "Published") return;
@@ -515,6 +520,7 @@ export default function EvidenceDetailPage() {
 
       // If current cycle is NOT validated, revert parent to Draft
       if (currentCycleStatus.status !== "validated") {
+        statusSyncRanRef.current = evidence.id;
         try {
           const response = await fetch(`/api/evidences/${id}`, {
             method: "PUT",

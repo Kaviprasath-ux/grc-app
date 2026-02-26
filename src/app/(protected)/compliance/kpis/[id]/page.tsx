@@ -231,7 +231,7 @@ export default function KPIDetailPage({
         calculationFormula: translatedKpi.calculationFormula || prev.calculationFormula,
       }));
     }
-  }, [translatedKpi, kpi]);
+  }, [translatedKpi?.objective, translatedKpi?.description, translatedKpi?.dataSource, translatedKpi?.calculationFormula, kpi?.id]);
 
   const fetchKPI = useCallback(async () => {
     try {

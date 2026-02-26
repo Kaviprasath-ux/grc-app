@@ -29,6 +29,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { sendTemplatedEmail, getUserInfo, TemplatePlaceholders } from './email-service';
+import { getAppUrl } from '@/config/app-url';
 
 // Import constants from the client-safe constants file
 // This keeps all constants in one place and allows client code to import from there
@@ -285,7 +286,7 @@ class NotificationService {
       const templateCode = this.getEmailTemplateCode(payload.event);
 
       // Build entity link with emailUser param for login pre-fill
-      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+      const baseUrl = getAppUrl();
       let entityLink: string | undefined;
       if (payload.link) {
         const linkUrl = new URL(payload.link, baseUrl);

@@ -13,6 +13,7 @@
 
 import nodemailer from 'nodemailer';
 import { prisma } from '@/lib/prisma';
+import { getAppUrl } from '@/config/app-url';
 
 // ==================== INTERFACES ====================
 
@@ -301,7 +302,7 @@ export function getDefaultPlaceholders(recipientName: string, recipientEmail: st
     recipientName,
     recipientEmail,
     appName: 'GRC Platform',
-    appUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    appUrl: getAppUrl(),
     currentDate: now.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',

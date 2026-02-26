@@ -184,7 +184,7 @@ export default function RiskAssessmentWizardPage() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [threatLikelihoods, threatImpacts, vulnerabilityRatingsForm, risk, loading]);
+  }, [threatLikelihoods, threatImpacts, vulnerabilityRatingsForm, risk?.id, loading]);
 
   // Debounced save function for auto-save
   const saveProgressValues = async () => {
