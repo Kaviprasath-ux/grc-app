@@ -211,6 +211,52 @@ export const DELETE = withAuth(
         where: { id: attachmentId },
       });
 
+      // Also delete matching vault document (bidirectional sync)
+      try {
+        const matchingVaultDoc = await prisma.governanceVaultDocument.findFirst({
+          where: {
+            customerAccountId: policy.customerAccountId,
+            fileName: attachment.fileName,
+          },
+        });
+        if (matchingVaultDoc) {
+          // Delete vault file from disk
+          if (matchingVaultDoc.filePath) {
+            try {
+              const vaultRelPath = matchingVaultDoc.filePath.startsWith("/")
+                ? matchingVaultDoc.filePath.slice(1)
+                : matchingVaultDoc.filePath;
+              await unlink(join(process.cwd(), vaultRelPath));
+            } catch {
+              // File may not exist
+            }
+          }
+          await prisma.governanceVaultDocumentLink.deleteMany({
+            where: { documentId: matchingVaultDoc.id },
+          });
+          await prisma.governanceVaultDocument.delete({
+            where: { id: matchingVaultDoc.id },
+          });
+        }
+      } catch (vaultError) {
+        console.warn("Could not sync vault document deletion:", vaultError);
+      }
+
+      // Revert policy to "Not Uploaded" if no documents remain
+      const remainingAttachments = await prisma.policyAttachment.count({
+        where: { policyId: id },
+      });
+      const remainingVaultLinks = await prisma.governanceVaultDocumentLink.count({
+        where: { policyId: id },
+      });
+
+      if (remainingAttachments === 0 && remainingVaultLinks === 0) {
+        await prisma.policy.updateMany({
+          where: { id, status: "Draft" },
+          data: { status: "Not Uploaded" },
+        });
+      }
+
       return NextResponse.json({
         message: "Attachment deleted successfully",
         fileName: attachment.fileName,

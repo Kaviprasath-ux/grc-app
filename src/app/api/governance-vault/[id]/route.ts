@@ -87,7 +87,14 @@ export const DELETE = withAuth(
       // First check if document exists and verify tenant access
       const document = await prisma.governanceVaultDocument.findUnique({
         where: { id },
-        select: { customerAccountId: true, filePath: true },
+        select: {
+          customerAccountId: true,
+          filePath: true,
+          fileName: true,
+          linkedPolicies: {
+            select: { policyId: true },
+          },
+        },
       });
 
       if (!document) {
@@ -101,6 +108,54 @@ export const DELETE = withAuth(
         return forbidden("Access denied to this document");
       }
 
+      // Also delete matching PolicyAttachments from linked policies (bidirectional sync)
+      if (document.linkedPolicies.length > 0) {
+        const linkedPolicyIds = document.linkedPolicies.map((lp) => lp.policyId);
+        const matchingAttachments = await prisma.policyAttachment.findMany({
+          where: {
+            policyId: { in: linkedPolicyIds },
+            fileName: document.fileName,
+          },
+        });
+
+        // Delete physical files for matched attachments
+        for (const att of matchingAttachments) {
+          if (att.filePath) {
+            try {
+              const { unlink } = await import("fs/promises");
+              const { join } = await import("path");
+              const relativePath = att.filePath.startsWith("/") ? att.filePath.slice(1) : att.filePath;
+              await unlink(join(process.cwd(), relativePath));
+            } catch {
+              // File may not exist, continue
+            }
+          }
+        }
+
+        // Delete attachment records
+        await prisma.policyAttachment.deleteMany({
+          where: {
+            policyId: { in: linkedPolicyIds },
+            fileName: document.fileName,
+          },
+        });
+      }
+
+      // Delete physical vault file
+      if (document.filePath) {
+        try {
+          const { unlink } = await import("fs/promises");
+          const { join } = await import("path");
+          const relativePath = document.filePath.startsWith("/") ? document.filePath.slice(1) : document.filePath;
+          await unlink(join(process.cwd(), relativePath));
+        } catch {
+          // File may not exist, continue
+        }
+      }
+
+      // Collect linked policy IDs before deleting links
+      const affectedPolicyIds = document.linkedPolicies.map((lp) => lp.policyId);
+
       // Delete linked policies first (due to foreign key constraints)
       await prisma.governanceVaultDocumentLink.deleteMany({
         where: { documentId: id },
@@ -110,6 +165,23 @@ export const DELETE = withAuth(
       await prisma.governanceVaultDocument.delete({
         where: { id },
       });
+
+      // Revert linked policies to "Not Uploaded" if they have no remaining documents
+      for (const policyId of affectedPolicyIds) {
+        const remainingAttachments = await prisma.policyAttachment.count({
+          where: { policyId },
+        });
+        const remainingVaultLinks = await prisma.governanceVaultDocumentLink.count({
+          where: { policyId },
+        });
+
+        if (remainingAttachments === 0 && remainingVaultLinks === 0) {
+          await prisma.policy.updateMany({
+            where: { id: policyId, status: "Draft" },
+            data: { status: "Not Uploaded" },
+          });
+        }
+      }
 
       return NextResponse.json({ message: "Document deleted successfully" });
     } catch (error) {

@@ -133,12 +133,6 @@ interface Policy {
       category: string;
     };
   }>;
-  linkedDocuments?: Array<{
-    id: string;
-    name: string;
-    type: string;
-    code: string;
-  }>;
   vaultDocumentLinks?: Array<{
     id: string;
     documentId: string;
@@ -984,42 +978,52 @@ export default function GovernanceDetailPage() {
 
     setUploading(true);
     try {
+      // Step 1: Upload to Information Security Vault
       const formData = new FormData();
       formData.append("file", uploadFile);
 
-      const response = await fetch(`/api/policies/${id}/attachments`, {
+      const vaultResponse = await fetch("/api/governance-vault", {
         method: "POST",
         body: formData,
       });
 
-      if (response.ok) {
-        setUploadDialogOpen(false);
-        setUploadFile(null);
-
-        // Auto-transition to Draft status when first attachment is uploaded
-        // Also set approver = assignee if not already set
-        if (policy?.status === "Not Uploaded") {
-          const updateData: Record<string, string | null> = { status: "Draft" };
-
-          // Auto-set approver to assignee if approver is not set
-          if (!policy.approverId && policy.assigneeId) {
-            updateData.approverId = policy.assigneeId;
-          }
-
-          await fetch(`/api/policies/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updateData),
-          });
-        }
-
-        fetchPolicy(); // Refresh policy data including attachments
-      } else {
-        const error = await response.json();
-        console.error("Upload failed:", error);
+      if (!vaultResponse.ok) {
+        const error = await vaultResponse.json();
+        console.error("Vault upload failed:", error);
+        toast.error(t("Failed to upload document"));
+        return;
       }
+
+      const vaultDoc = await vaultResponse.json();
+
+      // Step 2: Auto-link vault document to this policy
+      await fetch(`/api/governance-vault/${vaultDoc.id}/link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ governanceIds: [id] }),
+      });
+
+      // Step 3: Auto-transition to Draft status
+      if (policy?.status === "Not Uploaded") {
+        const updateData: Record<string, string | null> = { status: "Draft" };
+        if (!policy.approverId && policy.assigneeId) {
+          updateData.approverId = policy.assigneeId;
+        }
+        await fetch(`/api/policies/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updateData),
+        });
+      }
+
+      setUploadDialogOpen(false);
+      setUploadFile(null);
+      fetchPolicy();
+      fetchVaultDocuments();
+      toast.success(t("Document uploaded successfully"));
     } catch (error) {
       console.error("Error uploading attachment:", error);
+      toast.error(t("Failed to upload document"));
     } finally {
       setUploading(false);
     }
@@ -1027,12 +1031,44 @@ export default function GovernanceDetailPage() {
 
   const handleDeleteAttachment = async (attachmentId: string) => {
     try {
+      // Find the attachment to get its fileName for vault matching
+      const att = attachments.find((a) => a.id === attachmentId);
+
       const response = await fetch(`/api/policies/${id}/attachments?attachmentId=${attachmentId}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
-        fetchPolicy(); // Refresh policy data
+        // Also delete matching vault document if one exists with the same fileName
+        let deletedVaultDocId: string | null = null;
+        if (att) {
+          const matchingVaultLink = linkedVaultDocuments.find(
+            (link) => link.document.fileName === att.fileName
+          );
+          if (matchingVaultLink) {
+            deletedVaultDocId = matchingVaultLink.document.id;
+            await fetch(`/api/governance-vault/${matchingVaultLink.document.id}`, {
+              method: "DELETE",
+            });
+          }
+        }
+
+        // Check if no documents remain after this deletion → revert to "Not Uploaded"
+        const remainingAttachments = attachments.filter((a) => a.id !== attachmentId).length;
+        const remainingVaultDocs = linkedVaultDocuments.filter(
+          (link) => link.document.id !== deletedVaultDocId
+        ).length;
+
+        if (remainingAttachments === 0 && remainingVaultDocs === 0 && policy?.status === "Draft") {
+          await fetch(`/api/policies/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "Not Uploaded" }),
+          });
+        }
+
+        fetchPolicy();
+        fetchVaultDocuments();
       }
     } catch (error) {
       console.error("Error deleting attachment:", error);
@@ -1121,25 +1157,31 @@ export default function GovernanceDetailPage() {
   // Unlink vault document from policy
   const handleUnlinkVaultDocument = async (vaultDocId: string) => {
     try {
-      // First, fetch the current vault document to get its linked policies
-      const response = await fetch(`/api/governance-vault/${vaultDocId}`);
-      if (response.ok) {
-        const vaultDoc = await response.json();
-        // Remove current policy from linked governance IDs
-        const currentLinkedIds = vaultDoc.linkedGovernanceIds || [];
-        const newLinkedIds = currentLinkedIds.filter((gid: string) => gid !== id);
+      // Delete vault document entirely (also removes from Information Security Vault)
+      const response = await fetch(`/api/governance-vault/${vaultDocId}`, {
+        method: "DELETE",
+      });
 
-        await fetch(`/api/governance-vault/${vaultDocId}/link`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ governanceIds: newLinkedIds }),
-        });
+      if (response.ok) {
+        // Check if no documents remain after this deletion
+        const remainingAttachments = attachments.length;
+        const remainingVaultDocs = linkedVaultDocuments.filter(
+          (link) => link.document.id !== vaultDocId
+        ).length;
+
+        if (remainingAttachments === 0 && remainingVaultDocs === 0 && policy?.status === "Draft") {
+          await fetch(`/api/policies/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "Not Uploaded" }),
+          });
+        }
 
         fetchVaultDocuments();
         fetchPolicy();
       }
     } catch (error) {
-      console.error("Error unlinking vault document:", error);
+      console.error("Error deleting vault document:", error);
     }
   };
 
@@ -1298,7 +1340,6 @@ export default function GovernanceDetailPage() {
   const linkedControls = policy.policyControls || [];
   const linkedExceptions = policy.policyExceptions || [];
   const attachments = policy.attachments || [];
-  const linkedDocuments = policy.linkedDocuments || [];
   const linkedVaultDocuments = policy.vaultDocumentLinks || [];
 
   // Derive linked frameworks from policyControls -> control -> framework
@@ -1341,7 +1382,7 @@ export default function GovernanceDetailPage() {
       id: "documents",
       label: t("Linked Documents"),
       icon: FileText,
-      count: linkedDocuments.length + linkedVaultDocuments.length,
+      count: attachments.length + linkedVaultDocuments.length,
     },
   ];
 
@@ -3299,7 +3340,7 @@ export default function GovernanceDetailPage() {
             <h3 className="text-base font-semibold text-slate-800">{t("Linked Documents")}</h3>
           </div>
           <div className="p-5">
-            {linkedDocuments.length === 0 && linkedVaultDocuments.length === 0 ? (
+            {attachments.length === 0 && linkedVaultDocuments.length === 0 ? (
               <div className="py-16 text-center">
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                   <FileText className="h-6 w-6 text-primary-400" />
@@ -3308,93 +3349,92 @@ export default function GovernanceDetailPage() {
                 <p className="text-xs text-slate-400">{t("Documents linked to this policy will appear here")}</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Vault Documents */}
-                {linkedVaultDocuments.length > 0 && (
-                  <div className="space-y-2">
-                    {linkedVaultDocuments.map((link) => (
-                      <div
-                        key={link.id}
-                        className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg"
+              <div className="space-y-2">
+                {/* Uploaded Attachments */}
+                {attachments.map((att) => (
+                  <div
+                    key={att.id}
+                    className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg"
+                  >
+                    {getFileTypeIcon(att.fileType)}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-primary truncate">{att.fileName}</p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(att.uploadedAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "2-digit",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => window.open(`/api/policies/${id}/attachments/${att.id}/download`, "_blank")}
+                        title={t("Download")}
                       >
-                        {/* File Icon */}
-                        {getFileTypeIcon(link.document.fileType)}
-
-                        {/* Document Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-primary truncate">{link.document.fileName}</p>
-                          <p className="text-xs text-slate-500">
-                            By bts, {new Date(link.document.uploadedAt).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "2-digit",
-                              year: "numeric",
-                            })}
-                          </p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          {/* Download Button */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
-                            title={t("Download")}
-                          >
-                            <Download className="h-4 w-4 text-primary" />
-                          </Button>
-
-                          {/* Unlink Button */}
-                          <PermissionGate resource="compliance.governance" action="edit">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleUnlinkVaultDocument(link.document.id)}
-                              className="text-slate-600"
-                            >
-                              {t("Unlink")}
-                            </Button>
-                          </PermissionGate>
-
-                          {/* Status Badge */}
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            {link.document.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                        <Download className="h-4 w-4 text-primary" />
+                      </Button>
+                      <PermissionGate resource="compliance.governance" action="edit">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteAttachment(att.id)}
+                          className="text-slate-600 hover:text-red-600"
+                        >
+                          {t("Unlink")}
+                        </Button>
+                      </PermissionGate>
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        {t("Active")}
+                      </Badge>
+                    </div>
                   </div>
-                )}
+                ))}
 
-                {/* Regular Linked Documents (if any) */}
-                {linkedDocuments.length > 0 && (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Code")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {linkedDocuments.map((doc) => (
-                        <TableRow key={doc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                          <TableCell className="py-3 ps-5 text-sm font-medium text-slate-800">{doc.code}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{doc.name}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{doc.type}</TableCell>
-                          <TableCell className="py-3 pe-5">
-                            <PermissionGate resource="compliance.governance" action="edit">
-                              <Button variant="ghost" size="sm" className="text-red-500">
-                                {t("Unlink")}
-                              </Button>
-                            </PermissionGate>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                {/* Vault Linked Documents */}
+                {linkedVaultDocuments.map((link) => (
+                  <div
+                    key={link.id}
+                    className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg"
+                  >
+                    {getFileTypeIcon(link.document.fileType)}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-primary truncate">{link.document.fileName}</p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(link.document.uploadedAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "2-digit",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
+                        title={t("Download")}
+                      >
+                        <Download className="h-4 w-4 text-primary" />
+                      </Button>
+                      <PermissionGate resource="compliance.governance" action="edit">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleUnlinkVaultDocument(link.document.id)}
+                          className="text-slate-600 hover:text-red-600"
+                        >
+                          {t("Unlink")}
+                        </Button>
+                      </PermissionGate>
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        {link.document.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
