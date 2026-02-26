@@ -2263,7 +2263,7 @@ export default function GovernanceDetailPage() {
                           </p>
                         </div>
                       </DialogTrigger>
-                  <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 overflow-hidden">
+                  <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
                     <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100">
                       <DialogTitle className="text-base font-semibold text-slate-800">{t("Upload Existing File")}</DialogTitle>
                     </DialogHeader>
