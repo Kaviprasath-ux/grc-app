@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Sparkles, Search, Upload, Home, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, Search, Upload, Home, ChevronRight, ChevronLeft, ChevronDown, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNumber } from "@/lib/validations";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 const RISKS_REGISTER_PATH = "/risks/register";
 
@@ -1647,84 +1648,170 @@ export default function AssetClassificationPage() {
                       {t("Remove risks you do not need; only the remaining risks will be sent to the next step.")}
                     </p>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {risks.map((risk: any, idx: number) => {
                       const threatList = risk.Threats ?? [];
-                      const allControls = threatList.flatMap((t: any) => t.controls ?? []);
-                      const allVulnerabilities = threatList.flatMap((t: any) => (t.Vulnerabilities ?? []));
+                      const riskRating = risk.Inherent_risk_rating || "Medium";
+
                       return (
-                        <div key={idx} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-white">
-                          <div className="flex justify-between items-start gap-2">
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
-                              <h5 className="font-semibold text-slate-900 truncate">{risk.Risk_name}</h5>
-                              <Badge
-                                className={`shrink-0 ${
-                                  risk.Inherent_risk_rating === "High"
-                                    ? "bg-error-light text-error-dark"
-                                    : risk.Inherent_risk_rating === "Medium"
-                                      ? "bg-warning-light text-warning-dark"
-                                      : "bg-success-light text-success-dark"
-                                }`}
-                              >
-                                {risk.Inherent_risk_rating || "N/A"}
-                              </Badge>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 shrink-0 text-slate-400 hover:text-semantic-error hover:bg-red-50"
-                              onClick={() => removeRisk(idx)}
-                              title={t("Remove risk")}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                          <p className="text-sm text-slate-600">{risk.Risk_description}</p>
-                          {risk.Risk_category && (
-                            <p className="text-xs text-slate-500">{t("Category")}: {risk.Risk_category}</p>
-                          )}
-
-                          {threatList.length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs font-bold text-slate-400 uppercase">{t("Threats")}</p>
-                              <div className="flex flex-wrap gap-2">
-                                {threatList.map((tm: any, tIdx: number) => (
-                                  <Badge key={tIdx} variant="outline" className="text-[10px] py-0">
-                                    {tm.threat_name}
-                                  </Badge>
-                                ))}
+                        <Collapsible key={idx} defaultOpen={idx === 0} className="border border-slate-200 rounded-lg bg-white shadow-sm overflow-hidden">
+                          <CollapsibleTrigger className="w-full">
+                            <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <span className="font-semibold text-slate-900">{risk.Risk_name}</span>
+                                <Badge className={
+                                  riskRating === "High" ? "bg-error-light text-error-dark" :
+                                    riskRating === "Medium" ? "bg-warning-light text-warning-dark" :
+                                      "bg-success-light text-success-dark"
+                                }>
+                                  {riskRating}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={(e) => { e.stopPropagation(); removeRisk(idx); }}
+                                  title={t("Remove this risk")}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                                <ChevronDown className="h-5 w-5 text-slate-400 transition-transform data-[state=open]:rotate-180" />
                               </div>
                             </div>
-                          )}
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="px-4 pb-4 space-y-4">
+                              {/* Risk Description */}
+                              <p className="text-sm text-slate-600">{risk.Risk_description}</p>
+                              {risk.Risk_category && (
+                                <p className="text-xs text-slate-500">{t("Category")}: {risk.Risk_category}</p>
+                              )}
 
-                          {allControls.length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs font-bold text-slate-400 uppercase">{t("Suggested Controls")}</p>
-                              <div className="space-y-1">
-                                {allControls.map((c: any, cIdx: number) => (
-                                  <div key={cIdx} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-1.5 rounded">
-                                    <span className="font-mono text-[10px] bg-slate-200 px-1 rounded">
-                                      {c.control_functionalGrouping ?? ""}
-                                    </span>
-                                    <span className="flex-1">{c.ControlName ?? c.controlName ?? ""}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                              {/* Threats with nested Controls and Vulnerabilities */}
+                              {threatList.length > 0 && (
+                                <div className="space-y-3">
+                                  <p className="text-sm font-semibold text-primary-700">{t("AI Evaluated Threat")}</p>
+                                  {threatList.map((tm: any, tIdx: number) => {
+                                    const threatName = tm.threat_name || "Unknown Threat";
+                                    const vulnerabilities = tm.Vulnerabilities ?? [];
+                                    const threatControls = tm.controls ?? [];
 
-                          {allVulnerabilities.length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs font-bold text-slate-400 uppercase">{t("Vulnerabilities")}</p>
-                              <ul className="text-xs text-slate-600 list-disc list-inside space-y-0.5">
-                                {allVulnerabilities.map((v: string, vIdx: number) => (
-                                  <li key={vIdx}>{v}</li>
-                                ))}
-                              </ul>
+                                    return (
+                                      <Collapsible key={tIdx} defaultOpen={tIdx === 0} className="border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
+                                        <CollapsibleTrigger className="w-full">
+                                          <div className="flex items-center justify-between p-3 hover:bg-slate-100 transition-colors">
+                                            <span className="font-medium text-slate-800">{threatName}</span>
+                                            <div className="flex items-center gap-2">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  // Remove threat from risk
+                                                  setDisplayedRisks((prev) => {
+                                                    const list = prev ?? aiRiskResults?.results?.risks ?? aiRiskResults?.risks ?? [];
+                                                    const updated = [...list];
+                                                    updated[idx] = { ...updated[idx], Threats: updated[idx].Threats.filter((_: any, i: number) => i !== tIdx) };
+                                                    return updated;
+                                                  });
+                                                }}
+                                                title={t("Remove this threat")}
+                                              >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                              </Button>
+                                              <ChevronDown className="h-4 w-4 text-slate-400 transition-transform data-[state=open]:rotate-180" />
+                                            </div>
+                                          </div>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent>
+                                          <div className="px-3 pb-3 space-y-4">
+                                            {/* AI Evaluated Controls */}
+                                            {threatControls.length > 0 && (
+                                              <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-primary-700">{t("AI Evaluated Controls")}</p>
+                                                <div className="space-y-1.5">
+                                                  {threatControls.map((c: any, cIdx: number) => {
+                                                    const controlName = c.ControlName ?? c.controlName ?? c.name ?? "";
+                                                    const grouping = c.control_functionalGrouping ?? "";
+                                                    return (
+                                                      <div key={cIdx} className="flex items-center justify-between bg-white border border-slate-200 rounded-md p-2">
+                                                        <div className="flex items-center gap-2">
+                                                          {grouping && (
+                                                            <span className="font-mono text-[10px] bg-slate-200 px-1 rounded">
+                                                              {grouping}
+                                                            </span>
+                                                          )}
+                                                          <span className="text-sm text-slate-700">{controlName}</span>
+                                                        </div>
+                                                        <Button
+                                                          variant="ghost"
+                                                          size="sm"
+                                                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                          onClick={() => {
+                                                            setDisplayedRisks((prev) => {
+                                                              const list = prev ?? aiRiskResults?.results?.risks ?? aiRiskResults?.risks ?? [];
+                                                              const updated = [...list];
+                                                              const updatedThreats = [...updated[idx].Threats];
+                                                              updatedThreats[tIdx] = { ...updatedThreats[tIdx], controls: updatedThreats[tIdx].controls.filter((_: any, i: number) => i !== cIdx) };
+                                                              updated[idx] = { ...updated[idx], Threats: updatedThreats };
+                                                              return updated;
+                                                            });
+                                                          }}
+                                                          title={t("Remove this control")}
+                                                        >
+                                                          <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* AI Evaluated Vulnerabilities */}
+                                            {vulnerabilities.length > 0 && (
+                                              <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-primary-700">{t("AI Evaluated Vulnerabilities")}</p>
+                                                <div className="space-y-1.5">
+                                                  {vulnerabilities.map((vuln: string, vIdx: number) => (
+                                                    <div key={vIdx} className="flex items-center justify-between bg-white border border-slate-200 rounded-md p-2">
+                                                      <span className="text-sm text-slate-700">{vuln}</span>
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => {
+                                                          setDisplayedRisks((prev) => {
+                                                            const list = prev ?? aiRiskResults?.results?.risks ?? aiRiskResults?.risks ?? [];
+                                                            const updated = [...list];
+                                                            const updatedThreats = [...updated[idx].Threats];
+                                                            updatedThreats[tIdx] = { ...updatedThreats[tIdx], Vulnerabilities: updatedThreats[tIdx].Vulnerabilities.filter((_: any, i: number) => i !== vIdx) };
+                                                            updated[idx] = { ...updated[idx], Threats: updatedThreats };
+                                                            return updated;
+                                                          });
+                                                        }}
+                                                        title={t("Remove this vulnerability")}
+                                                      >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                      </Button>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </CollapsibleContent>
+                                      </Collapsible>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                       );
                     })}
                   </div>
