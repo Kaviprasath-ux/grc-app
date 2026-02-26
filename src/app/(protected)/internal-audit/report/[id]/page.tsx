@@ -146,13 +146,10 @@ export default function AuditReportViewPage({ params }: PageProps) {
           auditeeId: data.auditeeId || "",
         });
         setAuditeeComment(data.auditeeComment || "");
-      } else {
-        toast.error(t("Failed to fetch report"));
-        router.push("/internal-audit/report");
       }
+      // If response not ok, report stays null → NotFound component renders
     } catch (error) {
       console.error("Error fetching report:", error);
-      toast.error(t("Failed to fetch report"));
     } finally {
       setLoading(false);
     }
