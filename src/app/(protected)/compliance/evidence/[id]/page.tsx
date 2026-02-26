@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { NotFound } from "@/components/ui/unauthorized";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1337,11 +1338,7 @@ export default function EvidenceDetailPage() {
   }
 
   if (!evidence) {
-    return (
-      <div className="p-6">
-        <div className="text-center text-slate-500">{t("Evidence not found")}</div>
-      </div>
-    );
+    return <NotFound title={t("Evidence Not Found")} backHref="/compliance/evidence" />;
   }
 
   const currentStep = getStatusStep(evidence.status);

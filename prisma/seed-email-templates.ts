@@ -2903,7 +2903,7 @@ GRC Platform Team`,
       <table style="${emailStyles.table}">
         ${tableRow('Entity Type', '{entityType}')}
         ${tableRow('Entity Name', '{entityName}')}
-        ${tableRow('Comment By', '{actorName}')}
+        ${tableRow('Comment By', '{actorName} ({senderUsername})')}
       </table>
       <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid ${colors.primary}; margin: 15px 0;">
         <p style="margin: 0; font-style: italic;">"{commentPreview}"</p>
@@ -2916,7 +2916,7 @@ A new comment has been added:
 
 Entity Type: {entityType}
 Entity Name: {entityName}
-Comment By: {actorName}
+Comment By: {actorName} ({senderUsername})
 
 Comment: "{commentPreview}"
 
@@ -2924,7 +2924,7 @@ View Comment: {entityLink}
 
 Best regards,
 GRC Platform Team`,
-    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'commentPreview', 'entityLink']),
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'commentPreview', 'entityLink']),
   },
   {
     code: 'APPROVAL_REQUESTED',
@@ -2940,7 +2940,7 @@ GRC Platform Team`,
       <table style="${emailStyles.table}">
         ${tableRow('Type', '{entityType}')}
         ${tableRow('Name', '{entityName}')}
-        ${tableRow('Requested By', '{actorName}')}
+        ${tableRow('Requested By', '{actorName} ({senderUsername})')}
       </table>
       <p style="${emailStyles.paragraph}">Please review and take appropriate action.</p>`,
       'Review & Approve'
@@ -2951,7 +2951,7 @@ Your approval is required for the following:
 
 Type: {entityType}
 Name: {entityName}
-Requested By: {actorName}
+Requested By: {actorName} ({senderUsername})
 
 Please review and take appropriate action.
 
@@ -2959,7 +2959,7 @@ Review & Approve: {entityLink}
 
 Best regards,
 GRC Platform Team`,
-    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'entityLink']),
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'entityLink']),
   },
   {
     code: 'APPROVAL_GRANTED',
@@ -2975,7 +2975,7 @@ GRC Platform Team`,
       <table style="${emailStyles.table}">
         ${tableRow('Type', '{entityType}')}
         ${tableRow('Name', '{entityName}')}
-        ${tableRow('Approved By', '{actorName}')}
+        ${tableRow('Approved By', '{actorName} ({senderUsername})')}
       </table>
       <p style="${emailStyles.paragraph}">You may now proceed with the next steps.</p>`,
       'View Details'
@@ -2986,7 +2986,7 @@ Your request has been approved:
 
 Type: {entityType}
 Name: {entityName}
-Approved By: {actorName}
+Approved By: {actorName} ({senderUsername})
 
 You may now proceed with the next steps.
 
@@ -2994,7 +2994,7 @@ View Details: {entityLink}
 
 Best regards,
 GRC Platform Team`,
-    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'entityLink']),
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'entityLink']),
   },
   {
     code: 'APPROVAL_DENIED',
@@ -3010,7 +3010,7 @@ GRC Platform Team`,
       <table style="${emailStyles.table}">
         ${tableRow('Type', '{entityType}')}
         ${tableRow('Name', '{entityName}')}
-        ${tableRow('Rejected By', '{actorName}')}
+        ${tableRow('Rejected By', '{actorName} ({senderUsername})')}
         ${tableRow('Reason', '{reason}')}
       </table>
       <p style="${emailStyles.paragraph}">Please review and address the concerns before resubmitting.</p>`,
@@ -3022,7 +3022,7 @@ Your request has been rejected:
 
 Type: {entityType}
 Name: {entityName}
-Rejected By: {actorName}
+Rejected By: {actorName} ({senderUsername})
 Reason: {reason}
 
 Please review and address the concerns before resubmitting.
@@ -3031,7 +3031,7 @@ View Details: {entityLink}
 
 Best regards,
 GRC Platform Team`,
-    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'reason', 'entityLink']),
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'reason', 'entityLink']),
   },
   {
     code: 'SENT_BACK',
@@ -3047,7 +3047,7 @@ GRC Platform Team`,
       <table style="${emailStyles.table}">
         ${tableRow('Type', '{entityType}')}
         ${tableRow('Name', '{entityName}')}
-        ${tableRow('Sent Back By', '{actorName}')}
+        ${tableRow('Sent Back By', '{actorName} ({senderUsername})')}
         ${tableRow('Reason', '{reason}')}
       </table>
       <p style="${emailStyles.paragraph}">Please address the feedback and resubmit.</p>`,
@@ -3059,7 +3059,7 @@ The following has been sent back for revision:
 
 Type: {entityType}
 Name: {entityName}
-Sent Back By: {actorName}
+Sent Back By: {actorName} ({senderUsername})
 Reason: {reason}
 
 Please address the feedback and resubmit.
@@ -3068,7 +3068,7 @@ View & Revise: {entityLink}
 
 Best regards,
 GRC Platform Team`,
-    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'reason', 'entityLink']),
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'reason', 'entityLink']),
   },
   {
     code: 'FEEDBACK_REQUESTED',
@@ -3084,7 +3084,7 @@ GRC Platform Team`,
       <table style="${emailStyles.table}">
         ${tableRow('Type', '{entityType}')}
         ${tableRow('Name', '{entityName}')}
-        ${tableRow('Requested By', '{actorName}')}
+        ${tableRow('Requested By', '{actorName} ({senderUsername})')}
       </table>
       <p style="${emailStyles.paragraph}">Please provide your feedback at your earliest convenience.</p>`,
       'Provide Feedback'
@@ -3095,7 +3095,7 @@ Your feedback has been requested for the following:
 
 Type: {entityType}
 Name: {entityName}
-Requested By: {actorName}
+Requested By: {actorName} ({senderUsername})
 
 Please provide your feedback at your earliest convenience.
 
@@ -3103,7 +3103,7 @@ Provide Feedback: {entityLink}
 
 Best regards,
 GRC Platform Team`,
-    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'entityLink']),
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'entityLink']),
   },
   {
     code: 'STATUS_CHANGED',
@@ -3121,7 +3121,7 @@ GRC Platform Team`,
         ${tableRow('Name', '{entityName}')}
         ${tableRow('Previous Status', '{previousStatus}')}
         ${tableRow('New Status', '{newStatus}')}
-        ${tableRow('Changed By', '{actorName}')}
+        ${tableRow('Changed By', '{actorName} ({senderUsername})')}
       </table>`,
       'View Details'
     ),
@@ -3133,13 +3133,13 @@ Type: {entityType}
 Name: {entityName}
 Previous Status: {previousStatus}
 New Status: {newStatus}
-Changed By: {actorName}
+Changed By: {actorName} ({senderUsername})
 
 View Details: {entityLink}
 
 Best regards,
 GRC Platform Team`,
-    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'previousStatus', 'newStatus', 'actorName', 'entityLink']),
+    placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'previousStatus', 'newStatus', 'actorName', 'senderUsername', 'recipientUsername', 'entityLink']),
   },
 ];
 

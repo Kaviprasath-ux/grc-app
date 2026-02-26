@@ -25,7 +25,16 @@ function LoginContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [username, setUsername] = useState("");
+  // Read callbackUrl and username from query params (from email deep-links)
+  const callbackUrlParam = searchParams.get("callbackUrl");
+  const usernameParam = searchParams.get("username");
+
+  // Validate callbackUrl: must be relative path starting with / (prevent open-redirect)
+  const safeCallbackUrl = callbackUrlParam && callbackUrlParam.startsWith("/") && !callbackUrlParam.startsWith("//")
+    ? callbackUrlParam
+    : "/";
+
+  const [username, setUsername] = useState(usernameParam || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -68,8 +77,8 @@ function LoginContent() {
       if (result?.error) {
         setError(t("Invalid username or password"));
       } else {
-        // Redirect to root, which handles role-based landing page
-        router.push("/");
+        // Redirect to callbackUrl (from email deep-link) or root for role-based landing
+        router.push(safeCallbackUrl);
         router.refresh();
       }
     } catch {
@@ -82,7 +91,7 @@ function LoginContent() {
   const handleSsoSignIn = (provider: "google" | "microsoft-entra-id") => {
     setIsSsoLoading(provider);
     setError("");
-    signIn(provider, { callbackUrl: "/" });
+    signIn(provider, { callbackUrl: safeCallbackUrl });
   };
 
   return (

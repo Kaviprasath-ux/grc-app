@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { NotFound } from "@/components/ui/unauthorized";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -410,7 +411,7 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
   }
 
   if (!control) {
-    return <div className="p-6">{t("Control not found")}</div>;
+    return <NotFound title={t("Control Not Found")} backHref="/roles/grc-administrator/compliance/control" />;
   }
 
   return (

@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { NotFound } from "@/components/ui/unauthorized";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -313,11 +314,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
   }
 
   if (!report) {
-    return (
-      <div className="p-3 sm:p-6">
-        <p className="text-gray-500">{t("Report not found")}</p>
-      </div>
-    );
+    return <NotFound title={t("Report Not Found")} backHref="/internal-audit/report" />;
   }
 
   const fieldworkPeriod = `${formatDate(report.engagement.actualStartDate || report.engagement.plannedStartDate)} to ${formatDate(report.engagement.actualEndDate || report.engagement.plannedEndDate)}`;

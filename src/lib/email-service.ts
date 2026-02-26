@@ -394,13 +394,13 @@ export async function getUserEmail(userId: string): Promise<string | null> {
 /**
  * Get a user's name and email by their ID.
  */
-export async function getUserInfo(userId: string): Promise<{ name: string; email: string } | null> {
+export async function getUserInfo(userId: string): Promise<{ name: string; email: string; userName: string } | null> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { fullName: true, email: true },
+      select: { fullName: true, email: true, userName: true },
     });
-    return user ? { name: user.fullName, email: user.email } : null;
+    return user ? { name: user.fullName, email: user.email, userName: user.userName } : null;
   } catch (error) {
     console.error('[EmailService] Error fetching user info:', error);
     return null;

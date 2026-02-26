@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { NotFound } from "@/components/ui/unauthorized";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -511,7 +512,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
   }
 
   if (!control) {
-    return <div className="space-y-6">{t("Control not found")}</div>;
+    return <NotFound title={t("Control Not Found")} backHref="/compliance/framework" />;
   }
 
   return (

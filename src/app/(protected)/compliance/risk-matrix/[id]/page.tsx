@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { NotFound } from "@/components/ui/unauthorized";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -286,11 +287,7 @@ export default function RiskDetailPage() {
   }
 
   if (!risk) {
-    return (
-      <div className="p-6">
-        <div className="text-center text-slate-500">{t("Risk not found")}</div>
-      </div>
-    );
+    return <NotFound title={t("Risk Not Found")} backHref="/risks/register" />;
   }
 
   const linkedControls = risk.controlRisks || [];

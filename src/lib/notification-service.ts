@@ -272,26 +272,37 @@ class NotificationService {
         return;
       }
 
-      // Auto-resolve actor name if not provided in metadata
+      // Auto-resolve actor info if not provided in metadata
       let actorName = payload.metadata?.actorName as string | undefined;
-      if (!actorName && payload.actorId && payload.actorId !== 'system') {
+      let senderUsername: string | undefined;
+      if (payload.actorId && payload.actorId !== 'system') {
         const actorInfo = await getUserInfo(payload.actorId);
-        actorName = actorInfo?.name;
+        if (!actorName) actorName = actorInfo?.name;
+        senderUsername = actorInfo?.userName;
       }
 
       // Map notification event to email template code
       const templateCode = this.getEmailTemplateCode(payload.event);
 
+      // Build entity link with emailUser param for login pre-fill
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+      let entityLink: string | undefined;
+      if (payload.link) {
+        const linkUrl = new URL(payload.link, baseUrl);
+        linkUrl.searchParams.set('emailUser', userInfo.userName);
+        entityLink = linkUrl.toString();
+      }
+
       // Build placeholders for the template
       const placeholders: TemplatePlaceholders = {
         title: payload.title,
         message: payload.message,
-        entityLink: payload.link
-          ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${payload.link}`
-          : undefined,
+        entityLink,
         entityType: payload.relatedEntityType,
         entityName: payload.metadata?.entityName as string,
         actorName: actorName,
+        senderUsername: senderUsername,
+        recipientUsername: userInfo.userName,
         dueDate: payload.metadata?.dueDate as string,
         controlCode: payload.metadata?.controlCode as string,
         riskCode: payload.metadata?.riskCode as string,

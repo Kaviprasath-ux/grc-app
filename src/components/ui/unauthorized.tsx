@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ShieldX, ArrowLeft, Home } from "lucide-react";
+import { ShieldX, ArrowLeft, Home, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -127,6 +127,79 @@ export function UnauthorizedInline({
         <ShieldX className="h-5 w-5" />
         <span>{message}</span>
       </div>
+    </div>
+  );
+}
+
+// ==================== NOT FOUND COMPONENT ====================
+
+interface NotFoundProps {
+  /**
+   * Custom title for the not-found message
+   * @default "Not Found"
+   */
+  title?: string;
+  /**
+   * Custom description explaining what was not found
+   * @default "The item you're looking for doesn't exist or has been removed."
+   */
+  description?: string;
+  /**
+   * URL for the "Go Back" button. Uses router.back() if not provided.
+   */
+  backHref?: string;
+  /**
+   * Label for the back button
+   * @default "Go Back"
+   */
+  backLabel?: string;
+}
+
+/**
+ * Full-page not-found message for deep-linked pages.
+ * Use this when a specific entity (control, evidence, risk, etc.) is not found.
+ *
+ * @example
+ * ```tsx
+ * if (!control) return <NotFound title="Control Not Found" backHref="/compliance/framework" />;
+ * ```
+ */
+export function NotFound({
+  title = "Not Found",
+  description = "The item you're looking for doesn't exist or has been removed.",
+  backHref,
+  backLabel = "Go Back",
+}: NotFoundProps) {
+  const router = useRouter();
+
+  return (
+    <div className="flex items-center justify-center min-h-[60vh] p-4">
+      <Card className="max-w-md w-full">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <SearchX className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <CardTitle className="text-2xl">{title}</CardTitle>
+          <CardDescription className="text-base">{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-3 justify-center">
+          <Button
+            variant="outline"
+            onClick={() => backHref ? router.push(backHref) : router.back()}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {backLabel}
+          </Button>
+          <Button
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Go to Dashboard
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
