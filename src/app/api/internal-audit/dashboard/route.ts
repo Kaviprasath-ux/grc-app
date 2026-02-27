@@ -304,7 +304,7 @@ export const GET = withAuth(
         return {
           ...audit,
           auditorName,
-          durationDays: Math.max(durationDays, 30), // Minimum 30 days for visibility
+          durationDays: Math.max(durationDays, 1),
           startMonth: start.getMonth(), // 0-11
           endMonth: end.getMonth()
         };
@@ -374,7 +374,7 @@ export const GET = withAuth(
           engagementTitle: engagement.engagementTitle,
           startMonth: start.getMonth(),
           endMonth: end.getMonth(),
-          durationDays: Math.max(durationDays, 30),
+          durationDays: Math.max(durationDays, 1),
         });
       });
 
