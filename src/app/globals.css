@@ -10,7 +10,7 @@
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-  /* Primary - Indigo Scale */
+  /* Primary - Terracotta Scale */
   --color-primary-50: var(--primary-50);
   --color-primary-100: var(--primary-100);
   --color-primary-200: var(--primary-200);
@@ -23,7 +23,7 @@
   --color-primary-900: var(--primary-900);
   --color-primary-950: var(--primary-950);
 
-  /* Neutral - Slate Scale */
+  /* Neutral - Warm Sand Scale */
   --color-slate-50: var(--slate-50);
   --color-slate-100: var(--slate-100);
   --color-slate-200: var(--slate-200);
@@ -150,208 +150,246 @@
   /* Base radius for shadcn calculations */
   --radius: 0.5rem;
 
-  /* Primary - Indigo Scale */
-  --primary-50: #EEF2FF;
-  --primary-100: #E0E7FF;
-  --primary-200: #C7D2FE;
-  --primary-300: #A5B4FC;
-  --primary-400: #818CF8;
-  --primary-500: #6366F1;
-  --primary-600: #4F46E5;
-  --primary-700: #4338CA;
-  --primary-800: #3730A3;
-  --primary-900: #312E81;
-  --primary-950: #1E1B4B;
+  /* ─────────────────────────────────────────────────────────────
+     PRIMARY — Terracotta Scale  (mid-point: #A57865)
+     Inspired by moodboard desert sands & warm earth tones
+  ───────────────────────────────────────────────────────────── */
+  --primary-50:  #FBF5F2;
+  --primary-100: #F5E8E1;
+  --primary-200: #EDD0C2;
+  --primary-300: #E0AE97;
+  --primary-400: #CE8A72;
+  --primary-500: #A57865;   /* ← Brand primary */
+  --primary-600: #8A6050;
+  --primary-700: #6E4C3E;
+  --primary-800: #573C32;
+  --primary-900: #45302A;
+  --primary-950: #2A1C18;
 
-  /* Neutral - Slate Scale */
-  --slate-50: #F8FAFC;
-  --slate-100: #F1F5F9;
-  --slate-200: #E2E8F0;
-  --slate-300: #CBD5E1;
-  --slate-400: #94A3B8;
-  --slate-500: #64748B;
-  --slate-600: #475569;
-  --slate-700: #334155;
-  --slate-800: #1E293B;
-  --slate-900: #0F172A;
-  --slate-950: #020617;
+  /* ─────────────────────────────────────────────────────────────
+     NEUTRAL — Warm Sand / Parchment Scale
+     Replaces cold slate with moodboard sand & dune warmth
+  ───────────────────────────────────────────────────────────── */
+  --slate-50:  #FAF7F4;
+  --slate-100: #F4EDE6;
+  --slate-200: #E8D9CE;
+  --slate-300: #D5BFB2;
+  --slate-400: #B89888;
+  --slate-500: #8E7065;
+  --slate-600: #6B5349;
+  --slate-700: #503E37;
+  --slate-800: #3A2D28;
+  --slate-900: #28201C;
+  --slate-950: #160F0C;
 
-  /* Risk Colors */
-  --risk-critical: #DC2626;
-  --risk-critical-bg: #FEE2E2;
-  --risk-high: #EA580C;
-  --risk-high-bg: #FFEDD5;
-  --risk-medium: #F59E0B;
-  --risk-medium-bg: #FEF3C7;
-  --risk-low: #3B82F6;
-  --risk-low-bg: #DBEAFE;
-  --risk-minimal: #10B981;
-  --risk-minimal-bg: #D1FAE5;
+  /* ─────────────────────────────────────────────────────────────
+     RISK COLORS — Warm-toned risk spectrum
+  ───────────────────────────────────────────────────────────── */
+  --risk-critical:    #C0392B;
+  --risk-critical-bg: #FDECEA;
+  --risk-high:        #C96B2B;
+  --risk-high-bg:     #FDEFD8;
+  --risk-medium:      #C9A84C;   /* moodboard gold */
+  --risk-medium-bg:   #FBF3D9;
+  --risk-low:         #4A8FA8;   /* moodboard teal */
+  --risk-low-bg:      #DAF0F5;
+  --risk-minimal:     #4A5E3A;   /* moodboard forest green */
+  --risk-minimal-bg:  #DDE8D6;
 
-  /* Compliance Colors */
-  --compliance-compliant: #059669;
-  --compliance-compliant-bg: #D1FAE5;
-  --compliance-non-compliant: #DC2626;
-  --compliance-non-compliant-bg: #FEE2E2;
-  --compliance-pending: #F59E0B;
-  --compliance-pending-bg: #FEF3C7;
-  --compliance-in-progress: #3B82F6;
-  --compliance-in-progress-bg: #DBEAFE;
-  --compliance-not-applicable: #6B7280;
-  --compliance-not-applicable-bg: #F3F4F6;
+  /* ─────────────────────────────────────────────────────────────
+     COMPLIANCE COLORS
+  ───────────────────────────────────────────────────────────── */
+  --compliance-compliant:         #4A5E3A;   /* forest green */
+  --compliance-compliant-bg:      #DDE8D6;
+  --compliance-non-compliant:     #C0392B;
+  --compliance-non-compliant-bg:  #FDECEA;
+  --compliance-pending:           #C9A84C;   /* gold */
+  --compliance-pending-bg:        #FBF3D9;
+  --compliance-in-progress:       #4A8FA8;   /* teal */
+  --compliance-in-progress-bg:    #DAF0F5;
+  --compliance-not-applicable:    #8E7065;
+  --compliance-not-applicable-bg: #F4EDE6;
 
-  /* Semantic Colors */
-  --success: #10B981;
-  --success-light: #D1FAE5;
-  --success-dark: #047857;
-  --warning: #F59E0B;
-  --warning-light: #FEF3C7;
-  --warning-dark: #B45309;
-  --error: #EF4444;
-  --error-light: #FEE2E2;
-  --error-dark: #B91C1C;
-  --info: #3B82F6;
-  --info-light: #DBEAFE;
-  --info-dark: #1D4ED8;
+  /* ─────────────────────────────────────────────────────────────
+     SEMANTIC COLORS — mapped to moodboard accent palette
+  ───────────────────────────────────────────────────────────── */
+  /* Success → Forest Green  (#4A5E3A) */
+  --success:       #4A5E3A;
+  --success-light: #DDE8D6;
+  --success-dark:  #344429;
 
-  /* Chart Colors */
-  --chart-1: #6366F1;
-  --chart-2: #8B5CF6;
-  --chart-3: #06B6D4;
-  --chart-4: #10B981;
-  --chart-5: #F59E0B;
-  --chart-6: #EF4444;
-  --chart-7: #EC4899;
-  --chart-8: #14B8A6;
+  /* Warning → Desert Gold  (#C9A84C) */
+  --warning:       #C9A84C;
+  --warning-light: #FBF3D9;
+  --warning-dark:  #967B30;
 
-  /* Surface Colors */
-  --surface-primary: #FFFFFF;
-  --surface-secondary: #F8FAFC;
-  --surface-tertiary: #F1F5F9;
+  /* Error → Deep Terracotta Red */
+  --error:         #C0392B;
+  --error-light:   #FDECEA;
+  --error-dark:    #922B21;
 
-  /* Border Colors */
-  --border-light: #E2E8F0;
-  --border: #CBD5E1;
-  --border-dark: #94A3B8;
-  --border-focus: #6366F1;
+  /* Info → Ocean Teal  (#4A8FA8) */
+  --info:          #4A8FA8;
+  --info-light:    #DAF0F5;
+  --info-dark:     #30697D;
 
-  /* Text Colors */
-  --text-primary: #1E293B;
-  --text-secondary: #64748B;
-  --text-muted: #94A3B8;
-  --text-inverted: #FFFFFF;
-  --text-link: #4F46E5;
-  --text-link-hover: #4338CA;
+  /* ─────────────────────────────────────────────────────────────
+     CHART COLORS — full moodboard-inspired palette
+     1 Terracotta · 2 Forest Green · 3 Teal · 4 Gold
+     5 Sand Beige · 6 Deep Brown · 7 Sage · 8 Warm Red
+  ───────────────────────────────────────────────────────────── */
+  --chart-1: #A57865;   /* terracotta – primary */
+  --chart-2: #4A5E3A;   /* forest green */
+  --chart-3: #4A8FA8;   /* ocean teal */
+  --chart-4: #C9A84C;   /* desert gold */
+  --chart-5: #D4B5A0;   /* sand beige */
+  --chart-6: #6E4C3E;   /* deep brown */
+  --chart-7: #7A9E6E;   /* bamboo sage */
+  --chart-8: #C0392B;   /* warm red */
 
-  /* Shadcn UI Component Colors - Mapped to new design system */
-  --background: #FFFFFF;
-  --foreground: #1E293B;
-  --card: #FFFFFF;
-  --card-foreground: #1E293B;
-  --popover: #FFFFFF;
-  --popover-foreground: #1E293B;
-  --primary: #4F46E5;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F1F5F9;
-  --secondary-foreground: #1E293B;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-  --accent: #F1F5F9;
-  --accent-foreground: #1E293B;
-  --destructive: #EF4444;
-  --input: #E2E8F0;
-  --ring: #6366F1;
+  /* ─────────────────────────────────────────────────────────────
+     SURFACE COLORS — warm parchment backgrounds
+  ───────────────────────────────────────────────────────────── */
+  --surface-primary:   #FFFFFF;
+  --surface-secondary: #FAF7F4;
+  --surface-tertiary:  #F4EDE6;
 
-  /* Sidebar Colors - Dark theme for sidebar */
-  --sidebar: #0F172A;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #6366F1;
+  /* ─────────────────────────────────────────────────────────────
+     BORDER COLORS
+  ───────────────────────────────────────────────────────────── */
+  --border-light: #E8D9CE;
+  --border:       #D5BFB2;
+  --border-dark:  #B89888;
+  --border-focus: #A57865;
+
+  /* ─────────────────────────────────────────────────────────────
+     TEXT COLORS — warm dark brown hierarchy
+  ───────────────────────────────────────────────────────────── */
+  --text-primary:    #3A2D28;
+  --text-secondary:  #6B5349;
+  --text-muted:      #B89888;
+  --text-inverted:   #FFFFFF;
+  --text-link:       #A57865;
+  --text-link-hover: #8A6050;
+
+  /* ─────────────────────────────────────────────────────────────
+     SHADCN UI COMPONENT COLORS — Light mode
+  ───────────────────────────────────────────────────────────── */
+  --background:          #FFFFFF;
+  --foreground:          #3A2D28;
+  --card:                #FFFFFF;
+  --card-foreground:     #3A2D28;
+  --popover:             #FFFFFF;
+  --popover-foreground:  #3A2D28;
+  --primary:             #A57865;
+  --primary-foreground:  #FFFFFF;
+  --secondary:           #F4EDE6;
+  --secondary-foreground:#3A2D28;
+  --muted:               #F4EDE6;
+  --muted-foreground:    #6B5349;
+  --accent:              #F4EDE6;
+  --accent-foreground:   #3A2D28;
+  --destructive:         #C0392B;
+  --input:               #E8D9CE;
+  --ring:                #A57865;
+
+  /* ─────────────────────────────────────────────────────────────
+     SIDEBAR — Deep earthy dark (forest floor)
+  ───────────────────────────────────────────────────────────── */
+  --sidebar:                    #28201C;
+  --sidebar-foreground:         #FAF7F4;
+  --sidebar-primary:            #A57865;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(148, 163, 184, 0.16);
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: #6366F1;
+  --sidebar-accent:             rgba(213, 191, 178, 0.14);
+  --sidebar-accent-foreground:  #FAF7F4;
+  --sidebar-border:             rgba(255, 255, 255, 0.08);
+  --sidebar-ring:               #A57865;
 
-  /* Shadows */
-  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-card-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  /* ─────────────────────────────────────────────────────────────
+     SHADOWS — warm-tinted
+  ───────────────────────────────────────────────────────────── */
+  --shadow-card:       0 1px 3px 0 rgba(58, 45, 40, 0.10), 0 1px 2px -1px rgba(58, 45, 40, 0.10);
+  --shadow-card-hover: 0 4px 6px -1px rgba(58, 45, 40, 0.12), 0 2px 4px -2px rgba(58, 45, 40, 0.10);
+  --shadow-elevated:   0 10px 15px -3px rgba(58, 45, 40, 0.12), 0 4px 6px -4px rgba(58, 45, 40, 0.10);
+  --shadow-modal:      0 25px 50px -12px rgba(58, 45, 40, 0.28);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   DARK MODE — deep earthy night palette
+═══════════════════════════════════════════════════════════════ */
 .dark {
-  /* Primary - Indigo Scale (inverted for dark mode) */
-  --primary-50: #1E1B4B;
-  --primary-100: #312E81;
-  --primary-200: #3730A3;
-  --primary-300: #4338CA;
-  --primary-400: #4F46E5;
-  --primary-500: #6366F1;
-  --primary-600: #818CF8;
-  --primary-700: #A5B4FC;
-  --primary-800: #C7D2FE;
-  --primary-900: #E0E7FF;
-  --primary-950: #EEF2FF;
+  /* Primary — Terracotta Scale (lightened for dark bg) */
+  --primary-50:  #2A1C18;
+  --primary-100: #45302A;
+  --primary-200: #573C32;
+  --primary-300: #6E4C3E;
+  --primary-400: #8A6050;
+  --primary-500: #A57865;
+  --primary-600: #CE8A72;
+  --primary-700: #E0AE97;
+  --primary-800: #EDD0C2;
+  --primary-900: #F5E8E1;
+  --primary-950: #FBF5F2;
 
-  /* Neutral - Slate Scale (inverted for dark mode) */
-  --slate-50: #020617;
-  --slate-100: #0F172A;
-  --slate-200: #1E293B;
-  --slate-300: #334155;
-  --slate-400: #475569;
-  --slate-500: #64748B;
-  --slate-600: #94A3B8;
-  --slate-700: #CBD5E1;
-  --slate-800: #E2E8F0;
-  --slate-900: #F1F5F9;
-  --slate-950: #F8FAFC;
+  /* Neutral — Warm Sand (inverted for dark) */
+  --slate-50:  #160F0C;
+  --slate-100: #28201C;
+  --slate-200: #3A2D28;
+  --slate-300: #503E37;
+  --slate-400: #6B5349;
+  --slate-500: #8E7065;
+  --slate-600: #B89888;
+  --slate-700: #D5BFB2;
+  --slate-800: #E8D9CE;
+  --slate-900: #F4EDE6;
+  --slate-950: #FAF7F4;
 
   /* Surface Colors */
-  --surface-primary: #0F172A;
-  --surface-secondary: #1E293B;
-  --surface-tertiary: #334155;
+  --surface-primary:   #28201C;
+  --surface-secondary: #3A2D28;
+  --surface-tertiary:  #503E37;
 
   /* Border Colors */
-  --border-light: #334155;
-  --border: #475569;
-  --border-dark: #64748B;
+  --border-light: #503E37;
+  --border:       #6B5349;
+  --border-dark:  #8E7065;
 
   /* Text Colors */
-  --text-primary: #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --text-inverted: #0F172A;
-  --text-link: #818CF8;
-  --text-link-hover: #A5B4FC;
+  --text-primary:   #F4EDE6;
+  --text-secondary: #B89888;
+  --text-muted:     #6B5349;
+  --text-inverted:  #28201C;
+  --text-link:      #CE8A72;
+  --text-link-hover:#E0AE97;
 
-  /* Shadcn UI Component Colors - Dark mode */
-  --background: #0F172A;
-  --foreground: #F1F5F9;
-  --card: #1E293B;
-  --card-foreground: #F1F5F9;
-  --popover: #1E293B;
-  --popover-foreground: #F1F5F9;
-  --primary: #818CF8;
-  --primary-foreground: #0F172A;
-  --secondary: #334155;
-  --secondary-foreground: #F1F5F9;
-  --muted: #334155;
-  --muted-foreground: #94A3B8;
-  --accent: #334155;
-  --accent-foreground: #F1F5F9;
-  --destructive: #EF4444;
-  --input: #334155;
-  --ring: #818CF8;
+  /* Shadcn UI Component Colors — Dark mode */
+  --background:          #28201C;
+  --foreground:          #F4EDE6;
+  --card:                #3A2D28;
+  --card-foreground:     #F4EDE6;
+  --popover:             #3A2D28;
+  --popover-foreground:  #F4EDE6;
+  --primary:             #CE8A72;
+  --primary-foreground:  #28201C;
+  --secondary:           #503E37;
+  --secondary-foreground:#F4EDE6;
+  --muted:               #503E37;
+  --muted-foreground:    #B89888;
+  --accent:              #503E37;
+  --accent-foreground:   #F4EDE6;
+  --destructive:         #E05A4A;
+  --input:               #503E37;
+  --ring:                #CE8A72;
 
-  /* Sidebar Colors - Dark theme */
-  --sidebar: #020617;
-  --sidebar-foreground: #F1F5F9;
-  --sidebar-primary: #818CF8;
-  --sidebar-primary-foreground: #0F172A;
-  --sidebar-accent: rgba(148, 163, 184, 0.16);
-  --sidebar-accent-foreground: #F1F5F9;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: #818CF8;
+  /* Sidebar — Deepest night earth */
+  --sidebar:                    #160F0C;
+  --sidebar-foreground:         #F4EDE6;
+  --sidebar-primary:            #CE8A72;
+  --sidebar-primary-foreground: #28201C;
+  --sidebar-accent:             rgba(213, 191, 178, 0.14);
+  --sidebar-accent-foreground:  #F4EDE6;
+  --sidebar-border:             rgba(255, 255, 255, 0.08);
+  --sidebar-ring:               #CE8A72;
 }
 
 @layer base {
@@ -362,13 +400,12 @@
     @apply bg-background text-foreground;
   }
 
-  /* Minimal scrollbar - subtle and unobtrusive */
+  /* Minimal scrollbar — warm-tinted & subtle */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--slate-200) transparent;
   }
 
-  /* Webkit browsers (Chrome, Safari, Edge) */
   *::-webkit-scrollbar {
     width: 5px;
     height: 5px;

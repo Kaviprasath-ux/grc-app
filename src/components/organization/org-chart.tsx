@@ -14,9 +14,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // Design system aligned colors
-const ROOT_COLOR = "#4F46E5"; // primary-600 - indigo for root node
-const NODE_COLOR = "#6366F1"; // primary-500 - indigo for child nodes
-const LINE_COLOR = "#C7D2FE"; // primary-200 - light indigo for connector lines
+const ROOT_COLOR = "var(--primary-600)"; // #8A6050 - deep terracotta for root node
+const NODE_COLOR = "var(--primary-500)"; // #A57865 - terracotta for child nodes
+const LINE_COLOR = "var(--primary-200)"; // #EDD0C2 - light terracotta for lines
 
 interface Department {
   id: string;
@@ -496,11 +496,11 @@ export function OrgChart() {
   return (
     <div className="w-full" style={isRTL ? { direction: 'rtl' } : undefined}>
       {/* View Mode Controls - section header style */}
-      <div className="flex items-center gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100">
+      <div className="flex items-center gap-4 px-5 py-3 bg-white border-b border-slate-100">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("View Mode")}</span>
           <Select value={viewMode} onValueChange={(value: ViewMode) => setViewMode(value)}>
-            <SelectTrigger className="w-[180px] h-8 text-sm">
+            <SelectTrigger className="w-[180px] h-8 text-sm bg-slate-50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -514,7 +514,7 @@ export function OrgChart() {
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</span>
             <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
-              <SelectTrigger className="w-[180px] h-8 text-sm">
+              <SelectTrigger className="w-[180px] h-8 text-sm bg-slate-50">
                 <SelectValue placeholder={t("Select department")} />
               </SelectTrigger>
               <SelectContent>
