@@ -61,22 +61,12 @@ export const GET = withAuth(
 
       switch (type as ConfigType) {
         case 'vendor-profile-fields': {
+          // Ensure system fields are in sync (adds missing, removes stale)
+          await ensureSystemProfileFields(customerAccountId);
           const fields = await prisma.tPRMVendorProfileField.findMany({
             where: { customerAccountId },
-            orderBy: { sortOrder: 'asc' },
+            orderBy: [{ isSystem: 'desc' }, { sortOrder: 'asc' }],
           });
-          // If no fields exist, return system defaults
-          if (fields.length === 0) {
-            return NextResponse.json(
-              SYSTEM_PROFILE_FIELDS.map((name, i) => ({
-                id: `system_${i}`,
-                fieldName: name,
-                isSystem: true,
-                isActive: true,
-                sortOrder: i + 1,
-              }))
-            );
-          }
           return NextResponse.json(fields);
         }
 
@@ -633,22 +623,41 @@ export const DELETE = withAuth(
 
 // ============ HELPERS ============
 
-/** Ensure system vendor profile fields are created for this tenant */
+/** Ensure system vendor profile fields are created for this tenant and synced with SYSTEM_PROFILE_FIELDS */
 async function ensureSystemProfileFields(customerAccountId: string) {
-  const existing = await prisma.tPRMVendorProfileField.count({
+  const existing = await prisma.tPRMVendorProfileField.findMany({
     where: { customerAccountId, isSystem: true },
   });
-  if (existing > 0) return;
 
-  await prisma.tPRMVendorProfileField.createMany({
-    data: SYSTEM_PROFILE_FIELDS.map((name, i) => ({
-      customerAccountId,
-      fieldName: name,
-      isSystem: true,
-      sortOrder: i + 1,
-    })),
-    skipDuplicates: true,
-  });
+  const existingNames = new Set(existing.map(f => f.fieldName));
+  const desiredNames = new Set(SYSTEM_PROFILE_FIELDS);
+
+  // Delete system fields that are no longer in the list
+  const toDelete = existing.filter(f => !desiredNames.has(f.fieldName));
+  if (toDelete.length > 0) {
+    await prisma.tPRMVendorProfileField.deleteMany({
+      where: { id: { in: toDelete.map(f => f.id) } },
+    });
+  }
+
+  // Add missing system fields
+  const toAdd = SYSTEM_PROFILE_FIELDS.filter(name => !existingNames.has(name));
+  if (toAdd.length > 0) {
+    const maxOrder = await prisma.tPRMVendorProfileField.aggregate({
+      where: { customerAccountId },
+      _max: { sortOrder: true },
+    });
+    let nextOrder = (maxOrder._max.sortOrder || 0) + 1;
+    await prisma.tPRMVendorProfileField.createMany({
+      data: toAdd.map((name) => ({
+        customerAccountId,
+        fieldName: name,
+        isSystem: true,
+        sortOrder: nextOrder++,
+      })),
+      skipDuplicates: true,
+    });
+  }
 }
 
 /** Ensure default scorecard factors are created for this tenant */
