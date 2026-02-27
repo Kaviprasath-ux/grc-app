@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { customerName, email, userName, password, blocked, active, language, timeZone, subscriptionPlans, isTprmAdded } = body;
+    const { customerName, email, userName, password, blocked, active, language, timeZone, subscriptionPlans, isGrcAdded, isTprmAdded } = body;
 
     // Validate required fields
     if (!customerName || !email || !userName || !password) {
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       // Set isGrcAdded/isTprmAdded via raw SQL (Prisma client may not have these fields yet)
       await tx.$executeRawUnsafe(
         `UPDATE "CustomerAccount" SET "isGrcAdded" = $1, "isTprmAdded" = $2 WHERE id = $3`,
-        true, isTprmAdded === true, customerAccount.id
+        isGrcAdded !== false, isTprmAdded === true, customerAccount.id
       );
 
       // 2. Create the User linked to CustomerAccount

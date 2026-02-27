@@ -71,7 +71,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { customerName, email, userName, password, blocked, active, language, timeZone, isTprmAdded } = body;
+    const { customerName, email, userName, password, blocked, active, language, timeZone, isGrcAdded, isTprmAdded } = body;
 
     // Validate required fields
     if (!customerName || !email || !userName) {
@@ -142,11 +142,13 @@ export async function PUT(
       },
     });
 
-    // Update isTprmAdded on the CustomerAccount if provided
-    if (existingUser.customerAccountId && isTprmAdded !== undefined) {
+    // Update isGrcAdded/isTprmAdded on the CustomerAccount if provided
+    if (existingUser.customerAccountId && (isGrcAdded !== undefined || isTprmAdded !== undefined)) {
       await prisma.$executeRawUnsafe(
-        `UPDATE "CustomerAccount" SET "isTprmAdded" = $1 WHERE id = $2`,
-        isTprmAdded === true, existingUser.customerAccountId
+        `UPDATE "CustomerAccount" SET "isGrcAdded" = COALESCE($1, "isGrcAdded"), "isTprmAdded" = COALESCE($2, "isTprmAdded") WHERE id = $3`,
+        isGrcAdded !== undefined ? isGrcAdded === true : null,
+        isTprmAdded !== undefined ? isTprmAdded === true : null,
+        existingUser.customerAccountId
       );
     }
 

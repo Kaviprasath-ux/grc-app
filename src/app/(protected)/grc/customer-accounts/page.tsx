@@ -427,6 +427,7 @@ export default function CustomerAccountsPage() {
           password: formData.newPassword,
           blocked: formData.blocked,
           active: formData.active,
+          isGrcAdded: formData.isGrcAdded,
           isTprmAdded: formData.isTprmAdded,
           language: formData.language,
           timeZone: formData.timeZone,
@@ -516,6 +517,7 @@ export default function CustomerAccountsPage() {
           userName: formData.userName,
           blocked: formData.blocked,
           active: formData.active,
+          isGrcAdded: formData.isGrcAdded,
           isTprmAdded: formData.isTprmAdded,
           language: formData.language,
           timeZone: formData.timeZone,
@@ -1111,13 +1113,15 @@ export default function CustomerAccountsPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Last Login")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Blocked")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Active")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("GRC")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("TPRM")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-0">
+                <TableCell colSpan={11} className="py-0">
                   <div className="py-16 text-center">
                     <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
                       <Users className="h-6 w-6 text-primary-500" />
@@ -1147,6 +1151,22 @@ export default function CustomerAccountsPage() {
                       : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600"
                     }>
                       {customer.active ? t("Yes") : t("No")}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <span className={customer.isGrcAdded
+                      ? "px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700"
+                      : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-500"
+                    }>
+                      {customer.isGrcAdded ? t("Yes") : t("No")}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <span className={customer.isTprmAdded
+                      ? "px-2 py-1 rounded text-xs font-medium bg-purple-50 text-purple-700"
+                      : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-500"
+                    }>
+                      {customer.isTprmAdded ? t("Yes") : t("No")}
                     </span>
                   </TableCell>
                   <TableCell className="py-3 pr-5">
@@ -1409,6 +1429,29 @@ export default function CustomerAccountsPage() {
                           onChange={() => setFormData({ ...formData, active: false })}
                           className="accent-primary"
                         /> {t("No")}
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Is GRC Added")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isGrcAddedNew"
+                          checked={!formData.isGrcAdded}
+                          onChange={() => setFormData({ ...formData, isGrcAdded: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isGrcAddedNew"
+                          checked={formData.isGrcAdded}
+                          onChange={() => setFormData({ ...formData, isGrcAdded: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
                       </label>
                     </div>
                   </div>
@@ -1719,6 +1762,29 @@ export default function CustomerAccountsPage() {
                           onChange={() => setFormData({ ...formData, active: false })}
                           className="accent-primary"
                         /> {t("No")}
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Is GRC Added")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isGrcAddedEdit"
+                          checked={!formData.isGrcAdded}
+                          onChange={() => setFormData({ ...formData, isGrcAdded: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isGrcAddedEdit"
+                          checked={formData.isGrcAdded}
+                          onChange={() => setFormData({ ...formData, isGrcAdded: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
                       </label>
                     </div>
                   </div>
