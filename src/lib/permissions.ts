@@ -155,9 +155,13 @@ export const ROLES = {
     description: 'Creates/edits content within own department',
   },
   // TPRM Module roles
+  // NOTE: TPRMCustomerAdmin is DEPRECATED — use CustomerAdministrator instead.
+  // CustomerAdministrator now serves both GRC and TPRM customers; module visibility
+  // is controlled by isGrcAdded/isTprmAdded flags on the CustomerAccount.
+  // Kept in code for backward compatibility with existing users who may have this role.
   TPRMCustomerAdmin: {
     name: 'TPRMCustomerAdmin',
-    description: 'Customer-level TPRM administrator, manages vendor assessments for their account',
+    description: 'DEPRECATED — use CustomerAdministrator instead. Customer-level TPRM administrator',
   },
   FactoryAdmin: {
     name: 'FactoryAdmin',
@@ -438,9 +442,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
   ],
 
-  // TPRM Customer Admin - Equivalent to CustomerAdministrator for TPRM customers.
-  // Has both GRC + TPRM permissions defined; module flag filtering (isGrcAdded/isTprmAdded)
-  // controls which modules are actually visible at runtime.
+  // DEPRECATED: TPRMCustomerAdmin — kept for backward compatibility.
+  // New accounts should use CustomerAdministrator instead. Permissions are identical
+  // to CustomerAdministrator; module flag filtering (isGrcAdded/isTprmAdded) controls visibility.
   TPRMCustomerAdmin: [
     // GRC modules (only active when isGrcAdded=true via module flag filtering)
     { resource: 'organization.*', actions: ['*'], scope: 'all' },

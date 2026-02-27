@@ -191,8 +191,8 @@ export const navigation: NavItem[] = [
   // ==================== End Internal Audit Section ====================
 
   // ==================== TPRM Section ====================
-  // Grouped under TPRM parent. For TPRMCustomerAdmin this is the only sidebar group.
-  // For CustomerAdministrator it appears as a TPRM module alongside Organization, Compliance, etc.
+  // Grouped under TPRM parent. Visible to CustomerAdministrator when isTprmAdded=true.
+  // Module flag filtering controls whether GRC and/or TPRM sections appear in the sidebar.
   {
     name: "TPRM",
     icon: ShieldCheck,

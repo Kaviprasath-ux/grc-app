@@ -122,6 +122,14 @@ model CustomerAccount {
   tprmAssessments            TPRMAssessment[]
   tprmAssessmentLogs         TPRMAssessmentLog[]
   tprmConfiguration          TPRMConfiguration?
+  tprmVendorProfileFields    TPRMVendorProfileField[]
+  tprmOnboardingQuestions    TPRMOnboardingQuestion[]
+  tprmServiceCategories      TPRMServiceCategory[]
+  tprmDisciplines            TPRMDiscipline[]
+  tprmDepartments            TPRMDepartment[]
+  tprmQuestionnaireTemplates TPRMQuestionnaireTemplate[]
+  tprmOffboardingQuestions   TPRMOffboardingQuestion[]
+  tprmScorecardFactors       TPRMScorecardFactor[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -3403,10 +3411,148 @@ model TPRMConfiguration {
   scorecardLow       Int            @default(2)
   scorecardNominal   Int            @default(0)
 
+  // Scorecard Configuration — formula & weights
+  scoringFormula          String    @default("AVG")  // "AVG" or "SUM"
+  securityPostureWeight   Int       @default(50)     // percentage
+  threatExposureWeight    Int       @default(50)     // percentage
+
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
   @@index([customerAccountId])
+}
+
+// TPRMVendorProfileField — Vendor onboarding profile fields configuration
+model TPRMVendorProfileField {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  fieldName         String
+  isSystem          Boolean         @default(false) // System fields cannot be edited/deleted
+  isActive          Boolean         @default(true)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, fieldName])
+  @@index([customerAccountId])
+}
+
+// TPRMOnboardingQuestion — Vendor onboarding questionnaire
+model TPRMOnboardingQuestion {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  title             String
+  question          String?         @db.Text
+  score             Int             @default(0)
+  questionType      String          @default("Parent") // "Parent" or "Child"
+  parentId          String?
+  parent            TPRMOnboardingQuestion?  @relation("OnboardingQuestionHierarchy", fields: [parentId], references: [id])
+  children          TPRMOnboardingQuestion[] @relation("OnboardingQuestionHierarchy")
+  responseType      String          @default("Yes/No") // "Yes/No" or "FreeText"
+  isActive          Boolean         @default(true)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
+  @@index([parentId])
+}
+
+// TPRMServiceCategory — Service categories for vendor classification
+model TPRMServiceCategory {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  name              String
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
+}
+
+// TPRMDiscipline — Disciplines for vendor assessment (e.g., Compliance, Cyber)
+model TPRMDiscipline {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  name              String
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
+}
+
+// TPRMDepartment — TPRM-specific departments (separate from GRC departments)
+model TPRMDepartment {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  name              String
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
+}
+
+// TPRMQuestionnaireTemplate — Assessment questionnaire templates
+model TPRMQuestionnaireTemplate {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  templateName      String
+  frameworkName     String?
+  templateCategory  String          @default("Default") // "Default", "ISMS", "Compliance"
+  imageUrl          String?
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, templateName])
+  @@index([customerAccountId])
+}
+
+// TPRMOffboardingQuestion — Vendor offboarding questionnaire
+model TPRMOffboardingQuestion {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  sequenceNo        Int
+  title             String
+  question          String?         @db.Text
+  isActive          Boolean         @default(true)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// TPRMScorecardFactor — Security scorecard factors (SecurityPosture & ThreatExposure)
+model TPRMScorecardFactor {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  factorId          String          // e.g., "network_security", "known_breach"
+  name              String          // Display name
+  weightage         Int             @default(0) // percentage
+  isMandatory       Boolean         @default(false)
+  scoreType         String          // "SecurityPosture" or "ThreatExposure"
+  isSystem          Boolean         @default(false) // System factors cannot be deleted
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, factorId])
+  @@index([customerAccountId])
+  @@index([customerAccountId, scoreType])
 }
 
 // ==================== DYNAMIC DATA TRANSLATIONS ====================

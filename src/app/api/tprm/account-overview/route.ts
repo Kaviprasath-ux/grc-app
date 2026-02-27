@@ -57,7 +57,7 @@ export const GET = withAuth(
             users: {
               some: {
                 userRoles: {
-                  some: { role: { name: "TPRMCustomerAdmin" } },
+                  some: { role: { name: { in: ["CustomerAdministrator", "TPRMCustomerAdmin"] } } },
                 },
               },
             },
@@ -80,7 +80,7 @@ export const GET = withAuth(
                 users: {
                   where: {
                     userRoles: {
-                      some: { role: { name: "TPRMCustomerAdmin" } },
+                      some: { role: { name: { in: ["CustomerAdministrator", "TPRMCustomerAdmin"] } } },
                     },
                   },
                   select: { id: true, fullName: true, email: true },
@@ -488,9 +488,9 @@ export const GET = withAuth(
   { resource: "tprm.account-overview", action: "view" }
 );
 
-// ==================== POST — Create account + user with TPRM role ====================
+// ==================== POST — Create account + user with appropriate role ====================
 // Each tab creates a SEPARATE customer account with its own admin user:
-//   customers  -> CustomerAccount + User with TPRMCustomerAdmin role
+//   customers  -> CustomerAccount + User with CustomerAdministrator role (unified GRC+TPRM admin)
 //   factory    -> CustomerAccount + User with FactoryAdmin role
 //   superadmin -> CustomerAccount + User with TPRMAdmin role
 export const POST = withAuth(
@@ -511,8 +511,10 @@ export const POST = withAuth(
       }
 
       // Determine role name based on tab
+      // CustomerAdministrator is the unified admin role for both GRC and TPRM;
+      // module visibility is controlled by isGrcAdded/isTprmAdded flags on CustomerAccount
       const roleMap: Record<string, string> = {
-        customers: "TPRMCustomerAdmin",
+        customers: "CustomerAdministrator",
         factory: "FactoryAdmin",
         superadmin: "TPRMAdmin",
       };

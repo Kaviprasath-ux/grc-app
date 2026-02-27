@@ -3,7 +3,7 @@ import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth'
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
-// TPRM-specific roles that can be assigned by TPRMCustomerAdmin
+// TPRM-specific roles that can be assigned by the customer admin (CustomerAdministrator)
 const TPRM_USER_ROLES = [
   'Approver',
   'Assessor',

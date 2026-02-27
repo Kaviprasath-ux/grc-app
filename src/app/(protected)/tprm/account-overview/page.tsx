@@ -161,7 +161,7 @@ interface CreateAccountDialogProps {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  customers: "TPRMCustomerAdmin",
+  customers: "CustomerAdministrator",
   factory: "FactoryAdmin",
   superadmin: "TPRMAdmin",
 };

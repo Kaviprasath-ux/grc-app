@@ -2466,10 +2466,128 @@ CREATE TABLE "TPRMConfiguration" (
     "scorecardModerate" INTEGER NOT NULL DEFAULT 3,
     "scorecardLow" INTEGER NOT NULL DEFAULT 2,
     "scorecardNominal" INTEGER NOT NULL DEFAULT 0,
+    "scoringFormula" TEXT NOT NULL DEFAULT 'AVG',
+    "securityPostureWeight" INTEGER NOT NULL DEFAULT 50,
+    "threatExposureWeight" INTEGER NOT NULL DEFAULT 50,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TPRMConfiguration_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMVendorProfileField" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "fieldName" TEXT NOT NULL,
+    "isSystem" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMVendorProfileField_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMOnboardingQuestion" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "question" TEXT,
+    "score" INTEGER NOT NULL DEFAULT 0,
+    "questionType" TEXT NOT NULL DEFAULT 'Parent',
+    "parentId" TEXT,
+    "responseType" TEXT NOT NULL DEFAULT 'Yes/No',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMOnboardingQuestion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMServiceCategory" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMServiceCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMDiscipline" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMDiscipline_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMDepartment" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMDepartment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMQuestionnaireTemplate" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "templateName" TEXT NOT NULL,
+    "frameworkName" TEXT,
+    "templateCategory" TEXT NOT NULL DEFAULT 'Default',
+    "imageUrl" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMQuestionnaireTemplate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMOffboardingQuestion" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "sequenceNo" INTEGER NOT NULL,
+    "title" TEXT NOT NULL,
+    "question" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMOffboardingQuestion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMScorecardFactor" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "factorId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "weightage" INTEGER NOT NULL DEFAULT 0,
+    "isMandatory" BOOLEAN NOT NULL DEFAULT false,
+    "scoreType" TEXT NOT NULL,
+    "isSystem" BOOLEAN NOT NULL DEFAULT false,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMScorecardFactor_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -3218,6 +3336,54 @@ CREATE UNIQUE INDEX "TPRMConfiguration_customerAccountId_key" ON "TPRMConfigurat
 
 -- CreateIndex
 CREATE INDEX "TPRMConfiguration_customerAccountId_idx" ON "TPRMConfiguration"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMVendorProfileField_customerAccountId_idx" ON "TPRMVendorProfileField"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMVendorProfileField_customerAccountId_fieldName_key" ON "TPRMVendorProfileField"("customerAccountId", "fieldName");
+
+-- CreateIndex
+CREATE INDEX "TPRMOnboardingQuestion_customerAccountId_idx" ON "TPRMOnboardingQuestion"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMOnboardingQuestion_parentId_idx" ON "TPRMOnboardingQuestion"("parentId");
+
+-- CreateIndex
+CREATE INDEX "TPRMServiceCategory_customerAccountId_idx" ON "TPRMServiceCategory"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMServiceCategory_customerAccountId_name_key" ON "TPRMServiceCategory"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "TPRMDiscipline_customerAccountId_idx" ON "TPRMDiscipline"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMDiscipline_customerAccountId_name_key" ON "TPRMDiscipline"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "TPRMDepartment_customerAccountId_idx" ON "TPRMDepartment"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMDepartment_customerAccountId_name_key" ON "TPRMDepartment"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "TPRMQuestionnaireTemplate_customerAccountId_idx" ON "TPRMQuestionnaireTemplate"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMQuestionnaireTemplate_customerAccountId_templateName_key" ON "TPRMQuestionnaireTemplate"("customerAccountId", "templateName");
+
+-- CreateIndex
+CREATE INDEX "TPRMOffboardingQuestion_customerAccountId_idx" ON "TPRMOffboardingQuestion"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMScorecardFactor_customerAccountId_idx" ON "TPRMScorecardFactor"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMScorecardFactor_customerAccountId_scoreType_idx" ON "TPRMScorecardFactor"("customerAccountId", "scoreType");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMScorecardFactor_customerAccountId_factorId_key" ON "TPRMScorecardFactor"("customerAccountId", "factorId");
 
 -- CreateIndex
 CREATE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId");
@@ -4067,6 +4233,33 @@ ALTER TABLE "TPRMAssessmentLog" ADD CONSTRAINT "TPRMAssessmentLog_assessmentId_f
 
 -- AddForeignKey
 ALTER TABLE "TPRMConfiguration" ADD CONSTRAINT "TPRMConfiguration_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendorProfileField" ADD CONSTRAINT "TPRMVendorProfileField_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMOnboardingQuestion" ADD CONSTRAINT "TPRMOnboardingQuestion_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMOnboardingQuestion" ADD CONSTRAINT "TPRMOnboardingQuestion_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "TPRMOnboardingQuestion"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMServiceCategory" ADD CONSTRAINT "TPRMServiceCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMDiscipline" ADD CONSTRAINT "TPRMDiscipline_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMDepartment" ADD CONSTRAINT "TPRMDepartment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMQuestionnaireTemplate" ADD CONSTRAINT "TPRMQuestionnaireTemplate_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMOffboardingQuestion" ADD CONSTRAINT "TPRMOffboardingQuestion_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMScorecardFactor" ADD CONSTRAINT "TPRMScorecardFactor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DynamicTranslation" ADD CONSTRAINT "DynamicTranslation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Save, RotateCcw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DueDiligenceConfig {
@@ -37,11 +36,10 @@ export default function ControlCenterPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [dueDiligence, setDueDiligence] = useState<DueDiligenceConfig[]>([]);
   const [scorecard, setScorecard] = useState<ScorecardConfig[]>([]);
-  const [originalDD, setOriginalDD] = useState<DueDiligenceConfig[]>([]);
-  const [originalSC, setOriginalSC] = useState<ScorecardConfig[]>([]);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestDataRef = useRef<{ dueDiligence: DueDiligenceConfig[]; scorecard: ScorecardConfig[] } | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -49,7 +47,6 @@ export default function ControlCenterPage() {
       if (res.ok) {
         const json = await res.json();
 
-        // Map API response to local state
         const ddData: DueDiligenceConfig[] = DD_CATEGORIES.map((cat) => {
           const found = json.dueDiligence.find(
             (d: { category: string }) => d.category === cat
@@ -76,8 +73,6 @@ export default function ControlCenterPage() {
 
         setDueDiligence(ddData);
         setScorecard(scData);
-        setOriginalDD(JSON.parse(JSON.stringify(ddData)));
-        setOriginalSC(JSON.parse(JSON.stringify(scData)));
       }
     } catch (error) {
       console.error("Failed to fetch control center data:", error);
@@ -90,6 +85,44 @@ export default function ControlCenterPage() {
     fetchData();
   }, [fetchData]);
 
+  // Debounced auto-save
+  const scheduleAutoSave = useCallback((dd: DueDiligenceConfig[], sc: ScorecardConfig[]) => {
+    latestDataRef.current = { dueDiligence: dd, scorecard: sc };
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      const data = latestDataRef.current;
+      if (!data) return;
+      try {
+        const res = await fetch("/api/tprm/control-center", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          toast({
+            title: t("Error"),
+            description: err.error || t("Failed to save configuration"),
+            variant: "destructive",
+          });
+        }
+      } catch {
+        toast({
+          title: t("Error"),
+          description: t("Failed to save configuration"),
+          variant: "destructive",
+        });
+      }
+    }, 800);
+  }, [toast, t]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
   const handleDDChange = (
     catIndex: number,
     field: keyof DueDiligenceConfig,
@@ -98,57 +131,15 @@ export default function ControlCenterPage() {
     const updated = [...dueDiligence];
     updated[catIndex] = { ...updated[catIndex], [field]: parseInt(value) || 0 };
     setDueDiligence(updated);
+    scheduleAutoSave(updated, scorecard);
   };
 
   const handleSCChange = (catIndex: number, value: string) => {
     const updated = [...scorecard];
-    updated[catIndex].securityScore = parseInt(value) || 0;
+    updated[catIndex] = { ...updated[catIndex], securityScore: parseInt(value) || 0 };
     setScorecard(updated);
+    scheduleAutoSave(dueDiligence, updated);
   };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/tprm/control-center", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dueDiligence, scorecard }),
-      });
-
-      if (res.ok) {
-        toast({
-          title: t("Configuration saved"),
-          description: t("Control center settings have been updated successfully."),
-        });
-        setOriginalDD(JSON.parse(JSON.stringify(dueDiligence)));
-        setOriginalSC(JSON.parse(JSON.stringify(scorecard)));
-      } else {
-        const err = await res.json();
-        toast({
-          title: t("Error"),
-          description: err.error || t("Failed to save configuration"),
-          variant: "destructive",
-        });
-      }
-    } catch {
-      toast({
-        title: t("Error"),
-        description: t("Failed to save configuration"),
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleReset = () => {
-    setDueDiligence(JSON.parse(JSON.stringify(originalDD)));
-    setScorecard(JSON.parse(JSON.stringify(originalSC)));
-  };
-
-  const hasChanges =
-    JSON.stringify(dueDiligence) !== JSON.stringify(originalDD) ||
-    JSON.stringify(scorecard) !== JSON.stringify(originalSC);
 
   if (loading) {
     return (
@@ -160,31 +151,11 @@ export default function ControlCenterPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t("Control Center")}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t("Configure due diligence and scorecard thresholds")}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            disabled={!hasChanges || saving}
-          >
-            <RotateCcw className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Reset")}
-          </Button>
-          <Button onClick={handleSave} disabled={!hasChanges || saving}>
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />
-            ) : (
-              <Save className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            )}
-            {t("Save")}
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">{t("Control Center")}</h1>
+        <p className="text-muted-foreground mt-1">
+          {t("Configure due diligence and scorecard thresholds")}
+        </p>
       </div>
 
       {/* Due Diligence Configuration */}
